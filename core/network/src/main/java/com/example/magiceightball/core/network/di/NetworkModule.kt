@@ -46,9 +46,9 @@ abstract class NetworkModule {
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             })
-            .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
-            .writeTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(2, java.util.concurrent.TimeUnit.SECONDS) 
+            .readTimeout(3, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(2, java.util.concurrent.TimeUnit.SECONDS)
             .build()
     }
 
