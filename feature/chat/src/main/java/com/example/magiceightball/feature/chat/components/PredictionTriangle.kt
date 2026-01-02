@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ import androidx.wear.compose.material3.Text
 object PredictionTriangleDefaults {
     val BackgroundColor = Color(0xFF1E50F3)
     val GlowColor = Color(0xFF4B79FF)
+    val BorderColor = Color(0xFF102875).copy(alpha = 0.8f)
     val TextColor = Color.White
 
     val PaddingHorizontal = 30.dp
@@ -55,16 +57,26 @@ object PredictionTriangleDefaults {
     const val BLUR_RADIUS = 45f
 }
 
-class InvertedTriangleShape : Shape {
+class InvertedTriangleShape(private val cornerRadius: Float = 20f) : Shape {
     override fun createOutline(
         size: Size,
         layoutDirection: LayoutDirection,
         density: Density
     ): Outline {
         val path = Path().apply {
-            moveTo(0f, 0f)
-            lineTo(size.width, 0f)
-            lineTo(size.width / 2f, size.height)
+            // Top Left Corner
+            moveTo(cornerRadius, 0f)
+            lineTo(size.width - cornerRadius, 0f)
+            quadraticBezierTo(size.width, 0f, size.width - (cornerRadius * 0.5f), cornerRadius)
+            
+            // Bottom Tip
+            lineTo(size.width / 2f + (cornerRadius * 0.5f), size.height - cornerRadius)
+            quadraticBezierTo(size.width / 2f, size.height, size.width / 2f - (cornerRadius * 0.5f), size.height - cornerRadius)
+            
+            // Top Left Closing
+            lineTo((cornerRadius * 0.5f), cornerRadius)
+            quadraticBezierTo(0f, 0f, cornerRadius, 0f)
+            
             close()
         }
         return Outline.Generic(path)
@@ -78,6 +90,7 @@ fun PredictionTriangle(
     isLoading: Boolean = false,
     backgroundColor: Color = PredictionTriangleDefaults.BackgroundColor,
     glowColor: Color = PredictionTriangleDefaults.GlowColor,
+    borderColor: Color = PredictionTriangleDefaults.BorderColor,
     textColor: Color = PredictionTriangleDefaults.TextColor
 ) {
     Box(
@@ -104,11 +117,14 @@ fun PredictionTriangle(
             }
         }
 
+        val triangleShape = InvertedTriangleShape(cornerRadius = 15f)
+
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clip(InvertedTriangleShape())
+                .clip(triangleShape)
                 .background(backgroundColor)
+                .border(2.dp, borderColor, triangleShape)
                 .padding(
                     start = PredictionTriangleDefaults.PaddingHorizontal,
                     end = PredictionTriangleDefaults.PaddingHorizontal,
@@ -199,11 +215,11 @@ private data class FluidTypography(
 
 private fun calculateFluidTypography(length: Int): FluidTypography {
     return when {
-        length > 25 -> FluidTypography(fontSize = 8.sp, lineHeight = 10.sp)
-        length > 15 -> FluidTypography(fontSize = 9.sp, lineHeight = 12.sp)
+        length > 25 -> FluidTypography(fontSize = 8.sp, lineHeight = 12.sp) // Increased from 10
+        length > 15 -> FluidTypography(fontSize = 9.sp, lineHeight = 15.sp) // Increased from 12
         else -> FluidTypography(
             fontSize = 11.sp,
-            lineHeight = 14.sp
+            lineHeight = 18.sp // Increased from 14
         ) // Slightly larger for very short words like "YES"
     }
 }
