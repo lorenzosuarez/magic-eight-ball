@@ -1,0 +1,11 @@
+com.example.magiceightball.feature.chat
+string app_name
+string err_prefix
+string err_unknown
+string prompt_magic_question
+string shake_to_start
+string status_idle
+string status_shaking
+string title_main
+string title_shaking
+string uses_gemini_api

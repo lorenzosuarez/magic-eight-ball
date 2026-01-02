@@ -1,0 +1,106 @@
+[
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-hdpi_ic_launcher_foreground.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-hdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-anydpi_ic_launcher_round.xml.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-anydpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxhdpi_ic_launcher_foreground.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxhdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-mdpi_ic_launcher_foreground.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-mdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxxhdpi_ic_launcher_monochrome.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxxhdpi/ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-mdpi_ic_launcher_background.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-mdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxxhdpi_ic_launcher_background.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxxhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxxhdpi_ic_launcher_foreground.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxxhdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-mdpi_ic_launcher_monochrome.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-mdpi/ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxhdpi_ic_launcher_monochrome.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxhdpi/ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-ldpi_ic_launcher.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-ldpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-ldpi_ic_launcher_round.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-ldpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/drawable_ic_launcher.xml.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-hdpi_ic_launcher_monochrome.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-hdpi/ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xxhdpi_ic_launcher_background.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xxhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-hdpi_ic_launcher_background.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-hdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xhdpi_ic_launcher_monochrome.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xhdpi/ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xhdpi_ic_launcher_foreground.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xhdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/mipmap-xhdpi_ic_launcher_background.png.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/mipmap-xhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-debug-64:/drawable_splash_icon.xml.flat",
+        "source": "/Users/lorenzosuarez/.gradle/daemon/8.13/com.example.magiceightball.app-wear-main-66:/drawable/splash_icon.xml"
+    }
+]
