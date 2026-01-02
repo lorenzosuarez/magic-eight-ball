@@ -1,0 +1,14 @@
+package com.example.magiceightball.core.domain.usecase
+
+import com.example.magiceightball.core.domain.gateway.LlmGateway
+import com.example.magiceightball.core.domain.model.Magic8BallRequest
+import com.example.magiceightball.core.domain.model.Magic8BallResult
+import javax.inject.Inject
+
+class SendMessageUseCase @Inject constructor(
+    private val llmGateway: LlmGateway
+) {
+    suspend operator fun invoke(prompt: String): Magic8BallResult {
+        return llmGateway.generateMagic8BallMessage(Magic8BallRequest(prompt))
+    }
+}
