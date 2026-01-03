@@ -10,7 +10,7 @@ data class ChatState(
     val machineState: ChatStateMachine = ChatStateMachine.Idle,
     val titleRes: Int = R.string.title_main,
     val shakeStatusRes: Int? = null,
-    val languageCode: String = "en",
+    val language: AppLanguage = AppLanguage.ENGLISH,
     val error: String? = null
 )
 

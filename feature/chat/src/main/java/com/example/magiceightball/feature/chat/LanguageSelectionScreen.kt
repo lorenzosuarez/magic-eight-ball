@@ -29,8 +29,8 @@ import androidx.wear.compose.material3.Text
 
 @Composable
 fun LanguageSelectionScreen(
-    selectedLanguage: String,
-    onLanguageSelected: (String) -> Unit
+    selectedLanguage: AppLanguage,
+    onLanguageSelected: (AppLanguage) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -39,10 +39,10 @@ fun LanguageSelectionScreen(
         contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.Start, // Console usually aligns left-ish, but center is safer for Wear
+            horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .padding(horizontal = 24.dp) // Extra margin for round screen
+                .padding(horizontal = 24.dp)
                 .fillMaxWidth()
         ) {
             Text(
@@ -56,16 +56,16 @@ fun LanguageSelectionScreen(
 
             ConsoleOption(
                 label = stringResource(R.string.lang_english),
-                isSelected = selectedLanguage == "en",
-                onClick = { onLanguageSelected("en") }
+                isSelected = selectedLanguage == AppLanguage.ENGLISH,
+                onClick = { onLanguageSelected(AppLanguage.ENGLISH) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             ConsoleOption(
                 label = stringResource(R.string.lang_spanish),
-                isSelected = selectedLanguage == "es",
-                onClick = { onLanguageSelected("es") }
+                isSelected = selectedLanguage == AppLanguage.SPANISH,
+                onClick = { onLanguageSelected(AppLanguage.SPANISH) }
             )
         }
     }
@@ -78,19 +78,19 @@ private fun ConsoleOption(
     onClick: () -> Unit
 ) {
     val indicator = if (isSelected) "[x]" else "[ ]"
-    val color = if (isSelected) Color(0xFF00FF00) else Color.LightGray // Matrix/Console Green for selected
+    val color = if (isSelected) Color(0xFF00FF00) else Color.LightGray
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = Color.White), // Use new ripple API
+                indication = ripple(color = Color.White),
                 onClick = onClick
             )
-            .padding(vertical = 12.dp, horizontal = 8.dp), // Ripple area padding
+            .padding(vertical = 12.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start // Console look align left
+        horizontalArrangement = Arrangement.Start
     ) {
         Text(
             text = "$indicator $label",
@@ -111,7 +111,7 @@ private fun ConsoleOption(
 @Composable
 fun LanguageSelectionScreenPreview() {
     LanguageSelectionScreen(
-        selectedLanguage = "en",
+        selectedLanguage = AppLanguage.ENGLISH,
         onLanguageSelected = {}
     )
 }

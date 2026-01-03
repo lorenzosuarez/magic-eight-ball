@@ -24,7 +24,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
-// import com.example.magiceightball.feature.chat.ChatState // If it's in a separate file
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -34,19 +33,19 @@ class ChatViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _machineState = MutableStateFlow<ChatStateMachine>(ChatStateMachine.Idle)
-    private val _languageCode = MutableStateFlow("en") // Default to English
+    private val _language = MutableStateFlow(AppLanguage.ENGLISH)
 
     val state: StateFlow<ChatState> = combine(
         _machineState,
-        _languageCode
+        _language
     ) { machine, lang ->
-        val title = if (lang == "es") R.string.title_main_es else R.string.title_main
+        val title = if (lang == AppLanguage.SPANISH) R.string.title_main_es else R.string.title_main
         
         ChatState(
             machineState = machine,
             titleRes = title,
-            languageCode = lang,
-            shakeStatusRes = if (machine is ChatStateMachine.Running) R.string.title_shaking else null // Simplified
+            language = lang,
+            shakeStatusRes = if (machine is ChatStateMachine.Running) R.string.title_shaking else null
         )
     }.stateIn(
         scope = viewModelScope,
@@ -63,8 +62,8 @@ class ChatViewModel @Inject constructor(
         startShakeDetection()
     }
 
-    fun setLanguage(code: String) {
-        _languageCode.value = code
+    fun setLanguage(language: AppLanguage) {
+        _language.value = language
     }
 
     private fun startShakeDetection() {
@@ -100,7 +99,7 @@ class ChatViewModel @Inject constructor(
             // Trigger UseCase with language
             val result = sendMessageUseCase(
                 trigger = "shake",
-                languageCode = _languageCode.value
+                languageCode = _language.value.code
             )
             
             val answerText = when (result) {
@@ -122,6 +121,5 @@ class ChatViewModel @Inject constructor(
     }
 
     fun handleIntent(intent: ChatIntent) {
-        // Reserved for future manual interactions
     }
 }
