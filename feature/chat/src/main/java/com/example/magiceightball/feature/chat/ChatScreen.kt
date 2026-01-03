@@ -1,5 +1,10 @@
 package com.example.magiceightball.feature.chat
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,6 +58,46 @@ fun ChatScreen(
 
 @Composable
 fun ChatScreenContent(state: ChatState) {
+    AnimatedContent(
+        targetState = state.machineState,
+        transitionSpec = {
+            if (targetState is ChatStateMachine.Idle) {
+                // Prediction -> Idle (Reset): Slide towards right (Pop)
+                slideInHorizontally(
+                    animationSpec = tween(300),
+                    initialOffsetX = { -it }
+                ) togetherWith slideOutHorizontally(
+                    animationSpec = tween(300),
+                    targetOffsetX = { it }
+                )
+            } else {
+                // Idle -> Prediction: Slide towards left (Push)
+                slideInHorizontally(
+                    animationSpec = tween(300),
+                    initialOffsetX = { it }
+                ) togetherWith slideOutHorizontally(
+                    animationSpec = tween(300),
+                    targetOffsetX = { -it }
+                )
+            }
+        },
+        contentKey = { it is ChatStateMachine.Idle },
+        label = "ChatScreenTransition"
+    ) { machine ->
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            when (machine) {
+                is ChatStateMachine.Idle -> ChatScreenIdleWrapper(titleRes = state.titleRes)
+                else -> ChatScreenPredictionWrapper(machine)
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatScreenIdleWrapper(titleRes: Int) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -60,30 +105,36 @@ fun ChatScreenContent(state: ChatState) {
                 painter = painterResource(id = DesignR.drawable.ic_eight_ball_background),
                 contentScale = ContentScale.Crop
             ),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
-        when (val machine = state.machineState) {
-            is ChatStateMachine.Idle -> ChatScreenIdle(titleRes = state.titleRes)
-            is ChatStateMachine.Running -> ChatScreenRunning(machine)
-            is ChatStateMachine.Completed -> ChatScreenCompleted(answer = machine.answer)
-        }
+        ChatScreenIdle(titleRes = titleRes)
     }
 }
 
 @Composable
-fun ChatScreenRunning(machineState: ChatStateMachine) {
-    PredictionTriangleAnimator(
-        machineState = machineState,
-        content = { modifier, isLoading ->
-            PredictionCircle(modifier = modifier, contentOffsetY = 14.dp, innerWidth = 150.dp, innerHeight = 120.dp) { innerModifier ->
-                PredictionTriangle(
-                    text = if (machineState is ChatStateMachine.Completed) machineState.answer else "",
-                    modifier = innerModifier,
-                    isLoading = isLoading
-                )
+fun ChatScreenPredictionWrapper(machineState: ChatStateMachine) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .paint(
+                painter = painterResource(id = DesignR.drawable.ic_eight_ball_background),
+                contentScale = ContentScale.Crop
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        PredictionTriangleAnimator(
+            machineState = machineState,
+            content = { modifier, isLoading ->
+                PredictionCircle(modifier = modifier, contentOffsetY = 14.dp, innerWidth = 150.dp, innerHeight = 120.dp) { innerModifier ->
+                    PredictionTriangle(
+                        text = if (machineState is ChatStateMachine.Completed) machineState.answer else "",
+                        modifier = innerModifier,
+                        isLoading = isLoading
+                    )
+                }
             }
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -110,22 +161,6 @@ fun PredictionCircle(
     }
 }
 
-@Composable
-fun ChatScreenCompleted(answer: String) {
-    PredictionTriangleAnimator(
-        machineState = ChatStateMachine.Completed(answer),
-        content = { modifier, isLoading ->
-            PredictionCircle(modifier = modifier, contentOffsetY = 14.dp, innerWidth = 150.dp, innerHeight = 120.dp) { innerModifier ->
-                PredictionTriangle(
-                    text = answer,
-                    modifier = innerModifier,
-                    isLoading = isLoading
-                )
-            }
-        }
-    )
-}
-
 @Preview(
     name = "ChatScreen - Wear Round Completed",
     showBackground = true,
@@ -141,7 +176,7 @@ fun ChatScreenPreviewWearRoundCompleted() {
         ) {
             ChatScreenContent(
                 state = ChatState(
-                    machineState = ChatStateMachine.Completed("Outlook good, but uncertain."),// LoremIpsum(7).values.first()),
+                    machineState = ChatStateMachine.Completed("Outlook good, but uncertain."),
                     titleRes = R.string.title_main
                 )
             )
@@ -169,7 +204,6 @@ fun ChatScreenPreviewWearRoundIdle() {
                 )
             )
         }
-
     }
 }
 
