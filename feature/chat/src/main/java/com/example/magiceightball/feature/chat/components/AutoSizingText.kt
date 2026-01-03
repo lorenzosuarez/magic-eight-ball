@@ -1,5 +1,6 @@
 package com.example.magiceightball.feature.chat.components
 
+import android.annotation.SuppressLint
 import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.sp
  * A container that calculates the optimal font size for a given text to fit within
  * a geometric constraint (specifically tailored for the Inverted Triangle centroid width).
  */
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun AutoSizingTextContainer(
     text: String,
@@ -46,7 +48,8 @@ fun AutoSizingTextContainer(
             }
             
             // Search from largest reasonable size down to smallest
-            for (size in 20 downTo 6) {
+            // Reduced max size from 20 to 16 per user request for short phrases
+            for (size in 16 downTo 6) {
                 val spValue = size.sp
                 val px = with(density) { spValue.toPx() }
                 paint.textSize = px
