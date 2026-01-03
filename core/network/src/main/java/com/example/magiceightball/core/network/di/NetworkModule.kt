@@ -23,13 +23,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class NetworkModule {
 
-    // @Binds
-    // @Singleton
-    // abstract fun bindLlmGateway(impl: RetrofitLlmGateway): LlmGateway
 
-    // @Binds
-    // @Singleton
-    // abstract fun bindPromptPolicy(impl: DefaultPromptPolicy): PromptPolicy
 
     companion object {
         @Provides
@@ -63,15 +57,7 @@ abstract class NetworkModule {
                 .build()
         }
 
-        // @Provides
-        // @Singleton
-        // fun provideLlmGateway(
-        //    geminiService: GeminiService,
-        //    promptPolicy: PromptPolicy,
-        //    dispatcherProvider: DispatcherProvider
-        // ): LlmGateway {
-        //    return RetrofitLlmGateway(geminiService, promptPolicy, dispatcherProvider)
-        // }    }
+
 
         @Provides
         @Singleton
@@ -83,21 +69,6 @@ abstract class NetworkModule {
         @Singleton
         @Named("GeminiApiKey")
         fun provideApiKey(): String {
-            // Retrieve from BuildConfig. 
-            // Ensure GEMINI_API_KEY is present in local.properties and passed to buildConfigField if set up in build logic.
-            // For this implementation, we assume it's available via BuildConfig or a hardcoded fallback/error if missing.
-            // Since we didn't add the buildConfigField logic in gradle, we will rely on a placeholder or check.
-            
-            // NOTE: Ideally this comes from BuildConfig.GEMINI_API_KEY injected by gradle.
-            // But we only enabled buildConfig. We didn't define the field.
-            // I will use a placeholder or lookup. 
-            // Ideally: return BuildConfig.GEMINI_API_KEY
-            // Since I cannot modify gradle to add buildConfigField easily without potentially breaking (parsing local.properties), 
-            // I will assume the User has replaced this or I will return an empty string and handle it.
-            // Wait, I can execute code to read local.properties in gradle.
-            
-            // For now, returning empty string to allow compilation. RUNTIME will fail if not set.
-            // I'll add a TODO or try to read it.
             return BuildConfig.GEMINI_API_KEY
         }
     }
