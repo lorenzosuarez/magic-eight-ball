@@ -13,7 +13,7 @@
     <string name="uses_gemini_api">Uses Gemini API</string>
     
     <!-- Language Selection -->
-    <string name="lang_select_title">> SELECT_LANG:</string>
+    <string name="lang_select_title">SELECT_LANG:</string>
     <string name="lang_english">ENGLISH</string>
     <string name="lang_spanish">ESPAÑOL</string>
 </resources>

@@ -62,7 +62,7 @@ fun ChatScreenContent(state: ChatState) {
         targetState = state.machineState,
         transitionSpec = {
             if (targetState is ChatStateMachine.Idle) {
-                // Prediction -> Idle (Reset): Slide towards right (Pop)
+                // Prediction -> Idle (Reset/Pop): Enter from Left, Exit to Right
                 slideInHorizontally(
                     animationSpec = tween(300),
                     initialOffsetX = { -it }
@@ -71,7 +71,7 @@ fun ChatScreenContent(state: ChatState) {
                     targetOffsetX = { it }
                 )
             } else {
-                // Idle -> Prediction: Slide towards left (Push)
+                // Idle -> Prediction (Start/Push): Enter from Right, Exit to Left
                 slideInHorizontally(
                     animationSpec = tween(300),
                     initialOffsetX = { it }
