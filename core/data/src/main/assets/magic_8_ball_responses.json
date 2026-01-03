@@ -1,46 +1,166 @@
 {
   "en": [
-    { "index": 1, "message": "It is certain." },
-    { "index": 2, "message": "It is decidedly so." },
-    { "index": 3, "message": "Without a doubt." },
-    { "index": 4, "message": "Yes — definitely." },
-    { "index": 5, "message": "You may rely on it." },
-    { "index": 6, "message": "As I see it, yes." },
-    { "index": 7, "message": "Most likely." },
-    { "index": 8, "message": "Outlook good." },
-    { "index": 9, "message": "Yes." },
-    { "index": 10, "message": "Signs point to yes." },
-    { "index": 11, "message": "Reply hazy, try again." },
-    { "index": 12, "message": "Ask again later." },
-    { "index": 13, "message": "Better not tell you now." },
-    { "index": 14, "message": "Cannot predict now." },
-    { "index": 15, "message": "Concentrate and ask again." },
-    { "index": 16, "message": "Don't count on it." },
-    { "index": 17, "message": "My reply is no." },
-    { "index": 18, "message": "My sources say no." },
-    { "index": 19, "message": "Outlook not so good." },
-    { "index": 20, "message": "Very doubtful." }
+    {
+      "index": 1,
+      "message": "Don't bet on it."
+    },
+    {
+      "index": 2,
+      "message": "In your dreams."
+    },
+    {
+      "index": 3,
+      "message": "Outcome looks bleak."
+    },
+    {
+      "index": 4,
+      "message": "Laughable idea."
+    },
+    {
+      "index": 5,
+      "message": "Ask someone who cares."
+    },
+    {
+      "index": 6,
+      "message": "Meh, maybe?"
+    },
+    {
+      "index": 7,
+      "message": "Signs point to chaos."
+    },
+    {
+      "index": 8,
+      "message": "Outlook grim."
+    },
+    {
+      "index": 9,
+      "message": "Nope. Just nope."
+    },
+    {
+      "index": 10,
+      "message": "Try again, if you dare."
+    },
+    {
+      "index": 11,
+      "message": "The stars say... yikes."
+    },
+    {
+      "index": 12,
+      "message": "Seriously? No."
+    },
+    {
+      "index": 13,
+      "message": "My sources are laughing."
+    },
+    {
+      "index": 14,
+      "message": "Cannot predict (too boring)."
+    },
+    {
+      "index": 15,
+      "message": "Concentrate harder."
+    },
+    {
+      "index": 16,
+      "message": "Very doubtful, obviously."
+    },
+    {
+      "index": 17,
+      "message": "Absolutely not."
+    },
+    {
+      "index": 18,
+      "message": "A definitive maybe."
+    },
+    {
+      "index": 19,
+      "message": "Don't count on it, pal."
+    },
+    {
+      "index": 20,
+      "message": "You're doomed."
+    }
   ],
   "es": [
-    { "index": 1, "message": "Es cierto." },
-    { "index": 2, "message": "Totalmente seguro." },
-    { "index": 3, "message": "Sin duda." },
-    { "index": 4, "message": "Sí, definitivamente." },
-    { "index": 5, "message": "Puedes confiar en ello." },
-    { "index": 6, "message": "A mi parecer, sí." },
-    { "index": 7, "message": "Lo más probable." },
-    { "index": 8, "message": "Buen pronóstico." },
-    { "index": 9, "message": "Sí." },
-    { "index": 10, "message": "Las señales dicen que sí." },
-    { "index": 11, "message": "Respuesta confusa, intenta otra vez." },
-    { "index": 12, "message": "Pregunta más tarde." },
-    { "index": 13, "message": "Mejor no decirlo ahora." },
-    { "index": 14, "message": "No puedo predecir ahora." },
-    { "index": 15, "message": "Concéntrate y pregunta de nuevo." },
-    { "index": 16, "message": "No cuentes con ello." },
-    { "index": 17, "message": "Mi respuesta es no." },
-    { "index": 18, "message": "Mis fuentes dicen que no." },
-    { "index": 19, "message": "El pronóstico no es bueno." },
-    { "index": 20, "message": "Muy dudoso." }
+    {
+      "index": 1,
+      "message": "Ni en tus sueños."
+    },
+    {
+      "index": 2,
+      "message": "Olvídalo, amigo."
+    },
+    {
+      "index": 3,
+      "message": "El futuro pinta mal."
+    },
+    {
+      "index": 4,
+      "message": "Idea ridícula."
+    },
+    {
+      "index": 5,
+      "message": "Pregúntale a otro."
+    },
+    {
+      "index": 6,
+      "message": "Meh, quizás."
+    },
+    {
+      "index": 7,
+      "message": "Señales de caos."
+    },
+    {
+      "index": 8,
+      "message": "Panorama sombrío."
+    },
+    {
+      "index": 9,
+      "message": "No. Simplemente no."
+    },
+    {
+      "index": 10,
+      "message": "Intenta si te atreves."
+    },
+    {
+      "index": 11,
+      "message": "Los astros dicen... uf."
+    },
+    {
+      "index": 12,
+      "message": "¿En serio? No."
+    },
+    {
+      "index": 13,
+      "message": "Mis fuentes se ríen."
+    },
+    {
+      "index": 14,
+      "message": "Aburrido, no predigo."
+    },
+    {
+      "index": 15,
+      "message": "Concéntrate más."
+    },
+    {
+      "index": 16,
+      "message": "Muy dudoso, obvio."
+    },
+    {
+      "index": 17,
+      "message": "Absolutamente no."
+    },
+    {
+      "index": 18,
+      "message": "Un rotundo quizás."
+    },
+    {
+      "index": 19,
+      "message": "No cuentes con ello."
+    },
+    {
+      "index": 20,
+      "message": "Estás condenado."
+    }
   ]
 }
