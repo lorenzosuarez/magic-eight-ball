@@ -75,7 +75,7 @@ fun ChatScreenRunning(machineState: ChatStateMachine) {
     PredictionTriangleAnimator(
         machineState = machineState,
         content = { modifier, isLoading ->
-            PredictionCircle(modifier = modifier, contentOffsetY = 14.dp) { innerModifier ->
+            PredictionCircle(modifier = modifier, contentOffsetY = 14.dp, innerWidth = 150.dp, innerHeight = 120.dp) { innerModifier ->
                 PredictionTriangle(
                     text = if (machineState is ChatStateMachine.Completed) machineState.answer else "",
                     modifier = innerModifier,
@@ -90,7 +90,8 @@ fun ChatScreenRunning(machineState: ChatStateMachine) {
 fun PredictionCircle(
     modifier: Modifier = Modifier,
     outerSize: Dp = 160.dp,
-    innerSize: Dp = 120.dp,
+    innerWidth: Dp = 120.dp,
+    innerHeight: Dp = 120.dp,
     borderWidth: Dp = 2.dp,
     borderColor: Color = Color.Gray,
     backgroundColor: Color = Color.Black,
@@ -105,7 +106,7 @@ fun PredictionCircle(
             .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {
-        content(Modifier.size(innerSize).offset(y = contentOffsetY))
+        content(Modifier.size(width = innerWidth, height = innerHeight).offset(y = contentOffsetY))
     }
 }
 
@@ -114,7 +115,7 @@ fun ChatScreenCompleted(answer: String) {
     PredictionTriangleAnimator(
         machineState = ChatStateMachine.Completed(answer),
         content = { modifier, isLoading ->
-            PredictionCircle(modifier = modifier, contentOffsetY = 14.dp) { innerModifier ->
+            PredictionCircle(modifier = modifier, contentOffsetY = 14.dp, innerWidth = 150.dp, innerHeight = 120.dp) { innerModifier ->
                 PredictionTriangle(
                     text = answer,
                     modifier = innerModifier,
