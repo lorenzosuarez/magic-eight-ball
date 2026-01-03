@@ -3,6 +3,7 @@ package com.example.magiceightball.core.data.datasource
 import com.example.magiceightball.core.common.GeminiConfig
 import com.example.magiceightball.core.data.gateway.GeminiApiClient
 import com.example.magiceightball.core.domain.model.LlmError
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.policy.PromptPolicy
@@ -24,10 +25,12 @@ class GeminiRemoteDataSource @Inject constructor(
     private val promptPolicy: PromptPolicy,
     @Named("GeminiApiKey") private val apiKey: String
 ) {
-
     suspend fun fetchMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         return withContext(Dispatchers.IO) {
-            val systemPromptText = promptPolicy.getSystemPrompt(request.languageCode ?: "en")
+            val systemPromptText = promptPolicy.getSystemPrompt(
+                request.languageCode,
+                request.personality
+            )
             
             val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
             val userContent = Content(parts = listOf(Part(text = request.userTrigger ?: "What is my fortune?")))
@@ -44,13 +47,14 @@ class GeminiRemoteDataSource @Inject constructor(
                 generationConfig = genConfig
             )
 
-            executeWithRetry(apiRequest, request.languageCode ?: "en")
+            executeWithRetry(apiRequest, request.languageCode, request.personality)
         }
     }
 
     private suspend fun executeWithRetry(
         initialRequest: GeminiRequest,
         languageCode: String,
+        personality: Magic8BallPersonality,
         attempt: Int = 1
     ): Magic8BallResult {
         try {
@@ -73,18 +77,19 @@ class GeminiRemoteDataSource @Inject constructor(
                     // Retry with stricter prompt
                     // We assume English for the strict appending or we could make it dynamic too, but for now simple append is fine 
                     // or better ask policy for a strict version? Keeping it simple for this refactor:
-                    val currentPrompt = promptPolicy.getSystemPrompt(languageCode)
+                    val currentPrompt = promptPolicy.getSystemPrompt(languageCode, personality)
                     val stricterInstruction = Content(
                         parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
                     )
                     val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(retryRequest, languageCode, attempt + 1)
+                    return executeWithRetry(retryRequest, languageCode, personality, attempt + 1)
                 } else {
                     return Magic8BallResult.Failure(LlmError.ValidationFailed)
                 }
             }
 
             return Magic8BallResult.Success(text)
+
 
         } catch (e: Exception) {
             return when (e) {

@@ -26,12 +26,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 
 @Composable
-fun LanguageSelectionScreen(
-    selectedLanguage: AppLanguage,
-    onLanguageSelected: (AppLanguage) -> Unit
+fun PersonalitySelectionScreen(
+    selectedPersonality: Magic8BallPersonality,
+    language: AppLanguage,
+    onPersonalitySelected: (Magic8BallPersonality) -> Unit
 ) {
+    val titleRes = if (language == AppLanguage.SPANISH) R.string.personality_title_es else R.string.personality_title
+    val sarcasticRes = if (language == AppLanguage.SPANISH) R.string.personality_sarcastic_es else R.string.personality_sarcastic
+    val mysticalRes = if (language == AppLanguage.SPANISH) R.string.personality_mystical_es else R.string.personality_mystical
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -47,7 +53,7 @@ fun LanguageSelectionScreen(
         ) {
             Text(
                 modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally),
-                text = stringResource(R.string.lang_select_title),
+                text = stringResource(titleRes),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     color = Color.Gray
@@ -55,17 +61,17 @@ fun LanguageSelectionScreen(
             )
 
             ConsoleOption(
-                label = stringResource(R.string.lang_english),
-                isSelected = selectedLanguage == AppLanguage.ENGLISH,
-                onClick = { onLanguageSelected(AppLanguage.ENGLISH) }
+                label = stringResource(sarcasticRes),
+                isSelected = selectedPersonality == Magic8BallPersonality.SARCASTIC,
+                onClick = { onPersonalitySelected(Magic8BallPersonality.SARCASTIC) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             ConsoleOption(
-                label = stringResource(R.string.lang_spanish),
-                isSelected = selectedLanguage == AppLanguage.SPANISH,
-                onClick = { onLanguageSelected(AppLanguage.SPANISH) }
+                label = stringResource(mysticalRes),
+                isSelected = selectedPersonality == Magic8BallPersonality.MYSTICAL,
+                onClick = { onPersonalitySelected(Magic8BallPersonality.MYSTICAL) }
             )
         }
     }
@@ -109,9 +115,10 @@ private fun ConsoleOption(
     showBackground = true
 )
 @Composable
-fun LanguageSelectionScreenPreview() {
-    LanguageSelectionScreen(
-        selectedLanguage = AppLanguage.ENGLISH,
-        onLanguageSelected = {}
+fun PersonalitySelectionScreenPreview() {
+    PersonalitySelectionScreen(
+        selectedPersonality = Magic8BallPersonality.SARCASTIC,
+        language = AppLanguage.ENGLISH,
+        onPersonalitySelected = {}
     )
 }
