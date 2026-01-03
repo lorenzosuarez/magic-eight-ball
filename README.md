@@ -2,40 +2,91 @@
 
 **Author:** Lorenzo Suarez
 
-An AI-powered decision-making companion for Wear OS, blending the classic Magic 8 Ball nostalgia with modern Large Language Model (Gemini) intelligence.
+An advanced, AI-powered decision-making companion built exclusively for Wear OS. This application modernizes the classic Magic 8 Ball experience by fusing nostalgic charm with the cutting-edge intelligence of Google's Gemini Large Language Model, all wrapped in a premium, console-inspired interface.
 
-## Features ✨
+## Overview 🚀
 
--   **Hybrid Intelligence**: Instantly provides answers using a local deterministic fallback or the powerful Gemini API for creative responses.
--   **Immersive UI**: "Console-style" aesthetic on the language selection screen and a fluid, physics-based inverted triangle animation for revealing predictions.
--   **Multi-language Support**: Seamless toggle between English and Spanish.
--   **Wear OS Optimized**: Built with Wear Compose Material 3, supporting rotary input, swipe gestures, and ambient mode.
--   **Adaptive Typography**: Intelligent text scaling ensures predictions of any length fit perfectly within the iconic blue triangle.
+Magic 8 Ball Wear OS goes beyond simple random responses. It features a **Hybrid Intelligence** system that intelligently switches between a local deterministic engine for instant offline answers and a cloud-based Gemini AI for creative, context-aware predictions. The UI is meticulously crafted with physics-based animations, adaptive typography, and a "Matrix-green" console aesthetic that feels right at home on modern smartwatches.
 
-## Setup 🛠️
+## Screenshots 📸
 
-This project uses the Gemini API. To build and run the app, you must provide your own API key.
+| Language Console | Prediction Reveal |
+|:---:|:---:|
+| <img src="docs/screenshots/console.png" width="300" /> | <img src="docs/screenshots/demo.gif" width="300" /> |
+| *Retro-futuristic Selection* | *Physics-based Animation* |
 
-1.  **Get an API Key**: Visit [Google AI Studio](https://aistudio.google.com/) to generate a key.
-2.  **Configure Local Properties**:
-    Create a file named `local.properties` in the root directory (if it doesn't exist) and add:
-    ```properties
-    GEMINI_API_KEY=your_api_key_here
+*(Upload your screenshots to a `docs/screenshots` folder and update the paths)*
+
+## Key Features ✨
+
+*   **🧠 Hybrid AI Engine**:
+    *   **Local Fallback**: Instant, zero-latency responses using a local database when offline.
+    *   **Cloud Intelligence**: Taps into the Gemini API for unique, witty, and varied predictions when connected.
+    *   **Smart Retry Policies**: Robust network handling with exponential backoff and strict safety filters.
+
+*   **🎨 Premium Wear OS Experience**:
+    *   **Physics-Based Animation**: The signature blue triangle floats and settles with realistic spring dynamics.
+    *   **Console Aesthetic**: A retro-futuristic language selection screen with monospace typography and green accent highlights.
+    *   **Haptic Feedback**: Subtle vibrations enhance the tactile feel of shaking the device or receiving an answer.
+
+*   **📐 Adaptive Typography**:
+    *   **Auto-Sizing Text**: A custom `AutoSizingTextContainer` uses binary search algorithms to fit predictions of any length perfectly within the inverted triangle geometry without truncation.
+    *   **Dynamic Gravity**: Text naturally "floats" to the visual center but adapts its position based on phrase length and triangle width.
+
+*   **🌍 Multi-Language Support**:
+    *   Seamlessly toggle between **English** and **Spanish**.
+    *   **Dynamic System Prompts**: The AI's personae and language instructions are injected dynamically based on user preference.
+
+## Tech Stack 🛠️
+
+Built with modern Android development standards and best practices:
+
+*   **Language**: [Kotlin](https://kotlinlang.org/) (v2.0+)
+*   **UI Framework**: [Compose for Wear OS](https://developer.android.com/training/wearables/compose) (Material 3)
+*   **Architecture**: Clean Architecture + Multi-Module (Modularization by Layer & Feature)
+*   **Dependency Injection**: [Hilt](https://dagger.dev/hilt/)
+*   **Networking**: [Retrofit](https://square.github.io/retrofit/) + [OkHttp](https://square.github.io/okhttp/)
+*   **AI Integration**: [Google Gemini API](https://ai.google.dev/)
+*   **Concurrency**: Kotlin Coroutines & Flow
+*   **Serialization**: Kotlinx Serialization
+
+## Architecture 🏗️
+
+The project follows a strict **Clean Architecture** pattern, modularized to separate concerns and ensure scalability:
+
+```text
+:app-wear           # Application entry point & DI orchestration
+├── :feature:chat   # Presentation layer (UI, ViewModel)
+├── :core:domain    # Business logic (UseCases, Repository Interfaces, Policies)
+├── :core:data      # Data implementation (Repositories, DataSources, API)
+├── :core:network   # Network infrastructure (Retrofit, OkHttp, API Keys)
+├── :core:motion    # Sensor logic & Shake detection strategy
+├── :core:common    # Shared utilities & configurations
+└── :core:designsystem # Theming, Color, Type
+```
+
+## Setup & Configuration ⚙️
+
+This project requires a valid Google Gemini API key to function fully.
+
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/LorenzoSuarez/MagicEightBall.git
     ```
 
-    > **Note:** The `local.properties` file is excluded from version control to keep your key secure.
+2.  **Generate an API Key**:
+    Obtain a free API key from [Google AI Studio](https://aistudio.google.com/).
 
-3.  **Build**: Open the project in Android Studio and sync Gradle.
+3.  **Secure Your Key**:
+    Create a `local.properties` file in the project root (this file is git-ignored):
+    ```properties
+    # local.properties
+    GEMINI_API_KEY=your_api_key_starts_with_AIza...
+    ```
 
-## Tech Stack 📚
+4.  **Build & Run**:
+    Open the project in Android Studio (Koala or later recommended) and deploy to a Wear OS emulator or physical device.
 
--   **Kotlin** & **Compose for Wear OS**
--   **Material 3** Design System
--   **Hilt** for Dependency Injection
--   **Retrofit** & **OkHttp** for Networking
--   **Gemini API** (Generative AI)
--   **Coroutines** & **Flow** for async operations
+## License 📄
 
-## License
-
-Copyright © 2024 Lorenzo Suarez. All rights reserved.
+Copyright © 2024 **Lorenzo Suarez**. All rights reserved.
