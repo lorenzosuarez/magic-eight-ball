@@ -48,7 +48,7 @@ fun ChatScreen(
             when (page) {
                 0 -> ChatScreenContent(state)
                 1 -> LanguageSelectionScreen(
-                    selectedLanguage = state.languageCode,
+                    selectedLanguage = state.language,
                     onLanguageSelected = { viewModel.setLanguage(it) }
                 )
             }
@@ -62,7 +62,6 @@ fun ChatScreenContent(state: ChatState) {
         targetState = state.machineState,
         transitionSpec = {
             if (targetState is ChatStateMachine.Idle) {
-                // Prediction -> Idle (Reset/Pop): Enter from Left, Exit to Right
                 slideInHorizontally(
                     animationSpec = tween(300),
                     initialOffsetX = { -it }
@@ -71,7 +70,6 @@ fun ChatScreenContent(state: ChatState) {
                     targetOffsetX = { it }
                 )
             } else {
-                // Idle -> Prediction (Start/Push): Enter from Right, Exit to Left
                 slideInHorizontally(
                     animationSpec = tween(300),
                     initialOffsetX = { it }
