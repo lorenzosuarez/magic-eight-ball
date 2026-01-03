@@ -27,7 +27,12 @@ class GeminiRemoteDataSource @Inject constructor(
 
     suspend fun fetchMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         return withContext(Dispatchers.IO) {
-            val systemInstruction = Content(parts = listOf(Part(text = promptPolicy.systemPrompt)))
+            val languageInstruction = if (request.languageCode == "es") {
+                " You are a Magic 8 Ball. Respond in Spanish."
+            } else {
+                " You are a Magic 8 Ball. Respond in English."
+            }
+            val systemInstruction = Content(parts = listOf(Part(text = promptPolicy.systemPrompt + languageInstruction)))
             val userContent = Content(parts = listOf(Part(text = request.userTrigger ?: "What is my fortune?")))
 
             val genConfig = GenerationConfig(

@@ -67,15 +67,15 @@ class InvertedTriangleShape(private val cornerRadius: Float = 20f) : Shape {
             // Top Left Corner
             moveTo(cornerRadius, 0f)
             lineTo(size.width - cornerRadius, 0f)
-            quadraticBezierTo(size.width, 0f, size.width - (cornerRadius * 0.5f), cornerRadius)
+            quadraticTo(size.width, 0f, size.width - (cornerRadius * 0.5f), cornerRadius)
             
             // Bottom Tip
             lineTo(size.width / 2f + (cornerRadius * 0.5f), size.height - cornerRadius)
-            quadraticBezierTo(size.width / 2f, size.height, size.width / 2f - (cornerRadius * 0.5f), size.height - cornerRadius)
+            quadraticTo(size.width / 2f, size.height, size.width / 2f - (cornerRadius * 0.5f), size.height - cornerRadius)
             
             // Top Left Closing
             lineTo((cornerRadius * 0.5f), cornerRadius)
-            quadraticBezierTo(0f, 0f, cornerRadius, 0f)
+            quadraticTo(0f, 0f, cornerRadius, 0f)
             
             close()
         }

@@ -1,1 +1,0 @@
-com.example.magiceightball.core.data

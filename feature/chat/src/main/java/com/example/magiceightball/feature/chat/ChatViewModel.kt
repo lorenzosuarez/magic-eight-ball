@@ -11,6 +11,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -18,7 +21,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.SharingStarted
+import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
+// import com.example.magiceightball.feature.chat.ChatState // If it's in a separate file
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -27,8 +33,30 @@ class ChatViewModel @Inject constructor(
     private val queryConfig: QueryConfig
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(ChatState())
-    val state: StateFlow<ChatState> = _state.asStateFlow()
+    private val _machineState = MutableStateFlow<ChatStateMachine>(ChatStateMachine.Idle)
+    private val _languageCode = MutableStateFlow("en") // Default to English
+
+    val state: StateFlow<ChatState> = combine(
+        _machineState,
+        _languageCode
+    ) { machine, lang ->
+        // Derive title based on machine state and language
+        val title = when (machine) {
+            is ChatStateMachine.Running -> R.string.title_shaking
+            else -> if (lang == "es") R.string.title_main_es else R.string.title_main
+        }
+        
+        ChatState(
+            machineState = machine,
+            titleRes = title,
+            languageCode = lang,
+            shakeStatusRes = if (machine is ChatStateMachine.Running) R.string.title_shaking else null // Simplified
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ChatState()
+    )
 
     private val _effects = Channel<ChatEffect>()
     val effects = _effects.receiveAsFlow()
@@ -37,6 +65,10 @@ class ChatViewModel @Inject constructor(
 
     init {
         startShakeDetection()
+    }
+
+    fun setLanguage(code: String) {
+        _languageCode.value = code
     }
 
     private fun startShakeDetection() {
@@ -65,40 +97,30 @@ class ChatViewModel @Inject constructor(
     private fun onShakeStarted() {
         stopShakeDetection()
 
-        _state.update { 
-            it.copy(
-                machineState = ChatStateMachine.Running,
-                shakeStatusRes = R.string.status_shaking,
-                titleRes = R.string.title_shaking
-            )
-        }
+        // Transition to Running
+        _machineState.update { ChatStateMachine.Running }
 
         viewModelScope.launch {
-            val result = sendMessageUseCase("Give me a prediction")
+            // Trigger UseCase with language
+            val result = sendMessageUseCase(
+                trigger = "shake",
+                languageCode = _languageCode.value
+            )
             
             val answerText = when (result) {
-                is com.example.magiceightball.core.domain.model.Magic8BallResult.Success -> result.message
-                is com.example.magiceightball.core.domain.model.Magic8BallResult.Failure -> {
-                     // Simple error mapping for UI
-                     "Ask again" 
-                }
+                is Magic8BallResult.Success -> result.message
+                is Magic8BallResult.Failure -> "Ask again"
             }
 
-            _state.update {
-                it.copy(
-                    machineState = ChatStateMachine.Completed(answerText),
-                    shakeStatusRes = null,
-                    titleRes = R.string.title_main
-                )
-            }
+            // Transition to Completed
+            _machineState.update { ChatStateMachine.Completed(answerText) }
 
             delay(queryConfig.completionHoldTimeMs)
             
             delay(queryConfig.cooldownMs)
 
-            _state.update { 
-                it.copy(machineState = ChatStateMachine.Idle) 
-            }
+            // Back to Idle
+            _machineState.update { ChatStateMachine.Idle }
             startShakeDetection()
         }
     }

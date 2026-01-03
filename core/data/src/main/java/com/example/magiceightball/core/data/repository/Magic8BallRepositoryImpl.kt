@@ -22,13 +22,13 @@ class Magic8BallRepositoryImpl @Inject constructor(
             is Magic8BallResult.Failure -> {
                 // 2. Decide if fallback is appropriate
                 if (shouldFallback(remoteResult.error)) {
-                    val fallbackMessage = localDataSource.getRandomMessage("en") // Default/Config language
+                    val fallbackMessage = localDataSource.getRandomMessage(request.languageCode)
                     Magic8BallResult.Success(fallbackMessage)
                 } else {
                     remoteResult // Return error (e.g. strict safety block might shouldn't be overridden? Or always fallback?)
                     // User request implies "if service returns error or no internet", so basically any failure except maybe logic ones.
                     // Let's fallback on everything for a robust "toy" experience.
-                    val fallbackMessage = localDataSource.getRandomMessage("en")
+                    val fallbackMessage = localDataSource.getRandomMessage(request.languageCode)
                     Magic8BallResult.Success(fallbackMessage)
                 }
             }

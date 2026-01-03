@@ -52,7 +52,11 @@ fun ChatScreenIdle(@StringRes titleRes: Int, modifier: Modifier = Modifier) {
 
     LaunchedEffect(Unit) {
         if (StartupToastShown.shown.compareAndSet(false, true)) {
-            Toast.makeText(context, context.getString(R.string.shake_to_start), Toast.LENGTH_LONG)
+            Toast.makeText(
+                context,
+                context.getString(R.string.shake_to_start),
+                Toast.LENGTH_SHORT
+            )
                 .show()
         }
     }
@@ -98,7 +102,9 @@ fun ChatScreenIdle(@StringRes titleRes: Int, modifier: Modifier = Modifier) {
         Text(
             modifier = Modifier
                 .align(Alignment.Center)
-                .onGloballyPositioned { coordinates -> helperHeightPx.intValue = coordinates.size.height }
+                .onGloballyPositioned { coordinates ->
+                    helperHeightPx.intValue = coordinates.size.height
+                }
                 .offset(y = offsetDp),
             text = stringResource(R.string.uses_gemini_api),
             color = Color.LightGray.copy(

@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
     implementation(libs.wear.input)
+    implementation("androidx.compose.material3:material3:1.3.0") // Mobile M3 for ripple() API
     
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
