@@ -40,8 +40,9 @@ fun ChatScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+// ...
     MagicEightBallTheme {
-        val pagerState = androidx.wear.compose.foundation.pager.rememberPagerState(pageCount = { 2 })
+        val pagerState = androidx.wear.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
 
         androidx.wear.compose.foundation.pager.VerticalPager(
             state = pagerState,
@@ -52,6 +53,11 @@ fun ChatScreen(
                 1 -> LanguageSelectionScreen(
                     selectedLanguage = state.language,
                     onLanguageSelected = { viewModel.setLanguage(it) }
+                )
+                2 -> PersonalitySelectionScreen(
+                    selectedPersonality = state.personality,
+                    language = state.language,
+                    onPersonalitySelected = { viewModel.setPersonality(it) }
                 )
             }
         }

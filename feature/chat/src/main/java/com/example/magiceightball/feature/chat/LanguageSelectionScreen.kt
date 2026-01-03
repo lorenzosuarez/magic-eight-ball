@@ -48,7 +48,7 @@ fun LanguageSelectionScreen(
             Text(
                 modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally),
                 text = stringResource(R.string.lang_select_title),
-                style = MaterialTheme.typography.labelMedium.copy(
+                style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     color = Color.Gray
                 )
@@ -88,13 +88,13 @@ private fun ConsoleOption(
                 indication = ripple(color = Color.White),
                 onClick = onClick
             )
-            .padding(vertical = 12.dp, horizontal = 8.dp),
+            .padding(vertical = 10.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
         Text(
             text = "$indicator $label",
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = MaterialTheme.typography.bodySmall.copy(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 color = color

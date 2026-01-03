@@ -6,11 +6,14 @@ import com.example.magiceightball.feature.chat.R
 /**
  * Represents the UI state of the chat screen.
  */
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
+
 data class ChatState(
     val machineState: ChatStateMachine = ChatStateMachine.Idle,
     val titleRes: Int = R.string.title_main,
     val shakeStatusRes: Int? = null,
     val language: AppLanguage = AppLanguage.ENGLISH,
+    val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC,
     val error: String? = null
 )
 

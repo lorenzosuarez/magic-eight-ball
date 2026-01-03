@@ -24,6 +24,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -34,17 +35,20 @@ class ChatViewModel @Inject constructor(
 
     private val _machineState = MutableStateFlow<ChatStateMachine>(ChatStateMachine.Idle)
     private val _language = MutableStateFlow(AppLanguage.ENGLISH)
+    private val _personality = MutableStateFlow(Magic8BallPersonality.SARCASTIC)
 
     val state: StateFlow<ChatState> = combine(
         _machineState,
-        _language
-    ) { machine, lang ->
+        _language,
+        _personality
+    ) { machine, lang, personality ->
         val title = if (lang == AppLanguage.SPANISH) R.string.title_main_es else R.string.title_main
         
         ChatState(
             machineState = machine,
             titleRes = title,
             language = lang,
+            personality = personality,
             shakeStatusRes = if (machine is ChatStateMachine.Running) R.string.title_shaking else null
         )
     }.stateIn(
@@ -64,6 +68,10 @@ class ChatViewModel @Inject constructor(
 
     fun setLanguage(language: AppLanguage) {
         _language.value = language
+    }
+
+    fun setPersonality(personality: Magic8BallPersonality) {
+        _personality.value = personality
     }
 
     private fun startShakeDetection() {
@@ -96,10 +104,11 @@ class ChatViewModel @Inject constructor(
         _machineState.update { ChatStateMachine.Running }
 
         viewModelScope.launch {
-            // Trigger UseCase with language
+            // Trigger UseCase with language and personality
             val result = sendMessageUseCase(
                 trigger = "shake",
-                languageCode = _language.value.code
+                languageCode = _language.value.code,
+                personality = _personality.value
             )
             
             val answerText = when (result) {

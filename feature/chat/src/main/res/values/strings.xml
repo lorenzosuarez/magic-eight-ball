@@ -16,4 +16,12 @@
     <string name="lang_select_title">SELECT_LANG:</string>
     <string name="lang_english">ENGLISH</string>
     <string name="lang_spanish">ESPAÑOL</string>
+
+    <!-- Personality Selection -->
+    <string name="personality_title">PERSONALITY:</string>
+    <string name="personality_title_es">PERSONALIDAD:</string>
+    <string name="personality_sarcastic">SARCASTIC</string>
+    <string name="personality_sarcastic_es">SARCÁSTICO</string>
+    <string name="personality_mystical">MYSTICAL</string>
+    <string name="personality_mystical_es">MÍSTICO</string>
 </resources>
