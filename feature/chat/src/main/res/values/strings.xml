@@ -7,7 +7,13 @@
     <string name="err_unknown">Unknown error</string>
     <string name="err_prefix">Error: %s</string>
     <string name="title_main">Magic 8 Ball</string>
-    <string name="title_shaking">! Shaking !</string>
+    <string name="title_main_es">Bola Mágica 8</string>
+    <string name="title_shaking">Listening...</string>
     <string name="shake_to_start">Shake to start</string>
     <string name="uses_gemini_api">Uses Gemini API</string>
+    
+    <!-- Language Selection -->
+    <string name="lang_select_title">> SELECT_LANG:</string>
+    <string name="lang_english">ENGLISH</string>
+    <string name="lang_spanish">ESPAÑOL</string>
 </resources>

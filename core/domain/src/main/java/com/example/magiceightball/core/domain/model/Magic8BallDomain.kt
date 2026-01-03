@@ -20,5 +20,6 @@ sealed interface LlmError {
 }
 
 data class Magic8BallRequest(
-    val userTrigger: String? = null // context if needed
+    val userTrigger: String? = null, // context if needed
+    val languageCode: String = "en"
 )

@@ -8,8 +8,9 @@ import com.example.magiceightball.feature.chat.R
  */
 data class ChatState(
     val machineState: ChatStateMachine = ChatStateMachine.Idle,
-    val shakeStatusRes: Int? = null,
     val titleRes: Int = R.string.title_main,
+    val shakeStatusRes: Int? = null,
+    val languageCode: String = "en",
     val error: String? = null
 )
 

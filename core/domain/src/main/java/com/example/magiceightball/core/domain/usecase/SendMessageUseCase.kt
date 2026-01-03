@@ -8,7 +8,7 @@ import javax.inject.Inject
 class SendMessageUseCase @Inject constructor(
     private val llmGateway: LlmGateway
 ) {
-    suspend operator fun invoke(prompt: String): Magic8BallResult {
-        return llmGateway.generateMagic8BallMessage(Magic8BallRequest(prompt))
+    suspend operator fun invoke(trigger: String, languageCode: String = "en"): Magic8BallResult {
+        return llmGateway.generateMagic8BallMessage(Magic8BallRequest(userTrigger = trigger, languageCode = languageCode))
     }
 }
