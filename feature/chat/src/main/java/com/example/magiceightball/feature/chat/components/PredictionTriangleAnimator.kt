@@ -28,19 +28,16 @@ fun PredictionTriangleAnimator(
     val screenWidthPx = with(LocalDensity.current) { 200.dp.toPx() }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     
-    // Offset for the "Slide In" animation.
-    // Start hidden to the LEFT (-screenWidthPx) per "apareciendo desde la izquierda"
-    val startX = -screenWidthPx
-    val offsetX = remember { Animatable(startX) }
+    // Start hidden to the LEFT (-screenWidthPx)
+    val offsetX = remember { Animatable(-screenWidthPx) }
     
     LaunchedEffect(machineState) {
         when (machineState) {
             ChatStateMachine.Idle -> {
                 // Reset/Hide to Left
-                offsetX.snapTo(startX) 
+                offsetX.snapTo(-screenWidthPx) 
             }
             ChatStateMachine.Running -> {
-                // "Cuando se muestra el componente debe hacerse con la animacion"
                 // Animate Left -> Center with Spring
                 offsetX.animateTo(
                     targetValue = 0f,
@@ -54,7 +51,7 @@ fun PredictionTriangleAnimator(
                 // Ensure we are at Center
                 offsetX.snapTo(0f)
                 
-                // Trigger Haptic when text appears
+
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
             }
         }
@@ -65,8 +62,6 @@ fun PredictionTriangleAnimator(
             Modifier.graphicsLayer {
                 translationX = offsetX.value
                 
-                // Simple entry fade for polish?
-                // User said "solo deja la final que frena", implying straightforward motion.
                 // We keep alpha 1 to ensure visibility unless Idle
                 alpha = if (machineState is ChatStateMachine.Idle) 0f else 1f
             },

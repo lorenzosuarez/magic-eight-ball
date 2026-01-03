@@ -27,7 +27,6 @@ class GeminiRemoteDataSource @Inject constructor(
 
     suspend fun fetchMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         return withContext(Dispatchers.IO) {
-            // Delegate prompt construction to the policy
             val systemPromptText = promptPolicy.getSystemPrompt(request.languageCode ?: "en")
             
             val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
