@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -34,7 +35,7 @@ fun LanguageSelectionScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF3F3F3F)),
+            .background(Color(0xFF3F3F3F), shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -45,12 +46,12 @@ fun LanguageSelectionScreen(
                 .fillMaxWidth()
         ) {
             Text(
+                modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally),
                 text = stringResource(R.string.lang_select_title),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     color = Color.Gray
-                ),
-                modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally)
+                )
             )
 
             ConsoleOption(

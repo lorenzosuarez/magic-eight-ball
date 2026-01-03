@@ -40,11 +40,7 @@ class ChatViewModel @Inject constructor(
         _machineState,
         _languageCode
     ) { machine, lang ->
-        // Derive title based on machine state and language
-        val title = when (machine) {
-            is ChatStateMachine.Running -> R.string.title_shaking
-            else -> if (lang == "es") R.string.title_main_es else R.string.title_main
-        }
+        val title = if (lang == "es") R.string.title_main_es else R.string.title_main
         
         ChatState(
             machineState = machine,
