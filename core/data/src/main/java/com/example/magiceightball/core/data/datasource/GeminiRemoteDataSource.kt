@@ -27,12 +27,10 @@ class GeminiRemoteDataSource @Inject constructor(
 
     suspend fun fetchMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         return withContext(Dispatchers.IO) {
-            val languageInstruction = if (request.languageCode == "es") {
-                " You are a Magic 8 Ball. Respond in Spanish."
-            } else {
-                " You are a Magic 8 Ball. Respond in English."
-            }
-            val systemInstruction = Content(parts = listOf(Part(text = promptPolicy.systemPrompt + languageInstruction)))
+            // Delegate prompt construction to the policy
+            val systemPromptText = promptPolicy.getSystemPrompt(request.languageCode ?: "en")
+            
+            val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
             val userContent = Content(parts = listOf(Part(text = request.userTrigger ?: "What is my fortune?")))
 
             val genConfig = GenerationConfig(
@@ -47,12 +45,13 @@ class GeminiRemoteDataSource @Inject constructor(
                 generationConfig = genConfig
             )
 
-            executeWithRetry(apiRequest)
+            executeWithRetry(apiRequest, request.languageCode ?: "en")
         }
     }
 
     private suspend fun executeWithRetry(
         initialRequest: GeminiRequest,
+        languageCode: String,
         attempt: Int = 1
     ): Magic8BallResult {
         try {
@@ -73,11 +72,14 @@ class GeminiRemoteDataSource @Inject constructor(
             if (!validateWordCount(text)) {
                 if (attempt <= config.maxRetries) {
                     // Retry with stricter prompt
+                    // We assume English for the strict appending or we could make it dynamic too, but for now simple append is fine 
+                    // or better ask policy for a strict version? Keeping it simple for this refactor:
+                    val currentPrompt = promptPolicy.getSystemPrompt(languageCode)
                     val stricterInstruction = Content(
-                        parts = listOf(Part(text = "${promptPolicy.systemPrompt} You MUST use 6 words or less."))
+                        parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
                     )
                     val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(retryRequest, attempt + 1)
+                    return executeWithRetry(retryRequest, languageCode, attempt + 1)
                 } else {
                     return Magic8BallResult.Failure(LlmError.ValidationFailed)
                 }

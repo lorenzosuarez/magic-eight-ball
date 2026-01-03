@@ -159,7 +159,7 @@ fun PredictionTriangle(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(vertical = 20.dp),
+                        .padding(vertical = 20.dp, horizontal = 2.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
