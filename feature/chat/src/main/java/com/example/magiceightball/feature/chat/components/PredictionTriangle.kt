@@ -95,17 +95,15 @@ fun PredictionTriangle(
     borderColor: Color = PredictionTriangleDefaults.BorderColor,
     textColor: Color = PredictionTriangleDefaults.TextColor
 ) {
+    val triangleShape = InvertedTriangleShape(cornerRadius = 50f)
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val path = Path().apply {
-                moveTo(0f, 0f)
-                lineTo(size.width, 0f)
-                lineTo(size.width / 2f, size.height)
-                close()
-            }
+            val outline = triangleShape.createOutline(size, layoutDirection, this)
+            val path = if (outline is Outline.Generic) outline.path else Path()
 
             drawIntoCanvas { canvas ->
                 val paint = Paint().asFrameworkPaint().apply {
@@ -118,8 +116,6 @@ fun PredictionTriangle(
                 canvas.nativeCanvas.drawPath(path.asAndroidPath(), paint)
             }
         }
-
-        val triangleShape = InvertedTriangleShape(cornerRadius = 15f)
 
         Box(
             modifier = Modifier
@@ -262,7 +258,7 @@ private fun TriangleContentLayout(
     }
 }
 
-@Preview(group = "Components")
+@Preview(group = "Components", backgroundColor = 0xFFFFFFF)
 @Composable
 fun PredictionTrianglePreview() {
     Box(
