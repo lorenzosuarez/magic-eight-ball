@@ -55,8 +55,8 @@ object PredictionTriangleDefaults {
     val TextSize = 10.sp
     val LineHeight = 22.sp
 
-    const val MAX_LINES = 3
-    const val BLUR_RADIUS = 45f
+    const val MAX_LINES = 5
+    const val BLUR_RADIUS = 50f
 }
 
 class InvertedTriangleShape(private val cornerRadius: Float = 20f) : Shape {
@@ -230,27 +230,42 @@ private fun TriangleContentLayout(
         val contentWidth = placeable.width.toFloat()
         val contentHeight = placeable.height.toFloat()
 
-        // 1. Define the ideal visual center (e.g., 45% down looks balanced in an inverted triangle)
-        val idealCenterY = containerHeight * 0.45f
+        // 1. Define ideal center. Slightly higher than geometric center (1/3) visually looks better for text
+        // But with rounded corners, the "true" top starts lower.
+        // Let's aim for 42% down from the bounding box top.
+        val idealCenterY = containerHeight * 0.42f
 
-        // 2. Calculate the lowest safe position based on geometry
-        // The triangle width at any Y is: W * (1 - Y/H)
-        // We need the width at the BOTTOM of the text to be >= contentWidth (with padding)
-        // Constraint: contentWidth <= containerWidth * (1 - (centerY + h/2) / H)
-        // Solving for centerY:
-        // contentWidth / containerWidth <= 1 - (bottomY / H)
-        // bottomY / H <= 1 - contentWidth/containerWidth
-        // bottomY <= H * (1 - contentWidth/containerWidth)
+        // 2. Calculate Highest Safe Y (Top Constraint)
+        // At the top, we have large rounded corners (approx 50px radius).
+        // Text cannot go into the top-left/top-right corners.
+        // Simple heuristic: Keep top of text below 15% of height to clear corners.
+        val minSafeTopY = containerHeight * 0.15f
         
-        // Add a safety buffer (e.g. 1.1x width) to avoid touching edges
-        val safeBottomY = containerHeight * (1f - (contentWidth * 1.2f / containerWidth))
-        val maxSafeCenterY = safeBottomY - (contentHeight / 2f)
+        // 3. Calculate Lowest Safe Y (Bottom Constraint - Tip)
+        // The triangle gets very narrow at the bottom.
+        // Inverted triangle width W(y) = TotalW * (1 - y/H) roughly.
+        // We need W(bottom_of_text) > contentWidth + Padding
+        // W * (1 - (y + h)/H) > w
+        // 1 - (y+h)/H > w/W
+        // 1 - w/W > (y+h)/H
+        // H * (1 - w/W) > y + h
+        // y < H * (1 - w/W) - h
+        // 3. Calculate Lowest Safe Y (Bottom Constraint - Tip)
+        // We add a safety margin (1.15x width factor)
+        // If content is too wide/tall, this might be less than minSafeTopY.
+        val safetyFactor = 1.15f
+        val maxSafeTopY = containerHeight * (1f - (contentWidth * safetyFactor / containerWidth)) - contentHeight
 
-        // 3. The actual Y is the ideal center, but pushed up if necessary to fit
-        val finalCenterY = minOf(idealCenterY, maxSafeCenterY)
-
-        val y = (finalCenterY - (contentHeight / 2f)).toInt().coerceAtLeast(containerHeight.toInt() / 10) // Don't go too high (top 10%)
+        // 4. Determine final Y
+        // Start at ideal, clamp between min (top corners) and max (bottom tip)
+        // Handle case where max < min gracefully (prefer top constraint to avoid corner overlap, or center of safe zone?)
+        // We'll coerce max to be at least min to avoid crash, effectively pinning to minSafeTopY if it doesn't fit bottom.
+        val safeMax = maxSafeTopY.coerceAtLeast(minSafeTopY)
+        val clampedY = idealCenterY.coerceIn(minSafeTopY, safeMax)
+        
+        // Center horizontally
         val x = (constraints.maxWidth - placeable.width) / 2
+        val y = clampedY.toInt()
         
         layout(constraints.maxWidth, constraints.maxHeight) {
             placeable.place(x, y)

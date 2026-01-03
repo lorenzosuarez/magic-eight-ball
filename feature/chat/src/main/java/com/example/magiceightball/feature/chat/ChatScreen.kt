@@ -2,6 +2,8 @@ package com.example.magiceightball.feature.chat
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -62,21 +64,21 @@ fun ChatScreenContent(state: ChatState) {
         targetState = state.machineState,
         transitionSpec = {
             if (targetState is ChatStateMachine.Idle) {
-                slideInHorizontally(
+                (slideInHorizontally(
                     animationSpec = tween(300),
                     initialOffsetX = { -it }
-                ) togetherWith slideOutHorizontally(
+                ) + fadeIn(animationSpec = tween(300))) togetherWith (slideOutHorizontally(
                     animationSpec = tween(300),
                     targetOffsetX = { it }
-                )
+                ) + fadeOut(animationSpec = tween(300)))
             } else {
-                slideInHorizontally(
+                (slideInHorizontally(
                     animationSpec = tween(300),
                     initialOffsetX = { it }
-                ) togetherWith slideOutHorizontally(
+                ) + fadeIn(animationSpec = tween(300))) togetherWith (slideOutHorizontally(
                     animationSpec = tween(300),
                     targetOffsetX = { -it }
-                )
+                ) + fadeOut(animationSpec = tween(300)))
             }
         },
         contentKey = { it is ChatStateMachine.Idle },
