@@ -17,8 +17,7 @@ Experience the complete journey from startup to prediction.
 | <img src="docs/screenshots/1.png" width="200" /> | <img src="docs/screenshots/2.png" width="200" /> | <img src="docs/screenshots/3.png" width="200" /> | <img src="docs/screenshots/6.png" width="200" /> | <img src="docs/screenshots/4.png" width="200" /> | <img src="docs/screenshots/5.png" width="200" /> |
 
 ### Live Demo
-![Screen_recording_20260103_184908](https://github.com/user-attachments/assets/4f1b0b17-74f1-4d42-a85e-93ed32aa5994)
-
+![Screen Recording 2026-01-04 at 12 36 27 AM](https://github.com/user-attachments/assets/c7515835-c4ac-4325-a158-1a197ac621e1)
 
 *Real-time physics and API interaction*
 
