@@ -14,11 +14,12 @@ Experience the complete journey from startup to prediction.
 
 | 1. Start | 2. Configure | 3. Shake / Touch | 4. Reveal |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/splash_screen.png" width="200" /> | <img src="docs/screenshots/language_selection.png" width="200" /> | <img src="docs/screenshots/thinking_state.png" width="200" /> | <img src="docs/screenshots/prediction_result.png" width="200" /> |
+| <img src="docs/screenshots/Screenshot_20260103_022205.png" width="200" /> | <img src="docs/screenshots/Screenshot_20260103_022320.png" width="200" /> | <img src="docs/screenshots/Screenshot_20260103_022346.png" width="200" /> | <img src="docs/screenshots/Screenshot_20260103_022400.png" width="200" /> |
 | **Splash Screen**<br>Initialized with Gemini | **Language Console**<br>"Matrix" Style Selection | **Thinking State**<br>Physics-based Fluidity | **Prediction**<br>Auto-sized Typography |
 
 ### Live Demo
-<img src="docs/screenshots/demo.gif" width="300" />
+![Screen_recording_20260103_022022](https://github.com/user-attachments/assets/ae6101cb-8009-4725-bf47-09813a211d21)
+
 *Real-time physics and API interaction*
 
 *(Please rename your screenshots to match: `splash_screen.png`, `language_selection.png`, `thinking_state.png`, `prediction_result.png`, and `demo.gif`)*
