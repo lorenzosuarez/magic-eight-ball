@@ -12,13 +12,13 @@ Magic 8 Ball Wear OS goes beyond simple random responses. It features a **Hybrid
 
 Experience the complete journey from startup to prediction.
 
-| 1. Start | 2. Configure | 3. Shake / Touch | 4. Reveal |
-|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/Screenshot_20260103_022205.png" width="200" /> | <img src="docs/screenshots/Screenshot_20260103_022320.png" width="200" /> | <img src="docs/screenshots/Screenshot_20260103_022346.png" width="200" /> | <img src="docs/screenshots/Screenshot_20260103_022400.png" width="200" /> |
-| **Splash Screen**<br>Initialized with Gemini | **Language Console**<br>"Matrix" Style Selection | **Thinking State**<br>Physics-based Fluidity | **Prediction**<br>Auto-sized Typography |
+| Splash | 1. Home | Configure | Shake / Touch | Reveal |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/1.png" width="200" /> | <img src="docs/screenshots/2.png" width="200" /> | <img src="docs/screenshots/3.png" width="200" /> | <img src="docs/screenshots/4.png" width="200" /> | <img src="docs/screenshots/5.png" width="200" /> |
 
 ### Live Demo
-![Screen_recording_20260103_022022](https://github.com/user-attachments/assets/ae6101cb-8009-4725-bf47-09813a211d21)
+![Screen_recording_20260103_184908](https://github.com/user-attachments/assets/4f1b0b17-74f1-4d42-a85e-93ed32aa5994)
+
 
 *Real-time physics and API interaction*
 
