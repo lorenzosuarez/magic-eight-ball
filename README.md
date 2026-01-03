@@ -8,14 +8,20 @@ An advanced, AI-powered decision-making companion built exclusively for Wear OS.
 
 Magic 8 Ball Wear OS goes beyond simple random responses. It features a **Hybrid Intelligence** system that intelligently switches between a local deterministic engine for instant offline answers and a cloud-based Gemini AI for creative, context-aware predictions. The UI is meticulously crafted with physics-based animations, adaptive typography, and a "Matrix-green" console aesthetic that feels right at home on modern smartwatches.
 
-## Screenshots 📸
+## User Interface & Flow 📸
 
-| Language Console | Prediction Reveal |
-|:---:|:---:|
-| <img src="docs/screenshots/console.png" width="300" /> | <img src="docs/screenshots/demo.gif" width="300" /> |
-| *Retro-futuristic Selection* | *Physics-based Animation* |
+Experience the complete journey from startup to prediction.
 
-*(Upload your screenshots to a `docs/screenshots` folder and update the paths)*
+| 1. Start | 2. Configure | 3. Shake / Touch | 4. Reveal |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/splash_screen.png" width="200" /> | <img src="docs/screenshots/language_selection.png" width="200" /> | <img src="docs/screenshots/thinking_state.png" width="200" /> | <img src="docs/screenshots/prediction_result.png" width="200" /> |
+| **Splash Screen**<br>Initialized with Gemini | **Language Console**<br>"Matrix" Style Selection | **Thinking State**<br>Physics-based Fluidity | **Prediction**<br>Auto-sized Typography |
+
+### Live Demo
+<img src="docs/screenshots/demo.gif" width="300" />
+*Real-time physics and API interaction*
+
+*(Please rename your screenshots to match: `splash_screen.png`, `language_selection.png`, `thinking_state.png`, `prediction_result.png`, and `demo.gif`)*
 
 ## Key Features ✨
 
