@@ -1,8 +1,5 @@
 package com.example.magiceightball.feature.chat
 
-import com.example.magiceightball.core.domain.model.ShakeEvent
-import com.example.magiceightball.feature.chat.R
-
 /**
  * Represents the UI state of the chat screen.
  */

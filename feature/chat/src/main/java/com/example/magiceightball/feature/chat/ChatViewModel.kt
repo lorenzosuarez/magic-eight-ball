@@ -2,29 +2,25 @@ package com.example.magiceightball.feature.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.magiceightball.core.common.Result
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
+import com.example.magiceightball.core.domain.model.Magic8BallResult
+import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.model.ShakeEvent
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.flow.SharingStarted
-import com.example.magiceightball.core.domain.model.Magic8BallResult
-import com.example.magiceightball.core.domain.model.QueryConfig
-import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -100,11 +96,9 @@ class ChatViewModel @Inject constructor(
     private fun onShakeStarted() {
         stopShakeDetection()
 
-        // Transition to Running
         _machineState.update { ChatStateMachine.Running }
 
         viewModelScope.launch {
-            // Trigger UseCase with language and personality
             val result = sendMessageUseCase(
                 trigger = "shake",
                 languageCode = _language.value.code,
@@ -116,14 +110,12 @@ class ChatViewModel @Inject constructor(
                 is Magic8BallResult.Failure -> "Ask again"
             }
 
-            // Transition to Completed
             _machineState.update { ChatStateMachine.Completed(answerText) }
 
             delay(queryConfig.completionHoldTimeMs)
             
             delay(queryConfig.cooldownMs)
 
-            // Back to Idle
             _machineState.update { ChatStateMachine.Idle }
             startShakeDetection()
         }

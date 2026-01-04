@@ -43,21 +43,18 @@ class ChatViewModelTest {
 
     @Test
     fun `shake starts transitions to Running`() = runTest {
-        // Mock gateway to suspend so we can catch the Running state
         coEvery { sendMessageUseCase(any()) } coAnswers {
             delay(1000) 
             Result.Success("Answer")
         }
         
-        // Use a flow that mimics a real sensor: emits then stays open
         every { observeShakeUseCase() } returns flow {
             emit(ShakeEvent.Started)
-            delay(Long.MAX_VALUE) // Simulate ongoing stream
+            delay(Long.MAX_VALUE)
         }
         
         val viewModel = ChatViewModel(sendMessageUseCase, observeShakeUseCase, queryConfig)
         
-        // Advance time to allow Start emission and State update
         testScheduler.advanceTimeBy(10)
         
         assertEquals(ChatStateMachine.Running, viewModel.state.value.machineState)
@@ -65,7 +62,6 @@ class ChatViewModelTest {
 
     @Test
     fun `full flow transitions to Completed and then Idle`() = runTest {
-        // Prevent infinite loop by emitting only once
         var subscriptionCount = 0
         every { observeShakeUseCase() } answers {
             subscriptionCount++

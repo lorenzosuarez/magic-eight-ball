@@ -20,7 +20,7 @@ import java.io.IOException
 class GeminiLlmGatewayTest {
 
     private val apiClient: GeminiApiClient = mockk()
-    private val config: GeminiConfig = GeminiConfig() // Defaults: maxRetries=1
+    private val config: GeminiConfig = GeminiConfig()
     private val promptPolicy = DefaultPromptPolicy()
     private val apiKey = "test-key"
 
@@ -28,21 +28,17 @@ class GeminiLlmGatewayTest {
 
     @Test
     fun `generateMagic8BallMessage success returns valid message`() = runTest {
-        // Given
         val validText = "Yes perfectly valid."
         coEvery { apiClient.generateContent(any(), any(), any()) } returns createResponse(validText)
 
-        // When
         val result = gateway.generateMagic8BallMessage(Magic8BallRequest("trigger"))
 
-        // Then
         assertTrue(result is Magic8BallResult.Success)
         assertEquals(validText, (result as Magic8BallResult.Success).message)
     }
 
     @Test
     fun `generateMagic8BallMessage validation failure retries and succeeds`() = runTest {
-        // Given
         val longText = "This message is definitely way too long for the magic eight ball constraint."
         val validText = "Start again now."
         
@@ -51,38 +47,30 @@ class GeminiLlmGatewayTest {
             createResponse(validText)
         )
 
-        // When
         val result = gateway.generateMagic8BallMessage(Magic8BallRequest("trigger"))
 
-        // Then
         assertTrue(result is Magic8BallResult.Success)
         assertEquals(validText, (result as Magic8BallResult.Success).message)
     }
 
     @Test
     fun `generateMagic8BallMessage validation failure fails after max retries`() = runTest {
-        // Given
         val longText = "This message is definitely way too long for the magic eight ball constraint."
         
         coEvery { apiClient.generateContent(any(), any(), any()) } returns createResponse(longText)
 
-        // When
         val result = gateway.generateMagic8BallMessage(Magic8BallRequest("trigger"))
 
-        // Then
         assertTrue(result is Magic8BallResult.Failure)
         assertEquals(LlmError.ValidationFailed, (result as Magic8BallResult.Failure).error)
     }
 
     @Test
     fun `generateMagic8BallMessage network error maps key correctly`() = runTest {
-        // Given
         coEvery { apiClient.generateContent(any(), any(), any()) } throws IOException("No net")
 
-        // When
         val result = gateway.generateMagic8BallMessage(Magic8BallRequest("trigger"))
 
-        // Then
         assertTrue(result is Magic8BallResult.Failure)
         assertEquals(LlmError.Network, (result as Magic8BallResult.Failure).error)
     }

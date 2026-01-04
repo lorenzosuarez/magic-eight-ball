@@ -14,20 +14,15 @@ class Magic8BallRepositoryImpl @Inject constructor(
 ) : LlmGateway {
 
     override suspend fun generateMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
-        // 1. Try Remote
         val remoteResult = remoteDataSource.fetchMagic8BallMessage(request)
 
         return when (remoteResult) {
             is Magic8BallResult.Success -> remoteResult
             is Magic8BallResult.Failure -> {
-                // 2. Decide if fallback is appropriate
                 if (shouldFallback(remoteResult.error)) {
                     val fallbackMessage = localDataSource.getRandomMessage(request.languageCode)
                     Magic8BallResult.Success(fallbackMessage)
                 } else {
-                    remoteResult // Return error (e.g. strict safety block might shouldn't be overridden? Or always fallback?)
-                    // User request implies "if service returns error or no internet", so basically any failure except maybe logic ones.
-                    // Let's fallback on everything for a robust "toy" experience.
                     val fallbackMessage = localDataSource.getRandomMessage(request.languageCode)
                     Magic8BallResult.Success(fallbackMessage)
                 }
@@ -36,8 +31,6 @@ class Magic8BallRepositoryImpl @Inject constructor(
     }
 
     private fun shouldFallback(error: LlmError): Boolean {
-        // In a real app we might differentiate.
-        // For this Magic 8 Ball, we almost always want a result.
         return true 
     }
 }

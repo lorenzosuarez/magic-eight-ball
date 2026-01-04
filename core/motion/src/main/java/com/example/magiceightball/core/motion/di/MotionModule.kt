@@ -6,7 +6,6 @@ import com.example.magiceightball.core.motion.ShakeDetectionStrategy
 import com.example.magiceightball.core.motion.SimpleThresholdShakeStrategy
 import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton

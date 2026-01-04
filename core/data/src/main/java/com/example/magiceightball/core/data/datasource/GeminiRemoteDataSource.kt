@@ -18,7 +18,6 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Named
 
-// Renamed from GeminiLlmGateway. Now acts as a pure Remote Data Source.
 class GeminiRemoteDataSource @Inject constructor(
     private val apiClient: GeminiApiClient,
     private val config: GeminiConfig,
@@ -31,9 +30,10 @@ class GeminiRemoteDataSource @Inject constructor(
                 request.languageCode,
                 request.personality
             )
-            
+
             val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
-            val userContent = Content(parts = listOf(Part(text = request.userTrigger ?: "What is my fortune?")))
+            val userContent =
+                Content(parts = listOf(Part(text = request.userTrigger ?: "What is my fortune?")))
 
             val genConfig = GenerationConfig(
                 temperature = config.temperature,
@@ -59,8 +59,7 @@ class GeminiRemoteDataSource @Inject constructor(
     ): Magic8BallResult {
         try {
             val response = apiClient.generateContent(apiKey, config.modelId, initialRequest)
-            
-            // Safety Check
+
             if (response.promptFeedback?.blockReason != null) {
                 return Magic8BallResult.Failure(LlmError.SafetyBlocked)
             }
@@ -68,27 +67,20 @@ class GeminiRemoteDataSource @Inject constructor(
                 return Magic8BallResult.Failure(LlmError.SafetyBlocked)
             }
 
-            val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
-                ?: return Magic8BallResult.Failure(LlmError.Serialization) // Or Empty
+            val text =
+                response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+                    ?: return Magic8BallResult.Failure(LlmError.Serialization)
 
-            // VALIDATION: Word Limit
-            if (!validateWordCount(text)) {
-                if (attempt <= config.maxRetries) {
-                    // Retry with stricter prompt
-                    // We assume English for the strict appending or we could make it dynamic too, but for now simple append is fine 
-                    // or better ask policy for a strict version? Keeping it simple for this refactor:
-                    val currentPrompt = promptPolicy.getSystemPrompt(languageCode, personality)
-                    val stricterInstruction = Content(
-                        parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
-                    )
-                    val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(retryRequest, languageCode, personality, attempt + 1)
-                } else {
-                    return Magic8BallResult.Failure(LlmError.ValidationFailed)
-                }
+            if (attempt <= config.maxRetries) {
+                val currentPrompt = promptPolicy.getSystemPrompt(languageCode, personality)
+                val stricterInstruction = Content(
+                    parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
+                )
+                val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
+                return executeWithRetry(retryRequest, languageCode, personality, attempt + 1)
+            } else {
+                return Magic8BallResult.Failure(LlmError.ValidationFailed)
             }
-
-            return Magic8BallResult.Success(text)
 
 
         } catch (e: Exception) {
@@ -98,22 +90,20 @@ class GeminiRemoteDataSource @Inject constructor(
                     when (e.code()) {
                         401 -> Magic8BallResult.Failure(LlmError.Unauthorized)
                         429 -> {
-                            // Simple exponential backoff could go here if we were looping
-                            // For now, treat as RateLimit error
                             Magic8BallResult.Failure(LlmError.RateLimited)
                         }
+
                         in 500..599 -> Magic8BallResult.Failure(LlmError.Server)
                         else -> Magic8BallResult.Failure(LlmError.Unknown(e))
                     }
                 }
+
                 else -> Magic8BallResult.Failure(LlmError.Unknown(e))
             }
         }
     }
 
     private fun validateWordCount(text: String): Boolean {
-        // Simple whitespace tokenizer
-        // Remove punctuation to avoid counting "Yes." as 2 words? No, split by space.
         val wordCount = text.split("\\s+".toRegex()).count { it.isNotBlank() }
         return wordCount <= 6
     }

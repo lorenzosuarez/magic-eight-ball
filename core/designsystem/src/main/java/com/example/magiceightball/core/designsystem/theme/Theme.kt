@@ -8,8 +8,6 @@ import androidx.wear.compose.material3.ColorScheme
 fun MagicEightBallTheme(
     content: @Composable () -> Unit
 ) {
-    // Uses default Material 3 Wear colors for now.
-    // Can be customized with ColorScheme()
     MaterialTheme(
         content = content
     )

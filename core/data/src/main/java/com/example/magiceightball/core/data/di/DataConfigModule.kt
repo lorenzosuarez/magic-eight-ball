@@ -26,11 +26,6 @@ object DataConfigModule {
     fun provideQueryConfig(): QueryConfig {
         return QueryConfig()
     }
-
-    // Overrides NetworkModule's binding if applied later, or we need to replace it.
-    // Ideally we should disable NetworkModule or create a separate flavor.
-    // For this task, we will bind here and assume we replace usage or update NetworkModule.
-    // Let's create a specific module for MockGateway binding to replace the real one.
 }
 
 @Module
