@@ -15,7 +15,7 @@ object MotionConfigModule {
     @Singleton
     fun provideShakeConfig(): ShakeConfig {
         return ShakeConfig(
-            startThresholdGravity = 1.5f, // Reduced sensitivity
+            startThresholdGravity = 1.5f,
             stopThresholdGravity = 1.3f
         )
     }

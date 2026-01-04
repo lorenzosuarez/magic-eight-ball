@@ -50,7 +50,7 @@ object PredictionTriangleDefaults {
     val BorderColor = Color(0xFF102875).copy(alpha = 0.8f)
     val TextColor = Color.White
 
-    val PaddingHorizontal = 16.dp // Reduced from 30.dp to allow more text width
+    val PaddingHorizontal = 16.dp
     
     val TextSize = 10.sp
     val LineHeight = 22.sp
@@ -66,16 +66,13 @@ class InvertedTriangleShape(private val cornerRadius: Float = 20f) : Shape {
         density: Density
     ): Outline {
         val path = Path().apply {
-            // Top Left Corner
             moveTo(cornerRadius, 0f)
             lineTo(size.width - cornerRadius, 0f)
             quadraticTo(size.width, 0f, size.width - (cornerRadius * 0.5f), cornerRadius)
             
-            // Bottom Tip
             lineTo(size.width / 2f + (cornerRadius * 0.5f), size.height - cornerRadius)
             quadraticTo(size.width / 2f, size.height, size.width / 2f - (cornerRadius * 0.5f), size.height - cornerRadius)
             
-            // Top Left Closing
             lineTo((cornerRadius * 0.5f), cornerRadius)
             quadraticTo(0f, 0f, cornerRadius, 0f)
             
@@ -177,8 +174,6 @@ fun PredictionTriangle(
                 }
 
             } else {
-                // Intelligent Auto-Sizing Text
-                // Dynamically calculates the best font size to fit within the triangle's geometric bounds
                 AutoSizingTextContainer(
                     text = text.uppercase(),
                     modifier = Modifier.fillMaxSize(),
@@ -195,7 +190,7 @@ fun PredictionTriangle(
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = optimalFontSize,
-                                lineHeight = optimalFontSize * 1.3f, // Proportional line height
+                                lineHeight = optimalFontSize * 1.3f,
                                 hyphens = Hyphens.Auto,
                                 lineBreak = LineBreak.Paragraph
                             ),
@@ -207,12 +202,6 @@ fun PredictionTriangle(
         }
     }
 }
-
-
-
-
-
-// AutoSizingTextContainer is now externalized
 
 
 @Composable
@@ -230,40 +219,16 @@ private fun TriangleContentLayout(
         val contentWidth = placeable.width.toFloat()
         val contentHeight = placeable.height.toFloat()
 
-        // 1. Define ideal center. Slightly higher than geometric center (1/3) visually looks better for text
-        // But with rounded corners, the "true" top starts lower.
-        // Let's aim for 42% down from the bounding box top.
         val idealCenterY = containerHeight * 0.42f
 
-        // 2. Calculate Highest Safe Y (Top Constraint)
-        // At the top, we have large rounded corners (approx 50px radius).
-        // Text cannot go into the top-left/top-right corners.
-        // Simple heuristic: Keep top of text below 15% of height to clear corners.
         val minSafeTopY = containerHeight * 0.15f
         
-        // 3. Calculate Lowest Safe Y (Bottom Constraint - Tip)
-        // The triangle gets very narrow at the bottom.
-        // Inverted triangle width W(y) = TotalW * (1 - y/H) roughly.
-        // We need W(bottom_of_text) > contentWidth + Padding
-        // W * (1 - (y + h)/H) > w
-        // 1 - (y+h)/H > w/W
-        // 1 - w/W > (y+h)/H
-        // H * (1 - w/W) > y + h
-        // y < H * (1 - w/W) - h
-        // 3. Calculate Lowest Safe Y (Bottom Constraint - Tip)
-        // We add a safety margin (1.15x width factor)
-        // If content is too wide/tall, this might be less than minSafeTopY.
         val safetyFactor = 1.15f
         val maxSafeTopY = containerHeight * (1f - (contentWidth * safetyFactor / containerWidth)) - contentHeight
 
-        // 4. Determine final Y
-        // Start at ideal, clamp between min (top corners) and max (bottom tip)
-        // Handle case where max < min gracefully (prefer top constraint to avoid corner overlap, or center of safe zone?)
-        // We'll coerce max to be at least min to avoid crash, effectively pinning to minSafeTopY if it doesn't fit bottom.
         val safeMax = maxSafeTopY.coerceAtLeast(minSafeTopY)
         val clampedY = idealCenterY.coerceIn(minSafeTopY, safeMax)
         
-        // Center horizontally
         val x = (constraints.maxWidth - placeable.width) / 2
         val y = clampedY.toInt()
         

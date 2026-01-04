@@ -40,7 +40,7 @@ fun ChatScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-// ...
+
     MagicEightBallTheme {
         val pagerState = androidx.wear.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
 

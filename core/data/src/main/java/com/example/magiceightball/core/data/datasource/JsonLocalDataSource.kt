@@ -15,13 +15,13 @@ interface LocalDataSource {
 @Singleton
 class JsonLocalDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val json: Json // Use the Hilt-provided Json instance
+    private val json: Json
 ) : LocalDataSource {
 
     private var cachedData: Magic8BallDataDto? = null
 
     override fun getRandomMessage(languageCode: String): String {
-        val data = getOrLoadData() ?: return "Outlook uncertain." // Fallback if load fails completely
+        val data = getOrLoadData() ?: return "Outlook uncertain."
 
         val list = when (languageCode.lowercase()) {
             "es" -> data.es

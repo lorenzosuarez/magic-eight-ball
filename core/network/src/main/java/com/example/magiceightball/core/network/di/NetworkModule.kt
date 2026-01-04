@@ -1,12 +1,7 @@
 package com.example.magiceightball.core.network.di
 
-import com.example.magiceightball.core.domain.gateway.LlmGateway
-import com.example.magiceightball.core.domain.policy.PromptPolicy
-import com.example.magiceightball.core.domain.policy.DefaultPromptPolicy
-import com.example.magiceightball.core.network.api.GeminiService
 import com.example.magiceightball.core.network.BuildConfig
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import dagger.Binds
+import com.example.magiceightball.core.network.api.GeminiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,15 +11,13 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class NetworkModule {
-
-
-
     companion object {
         @Provides
         @Singleton
@@ -56,8 +49,6 @@ abstract class NetworkModule {
                 .addConverterFactory(json.asConverterFactory(contentType))
                 .build()
         }
-
-
 
         @Provides
         @Singleton
