@@ -12,9 +12,9 @@ Magic 8 Ball Wear OS goes beyond simple random responses. It features a **Hybrid
 
 Experience the complete journey from startup to prediction.
 
-| Splash | Home | Language | AI personality | Shake / Touch | Reveal |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/1.png" width="200" /> | <img src="docs/screenshots/2.png" width="200" /> | <img src="docs/screenshots/3.png" width="200" /> | <img src="docs/screenshots/6.png" width="200" /> | <img src="docs/screenshots/4.png" width="200" /> | <img src="docs/screenshots/5.png" width="200" /> |
+| Splash | Home | Language | AI personality | Reveal |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/1.png" width="200" /> | <img src="docs/screenshots/2.png" width="200" /> | <img src="docs/screenshots/3.png" width="200" /> | <img src="docs/screenshots/6.png" width="200" /> | <img src="docs/screenshots/5.png" width="200" /> |
 
 ### Live Demo
 ![Screen Recording 2026-01-04 at 12 36 27 AM](https://github.com/user-attachments/assets/c7515835-c4ac-4325-a158-1a197ac621e1)
