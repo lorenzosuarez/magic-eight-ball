@@ -29,7 +29,7 @@ fun AutoSizingTextContainer(
         val containerWidth = constraints.maxWidth.toFloat()
         val containerHeight = constraints.maxHeight.toFloat()
         
-        val searchMaxWidth = (containerWidth * 0.85f).toInt()
+        val searchMaxWidth = (containerWidth * 0.8f).toInt()
 
         val optimalSize = remember(text, containerWidth, containerHeight) {
             var bestSize = 8.sp
@@ -60,7 +60,8 @@ fun AutoSizingTextContainer(
                 for (i in 0 until layout.lineCount) {
                     maxLineWidth = maxOf(maxLineWidth, layout.getLineWidth(i))
                 }
-                maxLineWidth *= 1.1f 
+
+                maxLineWidth *= 1.25f // Increased buffer for safety 
 
                 val idealCenterY = containerHeight * 0.42f
                 val topY = idealCenterY - (actualHeight / 2f)
