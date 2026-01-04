@@ -223,7 +223,7 @@ private fun TriangleContentLayout(
 
         val minSafeTopY = containerHeight * 0.15f
         
-        val safetyFactor = 1.15f
+        val safetyFactor = 1.25f
         val maxSafeTopY = containerHeight * (1f - (contentWidth * safetyFactor / containerWidth)) - contentHeight
 
         val safeMax = maxSafeTopY.coerceAtLeast(minSafeTopY)

@@ -71,16 +71,20 @@ class GeminiRemoteDataSource @Inject constructor(
                 response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
                     ?: return Magic8BallResult.Failure(LlmError.Serialization)
 
-            if (attempt <= config.maxRetries) {
-                val currentPrompt = promptPolicy.getSystemPrompt(languageCode, personality)
-                val stricterInstruction = Content(
-                    parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
-                )
-                val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                return executeWithRetry(retryRequest, languageCode, personality, attempt + 1)
-            } else {
-                return Magic8BallResult.Failure(LlmError.ValidationFailed)
+            if (!validateWordCount(text)) {
+                if (attempt <= config.maxRetries) {
+                    val currentPrompt = promptPolicy.getSystemPrompt(languageCode, personality)
+                    val stricterInstruction = Content(
+                        parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
+                    )
+                    val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
+                    return executeWithRetry(retryRequest, languageCode, personality, attempt + 1)
+                } else {
+                    return Magic8BallResult.Failure(LlmError.ValidationFailed)
+                }
             }
+
+            return Magic8BallResult.Success(text)
 
 
         } catch (e: Exception) {
