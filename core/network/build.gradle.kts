@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("kotlin-kapt")
     alias(libs.plugins.hilt)
+    alias(libs.plugins.secrets)
 }
 
 android {
@@ -24,19 +25,6 @@ android {
     }
     buildFeatures {
         buildConfig = true
-    }
-}
-
-val localProperties = Properties()
-val localFile = rootProject.file("local.properties")
-if (localFile.exists()) {
-    localProperties.load(localFile.inputStream())
-}
-
-android {
-    defaultConfig {
-        val apiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
-        buildConfigField("String", "GEMINI_API_KEY", "\"$apiKey\"")
     }
 }
 

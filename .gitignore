@@ -53,11 +53,13 @@ captures/
 # For this request "basura innecesaria", ignoring .idea entirely or at least the volatile parts is best.
 .idea/
 
-# Keystore files
+# Keystore and signing files
 *.jks
 *.keystore
 *.pem
 *.p12
+keystore.properties
+PRODUCTION_KEYS.txt
 
 # External native build folder generated in Android Studio for NDK
 .externalNativeBuild
