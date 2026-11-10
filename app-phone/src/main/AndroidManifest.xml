@@ -3,11 +3,23 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Asked for the first time the user holds the screen to ask a question out loud. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- Shaking is optional (the ball can be tapped), so devices without the sensor are not filtered out. -->
+    <!-- Shaking and speaking are optional (the ball can be tapped), so devices without the sensor or a microphone are not filtered out. -->
     <uses-feature
         android:name="android.hardware.sensor.accelerometer"
         android:required="false" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
+
+    <!-- Lets the app see the device's speech recognition service (package visibility, Android 11+). -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <application
         android:name=".MagicEightBallPhoneApp"
@@ -22,8 +34,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

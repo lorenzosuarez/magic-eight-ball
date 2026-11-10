@@ -3,6 +3,8 @@ package com.lorenzosuarez.magiceightball.phone
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,5 +38,23 @@ class MainActivity : ComponentActivity() {
                 EightBallScreen(viewModel)
             }
         }
+        holdFirstFrameUntilSettingsAreRead()
+    }
+
+    /**
+     * Keeps the launch screen up for the few milliseconds it takes to read the saved choices,
+     * so the first frame the user sees is already in their language and with their settings.
+     */
+    private fun holdFirstFrameUntilSettingsAreRead() {
+        val content: View = findViewById(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    if (viewModel.state.value == null) return false
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    return true
+                }
+            }
+        )
     }
 }

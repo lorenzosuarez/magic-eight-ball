@@ -11,19 +11,22 @@ class SendMessageUseCase @Inject constructor(
 ) {
     /**
      * @param useAi the user's choice; when false the answer never comes from the AI service.
+     * @param question what the user asked, where the app hears questions; null everywhere else.
      */
     suspend operator fun invoke(
         trigger: String,
         languageCode: String,
         personality: Magic8BallPersonality,
-        useAi: Boolean
+        useAi: Boolean,
+        question: String? = null
     ): Magic8BallResult {
         return llmGateway.generateMagic8BallMessage(
             Magic8BallRequest(
                 userTrigger = trigger,
                 languageCode = languageCode,
                 personality = personality,
-                useAi = useAi
+                useAi = useAi,
+                question = question
             )
         )
     }

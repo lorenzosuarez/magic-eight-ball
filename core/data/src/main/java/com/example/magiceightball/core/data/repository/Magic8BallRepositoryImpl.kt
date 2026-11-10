@@ -15,7 +15,7 @@ import javax.inject.Inject
  * Answers come from Gemini only while the user allows it, it is switched on remotely and a key
  * is available; in every other case (turned off by the user, switched off remotely, no key,
  * offline, any API error) a bundled answer is used, and no request is sent to Gemini when it is
- * off.
+ * off. A question in the request goes to Gemini only; a bundled answer never depends on it.
  */
 class Magic8BallRepositoryImpl @Inject constructor(
     private val remoteDataSource: GeminiRemoteDataSource,

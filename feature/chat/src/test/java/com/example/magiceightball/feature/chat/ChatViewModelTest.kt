@@ -295,6 +295,26 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `the watch only ever sends the fixed trigger and never a question`() = runTest {
+        userSettings.saved.value = UserSettings(voiceQuestionsEnabled = true)
+        createViewModel(detectionEnabled = true)
+
+        shake()
+
+        assertEquals(
+            Magic8BallRequest(
+                userTrigger = "shake",
+                languageCode = AppLanguage.ENGLISH.code,
+                personality = Magic8BallPersonality.SARCASTIC,
+                useAi = true,
+                question = null
+            ),
+            llmGateway.requests.single()
+        )
+        assertNull(llmGateway.requests.single().questionForAi)
+    }
+
+    @Test
     fun `effects announce the shake and then the answer`() = runTest {
         val viewModel = createViewModel(detectionEnabled = true)
         val effects = mutableListOf<ChatEffect>()
@@ -351,6 +371,10 @@ class ChatViewModelTest {
 
         override suspend fun setAiAnswersEnabled(enabled: Boolean) {
             saved.update { it?.copy(aiAnswersEnabled = enabled) }
+        }
+
+        override suspend fun setVoiceQuestionsEnabled(enabled: Boolean) {
+            saved.update { it?.copy(voiceQuestionsEnabled = enabled) }
         }
     }
 

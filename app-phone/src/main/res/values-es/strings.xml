@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hint under the ball -->
+    <string name="hint_voice">Mantén presionado y pregunta, o agita</string>
+    <string name="hint_tap">Toca o agita para preguntar</string>
+    <string name="hint_listening">Te escucho…</string>
+    <string name="notice_microphone_denied">El micrófono está desactivado: toca o agita para preguntar. Puedes permitirlo en configuración.</string>
+    <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas. Toca o agita para preguntar.</string>
+
+    <!-- Ball -->
+    <string name="ball_description">Bola Mágica 8</string>
+    <string name="ball_answer_description">La bola dice: %1$s</string>
+    <string name="ball_state_listening">Escuchando</string>
+    <string name="ball_state_thinking">Pensando</string>
+    <string name="action_ask">Preguntar</string>
+    <string name="action_ask_by_voice">Preguntar por voz</string>
+    <string name="action_finish_question">Terminar la pregunta</string>
+    <string name="answer_fallback">Pregunta más tarde</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Configuración</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_style">Estilo de respuesta</string>
+    <string name="style_sarcastic">Sarcástico</string>
+    <string name="style_mystical">Místico</string>
+    <string name="settings_ai">Respuestas con IA</string>
+    <string name="settings_ai_on">Escritas por Gemini, solo para ti</string>
+    <string name="settings_ai_off">Respuestas clásicas de la app</string>
+    <string name="settings_ai_unavailable">No disponible por ahora</string>
+    <string name="settings_voice">Preguntas por voz</string>
+    <string name="settings_voice_on">Mantén presionada la pantalla y pregunta en voz alta</string>
+    <string name="settings_voice_off">Solo tocar o agitar</string>
+    <string name="settings_voice_denied">Necesita acceso al micrófono</string>
+    <string name="settings_voice_unsupported">Este dispositivo no tiene reconocimiento de voz</string>
+    <string name="settings_voice_allow">Permitir</string>
+
+    <!-- Privacy note in settings: one per combination of what is in use -->
+    <string name="privacy_voice_and_ai">El servicio de voz de tu dispositivo convierte tu pregunta en texto, que se envía a Gemini, de Google, para responderla. La app nunca la guarda.</string>
+    <string name="privacy_voice_only">El servicio de voz de tu dispositivo convierte tu pregunta en texto solo para mostrártela. No se envía a Gemini ni se guarda.</string>
+    <string name="privacy_ai_only">Las respuestas vienen de Gemini, de Google. La app no escucha y no se envía ninguna pregunta.</string>
+    <string name="privacy_none">Las respuestas vienen de la propia app. La app no escucha y nada de lo que preguntas sale de este dispositivo.</string>
+</resources>
