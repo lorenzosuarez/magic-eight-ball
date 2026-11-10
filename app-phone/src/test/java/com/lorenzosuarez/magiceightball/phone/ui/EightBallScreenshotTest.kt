@@ -284,7 +284,7 @@ class EightBallScreenshotTest {
                     now = NOW,
                     voiceLevel = { voiceLevel },
                     // An animation that never ends would never come to rest for its picture.
-                    reducedMotion = true,
+                    still = true,
                     onAsk = {},
                     onHoldStart = {},
                     onHoldEnd = {},

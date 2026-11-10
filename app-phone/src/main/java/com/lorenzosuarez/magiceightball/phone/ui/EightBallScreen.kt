@@ -187,7 +187,7 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
                 state = current,
                 now = now,
                 voiceLevel = { voiceLevel.value },
-                reducedMotion = rememberReducedMotion(),
+                still = false,
                 onAsk = viewModel::ask,
                 onHoldStart = viewModel::onHoldStart,
                 onHoldEnd = viewModel::onHoldEnd,
@@ -239,7 +239,7 @@ internal fun EightBallContent(
     state: EightBallUiState,
     now: Long,
     voiceLevel: () -> Float,
-    reducedMotion: Boolean,
+    still: Boolean,
     onAsk: () -> Unit,
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
@@ -308,7 +308,7 @@ internal fun EightBallContent(
                 Stage(
                     state = state,
                     voiceLevel = voiceLevel,
-                    reducedMotion = reducedMotion,
+                    still = still,
                     onAsk = onAsk,
                     onHoldStart = onHoldStart,
                     onHoldEnd = onHoldEnd,
@@ -400,7 +400,7 @@ private fun PageDots(current: Int, modifier: Modifier = Modifier) {
 private fun Stage(
     state: EightBallUiState,
     voiceLevel: () -> Float,
-    reducedMotion: Boolean,
+    still: Boolean,
     onAsk: () -> Unit,
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
@@ -430,7 +430,7 @@ private fun Stage(
             Ball(
                 state = state,
                 voiceLevel = voiceLevel,
-                reducedMotion = reducedMotion,
+                still = still,
                 onAsk = onAsk,
                 onHoldStart = onHoldStart,
                 onHoldEnd = onHoldEnd,
@@ -461,7 +461,7 @@ private fun Stage(
 private fun Ball(
     state: EightBallUiState,
     voiceLevel: () -> Float,
-    reducedMotion: Boolean,
+    still: Boolean,
     onAsk: () -> Unit,
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
@@ -506,7 +506,7 @@ private fun Ball(
         answer = answer,
         pressed = pressed,
         voiceLevel = voiceLevel,
-        reducedMotion = reducedMotion,
+        still = still,
         modifier = modifier
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -753,7 +753,7 @@ private fun EightBallContentPreview() {
             ),
             now = 0L,
             voiceLevel = { 0f },
-            reducedMotion = false,
+            still = false,
             onAsk = {},
             onHoldStart = {},
             onHoldEnd = {},

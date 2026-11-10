@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Motion of the die inside the ball, the same as on the phone.
@@ -39,18 +40,20 @@ fun PredictionTriangleAnimator(
     val surfacing = remember { Animatable(if (isThinking) 0f else 1f) }
 
     LaunchedEffect(isThinking) {
-        launch { surfacing.animateTo(if (isThinking) 0f else 1f, SurfacingSpec) }
-        if (isThinking) {
-            sway.animateTo(1f, tween(SWAY_MILLIS / 2, easing = EaseOutSine))
-            sway.animateTo(
-                targetValue = -1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(SWAY_MILLIS, easing = EaseInOutSine),
-                    repeatMode = RepeatMode.Reverse
+        withContext(DesignedMotion) {
+            launch { surfacing.animateTo(if (isThinking) 0f else 1f, SurfacingSpec) }
+            if (isThinking) {
+                sway.animateTo(1f, tween(SWAY_MILLIS / 2, easing = EaseOutSine))
+                sway.animateTo(
+                    targetValue = -1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(SWAY_MILLIS, easing = EaseInOutSine),
+                        repeatMode = RepeatMode.Reverse
+                    )
                 )
-            )
-        } else {
-            sway.animateTo(0f, SettleSpec, initialVelocity = RISE_TIP_SWAYS_PER_SECOND)
+            } else {
+                sway.animateTo(0f, SettleSpec, initialVelocity = RISE_TIP_SWAYS_PER_SECOND)
+            }
         }
     }
 

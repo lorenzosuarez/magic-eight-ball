@@ -69,7 +69,7 @@ class EightBallMotionTest {
                         answer = "Without a doubt.",
                         pressed = false,
                         voiceLevel = { 0f },
-                        reducedMotion = false,
+                        still = false,
                         modifier = Modifier.size(144.dp)
                     )
                 }
@@ -93,11 +93,11 @@ class EightBallMotionTest {
     }
 
     /**
-     * Users who turned animations off still see that the ball is working: the die stays put and
-     * the light keeps crossing it. The frames are the record of it.
+     * Held still, the ball still shows that it is working: the die stays put and the light
+     * keeps crossing it. The frames are the record of it.
      */
     @Test
-    fun the_thinking_die_shimmers_even_without_animations() {
+    fun the_thinking_die_shimmers_even_when_held_still() {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             MagicEightBallPhoneTheme {
@@ -107,7 +107,7 @@ class EightBallMotionTest {
                         answer = null,
                         pressed = false,
                         voiceLevel = { 0f },
-                        reducedMotion = true,
+                        still = true,
                         modifier = Modifier.size(144.dp)
                     )
                 }
