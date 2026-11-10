@@ -17,8 +17,12 @@ sealed interface LlmError {
     data class Unknown(val cause: Throwable?) : LlmError
 }
 
+/**
+ * @property useAi the user's choice: when false the answer must not come from the AI service.
+ */
 data class Magic8BallRequest(
     val userTrigger: String? = null,
     val languageCode: String = "en",
-    val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC
+    val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC,
+    val useAi: Boolean = true
 )

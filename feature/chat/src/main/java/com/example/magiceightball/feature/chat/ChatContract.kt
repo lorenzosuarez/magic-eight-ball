@@ -1,17 +1,21 @@
 package com.example.magiceightball.feature.chat
 
-import androidx.annotation.StringRes
-import com.example.magiceightball.core.domain.model.Magic8BallPersonality
+import com.example.magiceightball.core.domain.model.UserSettings
 
 /**
  * UI state of the chat screen.
+ *
+ * @property aiAnswersAvailable whether AI answers can be offered at all; when false the user's
+ * choice in [settings] has no effect and answers are the bundled ones.
  */
 data class ChatState(
     val machineState: ChatStateMachine = ChatStateMachine.Idle,
-    @StringRes val titleRes: Int = R.string.title_main,
-    val language: AppLanguage = AppLanguage.ENGLISH,
-    val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC
-)
+    val settings: UserSettings = UserSettings(),
+    val aiAnswersAvailable: Boolean = false
+) {
+    /** Whether a shake asks the AI service for the answer. */
+    val usesAiAnswers: Boolean get() = settings.aiAnswersEnabled && aiAnswersAvailable
+}
 
 /**
  * Shake-to-answer cycle: [Idle] -> [Running] -> [Completed] -> [Idle].
@@ -23,11 +27,12 @@ sealed interface ChatStateMachine {
 }
 
 /**
- * Text shown on the die: either an answer as delivered, or a localized string of the app.
+ * Text shown on the die: either an answer as delivered, or the app's own answer for when none
+ * could be obtained.
  */
 sealed interface AnswerText {
     data class Plain(val value: String) : AnswerText
-    data class Resource(@StringRes val resId: Int) : AnswerText
+    data object Fallback : AnswerText
 }
 
 /**

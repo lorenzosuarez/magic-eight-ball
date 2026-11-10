@@ -1,25 +1,32 @@
 package com.example.magiceightball.feature.chat
 
-import androidx.lifecycle.SavedStateHandle
+import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.gateway.MotionGateway
+import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.model.ShakeEvent
+import com.example.magiceightball.core.domain.model.UserSettings
+import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -38,13 +45,98 @@ class ChatViewModelTest {
 
     private val motionGateway = FakeMotionGateway()
     private val llmGateway = FakeLlmGateway()
+    private val userSettings = FakeUserSettingsRepository()
+    private val aiAvailability = FakeAiAnswersAvailability()
 
     @Test
-    fun `initial state is idle with the english title`() = runTest {
+    fun `initial state is idle with the saved choices`() = runTest {
+        val saved = UserSettings(
+            language = AppLanguage.SPANISH,
+            personality = Magic8BallPersonality.MYSTICAL,
+            aiAnswersEnabled = false
+        )
+        userSettings.saved.value = saved
+
         val viewModel = createViewModel()
 
-        assertEquals(ChatState(), viewModel.state.value)
-        assertEquals(R.string.title_main, viewModel.state.value.titleRes)
+        assertEquals(
+            ChatState(ChatStateMachine.Idle, saved, aiAnswersAvailable = false),
+            viewModel.state.value
+        )
+    }
+
+    @Test
+    fun `there is no state and no cycle until the saved choices are read`() = runTest {
+        userSettings.saved.value = null
+        val viewModel = createViewModel(detectionEnabled = true)
+        assertNull(viewModel.state.value)
+
+        shake()
+        assertNull(viewModel.state.value)
+        assertEquals(0, llmGateway.requests.size)
+
+        userSettings.saved.value = UserSettings(language = AppLanguage.SPANISH)
+        runCurrent()
+        assertEquals(AppLanguage.SPANISH, viewModel.state.value?.settings?.language)
+    }
+
+    @Test
+    fun `choices are saved and reach the state`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.setLanguage(AppLanguage.SPANISH)
+        viewModel.setPersonality(Magic8BallPersonality.MYSTICAL)
+        viewModel.setAiAnswersEnabled(false)
+        runCurrent()
+
+        val expected = UserSettings(
+            language = AppLanguage.SPANISH,
+            personality = Magic8BallPersonality.MYSTICAL,
+            aiAnswersEnabled = false
+        )
+        assertEquals(expected, userSettings.saved.value)
+        assertEquals(expected, viewModel.state.value?.settings)
+    }
+
+    @Test
+    fun `saved choices are restored by a new view model`() = runTest {
+        createViewModel().setLanguage(AppLanguage.SPANISH)
+        runCurrent()
+
+        assertEquals(AppLanguage.SPANISH, createViewModel().state.value?.settings?.language)
+    }
+
+    @Test
+    fun `ai answers are used only when the user allows them and they are available`() = runTest {
+        val viewModel = createViewModel()
+        assertEquals(false, viewModel.state.value?.aiAnswersAvailable)
+        assertEquals(false, viewModel.state.value?.usesAiAnswers)
+
+        aiAvailability.isAvailable.value = true
+        runCurrent()
+        assertEquals(true, viewModel.state.value?.aiAnswersAvailable)
+        assertEquals(true, viewModel.state.value?.usesAiAnswers)
+
+        viewModel.setAiAnswersEnabled(false)
+        runCurrent()
+        assertEquals(true, viewModel.state.value?.aiAnswersAvailable)
+        assertEquals(false, viewModel.state.value?.usesAiAnswers)
+    }
+
+    @Test
+    fun `request carries the user's ai choice`() = runTest {
+        val viewModel = createViewModel(detectionEnabled = true)
+
+        shake()
+        assertEquals(true, llmGateway.requests.single().useAi)
+
+        advanceTimeBy(MIN_THINKING_MS + HOLD_MS + COOLDOWN_MS)
+        runCurrent()
+        viewModel.setAiAnswersEnabled(false)
+        runCurrent()
+
+        shake()
+        assertEquals(listOf(true, false), llmGateway.requests.map { it.useAi })
     }
 
     @Test
@@ -122,11 +214,10 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `a slow answer is replaced by the localized fallback at the maximum thinking time`() =
+    fun `a slow answer is replaced by the fallback at the maximum thinking time`() =
         runTest {
             llmGateway.answer = { awaitCancellation() }
             val viewModel = createViewModel(detectionEnabled = true)
-            viewModel.setLanguage(AppLanguage.SPANISH)
 
             shake()
             advanceTimeBy(MAX_THINKING_MS - 1)
@@ -135,7 +226,7 @@ class ChatViewModelTest {
             advanceTimeBy(1)
             runCurrent()
             assertEquals(
-                ChatStateMachine.Completed(AnswerText.Resource(R.string.answer_fallback_es)),
+                ChatStateMachine.Completed(AnswerText.Fallback),
                 viewModel.machineState
             )
         }
@@ -150,7 +241,7 @@ class ChatViewModelTest {
         runCurrent()
 
         assertEquals(
-            ChatStateMachine.Completed(AnswerText.Resource(R.string.answer_fallback)),
+            ChatStateMachine.Completed(AnswerText.Fallback),
             viewModel.machineState
         )
     }
@@ -164,7 +255,7 @@ class ChatViewModelTest {
         advanceTimeBy(MIN_THINKING_MS)
         runCurrent()
         assertEquals(
-            ChatStateMachine.Completed(AnswerText.Resource(R.string.answer_fallback)),
+            ChatStateMachine.Completed(AnswerText.Fallback),
             viewModel.machineState
         )
 
@@ -194,14 +285,13 @@ class ChatViewModelTest {
         val viewModel = createViewModel(detectionEnabled = true)
         viewModel.setLanguage(AppLanguage.SPANISH)
         viewModel.setPersonality(Magic8BallPersonality.MYSTICAL)
+        runCurrent()
 
         shake()
 
         val request = llmGateway.requests.single()
         assertEquals("es", request.languageCode)
         assertEquals(Magic8BallPersonality.MYSTICAL, request.personality)
-        runCurrent()
-        assertEquals(R.string.title_main_es, viewModel.state.value.titleRes)
     }
 
     @Test
@@ -224,18 +314,17 @@ class ChatViewModelTest {
         runCurrent()
     }
 
-    private val ChatViewModel.machineState: ChatStateMachine
-        get() = state.value.machineState
+    private val ChatViewModel.machineState: ChatStateMachine?
+        get() = state.value?.machineState
 
-    /** Creates the ViewModel with an active subscriber, as the screen would be. */
-    private fun TestScope.createViewModel(detectionEnabled: Boolean = false): ChatViewModel {
+    private fun createViewModel(detectionEnabled: Boolean = false): ChatViewModel {
         val viewModel = ChatViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
             observeShakeUseCase = ObserveShakeUseCase(motionGateway),
-            queryConfig = queryConfig,
-            savedStateHandle = SavedStateHandle()
+            userSettingsRepository = userSettings,
+            aiAnswersAvailability = aiAvailability,
+            queryConfig = queryConfig
         )
-        backgroundScope.launch { viewModel.state.collect {} }
         viewModel.setShakeDetectionEnabled(detectionEnabled)
         return viewModel
     }
@@ -245,6 +334,28 @@ class ChatViewModelTest {
         override val shakeEvents = events
 
         val subscribers: Int get() = events.subscriptionCount.value
+    }
+
+    /** Stands for the settings file: what is saved here outlives a ViewModel. */
+    private class FakeUserSettingsRepository : UserSettingsRepository {
+        val saved = MutableStateFlow<UserSettings?>(UserSettings())
+        override val settings = saved.filterNotNull()
+
+        override suspend fun setLanguage(language: AppLanguage) {
+            saved.update { it?.copy(language = language) }
+        }
+
+        override suspend fun setPersonality(personality: Magic8BallPersonality) {
+            saved.update { it?.copy(personality = personality) }
+        }
+
+        override suspend fun setAiAnswersEnabled(enabled: Boolean) {
+            saved.update { it?.copy(aiAnswersEnabled = enabled) }
+        }
+    }
+
+    private class FakeAiAnswersAvailability : AiAnswersAvailability {
+        override val isAvailable = MutableStateFlow(false)
     }
 
     private class FakeLlmGateway : LlmGateway {

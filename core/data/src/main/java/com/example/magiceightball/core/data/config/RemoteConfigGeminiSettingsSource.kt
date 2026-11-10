@@ -5,6 +5,9 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -18,12 +21,18 @@ import javax.inject.Singleton
  *
  * When the app is built without `google-services.json`, Firebase is not initialised and the
  * build-time key alone decides: Gemini is used only if that key is present.
+ *
+ * [isAvailable] starts as false and is published by [refresh]: first from the values cached on
+ * the device, then again once the fetch has finished.
  */
 @Singleton
 class RemoteConfigGeminiSettingsSource @Inject constructor(
     @ApplicationContext private val context: Context,
     @Named("BuildGeminiApiKey") private val buildApiKey: String
 ) : GeminiSettingsSource {
+
+    private val availability = MutableStateFlow(false)
+    override val isAvailable: StateFlow<Boolean> = availability.asStateFlow()
 
     private val remoteConfig: FirebaseRemoteConfig? by lazy {
         if (FirebaseApp.getApps(context).isEmpty()) {
@@ -36,6 +45,7 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
                         .setFetchTimeoutInSeconds(FETCH_TIMEOUT_SECONDS)
                         .build()
                 )
+                config.ensureInitialized().addOnCompleteListener { publishAvailability() }
             }
         }
     }
@@ -50,8 +60,20 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
     }
 
     override fun refresh() {
-        // Throttled by the SDK to one network fetch per MIN_FETCH_INTERVAL_SECONDS.
-        remoteConfig?.fetchAndActivate()
+        val config = remoteConfig
+        if (config == null) {
+            publishAvailability()
+            return
+        }
+        // Throttled by the SDK to one network fetch per MIN_FETCH_INTERVAL_SECONDS. Whether the
+        // fetch succeeds or not, the values are only read once they are loaded from disk.
+        config.fetchAndActivate()
+            .continueWithTask { config.ensureInitialized() }
+            .addOnCompleteListener { publishAvailability() }
+    }
+
+    private fun publishAvailability() {
+        availability.value = current().isUsable
     }
 
     private companion object {

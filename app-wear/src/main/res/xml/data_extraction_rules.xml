@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Nothing is backed up or transferred: the app keeps no user data, and the cached remote settings must stay on the device. -->
+<!-- Nothing is backed up or transferred: the app keeps only the user's in-app choices, and those and the cached remote settings must stay on the device. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" path="." />
