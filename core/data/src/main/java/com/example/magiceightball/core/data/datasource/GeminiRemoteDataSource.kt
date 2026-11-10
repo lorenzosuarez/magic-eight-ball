@@ -23,7 +23,11 @@ class GeminiRemoteDataSource @Inject constructor(
     private val config: GeminiConfig,
     private val promptPolicy: PromptPolicy
 ) {
-    suspend fun fetchMagic8BallMessage(request: Magic8BallRequest, apiKey: String): Magic8BallResult {
+    suspend fun fetchMagic8BallMessage(
+        request: Magic8BallRequest,
+        apiKey: String,
+        modelId: String
+    ): Magic8BallResult {
         return withContext(Dispatchers.IO) {
             val systemPromptText = promptPolicy.getSystemPrompt(
                 request.languageCode,
@@ -34,11 +38,8 @@ class GeminiRemoteDataSource @Inject constructor(
             val userContent =
                 Content(parts = listOf(Part(text = request.userTrigger ?: "What is my fortune?")))
 
-            val genConfig = GenerationConfig(
-                temperature = config.temperature,
-                topP = config.topP,
-                maxOutputTokens = config.maxOutputTokens
-            )
+            // Sampling parameters are left to the model defaults: Gemini 3.x deprecates temperature/topP.
+            val genConfig = GenerationConfig(maxOutputTokens = config.maxOutputTokens)
 
             val apiRequest = GeminiRequest(
                 contents = listOf(userContent),
@@ -46,19 +47,20 @@ class GeminiRemoteDataSource @Inject constructor(
                 generationConfig = genConfig
             )
 
-            executeWithRetry(apiKey, apiRequest, request.languageCode, request.personality)
+            executeWithRetry(apiKey, modelId, apiRequest, request.languageCode, request.personality)
         }
     }
 
     private suspend fun executeWithRetry(
         apiKey: String,
+        modelId: String,
         initialRequest: GeminiRequest,
         languageCode: String,
         personality: Magic8BallPersonality,
         attempt: Int = 1
     ): Magic8BallResult {
         try {
-            val response = apiClient.generateContent(apiKey, config.modelId, initialRequest)
+            val response = apiClient.generateContent(apiKey, modelId, initialRequest)
 
             if (response.promptFeedback?.blockReason != null) {
                 return Magic8BallResult.Failure(LlmError.SafetyBlocked)
@@ -68,7 +70,8 @@ class GeminiRemoteDataSource @Inject constructor(
             }
 
             val text =
-                response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+                response.candidates?.firstOrNull()?.content?.parts
+                    ?.firstNotNullOfOrNull { part -> part.text?.trim()?.takeIf { it.isNotEmpty() } }
                     ?: return Magic8BallResult.Failure(LlmError.Serialization)
 
             if (!validateWordCount(text)) {
@@ -78,7 +81,7 @@ class GeminiRemoteDataSource @Inject constructor(
                         parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
                     )
                     val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(apiKey, retryRequest, languageCode, personality, attempt + 1)
+                    return executeWithRetry(apiKey, modelId, retryRequest, languageCode, personality, attempt + 1)
                 } else {
                     return Magic8BallResult.Failure(LlmError.ValidationFailed)
                 }
