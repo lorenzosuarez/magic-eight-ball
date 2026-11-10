@@ -10,9 +10,11 @@ plugins {
 }
 
 // Firebase is optional: without app-phone/google-services.json the app builds and runs offline-only
-// (Remote Config is unavailable, so Gemini stays off unless a local GEMINI_API_KEY is provided).
+// (Remote Config is unavailable, so Gemini stays off unless a local GEMINI_API_KEY is provided, and
+// crashes are not reported).
 if (file("google-services.json").isFile) {
     apply(plugin = libs.plugins.google.services.get().pluginId)
+    apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
 }
 
 // AdMob identifiers come from the git-ignored root local.properties (ADMOB_APP_ID and
@@ -97,6 +99,8 @@ dependencies {
     implementation(libs.user.messaging.platform)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)
+    // Crash reports, so a failure in the field can be found and fixed.
+    implementation(libs.firebase.crashlytics)
 
     implementation(project(":core:common"))
     implementation(project(":core:domain"))

@@ -122,6 +122,7 @@ The app builds and runs with no setup at all: without Firebase it answers from t
 2.  **Enable Gemini from the Firebase console (optional)**:
     *   Create a Firebase project and add an Android app with the package `com.lorenzosuarez.magiceightball`.
     *   Download `google-services.json` into `app-wear/` and `app-phone/` (git-ignored; the same file, since both apps share the package).
+    *   With that file in place both apps also report crashes to **Firebase Crashlytics**; there is nothing else to set up, and without the file nothing is reported.
     *   In **Remote Config**, add and publish two parameters:
 
         | Parameter | Type | Meaning |

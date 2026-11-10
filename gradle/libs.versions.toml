@@ -25,6 +25,7 @@ material = "1.12.0"
 firebaseBom = "33.5.1"
 datastore = "1.1.1"
 googleServices = "4.4.2"
+firebaseCrashlyticsPlugin = "3.0.2"
 
 [libraries]
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
@@ -74,6 +75,7 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 # Firebase
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-config = { group = "com.google.firebase", name = "firebase-config" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version = "23.6.0" }
 user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version = "3.1.0" }
 
@@ -96,5 +98,6 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 

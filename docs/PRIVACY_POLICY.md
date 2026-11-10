@@ -5,10 +5,10 @@
 This policy explains how the Magic 8 Ball app (package `com.lorenzosuarez.magiceightball`), developed by Lorenzo Suarez, handles information. It covers both versions of the app: the one for Wear OS watches and the one for Android phones and tablets. Where they differ, this policy says so.
 
 ## Summary
-- No account or sign-in, no analytics and no crash-reporting tools. The watch app shows no ads. The phone and tablet app may show an occasional ad, as described under "Ads"; you are asked for consent first where the law requires it.
+- No account or sign-in and no analytics. If the app crashes, a technical crash report is sent to the developer, as described under "Crash reports". The watch app shows no ads. The phone and tablet app may show an occasional ad, as described under "Ads"; you are asked for consent first where the law requires it.
 - The only things the app saves on your device are your choices in the app (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) and, on phones and tablets, a list of your latest questions and answers ("Recents"). The developer runs no server that receives your data.
 - You can switch AI answers off in the app at any time.
-- The app connects to Google services, all described below: Firebase Remote Config, to check its settings; the Gemini API, when AI answers are switched on; and, on phones and tablets while ads are switched on, Google AdMob.
+- The app connects to Google services, all described below: Firebase Remote Config, to check its settings; the Gemini API, when AI answers are switched on; Firebase Crashlytics, when the app crashes; and, on phones and tablets while ads are switched on, Google AdMob.
 - **Asking out loud:** on both versions you can hold and say your question. The app uses the microphone only while it is listening to a question you started, your speech is turned into text by your device's speech recognition service, and that text is sent to the Gemini API only when AI answers are switched on. The app never stores your voice. On phones and tablets the text of your question is saved, with its answer, only in the "Recents" list on your device, which you can clear at any time; the watch saves nothing. The app works without the microphone.
 - **On the watch** holding to ask is offered only while AI answers are in use, because only the AI service can answer a question; otherwise the watch answers to a shake and never listens.
 
@@ -26,6 +26,14 @@ On both versions the request never includes audio, and it does not include your 
 If the request fails or your device is offline, the app shows an answer from the built-in list instead. The same happens once a device has asked for its daily allowance of AI answers; to keep that count, the app saves today's date and a number on your device, and nothing else.
 
 Each request also names the app that is making it (its package name and the fingerprint of its signing certificate), so that Google can refuse requests that do not come from this app.
+
+## Crash reports
+If the app stops working unexpectedly, it sends a crash report to Google's Firebase Crashlytics service the next time it is opened, so that the developer can find and fix the fault. Both versions of the app do this.
+
+- **What a report contains.** The technical trace of the failure (where in the app's code it happened), the app version, the device model, the operating system version, the device's language and orientation, free memory and storage at the time, the date and time, and a random installation identifier created by Crashlytics for this copy of the app.
+- **What it never contains.** Your questions, the ball's answers, your "Recents" list, audio, your name, account or location. The app adds nothing of its own to a report.
+- **Who receives it.** Google, on the developer's behalf, under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy). Reports are kept for 90 days and then deleted. They are used only to fix the app, never for ads or analytics.
+- **When the app has not crashed.** Each time the app is opened it sends Crashlytics a short session record (app version, device model, operating system version and the same random installation identifier), which is what lets the developer see how many sessions end without a crash. It contains nothing about what you do in the app.
 
 ## Ads (phones and tablets only)
 The phone and tablet app can show a full-screen ad from time to time, only after you have closed an answer and never while you are asking or reading one. The developer can switch ads on and off for everyone; while they are off, nothing described in this section happens. The watch app never shows ads.
@@ -54,16 +62,16 @@ The phone and tablet app keeps a list of the latest answers the ball gave you, s
 
 ## Sensors and permissions
 - **Motion sensor (accelerometer):** used only on your device to detect a shake. Sensor readings are not stored or sent anywhere. No permission is required.
-- **Internet and network state** (`INTERNET`, `ACCESS_NETWORK_STATE`): used to contact Firebase Remote Config and the Gemini API.
+- **Internet and network state** (`INTERNET`, `ACCESS_NETWORK_STATE`): used to contact Firebase Remote Config, the Gemini API and, after a crash, Firebase Crashlytics.
 - **Microphone** (`RECORD_AUDIO`): requested the first time you hold to ask out loud, and used only as described under "Voice questions". You can refuse it or take it back in your device's settings at any time; the app keeps working by tap and shake.
 
 Neither version requests location, camera, contacts, body sensors or any other sensitive permission.
 
 ## Information stored on your device
-The app saves your choices (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) in a small settings file on your device, so they are still there the next time you open the app. They stay on the device, are not sent anywhere on their own, and are removed when you clear the app's data or uninstall it. On phones and tablets the app also saves the "Recents" list described above (at most your latest 50 questions and answers), which is removed the same way or from the list itself. On the watch, the latest answer is kept in memory only. The app stores nothing else of its own. Firebase stores its installation identifier and the latest settings on the device. Nothing is included in device backups.
+The app saves your choices (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) in a small settings file on your device, so they are still there the next time you open the app. They stay on the device, are not sent anywhere on their own, and are removed when you clear the app's data or uninstall it. On phones and tablets the app also saves the "Recents" list described above (at most your latest 50 questions and answers), which is removed the same way or from the list itself. On the watch, the latest answer is kept in memory only. The app stores nothing else of its own. Firebase stores its installation identifiers and the latest settings on the device, and a crash report waits there until it has been sent. Nothing is included in device backups.
 
 ## Retention and deletion
-The developer does not collect or store your information, so there is nothing for the developer to keep or delete. What the app saves on your device stays there until you delete it, as described above. Information received by Google, or by your device's speech recognition provider, is handled under their policies as described above.
+Apart from the crash reports described above, which Google keeps for the developer for 90 days, the developer does not collect or store your information. What the app saves on your device stays there until you delete it, as described above. Information received by Google, or by your device's speech recognition provider, is handled under their policies as described above.
 
 ## Children
 The app is not directed at children, and the developer does not knowingly collect personal information from children.
