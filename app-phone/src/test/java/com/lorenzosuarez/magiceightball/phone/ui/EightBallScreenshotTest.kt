@@ -39,8 +39,7 @@ import java.time.Duration
  * screenshot sizes. `./gradlew :app-phone:recordRoborazziDebug` writes the PNGs to
  * `app-phone/build/outputs/roborazzi/`; a plain unit-test run only checks that the screen renders.
  *
- * SDK 30 keeps the app's own palette: from Android 12 on the theme follows the wallpaper. A plain
- * [Application] stands in for the Hilt one, so nothing is injected and nothing touches the network.
+ * A plain [Application] stands in for the Hilt one, so nothing is injected and nothing touches the network.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -68,7 +67,22 @@ class EightBallScreenshotTest {
     fun small_phone_idle_history_spanish_large_font() = capture(
         name = "phone_20_small_phone_history_spanish_large_font",
         state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), history = HISTORY),
-        fontScale = 2f
+        fontScale = 2f,
+        initialPage = HISTORY_PAGE
+    )
+
+    @Test
+    fun phone_history() = capture(
+        name = "phone_21_history",
+        state = EightBallUiState(history = HISTORY),
+        initialPage = HISTORY_PAGE
+    )
+
+    @Test
+    fun phone_history_empty_spanish() = capture(
+        name = "phone_22_history_empty_spanish",
+        state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH)),
+        initialPage = HISTORY_PAGE
     )
 
     @Test
@@ -230,10 +244,11 @@ class EightBallScreenshotTest {
         name: String,
         state: EightBallUiState,
         voiceLevel: Float = 0f,
-        fontScale: Float = 1f
+        fontScale: Float = 1f,
+        initialPage: Int = BALL_PAGE
     ) {
         captureRoboImage(filePath = path(name)) {
-            WithFontScale(fontScale) { Screen(state, voiceLevel) }
+            WithFontScale(fontScale) { Screen(state, voiceLevel, initialPage) }
         }
     }
 
@@ -242,7 +257,7 @@ class EightBallScreenshotTest {
     private fun captureWithSettings(name: String, state: EightBallUiState) {
         val activity = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
         activity.setContent {
-            Screen(state, voiceLevel = 0f) {
+            Screen(state, voiceLevel = 0f, overlay = {
                 SettingsSheet(
                     state = state,
                     onLanguageSelected = {},
@@ -252,7 +267,7 @@ class EightBallScreenshotTest {
                     onAllowMicrophone = {},
                     onDismiss = {}
                 )
-            }
+            })
         }
         // Lets the sheet finish sliding in.
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2))
@@ -263,6 +278,7 @@ class EightBallScreenshotTest {
     private fun Screen(
         state: EightBallUiState,
         voiceLevel: Float,
+        initialPage: Int = BALL_PAGE,
         overlay: @Composable () -> Unit = {}
     ) {
         MagicEightBallPhoneTheme {
@@ -278,12 +294,12 @@ class EightBallScreenshotTest {
                     onHoldEnd = {},
                     onHoldCancel = {},
                     onToggleVoiceQuestion = {},
-                    onAskAgain = {},
                     onDismiss = {},
                     onShare = {},
                     onDeleteHistoryEntry = {},
                     onClearHistory = {},
-                    onOpenSettings = {}
+                    onOpenSettings = {},
+                    initialPage = initialPage
                 )
                 overlay()
             }

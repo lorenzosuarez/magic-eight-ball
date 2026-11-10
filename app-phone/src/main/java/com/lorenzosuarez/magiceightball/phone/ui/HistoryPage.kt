@@ -1,15 +1,11 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lorenzosuarez.magiceightball.phone.R
@@ -42,20 +39,15 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * What the sheet at the bottom of the screen holds: just its title while it peeks, the list
- * once it is pulled up.
+ * The history page: the latest answers, newest first.
  *
  * @param now the current time, for "5 min ago".
- * @param canExpand whether the sheet is not pulled up yet, so a tap on its title does it.
- * @param onExpand pulls the sheet up.
  * @param onShare receives the text to share for an entry.
  */
 @Composable
 internal fun HistoryContent(
     entries: List<HistoryEntry>,
     now: Long,
-    canExpand: Boolean,
-    onExpand: () -> Unit,
     onShare: (String) -> Unit,
     onDelete: (Long) -> Unit,
     onClearAll: () -> Unit,
@@ -67,21 +59,16 @@ internal fun HistoryContent(
         Text(
             text = stringResource(R.string.history_title),
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    enabled = canExpand,
-                    onClickLabel = stringResource(R.string.history_show),
-                    onClick = onExpand
-                )
-                .padding(horizontal = 24.dp, vertical = 10.dp)
+                .padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 12.dp)
                 .semantics { heading() },
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         LazyColumn(
             contentPadding = PaddingValues(
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+                bottom = 24.dp
             )
         ) {
             items(entries, key = { it.id }) { entry ->

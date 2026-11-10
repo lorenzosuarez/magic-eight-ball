@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
-    <string name="hint_voice">Mantén presionado para preguntar</string>
     <string name="hint_tap">Toca para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
-    <string name="hint_listening_hands_free">Te escucho… toca cuando termines</string>
+    <string name="hint_thinking">Pensando…</string>
     <string name="notice_microphone_denied">El micrófono está desactivado: toca o agita para preguntar. Puedes permitirlo en configuración.</string>
     <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas. Toca o agita para preguntar.</string>
 
     <!-- Result -->
     <string name="question_quoted">«%1$s»</string>
-    <string name="action_ask_again">Preguntar de nuevo</string>
     <string name="action_share">Compartir</string>
     <string name="action_close">Cerrar</string>
     <string name="action_cancel">Cancelar</string>
@@ -28,7 +26,6 @@
     <string name="history_clear_all">Borrar todo</string>
     <string name="history_clear_title">¿Borrar todos los recientes?</string>
     <string name="history_clear_text">Se borrarán de este dispositivo todas las preguntas y respuestas guardadas. No se puede deshacer.</string>
-    <string name="history_show">Ver recientes</string>
     <string name="time_just_now">Recién</string>
     <string name="time_minutes_ago">hace %1$d min</string>
     <string name="time_hours_ago">hace %1$d h</string>
@@ -55,7 +52,7 @@
     <string name="settings_ai_off">Respuestas clásicas de la app</string>
     <string name="settings_ai_unavailable">No disponible por ahora</string>
     <string name="settings_voice">Preguntas por voz</string>
-    <string name="settings_voice_on">Mantén presionada la pantalla y pregunta en voz alta</string>
+    <string name="settings_voice_on">Toca el micrófono y pregunta en voz alta</string>
     <string name="settings_voice_off">Solo tocar o agitar</string>
     <string name="settings_voice_denied">Necesita acceso al micrófono</string>
     <string name="settings_voice_unsupported">Este dispositivo no tiene reconocimiento de voz</string>
