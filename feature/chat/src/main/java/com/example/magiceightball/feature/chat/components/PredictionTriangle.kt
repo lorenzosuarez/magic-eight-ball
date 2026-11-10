@@ -4,11 +4,7 @@ import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Shader
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,6 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import kotlinx.coroutines.withContext
 
 /**
  * The triangular face of the die. While [isLoading] it is grey, with placeholder bars that a
@@ -40,11 +41,12 @@ fun PredictionTriangle(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false
 ) {
-    val answered = animateFloatAsState(
-        targetValue = if (isLoading) 0f else 1f,
-        animationSpec = tween(COLOUR_FADE_MILLIS),
-        label = "PredictionTriangleColour"
-    )
+    val answered = remember { Animatable(if (isLoading) 0f else 1f) }
+    LaunchedEffect(isLoading) {
+        withContext(DesignedMotion) {
+            answered.animateTo(if (isLoading) 0f else 1f, tween(COLOUR_FADE_MILLIS))
+        }
+    }
 
     Box(
         modifier = modifier.drawWithCache {
@@ -86,13 +88,18 @@ fun PredictionTriangle(
  */
 @Composable
 private fun ThinkingShimmer(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "ThinkingShimmer")
-    val sweep = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(SHIMMER_SWEEP_MILLIS, easing = LinearEasing)),
-        label = "ThinkingShimmerSweep"
-    )
+    // Driven by the display's frames, so the highlight keeps sweeping whatever the system's
+    // animation scale is: it is the app saying it is working.
+    val sweep = remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) {
+        val start = withFrameNanos { it }
+        while (true) {
+            withFrameNanos { now ->
+                val elapsedMillis = (now - start) / NANOS_PER_MILLI
+                sweep.floatValue = (elapsedMillis % SHIMMER_SWEEP_MILLIS).toFloat() / SHIMMER_SWEEP_MILLIS
+            }
+        }
+    }
 
     Spacer(
         modifier.drawWithCache {
@@ -112,7 +119,7 @@ private fun ThinkingShimmer(modifier: Modifier = Modifier) {
                 .apply { this.shader = shader }
 
             onDrawBehind {
-                shaderMatrix.setTranslate(lerp(sweepStart, sweepEnd, sweep.value), 0f)
+                shaderMatrix.setTranslate(lerp(sweepStart, sweepEnd, sweep.floatValue), 0f)
                 shader.setLocalMatrix(shaderMatrix)
                 drawIntoCanvas { canvas ->
                     val nativeCanvas = canvas.nativeCanvas
@@ -137,7 +144,8 @@ private fun ThinkingShimmer(modifier: Modifier = Modifier) {
 
 private const val CONTENT_FADE_MILLIS = 250
 private const val COLOUR_FADE_MILLIS = 450
-private const val SHIMMER_SWEEP_MILLIS = 1200
+private const val SHIMMER_SWEEP_MILLIS = 1200L
+private const val NANOS_PER_MILLI = 1_000_000L
 private const val SHIMMER_BAR_HEIGHT_FRACTION = 0.067f
 private const val SHIMMER_BAND_WIDTH_FRACTION = 0.4f
 

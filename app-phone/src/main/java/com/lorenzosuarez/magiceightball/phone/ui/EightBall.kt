@@ -6,7 +6,6 @@ import androidx.compose.animation.core.EaseOutSine
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -85,7 +84,7 @@ enum class BallMode {
  * @param answer the text on the die while [BallMode.Answered]; ignored otherwise.
  * @param pressed whether a finger is on the ball: it gives way a little.
  * @param voiceLevel how loud the voice is, from 0 to 1, while [BallMode.Listening].
- * @param reducedMotion true to keep the ball still, for users who turned animations off.
+ * @param still true to draw the ball without any motion of its own, for pictures of it.
  */
 @Composable
 fun EightBall(
@@ -93,7 +92,7 @@ fun EightBall(
     answer: String?,
     pressed: Boolean,
     voiceLevel: () -> Float,
-    reducedMotion: Boolean,
+    still: Boolean,
     modifier: Modifier = Modifier
 ) {
     val answered = mode == BallMode.Answered
@@ -106,14 +105,14 @@ fun EightBall(
     // The die keeps its text while it fades, after the answer is gone from the state.
     val shownAnswer = remember { LastAnswer() }.also { if (answer != null) it.text = answer }.text
 
-    LaunchedEffect(mode, reducedMotion) {
+    DesignedMotionEffect(mode, still) {
         when (mode) {
             BallMode.Thinking -> {
                 launch { text.animateTo(0f, tween(TEXT_OUT_MS)) }
                 launch { colour.animateTo(0f, tween(TEXT_OUT_MS)) }
                 launch { face.animateTo(1f, FaceSpring) }
                 launch { risen.animateTo(0f, tween(SINK_MS)) }
-                if (reducedMotion) {
+                if (still) {
                     tilt.snapTo(0f)
                 } else {
                     // Half a sway to one side, then from side to side for as long as it thinks.
@@ -139,7 +138,7 @@ fun EightBall(
                     delay(TEXT_IN_DELAY_MS)
                     text.animateTo(1f, tween(TEXT_IN_MS))
                 }
-                if (reducedMotion) {
+                if (still) {
                     tilt.snapTo(0f)
                 } else {
                     // Coming up tips the die over; the liquid then rocks it upright.
@@ -156,30 +155,25 @@ fun EightBall(
         }
     }
 
-    val press = animateFloatAsState(
-        targetValue = if (pressed) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
-        label = "press"
+    val press = designedFloatAsState(
+        target = if (pressed) 1f else 0f,
+        spec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium)
     )
-    val resting = animateFloatAsState(
-        targetValue = if (mode == BallMode.Idle) 1f else 0f,
-        animationSpec = tween(STAGE_FADE_MS),
-        label = "resting"
+    val resting = designedFloatAsState(
+        target = if (mode == BallMode.Idle) 1f else 0f,
+        spec = tween(STAGE_FADE_MS)
     )
-    val listening = animateFloatAsState(
-        targetValue = if (mode == BallMode.Listening) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
-        label = "listening"
+    val listening = designedFloatAsState(
+        target = if (mode == BallMode.Listening) 1f else 0f,
+        spec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow)
     )
-    val thinking = animateFloatAsState(
-        targetValue = if (mode == BallMode.Thinking) 1f else 0f,
-        animationSpec = tween(STAGE_FADE_MS),
-        label = "thinking"
+    val thinking = designedFloatAsState(
+        target = if (mode == BallMode.Thinking) 1f else 0f,
+        spec = tween(STAGE_FADE_MS)
     )
-    val grown = animateFloatAsState(
-        targetValue = if (answered) 1f else 0f,
-        animationSpec = GrowSpring,
-        label = "grown"
+    val grown = designedFloatAsState(
+        target = if (answered) 1f else 0f,
+        spec = GrowSpring
     )
 
     // One clock for the heartbeat and the rings: it runs only while one of them is on screen.
@@ -189,17 +183,16 @@ fun EightBall(
         BallMode.Listening -> RING_PULSE_MS
         BallMode.Thinking, BallMode.Answered -> 0
     }
-    LaunchedEffect(period, reducedMotion) {
-        while (period > 0 && !reducedMotion) {
+    DesignedMotionEffect(period, still) {
+        while (period > 0 && !still) {
             pulse.snapTo(0f)
             pulse.animateTo(1f, tween(period, easing = LinearEasing))
         }
         pulse.snapTo(0f)
     }
 
-    // The light that crosses the thinking die is the app saying it is working, so it is the one
-    // motion that runs even for users who turned animations off: it follows the display's
-    // frames directly, which that setting does not stop. Nothing moves; a highlight passes.
+    // The light that crosses the thinking die follows the display's frames directly: it is the
+    // app saying it is working, so it shows even when the ball is held still.
     val shimmer = remember { mutableFloatStateOf(0f) }
     val shimmers = mode == BallMode.Thinking
     LaunchedEffect(shimmers) {
@@ -213,8 +206,8 @@ fun EightBall(
         }
     }
 
-    // Without animations the ball does not move with the voice; its still rings say it listens.
-    val voiceMotion: () -> Float = if (reducedMotion) NoVoiceMotion else voiceLevel
+    // Held still, the ball does not move with the voice either; its rings still say it listens.
+    val voiceMotion: () -> Float = if (still) NoVoiceMotion else voiceLevel
     val textMeasurer = rememberTextMeasurer()
 
     Spacer(
