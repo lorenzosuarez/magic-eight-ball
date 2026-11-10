@@ -1,37 +1,44 @@
 # Privacy Policy for Magic 8 Ball (Wear OS)
 
-**Last Updated:** April 17, 2026
+**Effective date:** November 10, 2026
 
-This Privacy Policy describes how **Magic 8 Ball** (the "Application"), a standalone Wear OS application developed by Lorenzo Suarez, handles your information in accordance with industry best practices and global privacy standards.
+This policy explains how the Magic 8 Ball app for Wear OS (package `com.lorenzosuarez.magiceightball`), developed by Lorenzo Suarez, handles information.
 
-## 1. Data Collection and Processing Transparency
-Transparency is a core tenet of our design. The Application is built on the principle of **Data Minimization**:
-- **Personal Data:** The Application does not collect, store, or transmit any Personally Identifiable Information (PII). We do not have access to your name, email address, physical location, or device identifiers.
-- **Background Processing:** No background data collection occurs. Processing only happens when the Application is active and a user-initiated request is made.
+## Summary
+- No account or sign-in, no ads, no analytics and no crash-reporting tools.
+- The app does not save personal information on your watch, and the developer runs no server that receives your data.
+- The app connects to two Google services, both described below: Firebase Remote Config, to check its settings, and, when AI answers are switched on, the Gemini API.
 
-## 2. Artificial Intelligence and Third-Party API Integration
-To provide its core functionality, the Application utilizes the **Google Gemini API**.
-- **Data in Transit:** When you prompt the "Magic 8 Ball," the text of your query is transmitted to Google's servers. This transmission is strictly limited to the content of the prompt required to generate a response.
-- **Anonymization:** No user metadata or PII is attached to these API requests.
-- **Governing Terms:** The processing of these prompts is governed by [Google’s Privacy Policy](https://policies.google.com/privacy) and [Google's AI Terms of Service](https://ai.google.dev/terms).
+## What the app sends, and to whom
+**Firebase Remote Config.** When the app starts, and at most about once an hour while you use it, it asks Google's Firebase Remote Config service for its current settings, such as whether AI answers are switched on. This request includes a random installation identifier created by Firebase for this copy of the app, and basic app and device information (for example app version, language, country and operating system version). It does not include your name, account or location. Google handles this under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy).
 
-## 3. Data Security and Encryption
-We utilize enterprise-grade security protocols to protect data during transmission:
-- **Encryption:** All communication between the Application and the Gemini API is conducted over secure **HTTPS (TLS 1.2+)** channels, ensuring that data is encrypted in transit and protected against unauthorized interception.
+**Gemini API.** AI answers can be switched on or off by the developer. While they are off, the app shows answers from a list built into the app and sends nothing when you shake. While they are on, a shake sends a request over an encrypted HTTPS connection to Google's Gemini API (`generativelanguage.googleapis.com`). That request contains only:
+- a fixed instruction written by the developer, which reflects the personality (Sarcastic or Mystical) and answer language (English or Spanish) you chose in the app;
+- the fixed word "shake";
+- technical generation settings and the developer's API key.
 
-## 4. No Data Retention
-The Application does not maintain any persistent storage of your queries or the generated responses. Once a session is closed or a new "shake" is initiated, previous prompt data is flushed from the Application's volatile memory.
+The app has no text or voice input, and the request does not include your name, account, contacts, location, device identifiers or sensor readings. As with any internet request, Google receives your device's IP address and standard connection information. Google handles these requests under the [Gemini API Additional Terms of Service](https://ai.google.dev/gemini-api/terms) and the [Google Privacy Policy](https://policies.google.com/privacy). Depending on how the API is accessed, Google may keep these requests for a period of time and use them to provide and improve its services.
 
-## 5. User Rights and Compliance
-While the Application does not store user data, we respect global privacy rights (such as GDPR and CCPA):
-- **Right to Access/Delete:** Since no data is collected or stored, there is no data to access or delete. 
-- **Children's Privacy:** The Application does not knowingly interact with or collect data from individuals under the age of 13.
+If the request fails or your watch is offline, the app shows an answer from the built-in list instead.
 
-## 6. Changes to This Policy
-We reserve the right to update this Privacy Policy to reflect changes in our practices or service integrations. Any updates will be reflected by the "Last Updated" date at the top of this document.
+## Sensors and permissions
+- **Motion sensor (accelerometer):** used only on your watch to detect a shake. Sensor readings are not stored or sent anywhere. No permission is required.
+- **Internet and network state** (`INTERNET`, `ACCESS_NETWORK_STATE`): used to contact Firebase Remote Config and the Gemini API.
+- **Wake lock** (`WAKE_LOCK`): declared by the app but not used by the current version.
 
-## 7. Contact Information
-For any inquiries regarding this Privacy Policy or the Application's data practices, please contact the developer through the official contact channels provided on the Google Play Store listing.
+The app does not request location, microphone, camera, contacts, body sensors or any other sensitive permission.
 
----
-*Developed with a commitment to privacy-first architecture.*
+## Information stored on your watch
+Your language and personality choices and the latest answer are kept in memory only. The app does not write personal information to files or databases. Firebase stores its installation identifier and the latest settings on the watch. Nothing is included in device backups.
+
+## Retention and deletion
+The developer does not collect or store your information, so there is nothing for the developer to keep or delete. Information received by Google is handled under Google's policies linked above.
+
+## Children
+The app is not directed at children, and the developer does not knowingly collect personal information from children.
+
+## Changes to this policy
+If this policy changes, the updated version will be posted here with a new effective date.
+
+## Contact
+For questions about this policy, contact the developer through the contact details on the app's Google Play listing.

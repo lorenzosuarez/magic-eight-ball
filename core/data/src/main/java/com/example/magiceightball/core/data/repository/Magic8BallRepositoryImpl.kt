@@ -6,6 +6,8 @@ import com.example.magiceightball.core.data.datasource.LocalDataSource
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
@@ -22,7 +24,8 @@ class Magic8BallRepositoryImpl @Inject constructor(
 
     override suspend fun generateMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         geminiSettings.refresh()
-        val settings = geminiSettings.current()
+        // Remote Config may touch disk the first time it is read.
+        val settings = withContext(Dispatchers.IO) { geminiSettings.current() }
         if (settings.isUsable) {
             val remote = withTimeoutOrNull(REMOTE_BUDGET_MS) {
                 remoteDataSource.fetchMagic8BallMessage(request, settings.apiKey)

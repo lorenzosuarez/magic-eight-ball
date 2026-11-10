@@ -73,22 +73,27 @@ The project follows a strict **Clean Architecture** pattern, modularized to sepa
 
 ## Setup & Configuration ⚙️
 
-This project requires a valid Google Gemini API key to function fully.
+The app builds and runs with no setup at all: without Firebase it answers from the bundled offline list.
 
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/LorenzoSuarez/MagicEightBall.git
+    git clone https://github.com/lorenzosuarez/magic-eight-ball.git
     ```
 
-2.  **Generate an API Key**:
-    Obtain a free API key from [Google AI Studio](https://aistudio.google.com/).
+2.  **Enable Gemini from the Firebase console (optional)**:
+    *   Create a Firebase project and add an Android app with the package `com.lorenzosuarez.magiceightball`.
+    *   Download `google-services.json` into `app-wear/` (git-ignored).
+    *   In **Remote Config**, add and publish two parameters:
 
-3.  **Secure Your Key**:
-    Create a `local.properties` file in the project root (this file is git-ignored):
-    ```properties
-    # local.properties
-    GEMINI_API_KEY=your_api_key_starts_with_AIza...
-    ```
+        | Parameter | Type | Meaning |
+        |:---|:---|:---|
+        | `gemini_enabled` | Boolean | Turns Gemini answers on or off. Off when missing. |
+        | `gemini_api_key` | String | The Gemini API key from [Google AI Studio](https://aistudio.google.com/). |
+
+    The app checks Remote Config at launch and at most once an hour, so a change can take up to an hour to reach a watch. Values in Remote Config can be read by anyone with the app, so restrict the key to the Generative Language API and set a quota.
+
+3.  **Local key for debug builds (optional)**:
+    `GEMINI_API_KEY=...` in the git-ignored `local.properties` is compiled into **debug** builds only and is used when Remote Config provides no key. Release builds never embed a key.
 
 4.  **Build & Run**:
     Open the project in Android Studio (Koala or later recommended) and deploy to a Wear OS emulator or physical device.

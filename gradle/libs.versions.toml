@@ -20,7 +20,6 @@ androidxJunit = "1.2.1"
 espresso = "3.6.1"
 appcompat = "1.7.0"
 material = "1.12.0"
-secrets = "2.0.1"
 firebaseBom = "33.5.1"
 googleServices = "4.4.2"
 
@@ -84,6 +83,5 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-secrets = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secrets" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 

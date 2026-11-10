@@ -56,7 +56,7 @@ object NetworkModule {
     fun provideGeminiService(retrofit: Retrofit): GeminiService =
         retrofit.create(GeminiService::class.java)
 
-    /** Optional key from local.properties, used only when Remote Config provides none (local development). */
+    /** Optional key from local.properties; always empty in release builds (see build.gradle.kts). */
     @Provides
     @Singleton
     @Named("BuildGeminiApiKey")

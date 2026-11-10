@@ -6,8 +6,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("kotlin-kapt")
     alias(libs.plugins.hilt)
-    alias(libs.plugins.secrets)
 }
+
+// Optional GEMINI_API_KEY from the git-ignored root local.properties (debug builds only).
+val localGeminiApiKey: String = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.isFile) file.inputStream().use { load(it) }
+}.getProperty("GEMINI_API_KEY", "").trim().trim('"')
 
 android {
     namespace = "com.example.magiceightball.core.network"
@@ -25,6 +30,16 @@ android {
     }
     buildFeatures {
         buildConfig = true
+    }
+    buildTypes {
+        // The local key is a development convenience only: release builds never embed a key
+        // and get it from Firebase Remote Config instead.
+        debug {
+            buildConfigField("String", "GEMINI_API_KEY", "\"$localGeminiApiKey\"")
+        }
+        release {
+            buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+        }
     }
 }
 
