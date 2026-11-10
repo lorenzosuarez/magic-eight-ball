@@ -30,6 +30,8 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
+
+    implementation(project(":core:common"))
     
     debugImplementation(libs.ui.tooling)
 }

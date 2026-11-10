@@ -18,8 +18,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Brush
@@ -72,7 +74,8 @@ enum class BallMode {
 /**
  * The ball, drawn flat: a disc with its "8", which beats slowly at rest and has rings around it
  * while it listens. To answer, the "8" gives way to the window. While the ball thinks the die
- * hangs deep in the liquid, small and grey, swaying, with a light crossing it. With the answer
+ * goes on beating, and the die hangs deep in the liquid, small and grey, swaying, with bars
+ * where its answer will be and a light crossing them. With the answer
  * the ball grows and the die floats up: it comes close enough to fill the window, tips, rocks
  * back and forth ever less, and comes to rest upright, taking its colour and showing [answer].
  * The answer is written on the die and moves with it.
@@ -179,9 +182,10 @@ fun EightBall(
     // One clock for the heartbeat and the rings: it runs only while one of them is on screen.
     val pulse = remember { Animatable(0f) }
     val period = when (mode) {
-        BallMode.Idle -> HEARTBEAT_MS
+        // Thinking, the ball goes on beating as it does at rest: it is the same ball.
+        BallMode.Idle, BallMode.Thinking -> HEARTBEAT_MS
         BallMode.Listening -> RING_PULSE_MS
-        BallMode.Thinking, BallMode.Answered -> 0
+        BallMode.Answered -> 0
     }
     DesignedMotionEffect(period, still) {
         while (period > 0 && !still) {
@@ -219,7 +223,7 @@ fun EightBall(
                 onDrawBehind {
                     with(rings) {
                         draw(
-                            resting = resting.value,
+                            resting = maxOf(resting.value, thinking.value),
                             listening = listening.value,
                             level = voiceMotion(),
                             pulse = pulse.value
@@ -229,7 +233,7 @@ fun EightBall(
             }
             .graphicsLayer {
                 val scale = 1f - PRESS_SHRINK * press.value +
-                    HEARTBEAT_SWELL * beat(pulse.value) * resting.value +
+                    HEARTBEAT_SWELL * beat(pulse.value) * maxOf(resting.value, thinking.value) +
                     VOICE_SWELL * listening.value * voiceMotion() +
                     ANSWER_GROWTH * grown.value
                 scaleX = scale
@@ -338,13 +342,17 @@ private class BallDrawing(
         center = center,
         radius = liquidRadius
     )
-    private val liquidOutline = Path().apply { addOval(Rect(center, liquidRadius)) }
 
-    /** The window's two borders, drawn over the die: a fine light edge and a darker one inside it. */
+    /**
+     * The window's two borders, one against the other, and the glass inside them: the die is
+     * only ever seen through the glass, never across a border.
+     */
     private val rimStroke = Stroke(width = radius * RIM_WIDTH)
     private val rimRadius = liquidRadius - rimStroke.width / 2f
     private val innerRimStroke = Stroke(width = radius * INNER_RIM_WIDTH)
-    private val innerRimRadius = liquidRadius - rimStroke.width - radius * RIM_GAP - innerRimStroke.width / 2f
+    private val innerRimRadius = liquidRadius - rimStroke.width - innerRimStroke.width / 2f
+    private val glassRadius = liquidRadius - rimStroke.width - innerRimStroke.width
+    private val liquidOutline = Path().apply { addOval(Rect(center, glassRadius)) }
     private val dieDepth = liquidRadius * DIE_DEPTH
 
     // The die: a triangle pointing down, close enough to the window that its three corners are
@@ -370,7 +378,29 @@ private class BallDrawing(
     )
     private val dieEdge = Stroke(width = dieRadius * DIE_EDGE_WIDTH, join = StrokeJoin.Round)
 
-    /** A band of light as tall as the die, which [draw] slides across it from left to right. */
+    /**
+     * What the thinking die carries where its answer will be: three bars, as wide as the die
+     * allows at their height, like lines of text not yet written.
+     */
+    private val bars = Path().apply {
+        val dieHeight = dieBottom - dieTop
+        val barHeight = dieHeight * BAR_HEIGHT
+        for (bar in BAR_TOPS.indices) {
+            val halfWidth = dieHalfWidth * BAR_WIDTHS[bar]
+            val top = dieTop + dieHeight * BAR_TOPS[bar]
+            addRoundRect(
+                RoundRect(
+                    left = center.x - halfWidth,
+                    top = top,
+                    right = center.x + halfWidth,
+                    bottom = top + barHeight,
+                    cornerRadius = CornerRadius(barHeight / 2f)
+                )
+            )
+        }
+    }
+
+    /** A band of light as tall as the die, which [draw] slides across the bars from left to right. */
     private val shimmerWidth = dieHalfWidth * SHIMMER_WIDTH
     private val shimmerStart = center.x - dieHalfWidth - shimmerWidth
     private val shimmerTravel = dieHalfWidth * 2f + shimmerWidth
@@ -393,8 +423,8 @@ private class BallDrawing(
      * close enough to fill it.
      * @param tiltDegrees how far the die leans to one side; the answer leans with it.
      * @param colour 0 for the grey die that is still thinking, 1 for the die with its answer.
-     * @param shimmer how far across the die the band of light is, from 0 to 1.
-     * @param shimmerAlpha how much of that light shows.
+     * @param shimmer how far across the die's bars the band of light is, from 0 to 1.
+     * @param shimmerAlpha how much of the bars and of that light shows.
      * @param textAlpha how clearly the answer shows.
      */
     fun DrawScope.draw(
@@ -426,7 +456,8 @@ private class BallDrawing(
                         if (colour < 1f) drawDie(thinkingBrush, alpha = face * (1f - colour))
                         if (colour > 0f) drawDie(dieBrush, alpha = face * colour)
                         if (shimmerAlpha > 0f) {
-                            clipPath(diePath) {
+                            drawPath(bars, Color.White, alpha = face * shimmerAlpha * BAR_ALPHA)
+                            clipPath(bars) {
                                 translate(left = shimmerTravel * shimmer) {
                                     drawRect(
                                         brush = shimmerBrush,
@@ -565,9 +596,18 @@ private const val TEXT_OUT_MS = 100
 private const val SHIMMER_MS = 1400L
 private const val NANOS_PER_MILLI = 1_000_000L
 
-/** The band of light that crosses the thinking die: its width in half-dies, and its strength. */
+/**
+ * The bars on the thinking die, as on the watch: their height and where each one starts, as
+ * shares of the die's height, and their half widths as shares of the die's.
+ */
+private const val BAR_HEIGHT = 0.075f
+private val BAR_TOPS = floatArrayOf(0.2f, 0.345f, 0.49f)
+private val BAR_WIDTHS = floatArrayOf(0.46f, 0.6f, 0.34f)
+private const val BAR_ALPHA = 0.2f
+
+/** The band of light that crosses the bars: its width in half-dies, and its strength. */
 private const val SHIMMER_WIDTH = 0.9f
-private const val SHIMMER_ALPHA = 0.55f
+private const val SHIMMER_ALPHA = 0.5f
 
 private const val PRESS_SHRINK = 0.05f
 private const val VOICE_SWELL = 0.04f
@@ -591,10 +631,9 @@ private const val RING_VOICE_REACH = 0.4f
 private const val RING_ALPHA = 0.07f
 private const val RING_PULSE_MS = 2100
 
-/** The window's borders and the gap between them, relative to the ball's radius. */
+/** The window's two borders, relative to the ball's radius. */
 private const val RIM_WIDTH = 0.012f
-private const val RIM_GAP = 0.022f
-private const val INNER_RIM_WIDTH = 0.02f
+private const val INNER_RIM_WIDTH = 0.03f
 
 /** Radii of the two faces, relative to the ball's. */
 private const val EIGHT_RADIUS = 0.46f

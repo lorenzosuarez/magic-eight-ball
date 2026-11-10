@@ -179,8 +179,9 @@ private fun PredictionWindow(
 ) {
     Layout(
         content = content,
-        // The die comes close enough for its corners to leave the window, which cuts them off;
-        // the two borders are drawn over it.
+        // The die comes close enough for its corners to leave the window, which cuts them off.
+        // The two borders, one against the other, are drawn over it, so the die is only ever
+        // seen inside them.
         modifier = modifier
             .clip(CircleShape)
             .drawWithCache {
@@ -188,7 +189,7 @@ private fun PredictionWindow(
                 val rim = Stroke(width = WindowRimWidth.toPx())
                 val rimRadius = (size.minDimension - rim.width) / 2f
                 val innerRim = Stroke(width = WindowInnerRimWidth.toPx())
-                val innerRimRadius = rimRadius - rim.width / 2f - WindowRimGap.toPx() - innerRim.width / 2f
+                val innerRimRadius = rimRadius - rim.width / 2f - innerRim.width / 2f
                 onDrawWithContent {
                     drawCircle(window)
                     drawContent()
@@ -242,8 +243,7 @@ private const val DIE_DROP_FRACTION = 0.07f
 
 private val WindowFallbackDiameter = 160.dp
 private val WindowRimWidth = 1.dp
-private val WindowRimGap = 1.5.dp
-private val WindowInnerRimWidth = 1.5.dp
+private val WindowInnerRimWidth = 2.5.dp
 
 @Preview(name = "ChatScreen - Wear Round Completed", showBackground = true, widthDp = 192, heightDp = 192)
 @Composable

@@ -24,16 +24,19 @@ object BrandPalette {
     const val BALL_BOTTOM = 0xFF3F4853
 
     /** The window in the ball, from its centre to its edge. */
-    const val WINDOW_CENTER = 0xFF0B1422
-    const val WINDOW_EDGE = 0xFF03070E
+    const val WINDOW_CENTER = 0xFF131C28
+    const val WINDOW_EDGE = 0xFF080D14
 
-    /** The window's two borders: a fine light edge, and a darker one just inside it. */
-    const val WINDOW_RIM = 0xFFC9D1D9
-    const val WINDOW_RIM_INNER = 0xFF1B2430
+    /**
+     * The window's two borders, both in the ball's own greys: a fine edge a little lighter than
+     * the ball, where its surface turns in, and a darker one inside it, in the window's shadow.
+     */
+    const val WINDOW_RIM = 0xFF74808C
+    const val WINDOW_RIM_INNER = 0xFF262E38
 
-    /** The die while the ball thinks: no colour yet. */
-    const val DIE_THINKING_TOP = 0xFF7D8894
-    const val DIE_THINKING_BOTTOM = 0xFF56616D
+    /** The die while the ball thinks: no colour yet, only the ball's grey, a little lighter. */
+    const val DIE_THINKING_TOP = 0xFF737E8A
+    const val DIE_THINKING_BOTTOM = 0xFF5F6975
 
     /** The accent: the die once it carries an answer, and whatever is selected. */
     const val ACCENT = 0xFF7C96FF

@@ -23,7 +23,6 @@ import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -33,7 +32,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Draws [text] in upper case inside an inverted triangle that fills this composable, at the
+ * Draws [text], as it is written, inside an inverted triangle that fills this composable, at the
  * largest font size at which every line stays clear of the slanted edges.
  *
  * The text is measured with the exact style it is drawn with, once per size of the triangle,
@@ -47,19 +46,18 @@ internal fun TriangleFittedText(
 ) {
     val textMeasurer = rememberTextMeasurer()
     val baseStyle = MaterialTheme.typography.bodyMedium
-    // Upper case and hyphenation follow the language of the app, not the one of the device.
+    // Hyphenation follows the language of the app, not the one of the device.
     val locale = Locale(LocalAppLanguage.current.code)
     val style = remember(baseStyle, color, locale) {
         baseStyle.copy(
             color = color,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             localeList = LocaleList(locale),
             textAlign = TextAlign.Center,
             hyphens = Hyphens.Auto,
             lineBreak = LineBreak.Paragraph
         )
     }
-    val displayText = remember(text, locale) { text.toUpperCase(locale) }
 
     Spacer(
         modifier
@@ -72,7 +70,7 @@ internal fun TriangleFittedText(
                     null
                 } else {
                     fitTextInTriangle(
-                        text = displayText,
+                        text = text,
                         style = style,
                         textMeasurer = textMeasurer,
                         triangle = InvertedTriangleGeometry(size),
