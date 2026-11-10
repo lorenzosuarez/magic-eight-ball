@@ -59,6 +59,10 @@ captures/
 *.pem
 *.p12
 keystore.properties
+# Any .properties may hold credentials; only the tracked Gradle ones are allowed
+*.properties
+!/gradle.properties
+!/gradle/wrapper/gradle-wrapper.properties
 PRODUCTION_KEYS.txt
 
 # External native build folder generated in Android Studio for NDK
@@ -80,3 +84,6 @@ fastlane/readme.md
 
 # Mac OS
 .DS_Store
+
+# Kotlin compiler session files
+.kotlin/
