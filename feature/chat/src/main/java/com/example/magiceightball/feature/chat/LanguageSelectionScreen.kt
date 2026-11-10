@@ -3,21 +3,21 @@ package com.example.magiceightball.feature.chat
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.magiceightball.core.domain.model.AppLanguage
-import com.example.magiceightball.feature.chat.components.ConsoleMenu
-import com.example.magiceightball.feature.chat.components.ConsoleOption
+import com.example.magiceightball.feature.chat.components.SettingsMenu
+import com.example.magiceightball.feature.chat.components.SettingsOption
 
 @Composable
 fun LanguageSelectionScreen(
     selectedLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit
 ) {
-    ConsoleMenu(title = localizedString(Strings.LanguageTitle)) {
-        ConsoleOption(
+    SettingsMenu(title = localizedString(Strings.LanguageTitle)) {
+        SettingsOption(
             label = localizedString(Strings.LanguageEnglish),
             isSelected = selectedLanguage == AppLanguage.ENGLISH,
             onClick = { onLanguageSelected(AppLanguage.ENGLISH) }
         )
-        ConsoleOption(
+        SettingsOption(
             label = localizedString(Strings.LanguageSpanish),
             isSelected = selectedLanguage == AppLanguage.SPANISH,
             onClick = { onLanguageSelected(AppLanguage.SPANISH) }

@@ -17,26 +17,28 @@
     <string name="answer_fallback_es">Pregunta más tarde</string>
 
     <!-- Language selection: each language is listed under its own name -->
-    <string name="lang_title">LANGUAGE:</string>
-    <string name="lang_title_es">IDIOMA:</string>
-    <string name="lang_english" translatable="false">ENGLISH</string>
-    <string name="lang_spanish" translatable="false">ESPAÑOL</string>
+    <string name="lang_title">Language</string>
+    <string name="lang_title_es">Idioma</string>
+    <string name="lang_english" translatable="false">English</string>
+    <string name="lang_spanish" translatable="false">Español</string>
 
     <!-- Personality selection -->
-    <string name="personality_title">PERSONALITY:</string>
-    <string name="personality_title_es">PERSONALIDAD:</string>
-    <string name="personality_sarcastic">SARCASTIC</string>
-    <string name="personality_sarcastic_es">SARCÁSTICO</string>
-    <string name="personality_mystical">MYSTICAL</string>
-    <string name="personality_mystical_es">MÍSTICO</string>
+    <string name="personality_title">Answer style</string>
+    <string name="personality_title_es">Estilo de respuesta</string>
+    <string name="personality_sarcastic">Sarcastic</string>
+    <string name="personality_sarcastic_es">Sarcástico</string>
+    <string name="personality_mystical">Mystical</string>
+    <string name="personality_mystical_es">Místico</string>
+    <string name="personality_neutral">Neutral</string>
+    <string name="personality_neutral_es">Neutro</string>
 
     <!-- AI answers selection -->
-    <string name="ai_title">AI ANSWERS:</string>
-    <string name="ai_title_es">RESPUESTAS IA:</string>
-    <string name="ai_on">ON</string>
-    <string name="ai_on_es">SÍ</string>
-    <string name="ai_off">OFF</string>
-    <string name="ai_off_es">NO</string>
+    <string name="ai_title">AI answers</string>
+    <string name="ai_title_es">Respuestas con IA</string>
+    <string name="ai_on">On</string>
+    <string name="ai_on_es">Sí</string>
+    <string name="ai_off">Off</string>
+    <string name="ai_off_es">No</string>
     <string name="ai_unavailable">Not available yet</string>
     <string name="ai_unavailable_es">Aún no disponible</string>
 </resources>

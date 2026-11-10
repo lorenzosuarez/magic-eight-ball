@@ -72,11 +72,12 @@ private const val MAX_SWAY_DEGREES = 3f
 private const val SUBMERGED_SCALE = 0.9f
 private val SUBMERGED_DEPTH = 4.dp
 
+/** No overshoot, as on the phone: the die arrives and stays. */
 private val SurfacingSpec = spring<Float>(
-    dampingRatio = Spring.DampingRatioMediumBouncy,
+    dampingRatio = Spring.DampingRatioNoBouncy,
     stiffness = Spring.StiffnessLow
 )
 private val SettleSpec = spring<Float>(
-    dampingRatio = Spring.DampingRatioMediumBouncy,
+    dampingRatio = Spring.DampingRatioNoBouncy,
     stiffness = Spring.StiffnessMediumLow
 )

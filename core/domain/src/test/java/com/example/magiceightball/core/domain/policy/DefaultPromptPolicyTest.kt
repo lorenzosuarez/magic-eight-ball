@@ -44,6 +44,17 @@ class DefaultPromptPolicyTest {
     }
 
     @Test
+    fun `the neutral style asks for plain answers, without jokes or riddles`() {
+        val prompt = policy.getSystemPrompt("en", Magic8BallPersonality.NEUTRAL)
+
+        assertTrue("neutrally" in prompt)
+        assertTrue("no jokes" in prompt)
+        assertTrue("Max 6 words." in prompt)
+        assertNotEquals(prompt, policy.getSystemPrompt("en", Magic8BallPersonality.SARCASTIC))
+        assertNotEquals(prompt, policy.getSystemPrompt("en", Magic8BallPersonality.MYSTICAL))
+    }
+
+    @Test
     fun `without a question the prompt is the fixed one the watch has always sent`() {
         assertEquals(
             "You are a sarcastic, witty Magic 8 Ball. Be creative, funny, and rarely optimistic." +

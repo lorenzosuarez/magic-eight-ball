@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -17,13 +18,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.paint
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -36,12 +33,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.wear.compose.foundation.pager.VerticalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import com.example.magiceightball.core.designsystem.theme.MagicEightBallTheme
+import com.example.magiceightball.feature.chat.components.BallColors
 import com.example.magiceightball.feature.chat.components.PredictionTriangle
 import com.example.magiceightball.feature.chat.components.PredictionTriangleAnimator
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.min
 import kotlin.math.roundToInt
-import com.example.magiceightball.core.designsystem.R as DesignR
 
 @Composable
 fun ChatScreen(
@@ -108,18 +105,15 @@ private fun ChatHaptics(effects: Flow<ChatEffect>) {
 }
 
 /**
- * The ball: a static background with the title (idle) or the die (thinking / answer) sliding
- * over it. Only the foreground takes part in the transition.
+ * The ball, which is the whole screen: its "8" (idle) or its window with the die (thinking /
+ * answer) sliding over it. Only the foreground takes part in the transition.
  */
 @Composable
 fun ChatScreenContent(state: ChatState, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .paint(
-                painter = painterResource(id = DesignR.drawable.ic_eight_ball_background),
-                contentScale = ContentScale.Crop
-            )
+            .background(BallColors.Ball)
     ) {
         AnimatedContent(
             targetState = state.machineState,
@@ -183,12 +177,8 @@ private fun PredictionWindow(
     Layout(
         content = content,
         modifier = modifier.drawWithCache {
-            val border = Stroke(width = WindowBorderWidth.toPx())
-            val borderRadius = (size.minDimension - border.width) / 2f
-            onDrawBehind {
-                drawCircle(WindowColor)
-                drawCircle(WindowBorderColor, radius = borderRadius, style = border)
-            }
+            val window = Brush.radialGradient(listOf(BallColors.WindowCenter, BallColors.WindowEdge))
+            onDrawBehind { drawCircle(window) }
         }
     ) { measurables, constraints ->
         val diameter = min(constraints.maxWidth, constraints.maxHeight)
@@ -232,9 +222,6 @@ private const val DIE_HEIGHT_FRACTION = 0.75f
 private const val DIE_DROP_FRACTION = 0.0875f
 
 private val WindowFallbackDiameter = 160.dp
-private val WindowBorderWidth = 2.dp
-private val WindowColor = Color.Black
-private val WindowBorderColor = Color.Gray
 
 @Preview(name = "ChatScreen - Wear Round Completed", showBackground = true, widthDp = 192, heightDp = 192)
 @Composable

@@ -52,6 +52,7 @@
     <string name="settings_style">Answer style</string>
     <string name="style_sarcastic">Sarcastic</string>
     <string name="style_mystical">Mystical</string>
+    <string name="style_neutral">Neutral</string>
     <string name="settings_ai">AI answers</string>
     <string name="settings_ai_on">Written by Gemini, just for you</string>
     <string name="settings_ai_off">Classic answers from the app</string>

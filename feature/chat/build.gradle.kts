@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
     alias(libs.plugins.hilt)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -23,6 +24,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+    testOptions {
+        // Robolectric renders the real screens for the screenshot test, so it needs the resources.
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -52,4 +57,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.ui.test.junit4)
 }

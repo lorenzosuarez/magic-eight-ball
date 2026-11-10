@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -24,7 +25,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.em
+import com.example.magiceightball.core.common.BrandPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -93,6 +95,7 @@ fun EightBall(
     val dieSize = remember { Animatable(if (answered) 1f else DIE_THINKING_SIZE) }
     val dieTurn = remember { Animatable(0f) }
     val text = remember { Animatable(if (answered) 1f else 0f) }
+    val colour = remember { Animatable(if (answered) 1f else 0f) }
     val turning = remember { TurnMemory() }
     // The die keeps its text while it fades, after the answer is gone from the state.
     val shownAnswer = remember { LastAnswer() }.also { if (answer != null) it.text = answer }.text
@@ -103,6 +106,7 @@ fun EightBall(
         when (mode) {
             BallMode.Thinking -> {
                 launch { text.animateTo(0f, tween(TEXT_OUT_MS)) }
+                launch { colour.animateTo(0f, tween(TEXT_OUT_MS)) }
                 launch { face.animateTo(1f, FaceSpring) }
                 launch { dieSize.animateTo(DIE_THINKING_SIZE, tween(DIE_RESIZE_MS)) }
                 if (!reducedMotion) {
@@ -117,6 +121,11 @@ fun EightBall(
             BallMode.Answered -> {
                 launch { face.animateTo(1f, FaceSpring) }
                 launch { dieSize.animateTo(1f, GrowSpring) }
+                // Colour is the answer arriving: it washes over the die as it slows down.
+                launch {
+                    delay(COLOUR_IN_DELAY_MS)
+                    colour.animateTo(1f, tween(COLOUR_IN_MS))
+                }
                 launch {
                     delay(TEXT_IN_DELAY_MS)
                     text.animateTo(1f, tween(TEXT_IN_MS))
@@ -130,6 +139,7 @@ fun EightBall(
             BallMode.Idle, BallMode.Listening -> {
                 launch { text.animateTo(0f, tween(TEXT_OUT_MS)) }
                 face.animateTo(0f, tween(FACE_BACK_MS))
+                colour.snapTo(0f)
                 dieTurn.snapTo(0f)
                 dieSize.snapTo(DIE_THINKING_SIZE)
             }
@@ -162,8 +172,8 @@ fun EightBall(
         label = "grown"
     )
 
-    // One clock for the heartbeat, the rings and the die's shimmer: it runs only while one of
-    // them is on screen.
+    // One clock for the heartbeat, the rings and the light that crosses the die: it runs only
+    // while one of them is on screen.
     val pulse = remember { Animatable(0f) }
     val period = when (mode) {
         BallMode.Idle -> HEARTBEAT_MS
@@ -195,11 +205,7 @@ fun EightBall(
                             resting = resting.value,
                             listening = listening.value,
                             level = voiceMotion(),
-                            pulse = pulse.value,
-                            // Light gathers while the ball thinks, and settles as the answer
-                            // becomes readable.
-                            aura = AURA_THINKING * thinking.value * (AURA_REST + (1f - AURA_REST) * beat(pulse.value)) +
-                                grown.value * (AURA_ANSWER + (AURA_ARRIVAL - AURA_ANSWER) * (1f - text.value))
+                            pulse = pulse.value
                         )
                     }
                 }
@@ -226,9 +232,9 @@ fun EightBall(
                             face = face.value,
                             dieSize = dieSize.value,
                             dieTurnDegrees = dieTurn.value,
-                            rim = maxOf(thinking.value, grown.value),
-                            // While it turns, the die's light comes and goes, barely.
-                            dieAlpha = 1f - SHIMMER_DEPTH * beat(pulse.value) * thinking.value,
+                            colour = colour.value,
+                            shimmer = pulse.value,
+                            shimmerAlpha = thinking.value,
                             textAlpha = text.value
                         )
                     }
@@ -251,24 +257,10 @@ private class TurnMemory {
     var turning = false
 }
 
-/**
- * What surrounds the ball: a faint halo at rest, rings while listening, and a soft coloured
- * light behind it while it thinks and answers.
- */
+/** What surrounds the ball: a faint halo at rest and rings while listening. */
 private class BallRings(private val center: Offset, private val radius: Float) {
-    private val auraRadius = radius * AURA_REACH
-    private val auraBrush = Brush.radialGradient(
-        0f to AccentViolet,
-        0.45f to AccentBlue.copy(alpha = 0.5f),
-        1f to AccentBlue.copy(alpha = 0f),
-        center = center,
-        radius = auraRadius
-    )
 
-    fun DrawScope.draw(resting: Float, listening: Float, level: Float, pulse: Float, aura: Float) {
-        if (aura > 0f) {
-            drawCircle(auraBrush, auraRadius, center, alpha = aura.coerceIn(0f, 1f))
-        }
+    fun DrawScope.draw(resting: Float, listening: Float, level: Float, pulse: Float) {
         // At rest: one halo that follows the heartbeat.
         if (resting > 0f) {
             drawCircle(
@@ -326,22 +318,11 @@ private class BallDrawing(
         y = center.y - eight.size.height / 2f
     )
 
-    /**
-     * The rim's light: the accent colours going round three times, so that a third of a turn
-     * brings it back onto itself, as it does the die it turns with.
-     */
-    private val rimStroke = Stroke(width = radius * RIM_WIDTH)
-    private val rimRadius = radius * (1f - RIM_WIDTH / 2f)
-    private val rimBrush = Brush.sweepGradient(
-        colors = List(RIM_REPEATS) { listOf(AccentBlue, AccentViolet, AccentCyan) }.flatten() + AccentBlue,
-        center = center
-    )
-
     // The window side.
     private val liquidRadius = radius * WINDOW_RADIUS
     private val liquidBrush = Brush.radialGradient(
-        0f to LiquidLit,
-        1f to LiquidDeep,
+        0f to WindowCenter,
+        1f to WindowEdge,
         center = center,
         radius = liquidRadius
     )
@@ -358,15 +339,30 @@ private class BallDrawing(
         lineTo(center.x, center.y + dieRadius)
         close()
     }
-    private val dieBrush = Brush.linearGradient(
-        0f to AccentBlue,
-        0.55f to DieMid,
-        1f to DieDeep,
-        start = Offset(center.x - dieHalfWidth, dieTop),
-        end = Offset(center.x + dieHalfWidth * DIE_LIGHT_SLANT, center.y + dieRadius)
+    private val dieBottom = center.y + dieRadius
+
+    /** The die with its answer, and the die that has none yet. */
+    private val dieBrush = Brush.verticalGradient(0f to Accent, 1f to AccentDeep, startY = dieTop, endY = dieBottom)
+    private val thinkingBrush = Brush.verticalGradient(
+        0f to DieThinkingTop,
+        1f to DieThinkingBottom,
+        startY = dieTop,
+        endY = dieBottom
     )
-    private val dieHighlight = Stroke(width = dieRadius * DIE_HIGHLIGHT_WIDTH, join = StrokeJoin.Round)
     private val dieEdge = Stroke(width = dieRadius * DIE_EDGE_WIDTH, join = StrokeJoin.Round)
+
+    /** A band of light as tall as the die, which [draw] slides across it from left to right. */
+    private val shimmerWidth = dieHalfWidth * SHIMMER_WIDTH
+    private val shimmerStart = center.x - dieHalfWidth - shimmerWidth
+    private val shimmerTravel = dieHalfWidth * 2f + shimmerWidth
+    private val shimmerSize = Size(shimmerWidth, dieBottom - dieTop)
+    private val shimmerBrush = Brush.horizontalGradient(
+        0f to Color.White.copy(alpha = 0f),
+        0.5f to Color.White.copy(alpha = SHIMMER_ALPHA),
+        1f to Color.White.copy(alpha = 0f),
+        startX = shimmerStart,
+        endX = shimmerStart + shimmerWidth
+    )
 
     private val answerLayout: FittedText? = answer?.takeIf { it.isNotBlank() }?.let {
         fitInDie(it, textMeasurer, density)
@@ -376,23 +372,21 @@ private class BallDrawing(
      * @param face 0 for the "8", 1 for the window; in between one gives way to the other.
      * @param dieSize the die's size relative to the one it has at rest with its answer.
      * @param dieTurnDegrees how far the die has turned around its centre.
-     * @param rim how brightly the coloured rim shows; it turns with the die.
+     * @param colour 0 for the grey die that is still thinking, 1 for the die with its answer.
+     * @param shimmer how far across the die the band of light is, from 0 to 1.
+     * @param shimmerAlpha how much of that light shows.
      * @param textAlpha how clearly the answer shows; it is never turned with the die.
      */
     fun DrawScope.draw(
         face: Float,
         dieSize: Float,
         dieTurnDegrees: Float,
-        rim: Float,
-        dieAlpha: Float,
+        colour: Float,
+        shimmer: Float,
+        shimmerAlpha: Float,
         textAlpha: Float
     ) {
         drawCircle(discBrush, radius, center)
-        if (rim > 0f) {
-            rotate(dieTurnDegrees, pivot = center) {
-                drawCircle(rimBrush, rimRadius, center, alpha = rim, style = rimStroke)
-            }
-        }
 
         if (face < 1f) {
             scale(1f - FACE_SHRINK * face, pivot = center) {
@@ -408,9 +402,20 @@ private class BallDrawing(
                         rotate(dieTurnDegrees, pivot = center)
                         scale(dieSize, pivot = center)
                     }) {
-                        drawPath(diePath, dieBrush, alpha = face * dieAlpha)
-                        drawPath(diePath, dieBrush, alpha = face * dieAlpha, style = dieEdge)
-                        drawPath(diePath, DieHighlight, alpha = face * dieAlpha * DIE_HIGHLIGHT_ALPHA, style = dieHighlight)
+                        if (colour < 1f) drawDie(thinkingBrush, alpha = face * (1f - colour))
+                        if (colour > 0f) drawDie(dieBrush, alpha = face * colour)
+                        if (shimmerAlpha > 0f) {
+                            clipPath(diePath) {
+                                translate(left = shimmerTravel * shimmer) {
+                                    drawRect(
+                                        brush = shimmerBrush,
+                                        topLeft = Offset(shimmerStart, dieTop),
+                                        size = shimmerSize,
+                                        alpha = face * shimmerAlpha
+                                    )
+                                }
+                            }
+                        }
                     }
                     if (textAlpha > 0f) {
                         // The answer comes forward as it clears.
@@ -421,6 +426,12 @@ private class BallDrawing(
                 }
             }
         }
+    }
+
+    /** The die, with an outline in its own colours that rounds its corners. */
+    private fun DrawScope.drawDie(brush: Brush, alpha: Float) {
+        drawPath(diePath, brush, alpha = alpha)
+        drawPath(diePath, brush, alpha = alpha, style = dieEdge)
     }
 
     /**
@@ -518,29 +529,20 @@ private const val DIE_SYMMETRY = 120f
 
 /** The least the die still turns once the answer is here, so it never stops dead. */
 private const val DIE_BRAKING_DEGREES = 70f
-private const val SHIMMER_MS = 1300
-private const val SHIMMER_DEPTH = 0.18f
+private const val SHIMMER_MS = 1500
 /** The answer waits for the die to be all but still. */
 private const val TEXT_IN_DELAY_MS = 750L
 private const val TEXT_IN_MS = 320
 private const val TEXT_OUT_MS = 100
 private const val TEXT_START_SCALE = 0.94f
 
-/** The light behind the ball: how far it reaches and how strong it is at each moment. */
-private const val AURA_REACH = 1.9f
-private const val AURA_THINKING = 0.26f
-private const val AURA_REST = 0.55f
-private const val AURA_ARRIVAL = 0.34f
-private const val AURA_ANSWER = 0.16f
+/** The answer's colour and then its text, each once the die has slowed enough for it. */
+private const val COLOUR_IN_DELAY_MS = 250L
+private const val COLOUR_IN_MS = 520
 
-/** The coloured rim, relative to the ball's radius. */
-private const val RIM_WIDTH = 0.035f
-private const val RIM_REPEATS = 3
-
-/** The die's light falls from its upper left corner; its edge catches a little of it. */
-private const val DIE_LIGHT_SLANT = 0.3f
-private const val DIE_HIGHLIGHT_WIDTH = 0.012f
-private const val DIE_HIGHLIGHT_ALPHA = 0.45f
+/** The band of light that crosses the thinking die: its width in half-dies, and its strength. */
+private const val SHIMMER_WIDTH = 1.1f
+private const val SHIMMER_ALPHA = 0.38f
 
 private const val PRESS_SHRINK = 0.05f
 private const val VOICE_SWELL = 0.04f
@@ -585,15 +587,11 @@ private const val SIN_60 = 0.8660254f
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
 
 private val RingColor = Color.White
-private val DiscTop = Color(0xFF5C6773)
-private val DiscBottom = Color(0xFF3F4853)
-private val LiquidLit = Color(0xFF141C52)
-private val LiquidDeep = Color(0xFF05081C)
-
-/** The accent, in the three tones the rim and the light behind the ball go through. */
-private val AccentBlue = Color(0xFF6C8AFF)
-private val AccentViolet = Color(0xFF9D7BFF)
-private val AccentCyan = Color(0xFF5CC8FF)
-private val DieMid = Color(0xFF5A5BF0)
-private val DieDeep = Color(0xFF3A2FC0)
-private val DieHighlight = Color(0xFFDDE3FF)
+private val DiscTop = Color(BrandPalette.BALL_TOP)
+private val DiscBottom = Color(BrandPalette.BALL_BOTTOM)
+private val WindowCenter = Color(BrandPalette.WINDOW_CENTER)
+private val WindowEdge = Color(BrandPalette.WINDOW_EDGE)
+private val DieThinkingTop = Color(BrandPalette.DIE_THINKING_TOP)
+private val DieThinkingBottom = Color(BrandPalette.DIE_THINKING_BOTTOM)
+private val Accent = Color(BrandPalette.ACCENT)
+private val AccentDeep = Color(BrandPalette.ACCENT_DEEP)
