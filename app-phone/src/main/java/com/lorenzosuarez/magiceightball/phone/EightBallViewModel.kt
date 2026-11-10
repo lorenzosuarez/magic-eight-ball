@@ -199,8 +199,8 @@ class EightBallViewModel @Inject constructor(
     }
 
     /**
-     * The microphone button, and the equivalent of holding for users who cannot hold: the first
-     * call starts listening and the next one ends the question. The question also ends by itself after a pause.
+     * The equivalent of holding for users who cannot hold: the first call starts listening and
+     * the next one ends the question. The question also ends by itself after a pause.
      */
     fun toggleVoiceQuestion() {
         if (phase.value is BallPhase.Listening) {
