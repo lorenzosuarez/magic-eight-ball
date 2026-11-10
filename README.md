@@ -67,15 +67,33 @@ Built with modern Android development standards and best practices:
 The project follows a strict **Clean Architecture** pattern, modularized to separate concerns and ensure scalability:
 
 ```text
-:app-wear           # Application entry point & DI orchestration
-├── :feature:chat   # Presentation layer (UI, ViewModel)
+:app-wear           # Wear OS application: entry point & DI orchestration
+├── :feature:chat   # Wear presentation layer (UI, ViewModel)
+:app-phone          # Phone/tablet application: single Compose (Material 3) screen & its ViewModel
 ├── :core:domain    # Business logic (UseCases, Repository Interfaces, Policies)
 ├── :core:data      # Data implementation (Repositories, DataSources, API)
 ├── :core:network   # Network infrastructure (Retrofit, OkHttp, API Keys)
 ├── :core:motion    # Sensor logic & Shake detection strategy
 ├── :core:common    # Shared utilities & configurations
-└── :core:designsystem # Theming, Color, Type
+└── :core:designsystem # Wear theming, Color, Type
 ```
+
+Both applications share `:core:domain`, `:core:data`, `:core:network`, `:core:motion` and `:core:common`, so the bundled answers, the Gemini layer and the shake detection are the same code on the watch and on the phone.
+
+### Phone & tablet app
+
+`:app-phone` exists so the app can also be tested and installed on phones and tablets. One screen: an optional question field, the ball (tap it or shake the device), the animated answer, a personality switch and the last 5 answers (kept in memory only). The typed question never leaves the device: it is only shown on screen, and the request for an answer is the same fixed trigger the watch sends.
+
+### Builds & version codes
+
+Google Play pairs the two apps through the **same `applicationId`** (`com.lorenzosuarez.magiceightball`) and the **same signing key**; the version codes must never collide:
+
+| Module | Version codes | Min SDK | Release build |
+|:---|:---|:---|:---|
+| `:app-phone` | 1, 2, 3… | 26 | `./gradlew :app-phone:bundleRelease` |
+| `:app-wear` | 101, 102, 103… | 30 | `./gradlew :app-wear:bundleRelease` |
+
+Release signing is configured once, in `gradle/release-signing.gradle`, for both modules. The credentials stay outside the repository (`~/.android-keys/magic8ball-keystore.properties` by default; override with `-Pmagic8ball.keystoreProperties=...` or `MAGIC8BALL_KEYSTORE_PROPERTIES`). Without them a release build still succeeds, unsigned.
 
 ## Setup & Configuration ⚙️
 
@@ -88,7 +106,7 @@ The app builds and runs with no setup at all: without Firebase it answers from t
 
 2.  **Enable Gemini from the Firebase console (optional)**:
     *   Create a Firebase project and add an Android app with the package `com.lorenzosuarez.magiceightball`.
-    *   Download `google-services.json` into `app-wear/` (git-ignored).
+    *   Download `google-services.json` into `app-wear/` and `app-phone/` (git-ignored; the same file, since both apps share the package).
     *   In **Remote Config**, add and publish two parameters:
 
         | Parameter | Type | Meaning |
@@ -103,7 +121,7 @@ The app builds and runs with no setup at all: without Firebase it answers from t
     `GEMINI_API_KEY=...` in the git-ignored `local.properties` is compiled into **debug** builds only and is used when Remote Config provides no key. Release builds never embed a key.
 
 4.  **Build & Run**:
-    Open the project in Android Studio (Koala or later recommended) and deploy to a Wear OS emulator or physical device.
+    Open the project in Android Studio (Koala or later recommended) and deploy `app-wear` to a Wear OS emulator or watch, or `app-phone` to a phone or tablet (`./gradlew :app-wear:assembleDebug` / `./gradlew :app-phone:assembleDebug`).
 
 ## License 📄
 

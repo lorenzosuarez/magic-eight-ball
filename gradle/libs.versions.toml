@@ -16,6 +16,8 @@ retrofit = "2.11.0"
 okhttp = "4.12.0"
 serialization = "1.7.3"
 junit = "4.13.2"
+robolectric = "4.14.1"
+roborazzi = "1.50.0"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
 appcompat = "1.7.0"
@@ -39,6 +41,7 @@ compose-foundation = { group = "androidx.wear.compose", name = "compose-foundati
 compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "composeFoundation" }
 wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
 wear-input = { group = "androidx.wear", name = "wear-input", version = "1.1.0" }
+material3 = { group = "androidx.compose.material3", name = "material3" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 javax-inject = { group = "javax.inject", name = "javax.inject", version = "1" }
@@ -74,6 +77,9 @@ firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 
 # Test
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -88,4 +94,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 
