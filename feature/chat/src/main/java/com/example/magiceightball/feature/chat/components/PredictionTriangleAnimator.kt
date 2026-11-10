@@ -20,10 +20,11 @@ import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.launch
 
 /**
- * Motion of the die inside the ball.
+ * Motion of the die inside the ball, the same as on the phone.
  *
- * While [isThinking] the die hangs slightly deeper in the liquid and sways from side to side.
- * When the answer is in, it floats up to the window and the sway settles with a spring.
+ * While [isThinking] the die hangs deep in the liquid, small, and sways from side to side.
+ * When the answer is in, it floats up until it fills the window; coming up tips it over, and
+ * the liquid rocks it upright, each swing smaller than the one before.
  *
  * All values are read inside [graphicsLayer], so the motion only updates layer properties:
  * no recomposition, no layout and no redrawing of [content].
@@ -49,7 +50,7 @@ fun PredictionTriangleAnimator(
                 )
             )
         } else {
-            sway.animateTo(0f, SettleSpec)
+            sway.animateTo(0f, SettleSpec, initialVelocity = RISE_TIP_SWAYS_PER_SECOND)
         }
     }
 
@@ -67,17 +68,16 @@ fun PredictionTriangleAnimator(
     )
 }
 
-private const val SWAY_MILLIS = 700
-private const val MAX_SWAY_DEGREES = 3f
-private const val SUBMERGED_SCALE = 0.9f
-private val SUBMERGED_DEPTH = 4.dp
+private const val SWAY_MILLIS = 1300
+private const val MAX_SWAY_DEGREES = 7f
+private const val SUBMERGED_SCALE = 0.5f
+private val SUBMERGED_DEPTH = 12.dp
 
-/** No overshoot, as on the phone: the die arrives and stays. */
-private val SurfacingSpec = spring<Float>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessLow
-)
-private val SettleSpec = spring<Float>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessMediumLow
-)
+/** The push to one side that coming up gives the die, in sways per second. */
+private const val RISE_TIP_SWAYS_PER_SECOND = -21f
+
+/** The die comes up without overshoot: it arrives and stays. */
+private val SurfacingSpec = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 55f)
+
+/** The die rocking upright: it passes the vertical a few times, each time by less, and stops. */
+private val SettleSpec = spring<Float>(dampingRatio = 0.28f, stiffness = 34f)

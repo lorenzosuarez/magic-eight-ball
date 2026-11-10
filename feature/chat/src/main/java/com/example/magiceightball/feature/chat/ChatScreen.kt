@@ -12,13 +12,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
@@ -176,10 +179,23 @@ private fun PredictionWindow(
 ) {
     Layout(
         content = content,
-        modifier = modifier.drawWithCache {
-            val window = Brush.radialGradient(listOf(BallColors.WindowCenter, BallColors.WindowEdge))
-            onDrawBehind { drawCircle(window) }
-        }
+        // The die comes close enough for its corners to leave the window, which cuts them off;
+        // the two borders are drawn over it.
+        modifier = modifier
+            .clip(CircleShape)
+            .drawWithCache {
+                val window = Brush.radialGradient(listOf(BallColors.WindowCenter, BallColors.WindowEdge))
+                val rim = Stroke(width = WindowRimWidth.toPx())
+                val rimRadius = (size.minDimension - rim.width) / 2f
+                val innerRim = Stroke(width = WindowInnerRimWidth.toPx())
+                val innerRimRadius = rimRadius - rim.width / 2f - WindowRimGap.toPx() - innerRim.width / 2f
+                onDrawWithContent {
+                    drawCircle(window)
+                    drawContent()
+                    drawCircle(BallColors.WindowRimInner, radius = innerRimRadius, style = innerRim)
+                    drawCircle(BallColors.WindowRim, radius = rimRadius, style = rim)
+                }
+            }
     ) { measurables, constraints ->
         val diameter = min(constraints.maxWidth, constraints.maxHeight)
             .takeIf { it != Constraints.Infinity }
@@ -216,12 +232,18 @@ private val ExitToStart =
 /** Share of the screen taken by the window (160dp on a 192dp screen). */
 private const val WINDOW_SCREEN_FRACTION = 0.83f
 
-/** Die box relative to the window diameter: 136 x 120 dp, 14 dp below centre, in a 160 dp window. */
-private const val DIE_WIDTH_FRACTION = 0.85f
-private const val DIE_HEIGHT_FRACTION = 0.75f
-private const val DIE_DROP_FRACTION = 0.0875f
+/**
+ * Die box relative to the window diameter. Nearly as wide as the window: the risen die fills
+ * most of it and its top corners go out of sight, so there is always die under the answer.
+ */
+private const val DIE_WIDTH_FRACTION = 0.96f
+private const val DIE_HEIGHT_FRACTION = 0.86f
+private const val DIE_DROP_FRACTION = 0.07f
 
 private val WindowFallbackDiameter = 160.dp
+private val WindowRimWidth = 1.dp
+private val WindowRimGap = 1.5.dp
+private val WindowInnerRimWidth = 1.5.dp
 
 @Preview(name = "ChatScreen - Wear Round Completed", showBackground = true, widthDp = 192, heightDp = 192)
 @Composable

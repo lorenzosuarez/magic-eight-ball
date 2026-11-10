@@ -27,6 +27,10 @@ object BrandPalette {
     const val WINDOW_CENTER = 0xFF0B1422
     const val WINDOW_EDGE = 0xFF03070E
 
+    /** The window's two borders: a fine light edge, and a darker one just inside it. */
+    const val WINDOW_RIM = 0xFFC9D1D9
+    const val WINDOW_RIM_INNER = 0xFF1B2430
+
     /** The die while the ball thinks: no colour yet. */
     const val DIE_THINKING_TOP = 0xFF7D8894
     const val DIE_THINKING_BOTTOM = 0xFF56616D

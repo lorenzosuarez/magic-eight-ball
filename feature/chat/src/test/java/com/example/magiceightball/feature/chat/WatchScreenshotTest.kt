@@ -67,8 +67,15 @@ class WatchScreenshotTest {
     }
 
     @Test
-    fun answer() = capture("watch_3_answer") {
+    fun answer() = capture("watch_3_answer", settleMs = ANSWER_SETTLE_MS) {
         ChatScreenContent(ChatState(machineState = ChatStateMachine.Completed(AnswerText.Plain("Without a doubt."))))
+    }
+
+    @Test
+    fun longest_answer_spanish() = capture("watch_6_longest_answer_spanish", AppLanguage.SPANISH, ANSWER_SETTLE_MS) {
+        ChatScreenContent(
+            ChatState(machineState = ChatStateMachine.Completed(AnswerText.Plain("Concéntrate y pregunta.")))
+        )
     }
 
     @Test
@@ -84,6 +91,7 @@ class WatchScreenshotTest {
     private fun capture(
         name: String,
         language: AppLanguage = AppLanguage.ENGLISH,
+        settleMs: Long = SETTLE_MS,
         content: @Composable () -> Unit
     ) {
         compose.mainClock.autoAdvance = false
@@ -92,12 +100,15 @@ class WatchScreenshotTest {
                 CompositionLocalProvider(LocalAppLanguage provides language, content = content)
             }
         }
-        compose.mainClock.advanceTimeBy(SETTLE_MS)
+        compose.mainClock.advanceTimeBy(settleMs)
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/$name.png")
     }
 
     private companion object {
         /** Long enough for every entrance to finish; the thinking die is caught mid-motion. */
         const val SETTLE_MS = 2_000L
+
+        /** Long enough for the die to have stopped rocking. */
+        const val ANSWER_SETTLE_MS = 8_000L
     }
 }

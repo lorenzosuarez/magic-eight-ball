@@ -28,6 +28,10 @@ internal object BallColors {
     val WindowCenter = Color(BrandPalette.WINDOW_CENTER)
     val WindowEdge = Color(BrandPalette.WINDOW_EDGE)
 
+    /** The window's two borders: a fine light edge, and a darker one just inside it. */
+    val WindowRim = Color(BrandPalette.WINDOW_RIM)
+    val WindowRimInner = Color(BrandPalette.WINDOW_RIM_INNER)
+
     /** The die while the ball thinks, and the die with its answer. */
     val DieThinking = Brush.verticalGradient(
         listOf(Color(BrandPalette.DIE_THINKING_TOP), Color(BrandPalette.DIE_THINKING_BOTTOM))
