@@ -7,9 +7,11 @@ plugins {
 }
 
 // Firebase is optional: without app-wear/google-services.json the app builds and runs offline-only
-// (Remote Config is unavailable, so Gemini stays off unless a local GEMINI_API_KEY is provided).
+// (Remote Config is unavailable, so Gemini stays off unless a local GEMINI_API_KEY is provided, and
+// crashes are not reported).
 if (file("google-services.json").isFile) {
     apply(plugin = libs.plugins.google.services.get().pluginId)
+    apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
 }
 
 // Same upload key as :app-phone; see the script for where the credentials are read from.
@@ -60,6 +62,10 @@ dependencies {
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+
+    // Crash reports, so a failure in the field can be found and fixed.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
