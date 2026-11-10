@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- What to do, above the ball: one title and one supporting line per stage -->
-    <string name="idle_title_voice">Mantén presionada la bola y pregunta</string>
-    <string name="idle_hint_voice">O tócala, o agita el teléfono, para una respuesta rápida</string>
-    <string name="idle_title_tap">Toca la bola para preguntar</string>
-    <string name="idle_hint_tap">O agita el teléfono</string>
-    <string name="listening_title">Te escucho…</string>
-    <string name="listening_hint_hold">Suelta cuando termines</string>
-    <string name="listening_hint_hands_free">Toca la bola cuando termines</string>
-    <string name="thinking_title">Pensando…</string>
-    <string name="thinking_hint">Un momento</string>
-    <string name="answer_title">La bola dice</string>
+    <!-- The one line under the ball -->
+    <string name="hint_voice">Mantén presionado para preguntar</string>
+    <string name="hint_tap">Toca para preguntar</string>
+    <string name="hint_listening">Te escucho…</string>
+    <string name="hint_listening_hands_free">Te escucho… toca cuando termines</string>
     <string name="notice_microphone_denied">El micrófono está desactivado: toca o agita para preguntar. Puedes permitirlo en configuración.</string>
     <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas. Toca o agita para preguntar.</string>
 
@@ -22,16 +16,13 @@
     <string name="action_cancel">Cancelar</string>
     <string name="source_ai">IA</string>
     <string name="source_classic">Clásica</string>
-    <string name="source_ai_answer">Respuesta con IA</string>
-    <string name="source_classic_answer">Respuesta clásica</string>
     <string name="share_answer">La Bola Mágica 8 dice: «%1$s»</string>
     <string name="share_question_and_answer">Le pregunté a la Bola Mágica 8: «%1$s»\nRespondió: «%2$s»</string>
 
     <!-- History -->
     <string name="history_title">Recientes</string>
-    <string name="history_empty">Tus preguntas y respuestas aparecerán aquí.</string>
-    <string name="history_footer">Guardado solo en este dispositivo (las últimas %1$d).</string>
-    <string name="history_no_question">Pregunta rápida</string>
+    <string name="history_empty">Tus respuestas aparecerán aquí, guardadas solo en este dispositivo</string>
+    <string name="history_footer">Guardado solo en este dispositivo</string>
     <string name="history_more">Más opciones</string>
     <string name="history_delete">Borrar</string>
     <string name="history_clear_all">Borrar todo</string>

@@ -46,20 +46,17 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
@@ -92,13 +89,11 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -230,12 +225,13 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
 }
 
 /**
- * The stateless screen. One stage at a time, each saying what to do in the same place:
+ * The stateless screen: the ball, one short text under it, and nothing else that is not needed
+ * right now.
  *
- * - at rest, the ball with "hold and ask" above it and "Recents" peeking from the bottom;
- * - listening, rings around the ball and the words as they are heard, large, under it;
- * - thinking, the ball spinning over the question;
- * - the answer, large, with "ask again" and "share", until it is closed or replaced.
+ * - at rest, a single hint and "Recents" peeking from the bottom;
+ * - listening, rings around the ball and the words as they are heard;
+ * - thinking, the ball shaken, over the question;
+ * - the answer on the ball, with "ask again" and "share", until it is closed or replaced.
  *
  * The ball is the one main action throughout. The history sheet is only there at rest, so
  * nothing competes with a question in progress or with its answer.
@@ -288,8 +284,7 @@ internal fun EightBallContent(
     BackHandler(enabled = !atRest, onBack = onDismiss)
 
     val navigationBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    // On a short window the sheet shows less of itself rather than taking the ball's place.
-    val peek = minOf(HISTORY_PEEK, LocalConfiguration.current.screenHeightDp.dp * HISTORY_PEEK_MAX_FRACTION)
+    val peek = HISTORY_PEEK
 
     BottomSheetScaffold(
         sheetContent = {
@@ -301,7 +296,11 @@ internal fun EightBallContent(
                 onShare = onShare,
                 onDelete = onDeleteHistoryEntry,
                 onClearAll = onClearHistory,
-                modifier = Modifier.heightIn(min = peek + navigationBar)
+                // Pulled up, the sheet stops short of the top: the screen behind it stays in sight.
+                modifier = Modifier.heightIn(
+                    min = peek + navigationBar,
+                    max = LocalConfiguration.current.screenHeightDp.dp * HISTORY_MAX_HEIGHT_FRACTION
+                )
             )
         },
         modifier = modifier,
@@ -328,7 +327,10 @@ internal fun EightBallContent(
     }
 }
 
-/** Everything but the history: the bar, what to do, the ball and what it heard or said. */
+/**
+ * Everything but the history: the ball, as large as the window allows and always in the same
+ * place, and one short text under it. The answer itself is on the ball.
+ */
 @Composable
 private fun Stage(
     state: EightBallUiState,
@@ -353,64 +355,51 @@ private fun Stage(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(WindowInsets.safeDrawing)
+            // Kept free in every stage, so the ball does not move when the history comes and goes.
+            .padding(bottom = historyPeek)
     ) {
-        // The ball keeps its size and its place through every stage: only what is written
-        // above and under it changes.
-        val headlineHeight = with(LocalDensity.current) {
-            (MaterialTheme.typography.headlineSmall.lineHeight.toDp() +
-                MaterialTheme.typography.bodyLarge.lineHeight.toDp()) * HEADLINE_LINES_EACH
-        }
-        // With a large font on a small window it shrinks, so the history at rest never covers it.
-        val roomForBall = maxHeight - TOP_BAR_HEIGHT - headlineHeight - BALL_GAP - historyPeek - BALL_GAP / 2
         val ballSize = minOf(
-            minOf(maxWidth * BALL_WIDTH_FRACTION, maxHeight * BALL_HEIGHT_FRACTION, BALL_MAX_SIZE),
-            roomForBall
+            minOf(maxWidth * BALL_WIDTH_FRACTION, BALL_MAX_SIZE),
+            maxHeight - TOP_BAR_HEIGHT - BALL_GAP - CAPTION_HEIGHT
         ).coerceAtLeast(BALL_MIN_SIZE)
 
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(TOP_BAR_HEIGHT)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(TOP_BAR_HEIGHT)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AnimatedVisibility(visible = !atRest, enter = fadeIn(), exit = fadeOut()) {
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_close),
-                            contentDescription = stringResource(
-                                if (busy) R.string.action_cancel else R.string.action_close
-                            ),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-                AnimatedVisibility(visible = !busy, enter = fadeIn(), exit = fadeOut()) {
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_settings),
-                            contentDescription = stringResource(R.string.settings_title),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            AnimatedVisibility(visible = !atRest, enter = fadeIn(), exit = fadeOut()) {
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_close),
+                        contentDescription = stringResource(
+                            if (busy) R.string.action_cancel else R.string.action_close
+                        ),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
+            Spacer(Modifier.weight(1f))
+            AnimatedVisibility(visible = !busy, enter = fadeIn(), exit = fadeOut()) {
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings),
+                        contentDescription = stringResource(R.string.settings_title),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
 
-            Headline(
-                state = state,
-                modifier = Modifier
-                    .padding(horizontal = 32.dp)
-                    .widthIn(max = TEXT_MAX_WIDTH)
-                    .fillMaxWidth()
-                    .heightIn(min = headlineHeight)
-            )
-            Spacer(Modifier.height(BALL_GAP))
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = TOP_BAR_HEIGHT),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Ball(
                 state = state,
                 voiceLevel = voiceLevel,
@@ -423,16 +412,15 @@ private fun Stage(
                 modifier = Modifier.size(ballSize)
             )
             Spacer(Modifier.height(BALL_GAP))
-
-            Outcome(
-                phase = state.phase,
+            Caption(
+                state = state,
                 onAskAgain = onAskAgain,
                 onShare = onShare,
                 modifier = Modifier
-                    .weight(1f)
                     .padding(horizontal = 32.dp)
                     .widthIn(max = TEXT_MAX_WIDTH)
                     .fillMaxWidth()
+                    .heightIn(min = CAPTION_HEIGHT)
             )
         }
     }
@@ -549,172 +537,108 @@ private fun Ball(
 }
 
 /**
- * What to do right now, above the ball: a title and one supporting line. Only a change of
- * stage is animated.
+ * The one text under the ball: what to do at rest, the words as they are heard, the question
+ * while the ball thinks, and with the answer, the question again over what can be done next.
+ * The words being heard just update; every other change is animated.
+ *
+ * The text on the die is as large as the die allows and cannot follow the system's font size,
+ * so with a large font the answer is written here instead of the question.
  */
 @Composable
-private fun Headline(state: EightBallUiState, modifier: Modifier = Modifier) {
-    val headline = state.headline()
+private fun Caption(
+    state: EightBallUiState,
+    onAskAgain: () -> Unit,
+    onShare: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val notice = state.notice
+    val voiceReady = state.voice.isReady
+    val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+
     AnimatedContent(
-        targetState = headline,
+        targetState = state.phase,
         modifier = modifier,
         transitionSpec = { StageEnter togetherWith fadeOut(tween(durationMillis = 120)) },
-        contentAlignment = Alignment.BottomCenter,
-        label = "headline"
-    ) { shown ->
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = shown.title,
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = TITLE_MAX_LINES,
-                overflow = TextOverflow.Ellipsis
+        contentAlignment = Alignment.TopCenter,
+        contentKey = { (it as? BallPhase.Answered)?.id ?: it::class },
+        label = "caption"
+    ) { phase ->
+        when (phase) {
+            BallPhase.Idle -> CaptionText(
+                text = when (notice) {
+                    Notice.MicrophoneDenied -> stringResource(R.string.notice_microphone_denied)
+                    Notice.VoiceUnsupported -> stringResource(R.string.notice_voice_unsupported)
+                    null -> stringResource(if (voiceReady) R.string.hint_voice else R.string.hint_tap)
+                },
+                modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
             )
-            if (shown.supporting.isNotEmpty()) {
+            is BallPhase.Listening -> if (phase.transcript.isEmpty()) {
+                CaptionText(
+                    stringResource(
+                        if (phase.handsFree) R.string.hint_listening_hands_free else R.string.hint_listening
+                    )
+                )
+            } else {
                 Text(
-                    text = shown.supporting,
-                    modifier = Modifier.semantics {
-                        if (shown.isNotice) liveRegion = LiveRegionMode.Polite
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = phase.transcript,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
-                    maxLines = if (shown.isNotice) NOTICE_MAX_LINES else HEADLINE_LINES_EACH,
+                    maxLines = CAPTION_MAX_LINES,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+            is BallPhase.Thinking -> CaptionText(phase.question.quoted())
+            is BallPhase.Answered -> {
+                val answer = phase.answer.text()
+                val shareText = shareText(phase.question, answer)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    when {
+                        largeFont -> Text(
+                            text = answer,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                        phase.question.isNotEmpty() -> CaptionText(phase.question.quoted(), maxLines = 2)
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilledTonalButton(onClick = onAskAgain, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.action_ask_again))
+                        }
+                        FilledTonalIconButton(onClick = { onShare(shareText) }, modifier = Modifier.size(48.dp)) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_share),
+                                contentDescription = stringResource(R.string.action_share),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-private data class HeadlineContent(val title: String, val supporting: String, val isNotice: Boolean = false)
-
 @Composable
-private fun EightBallUiState.headline(): HeadlineContent = when (val phase = phase) {
-    BallPhase.Idle -> HeadlineContent(
-        title = stringResource(if (voice.isReady) R.string.idle_title_voice else R.string.idle_title_tap),
-        supporting = when (notice) {
-            Notice.MicrophoneDenied -> stringResource(R.string.notice_microphone_denied)
-            Notice.VoiceUnsupported -> stringResource(R.string.notice_voice_unsupported)
-            null -> stringResource(if (voice.isReady) R.string.idle_hint_voice else R.string.idle_hint_tap)
-        },
-        isNotice = notice != null
+private fun CaptionText(text: String, modifier: Modifier = Modifier, maxLines: Int = CAPTION_MAX_LINES) {
+    Text(
+        text = text,
+        modifier = modifier.fillMaxWidth(),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis
     )
-    is BallPhase.Listening -> HeadlineContent(
-        title = stringResource(R.string.listening_title),
-        supporting = stringResource(
-            if (phase.handsFree) R.string.listening_hint_hands_free else R.string.listening_hint_hold
-        )
-    )
-    is BallPhase.Thinking -> HeadlineContent(
-        title = stringResource(R.string.thinking_title),
-        supporting = stringResource(R.string.thinking_hint)
-    )
-    is BallPhase.Answered -> HeadlineContent(
-        title = stringResource(R.string.answer_title),
-        supporting = phase.question.quoted()
-    )
-}
-
-/**
- * Under the ball: the words as they are heard, the question while the ball thinks, then the
- * answer with what can be done with it. Nothing at rest, where the history peeks instead.
- * The words being heard just update; every other change is animated.
- */
-@Composable
-private fun Outcome(
-    phase: BallPhase,
-    onAskAgain: () -> Unit,
-    onShare: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    AnimatedContent(
-        targetState = phase,
-        modifier = modifier,
-        transitionSpec = { StageEnter togetherWith fadeOut(tween(durationMillis = 120)) },
-        contentAlignment = Alignment.TopCenter,
-        contentKey = { (it as? BallPhase.Answered)?.id ?: it::class },
-        label = "outcome"
-    ) { shown ->
-        when (shown) {
-            BallPhase.Idle -> Spacer(Modifier.fillMaxWidth())
-            is BallPhase.Listening -> Text(
-                text = shown.transcript,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = TRANSCRIPT_MAX_LINES,
-                overflow = TextOverflow.Ellipsis
-            )
-            is BallPhase.Thinking -> Text(
-                text = shown.question.quoted(),
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = TRANSCRIPT_MAX_LINES,
-                overflow = TextOverflow.Ellipsis
-            )
-            is BallPhase.Answered -> Answer(shown, onAskAgain, onShare)
-        }
-    }
-}
-
-/** The answer, large, who wrote it, and the two things to do next. */
-@Composable
-private fun Answer(
-    answered: BallPhase.Answered,
-    onAskAgain: () -> Unit,
-    onShare: (String) -> Unit
-) {
-    val answer = answered.answer.text()
-    val fromAi = (answered.answer as? AnswerText.Plain)?.fromAi == true
-    val shareText = shareText(answered.question, answer)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = answer,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = stringResource(if (fromAi) R.string.source_ai_answer else R.string.source_classic_answer),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = onAskAgain,
-            modifier = Modifier
-                .widthIn(max = ACTION_MAX_WIDTH)
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-        ) {
-            Text(stringResource(R.string.action_ask_again), style = MaterialTheme.typography.titleMedium)
-        }
-        Spacer(Modifier.height(4.dp))
-        TextButton(onClick = { onShare(shareText) }, modifier = Modifier.heightIn(min = 48.dp)) {
-            Icon(painter = painterResource(R.drawable.ic_share), contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.action_share))
-        }
-    }
 }
 
 @Composable
@@ -765,22 +689,23 @@ private const val HOLD_DELAY_MS = 180L
 
 private const val CLOCK_TICK_MS = 30_000L
 
-private const val BALL_WIDTH_FRACTION = 0.6f
-private const val BALL_HEIGHT_FRACTION = 0.34f
-private val BALL_MAX_SIZE = 360.dp
+private const val BALL_WIDTH_FRACTION = 0.8f
+private val BALL_MAX_SIZE = 440.dp
 private val BALL_MIN_SIZE = 96.dp
-private val BALL_GAP = 48.dp
+private val BALL_GAP = 40.dp
 private val TOP_BAR_HEIGHT = 56.dp
-private val TEXT_MAX_WIDTH = 520.dp
-private val ACTION_MAX_WIDTH = 360.dp
-private const val HEADLINE_LINES_EACH = 2
-private const val TITLE_MAX_LINES = 3
-private const val NOTICE_MAX_LINES = 3
-private const val TRANSCRIPT_MAX_LINES = 4
+private val TEXT_MAX_WIDTH = 480.dp
+private const val CAPTION_MAX_LINES = 3
 
-/** How much of the history sheet shows at rest: its handle, its title and the latest answer. */
-private val HISTORY_PEEK = 212.dp
-private const val HISTORY_PEEK_MAX_FRACTION = 0.25f
+/** Room kept under the ball, so it stays put whatever is written there. */
+private val CAPTION_HEIGHT = 112.dp
+
+/** From this font scale up, the answer is also written under the ball. */
+private const val LARGE_FONT_SCALE = 1.3f
+
+/** How much of the history sheet shows at rest: its handle and its title. */
+private val HISTORY_PEEK = 92.dp
+private const val HISTORY_MAX_HEIGHT_FRACTION = 0.86f
 
 @PreviewLightDark
 @Preview(name = "Tablet", widthDp = 840, heightDp = 1200)

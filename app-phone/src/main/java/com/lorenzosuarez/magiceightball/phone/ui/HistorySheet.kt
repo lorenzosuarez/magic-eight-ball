@@ -1,16 +1,14 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,18 +34,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lorenzosuarez.magiceightball.phone.R
-import com.lorenzosuarez.magiceightball.phone.history.AnswerHistory
 import com.lorenzosuarez.magiceightball.phone.history.HistoryEntry
 import java.text.DateFormat
 import java.util.Date
 
 /**
- * What the sheet at the bottom of the screen holds: "Recents" and the latest answer while it
- * peeks, the whole list once it is pulled up.
+ * What the sheet at the bottom of the screen holds: just its title while it peeks, the list
+ * once it is pulled up.
  *
  * @param now the current time, for "5 min ago".
  * @param canExpand whether the sheet is not pulled up yet, so a tap on its title does it.
@@ -69,7 +64,8 @@ internal fun HistoryContent(
     var confirmClear by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
+        Text(
+            text = stringResource(R.string.history_title),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
@@ -77,52 +73,41 @@ internal fun HistoryContent(
                     onClickLabel = stringResource(R.string.history_show),
                     onClick = onExpand
                 )
-                .heightIn(min = 48.dp)
-                .padding(start = 24.dp, end = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.history_title),
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { heading() },
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            if (entries.isNotEmpty()) {
-                TextButton(onClick = { confirmClear = true }) {
-                    Text(stringResource(R.string.history_clear_all))
-                }
-            }
-        }
+                .padding(horizontal = 24.dp, vertical = 10.dp)
+                .semantics { heading() },
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
-        if (entries.isEmpty()) {
-            Text(
-                text = stringResource(R.string.history_empty),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        LazyColumn(
+            contentPadding = PaddingValues(
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
             )
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
-                )
-            ) {
-                items(entries, key = { it.id }) { entry ->
-                    HistoryRow(entry, now, onShare, onDelete, Modifier.animateItem())
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                }
-                item {
+        ) {
+            items(entries, key = { it.id }) { entry ->
+                HistoryRow(entry, now, onShare, onDelete, Modifier.animateItem())
+            }
+            item {
+                // Where the list ends: what it is, and the way to empty it.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, top = 8.dp, end = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = stringResource(R.string.history_footer, AnswerHistory.MAX_ENTRIES),
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                        text = stringResource(
+                            if (entries.isEmpty()) R.string.history_empty else R.string.history_footer
+                        ),
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (entries.isNotEmpty()) {
+                        TextButton(onClick = { confirmClear = true }) {
+                            Text(stringResource(R.string.history_clear_all))
+                        }
+                    }
                 }
             }
         }
@@ -175,17 +160,10 @@ private fun HistoryRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, top = 12.dp, end = 4.dp, bottom = 12.dp),
+            .padding(start = 24.dp, top = 10.dp, end = 4.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = entry.question.ifEmpty { stringResource(R.string.history_no_question) },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = answer,
                 style = MaterialTheme.typography.titleMedium,
@@ -193,7 +171,15 @@ private fun HistoryRow(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(Modifier.height(4.dp))
+            if (entry.question.isNotEmpty()) {
+                Text(
+                    text = entry.question,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
                 text = stringResource(
                     R.string.history_entry_meta,
