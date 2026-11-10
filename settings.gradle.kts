@@ -21,6 +21,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "MagicEightBall"
 include(":app-wear")
+include(":app-phone")
 include(":core:common")
 include(":core:designsystem")
 include(":core:domain")

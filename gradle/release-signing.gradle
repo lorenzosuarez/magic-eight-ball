@@ -1,0 +1,44 @@
+// Release signing shared by every application module: :app-wear and :app-phone share one
+// applicationId on Google Play, so both must be signed with the same key.
+// Apply it right after the plugins block: apply(from = rootProject.file("gradle/release-signing.gradle"))
+// (Groovy on purpose: a script plugin written in Kotlin cannot see the Android plugin's types.)
+//
+// Release signing credentials live OUTSIDE the repository.
+// Default: ~/.android-keys/magic8ball-keystore.properties
+// Override: -Pmagic8ball.keystoreProperties=/path/file.properties or env MAGIC8BALL_KEYSTORE_PROPERTIES.
+// Keys: storeFile (absolute, or relative to the properties file), storePassword, keyAlias, keyPassword.
+// If the file or the keystore is missing, release builds still succeed but produce UNSIGNED artifacts.
+def keystorePropertiesFile = new File(
+    providers.gradleProperty("magic8ball.keystoreProperties").orNull
+        ?: System.getenv("MAGIC8BALL_KEYSTORE_PROPERTIES")
+        ?: "${System.getProperty("user.home")}/.android-keys/magic8ball-keystore.properties"
+)
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.isFile()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+def keystoreFile = keystoreProperties.getProperty("storeFile")?.with { path ->
+    def file = new File(path)
+    file.isAbsolute() ? file : new File(keystorePropertiesFile.parentFile, path)
+}
+def hasReleaseSigning = keystoreFile?.isFile() &&
+    ["storePassword", "keyAlias", "keyPassword"].every { keystoreProperties.getProperty(it)?.trim() }
+
+android {
+    if (hasReleaseSigning) {
+        signingConfigs {
+            release {
+                storeFile = keystoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+        buildTypes.release.signingConfig = signingConfigs.release
+    } else {
+        logger.warn(
+            "Release signing not configured ($keystorePropertiesFile missing or incomplete): " +
+                "release artifacts of $project.path will be UNSIGNED."
+        )
+    }
+}

@@ -11,7 +11,8 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        minSdk = 30
+        // Lowest of the apps using this module: :app-phone (26); :app-wear needs 30.
+        minSdk = 26
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
