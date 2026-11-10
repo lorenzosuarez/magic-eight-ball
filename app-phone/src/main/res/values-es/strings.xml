@@ -1,11 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Hint under the ball -->
-    <string name="hint_voice">Mantén presionado y pregunta, o agita</string>
-    <string name="hint_tap">Toca o agita para preguntar</string>
-    <string name="hint_listening">Te escucho…</string>
+    <!-- What to do, above the ball: one title and one supporting line per stage -->
+    <string name="idle_title_voice">Mantén presionada la bola y pregunta</string>
+    <string name="idle_hint_voice">O tócala, o agita el teléfono, para una respuesta rápida</string>
+    <string name="idle_title_tap">Toca la bola para preguntar</string>
+    <string name="idle_hint_tap">O agita el teléfono</string>
+    <string name="listening_title">Te escucho…</string>
+    <string name="listening_hint_hold">Suelta cuando termines</string>
+    <string name="listening_hint_hands_free">Toca la bola cuando termines</string>
+    <string name="thinking_title">Pensando…</string>
+    <string name="thinking_hint">Un momento</string>
+    <string name="answer_title">La bola dice</string>
     <string name="notice_microphone_denied">El micrófono está desactivado: toca o agita para preguntar. Puedes permitirlo en configuración.</string>
     <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas. Toca o agita para preguntar.</string>
+
+    <!-- Result -->
+    <string name="question_quoted">«%1$s»</string>
+    <string name="action_ask_again">Preguntar de nuevo</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="source_ai">IA</string>
+    <string name="source_classic">Clásica</string>
+    <string name="source_ai_answer">Respuesta con IA</string>
+    <string name="source_classic_answer">Respuesta clásica</string>
+    <string name="share_answer">La Bola Mágica 8 dice: «%1$s»</string>
+    <string name="share_question_and_answer">Le pregunté a la Bola Mágica 8: «%1$s»\nRespondió: «%2$s»</string>
+
+    <!-- History -->
+    <string name="history_title">Recientes</string>
+    <string name="history_empty">Tus preguntas y respuestas aparecerán aquí.</string>
+    <string name="history_footer">Guardado solo en este dispositivo (las últimas %1$d).</string>
+    <string name="history_no_question">Pregunta rápida</string>
+    <string name="history_more">Más opciones</string>
+    <string name="history_delete">Borrar</string>
+    <string name="history_clear_all">Borrar todo</string>
+    <string name="history_clear_title">¿Borrar todos los recientes?</string>
+    <string name="history_clear_text">Se borrarán de este dispositivo todas las preguntas y respuestas guardadas. No se puede deshacer.</string>
+    <string name="history_show">Ver recientes</string>
+    <string name="time_just_now">Recién</string>
+    <string name="time_minutes_ago">hace %1$d min</string>
+    <string name="time_hours_ago">hace %1$d h</string>
+    <string name="time_days_ago">hace %1$d d</string>
 
     <!-- Ball -->
     <string name="ball_description">Bola Mágica 8</string>
@@ -35,8 +71,8 @@
     <string name="settings_voice_allow">Permitir</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
-    <string name="privacy_voice_and_ai">El servicio de voz de tu dispositivo convierte tu pregunta en texto, que se envía a Gemini, de Google, para responderla. La app nunca la guarda.</string>
-    <string name="privacy_voice_only">El servicio de voz de tu dispositivo convierte tu pregunta en texto solo para mostrártela. No se envía a Gemini ni se guarda.</string>
-    <string name="privacy_ai_only">Las respuestas vienen de Gemini, de Google. La app no escucha y no se envía ninguna pregunta.</string>
-    <string name="privacy_none">Las respuestas vienen de la propia app. La app no escucha y nada de lo que preguntas sale de este dispositivo.</string>
+    <string name="privacy_voice_and_ai">El servicio de voz de tu dispositivo convierte tu pregunta en texto, que se envía a Gemini, de Google, para responderla. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
+    <string name="privacy_voice_only">El servicio de voz de tu dispositivo convierte tu pregunta en texto. No se envía a Gemini. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
+    <string name="privacy_ai_only">Las respuestas vienen de Gemini, de Google. La app no escucha y no se envía ninguna pregunta. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
+    <string name="privacy_none">Las respuestas vienen de la propia app. La app no escucha y nada sale de este dispositivo. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
 </resources>

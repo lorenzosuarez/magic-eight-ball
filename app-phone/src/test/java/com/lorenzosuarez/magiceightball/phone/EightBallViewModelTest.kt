@@ -14,6 +14,7 @@ import com.example.magiceightball.core.domain.model.UserSettings
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
+import com.lorenzosuarez.magiceightball.phone.history.AnswerHistory
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechEvent
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechListener
 import kotlinx.coroutines.Deferred
@@ -37,6 +38,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EightBallViewModelTest {
@@ -55,6 +57,14 @@ class EightBallViewModelTest {
     private val userSettings = FakeUserSettingsRepository()
     private val aiAvailability = FakeAiAnswersAvailability()
     private val speech = FakeSpeechListener()
+
+    @get:Rule
+    val files = TemporaryFolder()
+
+    /** The real history over a file of its own: what is saved there outlives a ViewModel. */
+    private val history by lazy { newHistory() }
+
+    private fun newHistory() = AnswerHistory(files.root.resolve("history.bin"), mainDispatcherRule.testDispatcher)
 
     // Start-up and settings
 
@@ -629,7 +639,7 @@ class EightBallViewModelTest {
         val viewModel = createViewModel(microphoneGranted = true)
 
         viewModel.toggleVoiceQuestion()
-        assertEquals(BallPhase.Listening(""), viewModel.phase)
+        assertEquals(BallPhase.Listening(handsFree = true), viewModel.phase)
         val session = speech.sessions.single()
         session.hear("Is it time")
 
@@ -779,6 +789,147 @@ class EightBallViewModelTest {
         )
     }
 
+    // Closing, asking again and the history
+
+    @Test
+    fun `closing an answer goes back to rest`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.ask()
+        finishThinking()
+
+        viewModel.dismiss()
+        runCurrent()
+
+        assertEquals(BallPhase.Idle, viewModel.phase)
+    }
+
+    @Test
+    fun `closing while thinking drops the question and nothing is answered or saved`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.ask()
+        runCurrent()
+        assertTrue(viewModel.phase is BallPhase.Thinking)
+
+        viewModel.dismiss()
+        finishThinking()
+
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertEquals(emptyList<Any>(), viewModel.state.value?.history)
+    }
+
+    @Test
+    fun `closing while listening releases the microphone and goes back to rest`() = runTest {
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+        viewModel.ask()
+        finishThinking()
+        viewModel.onHoldStart()
+        runCurrent()
+        assertTrue(viewModel.phase is BallPhase.Listening)
+
+        viewModel.dismiss()
+        runCurrent()
+
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertFalse(speech.sessions.single().active)
+    }
+
+    @Test
+    fun `asking again listens without a hold when the app may listen`() = runTest {
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+        viewModel.ask()
+        finishThinking()
+
+        viewModel.askAgain()
+        runCurrent()
+
+        assertEquals(BallPhase.Listening(handsFree = true), viewModel.phase)
+    }
+
+    @Test
+    fun `asking again asks without a question when the app may not listen`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.setVoiceQuestionsEnabled(false)
+        viewModel.ask()
+        finishThinking()
+
+        viewModel.askAgain()
+        finishThinking()
+
+        assertEquals(2, llmGateway.requests.size)
+        assertEquals(0, speech.sessions.size)
+        assertEquals(2, viewModel.state.value?.history?.size)
+    }
+
+    @Test
+    fun `every answer is saved with its question and who wrote it, newest first`() = runTest {
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+        viewModel.ask()
+        finishThinking()
+
+        llmGateway.answer = { Magic8BallResult.Success("Without a doubt", fromAi = true) }
+        viewModel.onHoldStart()
+        runCurrent()
+        speech.sessions.single().finish("Will it rain?")
+        viewModel.onHoldEnd()
+        finishThinking()
+
+        val saved = viewModel.state.value?.history.orEmpty()
+        assertEquals(listOf("Will it rain?", ""), saved.map { it.question })
+        assertEquals(listOf("Without a doubt", FakeLlmGateway.ANSWER), saved.map { it.answer })
+        assertEquals(listOf(true, false), saved.map { it.fromAi })
+    }
+
+    @Test
+    fun `an answer the app had to make up is saved without a text`() = runTest {
+        llmGateway.answer = { Magic8BallResult.Failure(LlmError.Network) }
+        val viewModel = createViewModel()
+        viewModel.ask()
+        finishThinking()
+
+        assertEquals(listOf<String?>(null), viewModel.state.value?.history?.map { it.answer })
+    }
+
+    @Test
+    fun `the history survives the view model, and entries can be deleted one by one or all at once`() = runTest {
+        val first = createViewModel()
+        repeat(3) {
+            first.ask()
+            finishThinking()
+        }
+
+        val reopened = AnswerHistory(files.root.resolve("history.bin"), mainDispatcherRule.testDispatcher)
+        reopened.load()
+        assertEquals(3, reopened.entries.value.size)
+
+        first.deleteHistoryEntry(first.state.value!!.history.first().id)
+        runCurrent()
+        assertEquals(2, first.state.value?.history?.size)
+
+        first.clearHistory()
+        runCurrent()
+        assertEquals(emptyList<Any>(), first.state.value?.history)
+        assertEquals(emptyList<Any>(), newHistory().apply { load() }.entries.value)
+    }
+
+    @Test
+    fun `only the latest fifty answers are kept`() = runTest {
+        val history = newHistory()
+        repeat(AnswerHistory.MAX_ENTRIES + 5) { history.add("q$it", "a$it", it.toLong(), fromAi = false) }
+
+        val kept = newHistory().apply { load() }.entries.value
+        assertEquals(AnswerHistory.MAX_ENTRIES, kept.size)
+        assertEquals("q54", kept.first().question)
+        assertEquals("q5", kept.last().question)
+        assertEquals(kept.size, kept.map { it.id }.toSet().size)
+    }
+
+    @Test
+    fun `a damaged history file is an empty history`() = runTest {
+        files.root.resolve("history.bin").writeBytes(byteArrayOf(0, 0, 0, 1, 0, 0, 0, 9, 1))
+
+        assertEquals(emptyList<Any>(), newHistory().apply { load() }.entries.value)
+    }
+
     private val EightBallViewModel.phase: BallPhase? get() = state.value?.phase
 
     private fun EightBallViewModel.collectEffects(scope: TestScope): List<EightBallEffect> {
@@ -811,6 +962,7 @@ class EightBallViewModelTest {
             userSettingsRepository = userSettings,
             aiAnswersAvailability = aiAvailability,
             speechListener = speech,
+            history = history,
             queryConfig = queryConfig
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
