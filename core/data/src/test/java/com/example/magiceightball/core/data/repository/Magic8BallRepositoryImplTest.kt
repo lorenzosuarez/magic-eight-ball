@@ -1,5 +1,6 @@
 package com.example.magiceightball.core.data.repository
 
+import com.example.magiceightball.core.data.config.DeviceAiAnswerQuota
 import com.example.magiceightball.core.data.config.GeminiSettings
 import com.example.magiceightball.core.data.config.GeminiSettingsSource
 import com.example.magiceightball.core.data.datasource.GeminiRemoteDataSource
@@ -18,6 +19,11 @@ import org.junit.Test
 
 class Magic8BallRepositoryImplTest {
 
+    private class MemoryStore : DeviceAiAnswerQuota.Store {
+        override var day: String? = null
+        override var used: Int = 0
+    }
+
     private val remoteDataSource = mockk<GeminiRemoteDataSource> {
         coEvery { fetchMagic8BallMessage(any(), any(), any()) } returns Magic8BallResult.Success(REMOTE_ANSWER)
     }
@@ -28,7 +34,34 @@ class Magic8BallRepositoryImplTest {
         ): String = LOCAL_ANSWER
     }
     private val geminiSettings = FakeGeminiSettingsSource()
-    private val repository = Magic8BallRepositoryImpl(remoteDataSource, localDataSource, geminiSettings)
+    private val quota = DeviceAiAnswerQuota(MemoryStore(), today = { today })
+    private var today = "2026-11-10"
+    private val repository = Magic8BallRepositoryImpl(remoteDataSource, localDataSource, geminiSettings, quota)
+
+    @Test
+    fun `past the day's allowance answers are bundled, until the next day`() = runTest {
+        geminiSettings.settings = geminiSettings.settings.copy(dailyLimit = 2)
+        val request = Magic8BallRequest(useAi = true)
+
+        repeat(2) { assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request)) }
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request))
+        coVerify(exactly = 2) { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) }
+
+        today = "2026-11-11"
+        assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request))
+    }
+
+    @Test
+    fun `answers that never reach gemini do not use up the allowance`() = runTest {
+        geminiSettings.settings = geminiSettings.settings.copy(dailyLimit = 1)
+
+        repeat(3) { repository.generateMagic8BallMessage(Magic8BallRequest(useAi = false)) }
+
+        assertEquals(
+            Magic8BallResult.Success(REMOTE_ANSWER),
+            repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
+        )
+    }
 
     @Test
     fun `gemini answers when the user allows it and it is usable`() = runTest {

@@ -5,6 +5,8 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.example.magiceightball.core.data.config.AiAnswerQuota
+import com.example.magiceightball.core.data.config.DeviceAiAnswerQuota
 import com.example.magiceightball.core.data.config.GeminiSettingsSource
 import com.example.magiceightball.core.data.config.RemoteConfigGeminiSettingsSource
 import com.example.magiceightball.core.data.datasource.JsonLocalDataSource
@@ -78,6 +80,10 @@ abstract class GatewayModule {
     @Binds
     @Singleton
     abstract fun bindAiAnswersAvailability(impl: RemoteConfigGeminiSettingsSource): AiAnswersAvailability
+
+    @Binds
+    @Singleton
+    abstract fun bindAiAnswerQuota(impl: DeviceAiAnswerQuota): AiAnswerQuota
 
     @Binds
     @Singleton

@@ -23,7 +23,9 @@ This policy explains how the Magic 8 Ball app (package `com.lorenzosuarez.magice
 
 On both versions the request never includes audio, and it does not include your name, account, contacts, location, device identifiers or sensor readings. Please do not say anything in a question that you would not want to send to Google. As with any internet request, Google receives your device's IP address and standard connection information. Google handles these requests under the [Gemini API Additional Terms of Service](https://ai.google.dev/gemini-api/terms) and the [Google Privacy Policy](https://policies.google.com/privacy). Depending on how the API is accessed, Google may keep these requests for a period of time and use them to provide and improve its services.
 
-If the request fails or your device is offline, the app shows an answer from the built-in list instead.
+If the request fails or your device is offline, the app shows an answer from the built-in list instead. The same happens once a device has asked for its daily allowance of AI answers; to keep that count, the app saves today's date and a number on your device, and nothing else.
+
+Each request also names the app that is making it (its package name and the fingerprint of its signing certificate), so that Google can refuse requests that do not come from this app.
 
 ## Voice questions
 On a phone or tablet you hold the ball and say your question; on the watch you hold the screen. This is optional. On a phone or tablet you can switch "Voice questions" off in the settings; on either device you can decline the microphone permission, and then the app answers to a tap or a shake only. The watch offers it only while AI answers are in use.
