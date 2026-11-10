@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -12,6 +14,17 @@ plugins {
 if (file("google-services.json").isFile) {
     apply(plugin = libs.plugins.google.services.get().pluginId)
 }
+
+// AdMob identifiers come from the git-ignored root local.properties (ADMOB_APP_ID and
+// ADMOB_INTERSTITIAL_ID). Without them the build uses Google's public test identifiers, which
+// only ever serve test ads: a build meant for the store needs the real ones.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.isFile) file.inputStream().use(::load)
+}
+val admobAppId: String = localProperties.getProperty("ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713").trim()
+val admobInterstitialId: String =
+    localProperties.getProperty("ADMOB_INTERSTITIAL_ID", "ca-app-pub-3940256099942544/1033173712").trim()
 
 // Same upload key as :app-wear; see the script for where the credentials are read from.
 apply(from = rootProject.file("gradle/release-signing.gradle"))
@@ -28,6 +41,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
+
+        manifestPlaceholders["admobAppId"] = admobAppId
+        buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"$admobInterstitialId\"")
     }
 
     buildTypes {
@@ -48,6 +64,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     bundle {
         // The language is chosen in the app, not by the device: every installation needs both
@@ -74,6 +91,12 @@ dependencies {
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+
+    // Ads, off unless switched on from Remote Config, and the consent they need.
+    implementation(libs.play.services.ads)
+    implementation(libs.user.messaging.platform)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
 
     implementation(project(":core:common"))
     implementation(project(":core:domain"))

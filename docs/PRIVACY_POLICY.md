@@ -5,10 +5,10 @@
 This policy explains how the Magic 8 Ball app (package `com.lorenzosuarez.magiceightball`), developed by Lorenzo Suarez, handles information. It covers both versions of the app: the one for Wear OS watches and the one for Android phones and tablets. Where they differ, this policy says so.
 
 ## Summary
-- No account or sign-in, no ads, no analytics and no crash-reporting tools.
+- No account or sign-in, no analytics and no crash-reporting tools. The watch app shows no ads. The phone and tablet app may show an occasional ad, as described under "Ads"; you are asked for consent first where the law requires it.
 - The only things the app saves on your device are your choices in the app (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) and, on phones and tablets, a list of your latest questions and answers ("Recents"). The developer runs no server that receives your data.
 - You can switch AI answers off in the app at any time.
-- The app connects to two Google services, both described below: Firebase Remote Config, to check its settings, and, when AI answers are switched on, the Gemini API.
+- The app connects to Google services, all described below: Firebase Remote Config, to check its settings; the Gemini API, when AI answers are switched on; and, on phones and tablets while ads are switched on, Google AdMob.
 - **Asking out loud:** on both versions you can hold and say your question. The app uses the microphone only while it is listening to a question you started, your speech is turned into text by your device's speech recognition service, and that text is sent to the Gemini API only when AI answers are switched on. The app never stores your voice. On phones and tablets the text of your question is saved, with its answer, only in the "Recents" list on your device, which you can clear at any time; the watch saves nothing. The app works without the microphone.
 - **On the watch** holding to ask is offered only while AI answers are in use, because only the AI service can answer a question; otherwise the watch answers to a shake and never listens.
 
@@ -26,6 +26,14 @@ On both versions the request never includes audio, and it does not include your 
 If the request fails or your device is offline, the app shows an answer from the built-in list instead. The same happens once a device has asked for its daily allowance of AI answers; to keep that count, the app saves today's date and a number on your device, and nothing else.
 
 Each request also names the app that is making it (its package name and the fingerprint of its signing certificate), so that Google can refuse requests that do not come from this app.
+
+## Ads (phones and tablets only)
+The phone and tablet app can show a full-screen ad from time to time, only after you have closed an answer and never while you are asking or reading one. The developer can switch ads on and off for everyone; while they are off, nothing described in this section happens. The watch app never shows ads.
+
+- **Who shows them.** Ads are provided by Google AdMob. To request and show an ad, Google's advertising software in the app collects and uses information such as your device's advertising ID, IP address, approximate location derived from it, device and app information, and how you interact with ads. Google handles it under [its policy on how it uses information from apps that use its services](https://policies.google.com/technologies/partner-sites) and the [Google Privacy Policy](https://policies.google.com/privacy).
+- **Your consent.** Where the law requires it (for example in the European Economic Area, the United Kingdom and Switzerland), the app asks for your choice before any ad is requested, through Google's consent message. You can change that choice at any time under "Ad privacy choices" in the app's settings. You can also reset or delete your advertising ID, or turn off ad personalisation, in your device's settings.
+- **What ads never get.** Your questions, the ball's answers and your "Recents" list are never used for ads or shared with the ad service by the app.
+- **Permission.** The advertising software adds the `com.google.android.gms.permission.AD_ID` permission to the phone and tablet app.
 
 ## Voice questions
 On a phone or tablet you hold the ball and say your question; on the watch you hold the screen. This is optional. On a phone or tablet you can switch "Voice questions" off in the settings; on either device you can decline the microphone permission, and then the app answers to a tap or a shake only. The watch offers it only while AI answers are in use.
