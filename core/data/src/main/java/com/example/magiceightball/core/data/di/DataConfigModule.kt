@@ -13,8 +13,10 @@ import com.example.magiceightball.core.data.gateway.GeminiApiClient
 import com.example.magiceightball.core.data.gateway.RetrofitGeminiApiClient
 import com.example.magiceightball.core.data.repository.Magic8BallRepositoryImpl
 import com.example.magiceightball.core.data.settings.DataStoreUserSettingsRepository
+import com.example.magiceightball.core.data.speech.AndroidSpeechListener
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.LlmGateway
+import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.policy.DefaultPromptPolicy
 import com.example.magiceightball.core.domain.policy.PromptPolicy
@@ -76,6 +78,10 @@ abstract class GatewayModule {
     @Binds
     @Singleton
     abstract fun bindAiAnswersAvailability(impl: RemoteConfigGeminiSettingsSource): AiAnswersAvailability
+
+    @Binds
+    @Singleton
+    abstract fun bindSpeechListener(impl: AndroidSpeechListener): SpeechListener
 
     @Binds
     @Singleton

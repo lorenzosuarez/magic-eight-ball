@@ -15,4 +15,6 @@ interface UserSettingsRepository {
     suspend fun setPersonality(personality: Magic8BallPersonality)
 
     suspend fun setAiAnswersEnabled(enabled: Boolean)
+
+    suspend fun setVoiceQuestionsEnabled(enabled: Boolean)
 }

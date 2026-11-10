@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- The window behind the app: the ball's colour, so nothing black shows between the launch screen and the first frame. -->
+    <style name="Theme.App" parent="@android:style/Theme.DeviceDefault">
+        <item name="android:windowBackground">@color/ball</item>
+    </style>
+
+    <!-- The launch screen: the "8" on the ball's colour, which the app's first frame continues. -->
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#000000</item>
+        <item name="windowSplashScreenBackground">@color/ball</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
-        <item name="postSplashScreenTheme">@android:style/Theme.DeviceDefault</item>
+        <item name="postSplashScreenTheme">@style/Theme.App</item>
     </style>
 </resources>

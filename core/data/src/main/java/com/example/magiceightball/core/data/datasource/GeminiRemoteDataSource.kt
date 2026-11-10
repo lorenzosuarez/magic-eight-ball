@@ -3,7 +3,6 @@ package com.example.magiceightball.core.data.datasource
 import com.example.magiceightball.core.common.GeminiConfig
 import com.example.magiceightball.core.data.gateway.GeminiApiClient
 import com.example.magiceightball.core.domain.model.LlmError
-import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.policy.PromptPolicy
@@ -23,20 +22,30 @@ class GeminiRemoteDataSource @Inject constructor(
     private val config: GeminiConfig,
     private val promptPolicy: PromptPolicy
 ) {
+    /**
+     * Asks Gemini for an answer.
+     *
+     * The system instruction is always the app's own. The user content is the user's question
+     * when the request carries one (capped by [Magic8BallRequest.questionForAi]), and the fixed
+     * trigger otherwise. Nothing else about the user is sent.
+     */
     suspend fun fetchMagic8BallMessage(
         request: Magic8BallRequest,
         apiKey: String,
         modelId: String
     ): Magic8BallResult {
         return withContext(Dispatchers.IO) {
+            val question = request.questionForAi
             val systemPromptText = promptPolicy.getSystemPrompt(
-                request.languageCode,
-                request.personality
+                languageCode = request.languageCode,
+                personality = request.personality,
+                answersQuestion = question != null
             )
 
             val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
-            val userContent =
-                Content(parts = listOf(Part(text = request.userTrigger ?: "What is my fortune?")))
+            val userContent = Content(
+                parts = listOf(Part(text = question ?: request.userTrigger ?: "What is my fortune?"))
+            )
 
             // Sampling parameters are left to the model defaults: Gemini 3.x deprecates temperature/topP.
             val genConfig = GenerationConfig(maxOutputTokens = config.maxOutputTokens)
@@ -47,7 +56,7 @@ class GeminiRemoteDataSource @Inject constructor(
                 generationConfig = genConfig
             )
 
-            executeWithRetry(apiKey, modelId, apiRequest, request.languageCode, request.personality)
+            executeWithRetry(apiKey, modelId, apiRequest, systemPromptText)
         }
     }
 
@@ -55,8 +64,7 @@ class GeminiRemoteDataSource @Inject constructor(
         apiKey: String,
         modelId: String,
         initialRequest: GeminiRequest,
-        languageCode: String,
-        personality: Magic8BallPersonality,
+        systemPromptText: String,
         attempt: Int = 1
     ): Magic8BallResult {
         try {
@@ -76,20 +84,17 @@ class GeminiRemoteDataSource @Inject constructor(
 
             if (!validateWordCount(text)) {
                 if (attempt <= config.maxRetries) {
-                    val currentPrompt = promptPolicy.getSystemPrompt(languageCode, personality)
                     val stricterInstruction = Content(
-                        parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
+                        parts = listOf(Part(text = "$systemPromptText You MUST use 6 words or less."))
                     )
                     val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(apiKey, modelId, retryRequest, languageCode, personality, attempt + 1)
+                    return executeWithRetry(apiKey, modelId, retryRequest, systemPromptText, attempt + 1)
                 } else {
                     return Magic8BallResult.Failure(LlmError.ValidationFailed)
                 }
             }
 
-            return Magic8BallResult.Success(text)
-
-
+            return Magic8BallResult.Success(text, fromAi = true)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

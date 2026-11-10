@@ -1,8 +1,12 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.gateway.MotionGateway
+import com.example.magiceightball.core.domain.gateway.SpeechEvent
+import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
@@ -10,13 +14,22 @@ import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.model.ShakeEvent
 import com.example.magiceightball.core.domain.model.UserSettings
+import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -24,6 +37,8 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -43,193 +58,661 @@ class EightBallViewModelTest {
     private val motionGateway = FakeMotionGateway()
     private val llmGateway = FakeLlmGateway()
     private val userSettings = FakeUserSettingsRepository()
+    private val aiAvailability = FakeAiAnswersAvailability()
+    private val speech = FakeSpeechListener()
+    private val history = FakeAnswerHistoryRepository()
+    private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
+
+    // Start-up and settings
 
     @Test
-    fun `initial state is idle with the saved personality and no history`() = runTest {
-        userSettings.saved.value = UserSettings(personality = Magic8BallPersonality.MYSTICAL)
+    fun `initial state is idle with the saved choices`() = runTest {
+        val saved = UserSettings(
+            language = AppLanguage.SPANISH,
+            personality = Magic8BallPersonality.MYSTICAL,
+            aiAnswersEnabled = false,
+            voiceQuestionsEnabled = false
+        )
+        userSettings.saved.value = saved
 
         val viewModel = createViewModel()
 
         assertEquals(
-            EightBallUiState(BallPhase.Idle, Magic8BallPersonality.MYSTICAL, emptyList()),
+            EightBallUiState(
+                phase = BallPhase.Idle,
+                settings = saved,
+                aiAnswersAvailable = false,
+                voice = VoiceStatus.Off,
+                notice = null
+            ),
             viewModel.state.value
         )
     }
+
+    @Test
+    fun `there is no state and no answer until the saved choices are read`() = runTest {
+        userSettings.saved.value = null
+        val viewModel = createViewModel(resumed = true)
+        assertNull(viewModel.state.value)
+
+        viewModel.ask()
+        viewModel.onHoldStart()
+        viewModel.onHoldEnd()
+        shake()
+        assertNull(viewModel.state.value)
+        assertEquals(0, llmGateway.requests.size)
+        assertEquals(0, speech.sessions.size)
+
+        userSettings.saved.value = UserSettings(language = AppLanguage.SPANISH)
+        runCurrent()
+        assertEquals(AppLanguage.SPANISH, viewModel.state.value?.settings?.language)
+    }
+
+    @Test
+    fun `choices are saved and reach the state`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.setLanguage(AppLanguage.SPANISH)
+        viewModel.setPersonality(Magic8BallPersonality.MYSTICAL)
+        viewModel.setAiAnswersEnabled(false)
+        viewModel.setVoiceQuestionsEnabled(false)
+        runCurrent()
+
+        val expected = UserSettings(
+            language = AppLanguage.SPANISH,
+            personality = Magic8BallPersonality.MYSTICAL,
+            aiAnswersEnabled = false,
+            voiceQuestionsEnabled = false
+        )
+        assertEquals(expected, userSettings.saved.value)
+        assertEquals(expected, viewModel.state.value?.settings)
+    }
+
+    @Test
+    fun `saved choices are restored by a new view model`() = runTest {
+        createViewModel().setVoiceQuestionsEnabled(false)
+        runCurrent()
+
+        assertEquals(VoiceStatus.Off, createViewModel().state.value?.voice)
+    }
+
+    @Test
+    fun `ai answers are used only when the user allows them and they are available`() = runTest {
+        val viewModel = createViewModel()
+        assertEquals(false, viewModel.state.value?.usesAiAnswers)
+
+        aiAvailability.isAvailable.value = true
+        runCurrent()
+        assertEquals(true, viewModel.state.value?.aiAnswersAvailable)
+        assertEquals(true, viewModel.state.value?.usesAiAnswers)
+
+        viewModel.setAiAnswersEnabled(false)
+        runCurrent()
+        assertEquals(true, viewModel.state.value?.aiAnswersAvailable)
+        assertEquals(false, viewModel.state.value?.usesAiAnswers)
+    }
+
+    @Test
+    fun `the request carries the chosen language, personality and ai choice`() = runTest {
+        userSettings.saved.value = UserSettings(
+            language = AppLanguage.SPANISH,
+            personality = Magic8BallPersonality.MYSTICAL,
+            aiAnswersEnabled = false
+        )
+        val viewModel = createViewModel()
+
+        viewModel.ask()
+
+        assertEquals(
+            Magic8BallRequest(
+                userTrigger = EightBallViewModel.ASK_TRIGGER,
+                languageCode = "es",
+                personality = Magic8BallPersonality.MYSTICAL,
+                useAi = false,
+                question = null
+            ),
+            llmGateway.requests.single()
+        )
+    }
+
+    // Tap
 
     @Test
     fun `a tap thinks for the minimum time and then reveals the answer`() = runTest {
         val viewModel = createViewModel()
 
         viewModel.ask()
-        assertEquals(BallPhase.Thinking, viewModel.state.value.phase)
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
 
         advanceTimeBy(MIN_THINKING_MS - 1)
-        assertEquals(BallPhase.Thinking, viewModel.state.value.phase)
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
 
         advanceTimeBy(1)
         runCurrent()
-        val expected = HistoryEntry(id = 0, question = "", answer = AnswerText.Plain(FakeLlmGateway.ANSWER))
-        assertEquals(BallPhase.Answered(expected), viewModel.state.value.phase)
-        assertEquals(listOf(expected), viewModel.state.value.history)
-    }
-
-    @Test
-    fun `a tap answers even while shake detection is off`() = runTest {
-        val viewModel = createViewModel(detectionEnabled = false)
-
-        viewModel.ask()
-        finishCycle()
-
-        assertEquals(1, viewModel.state.value.history.size)
-    }
-
-    @Test
-    fun `a shake produces an answer just like a tap`() = runTest {
-        val viewModel = createViewModel(detectionEnabled = true)
-
-        shake()
-        assertEquals(BallPhase.Thinking, viewModel.state.value.phase)
-
-        advanceTimeBy(MIN_THINKING_MS)
-        runCurrent()
         assertEquals(
-            AnswerText.Plain(FakeLlmGateway.ANSWER),
-            viewModel.state.value.history.single().answer
+            BallPhase.Answered(id = 0, question = "", answer = AnswerText.Plain(FakeLlmGateway.ANSWER)),
+            viewModel.phase
         )
     }
 
     @Test
-    fun `the sensor is used only while detection is enabled and the ball is not thinking`() = runTest {
-        val viewModel = createViewModel()
-        assertEquals(0, motionGateway.subscribers)
+    fun `a tap never listens and sends only the fixed trigger`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
 
-        viewModel.setShakeDetectionEnabled(true)
-        assertEquals(1, motionGateway.subscribers)
+        viewModel.ask()
 
-        shake()
-        assertEquals(0, motionGateway.subscribers)
-
-        advanceTimeBy(MIN_THINKING_MS)
-        runCurrent()
-        assertEquals(1, motionGateway.subscribers)
-
-        viewModel.setShakeDetectionEnabled(false)
-        assertEquals(0, motionGateway.subscribers)
+        assertEquals(0, speech.sessions.size)
+        val request = llmGateway.requests.single()
+        assertEquals(EightBallViewModel.ASK_TRIGGER, request.userTrigger)
+        assertNull(request.question)
     }
 
     @Test
-    fun `leaving the screen while thinking still delivers the answer`() = runTest {
-        val viewModel = createViewModel(detectionEnabled = true)
+    fun `asking again is ignored while thinking, and answers again right after`() = runTest {
+        val viewModel = createViewModel()
 
         viewModel.ask()
-        viewModel.setShakeDetectionEnabled(false)
-        advanceTimeBy(MIN_THINKING_MS)
-        runCurrent()
+        viewModel.ask()
+        viewModel.onHoldStart()
+        viewModel.onHoldEnd()
+        assertEquals(1, llmGateway.requests.size)
 
-        assertEquals(1, viewModel.state.value.history.size)
+        finishThinking()
+        viewModel.ask()
+        finishThinking()
+
+        assertEquals(2, llmGateway.requests.size)
+        assertEquals(1L, (viewModel.phase as BallPhase.Answered).id)
+    }
+
+    @Test
+    fun `the answer stays on the ball until the next question`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.ask()
+        finishThinking()
+        advanceTimeBy(60_000)
+
+        assertTrue(viewModel.phase is BallPhase.Answered)
+    }
+
+    // Shake
+
+    @Test
+    fun `a shake produces an answer just like a tap`() = runTest {
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+
+        shake()
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+
+        finishThinking()
+        assertEquals(AnswerText.Plain(FakeLlmGateway.ANSWER), (viewModel.phase as BallPhase.Answered).answer)
+        assertNull(llmGateway.requests.single().question)
+        assertEquals(0, speech.sessions.size)
+    }
+
+    @Test
+    fun `the sensor is used only while resumed and at rest`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+        assertEquals(0, motionGateway.subscribers)
+
+        viewModel.setResumed(true)
+        assertEquals(1, motionGateway.subscribers)
+
+        viewModel.onHoldStart()
+        assertEquals(0, motionGateway.subscribers)
+
+        viewModel.onHoldEnd()
+        speech.sessions.single().finish("Will it rain?")
+        assertEquals(0, motionGateway.subscribers)
+
+        finishThinking()
+        // The tail of a shake must not ask again: the sensor comes back after the cooldown.
+        advanceTimeBy(COOLDOWN_MS - 1)
+        assertEquals(0, motionGateway.subscribers)
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(1, motionGateway.subscribers)
+
+        viewModel.setResumed(false)
+        assertEquals(0, motionGateway.subscribers)
     }
 
     @Test
     fun `stop events do not ask the ball`() = runTest {
-        val viewModel = createViewModel(detectionEnabled = true)
+        val viewModel = createViewModel(resumed = true)
 
         motionGateway.events.emit(ShakeEvent.Stopped)
         runCurrent()
 
-        assertEquals(BallPhase.Idle, viewModel.state.value.phase)
+        assertEquals(BallPhase.Idle, viewModel.phase)
         assertEquals(0, llmGateway.requests.size)
     }
 
     @Test
-    fun `asking again is ignored while thinking and during the cooldown`() = runTest {
-        val viewModel = createViewModel(detectionEnabled = true)
+    fun `leaving the screen while thinking still delivers the answer`() = runTest {
+        val viewModel = createViewModel(resumed = true)
 
         viewModel.ask()
-        viewModel.ask()
+        viewModel.setResumed(false)
+        finishThinking()
+
+        assertTrue(viewModel.phase is BallPhase.Answered)
+    }
+
+    // Hold to ask by voice
+
+    @Test
+    fun `hold listens, release thinks, and the answer is to the question heard`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        assertEquals(BallPhase.Listening(""), viewModel.phase)
+        val session = speech.sessions.single()
+        assertEquals(AppLanguage.ENGLISH, session.language)
+
+        session.hear("Will it")
+        assertEquals(BallPhase.Listening("Will it"), viewModel.phase)
+        session.hear("Will it rain")
+        assertEquals(BallPhase.Listening("Will it rain"), viewModel.phase)
+
+        viewModel.onHoldEnd()
+        assertTrue(session.stopRequested)
+        assertEquals(BallPhase.Thinking("Will it rain"), viewModel.phase)
+        assertEquals(0, llmGateway.requests.size)
+
+        session.finish("Will it rain tomorrow?")
+        assertEquals(BallPhase.Thinking("Will it rain tomorrow?"), viewModel.phase)
+        assertEquals("Will it rain tomorrow?", llmGateway.requests.single().question)
+        assertEquals(EightBallViewModel.ASK_TRIGGER, llmGateway.requests.single().userTrigger)
+
         advanceTimeBy(MIN_THINKING_MS)
         runCurrent()
+        assertEquals(
+            BallPhase.Answered(
+                id = 0,
+                question = "Will it rain tomorrow?",
+                answer = AnswerText.Plain(FakeLlmGateway.ANSWER)
+            ),
+            viewModel.phase
+        )
+        assertFalse(session.active)
+    }
 
-        viewModel.ask()
-        shake()
-        advanceTimeBy(COOLDOWN_MS - 1)
-        assertEquals(1, llmGateway.requests.size)
+    @Test
+    fun `the recognizer is asked for the language chosen in the app`() = runTest {
+        userSettings.saved.value = UserSettings(language = AppLanguage.SPANISH)
+        val viewModel = createViewModel(microphoneGranted = true)
 
+        viewModel.onHoldStart()
+
+        assertEquals(AppLanguage.SPANISH, speech.sessions.single().language)
+    }
+
+    @Test
+    fun `the voice level follows the recognizer while listening and falls back to zero`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        speech.sessions.single().events.trySend(SpeechEvent.Level(0.6f))
+        assertEquals(0.6f, viewModel.voiceLevel.value)
+
+        viewModel.onHoldEnd()
+        speech.sessions.single().finish("Will it rain?")
+        assertEquals(0f, viewModel.voiceLevel.value)
+    }
+
+    @Test
+    fun `when the last words never arrive the words heard so far are the question`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        val session = speech.sessions.single()
+        session.hear("Should I go")
+        viewModel.onHoldEnd()
+
+        advanceTimeBy(EightBallViewModel.FINAL_TRANSCRIPT_TIMEOUT_MS - 1)
+        assertEquals(0, llmGateway.requests.size)
         advanceTimeBy(1)
         runCurrent()
-        viewModel.ask()
-        assertEquals(2, llmGateway.requests.size)
+
+        assertEquals("Should I go", llmGateway.requests.single().question)
+        assertFalse(session.active)
     }
 
     @Test
-    fun `history keeps the last five answers, newest first`() = runTest {
-        val viewModel = createViewModel()
+    fun `a hold in which nothing was said asks without a question`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
 
-        repeat(7) { index ->
-            llmGateway.answer = { Magic8BallResult.Success("Answer $index") }
-            viewModel.onQuestionChange("Question $index")
-            viewModel.ask()
-            finishCycle()
-        }
+        viewModel.onHoldStart()
+        viewModel.onHoldEnd()
+        speech.sessions.single().finish(null)
 
-        val history = viewModel.state.value.history
-        assertEquals(EightBallUiState.MAX_ENTRIES, history.size)
-        assertEquals(listOf(6L, 5L, 4L, 3L, 2L), history.map { it.id })
-        assertEquals("Question 6", history.first().question)
-        assertEquals(AnswerText.Plain("Answer 6"), history.first().answer)
-        assertEquals(BallPhase.Answered(history.first()), viewModel.state.value.phase)
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+        assertNull(llmGateway.requests.single().question)
+        finishThinking()
+        assertEquals("", (viewModel.phase as BallPhase.Answered).question)
     }
 
     @Test
-    fun `the typed question is trimmed into the history and the field is cleared`() = runTest {
-        val viewModel = createViewModel()
+    fun `a question the recognizer hears to its end is answered while the finger is still down`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
 
-        viewModel.onQuestionChange("  Will it rain?  ")
-        viewModel.ask()
+        viewModel.onHoldStart()
+        speech.sessions.single().finish("Will it rain?")
+        assertEquals(BallPhase.Thinking("Will it rain?"), viewModel.phase)
 
-        assertEquals("", viewModel.question)
-        finishCycle()
-        assertEquals("Will it rain?", viewModel.state.value.history.single().question)
+        finishThinking()
+        assertTrue(viewModel.phase is BallPhase.Answered)
+
+        // Lifting the finger afterwards belongs to that question: it asks nothing more.
+        viewModel.onHoldEnd()
+        assertTrue(viewModel.phase is BallPhase.Answered)
+        assertEquals(1, llmGateway.requests.size)
     }
 
     @Test
-    fun `the question is capped at its maximum length`() = runTest {
-        val viewModel = createViewModel()
+    fun `a recognizer that gives up empty-handed keeps waiting for the release`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
 
-        viewModel.onQuestionChange("a".repeat(EightBallViewModel.MAX_QUESTION_LENGTH + 10))
+        viewModel.onHoldStart()
+        speech.sessions.single().finish(null)
+        assertEquals(BallPhase.Listening(""), viewModel.phase)
+        assertEquals(0, llmGateway.requests.size)
 
-        assertEquals(EightBallViewModel.MAX_QUESTION_LENGTH, viewModel.question.length)
+        viewModel.onHoldEnd()
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+        assertNull(llmGateway.requests.single().question)
     }
 
     @Test
-    fun `the typed question never leaves the device`() = runTest {
-        val viewModel = createViewModel()
+    fun `a recognizer that gives up is started again while the finger is still down`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
 
-        viewModel.onQuestionChange("Something private")
-        viewModel.ask()
-
-        assertEquals(
-            Magic8BallRequest(
-                userTrigger = EightBallViewModel.ASK_TRIGGER,
-                languageCode = AppLanguage.ENGLISH.code,
-                personality = Magic8BallPersonality.SARCASTIC,
-                useAi = true
-            ),
-            llmGateway.requests.single()
-        )
-    }
-
-    @Test
-    fun `the chosen personality is saved and used for the next answer`() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.setPersonality(Magic8BallPersonality.MYSTICAL)
+        viewModel.onHoldStart()
+        speech.sessions.single().finish(null)
+        advanceTimeBy(EightBallViewModel.LISTEN_RETRY_MS)
         runCurrent()
-        assertEquals(Magic8BallPersonality.MYSTICAL, userSettings.saved.value.personality)
-        assertEquals(Magic8BallPersonality.MYSTICAL, viewModel.state.value.personality)
+        assertEquals(2, speech.sessions.size)
+        assertTrue(speech.sessions.last().active)
+
+        speech.sessions.last().finish("Will it rain?")
+        assertEquals(BallPhase.Thinking("Will it rain?"), viewModel.phase)
+    }
+
+    @Test
+    fun `a recognizer that fails is a question nobody heard, never an error`() = runTest {
+        speech.failure = IllegalStateException("recognizer died")
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        assertEquals(BallPhase.Listening(""), viewModel.phase)
+        viewModel.onHoldEnd()
+        finishThinking()
+
+        val phase = viewModel.phase as BallPhase.Answered
+        assertEquals(AnswerText.Plain(FakeLlmGateway.ANSWER), phase.answer)
+        assertNull(llmGateway.requests.single().question)
+        assertNull(viewModel.state.value?.notice)
+    }
+
+    @Test
+    fun `leaving the screen while listening releases the microphone and asks nothing`() = runTest {
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        val session = speech.sessions.single()
+        session.hear("Will it")
+        viewModel.setResumed(false)
+        runCurrent()
+
+        assertFalse(session.active)
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertEquals(0f, viewModel.voiceLevel.value)
+
+        viewModel.onHoldCancel()
+        advanceTimeBy(MAX_THINKING_MS)
+        assertEquals(0, llmGateway.requests.size)
+    }
+
+    @Test
+    fun `an interrupted hold puts the previous answer back`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+        viewModel.ask()
+        finishThinking()
+        val answered = viewModel.phase
+
+        viewModel.onHoldStart()
+        assertEquals(BallPhase.Listening(""), viewModel.phase)
+        viewModel.onHoldCancel()
+        runCurrent()
+
+        assertEquals(answered, viewModel.phase)
+        assertFalse(speech.sessions.single().active)
+        assertEquals(1, llmGateway.requests.size)
+    }
+
+    // Microphone off, denied or impossible
+
+    @Test
+    fun `with voice questions off a hold is a long tap`() = runTest {
+        userSettings.saved.value = UserSettings(voiceQuestionsEnabled = false)
+        val viewModel = createViewModel(microphoneGranted = true)
+        assertEquals(VoiceStatus.Off, viewModel.state.value?.voice)
+
+        viewModel.onHoldStart()
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertEquals(0, speech.sessions.size)
+
+        viewModel.onHoldEnd()
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+        assertNull(llmGateway.requests.single().question)
+        assertNull(viewModel.state.value?.notice)
+    }
+
+    @Test
+    fun `the first hold asks for the microphone permission instead of asking the ball`() = runTest {
+        val viewModel = createViewModel()
+        val effects = viewModel.collectEffects(this)
+        assertEquals(VoiceStatus.Ready, viewModel.state.value?.voice)
+
+        viewModel.onHoldStart()
+        viewModel.onHoldStart()
+        viewModel.onHoldEnd()
+        runCurrent()
+
+        assertEquals(listOf<EightBallEffect>(EightBallEffect.RequestMicrophonePermission), effects)
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertEquals(0, speech.sessions.size)
+        assertEquals(0, llmGateway.requests.size)
+    }
+
+    @Test
+    fun `once the permission is granted the next hold listens`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.onHoldStart()
+        viewModel.onMicrophonePermissionResult(granted = true)
+        assertEquals(VoiceStatus.Ready, viewModel.state.value?.voice)
+        assertNull(viewModel.state.value?.notice)
+        assertEquals(0, speech.sessions.size)
+
+        viewModel.onHoldStart()
+        assertEquals(BallPhase.Listening(""), viewModel.phase)
+    }
+
+    @Test
+    fun `a denied permission behaves like voice questions off and explains itself once`() = runTest {
+        val viewModel = createViewModel()
+        val effects = viewModel.collectEffects(this)
+
+        viewModel.onHoldStart()
+        viewModel.onMicrophonePermissionResult(granted = false)
+        assertEquals(VoiceStatus.PermissionDenied, viewModel.state.value?.voice)
+        assertEquals(Notice.MicrophoneDenied, viewModel.state.value?.notice)
+
+        advanceTimeBy(EightBallViewModel.NOTICE_DURATION_MS)
+        runCurrent()
+        assertNull(viewModel.state.value?.notice)
+
+        // From now on a hold is a long tap: no new request, no listening, no notice.
+        viewModel.onHoldStart()
+        viewModel.onHoldEnd()
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+        assertEquals(0, speech.sessions.size)
+        assertNull(viewModel.state.value?.notice)
+        assertEquals(1, effects.count { it == EightBallEffect.RequestMicrophonePermission })
+
+        finishThinking()
+        viewModel.onMicrophonePermissionResult(granted = false)
+        assertNull(viewModel.state.value?.notice)
+    }
+
+    @Test
+    fun `asking clears the notice`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.onHoldStart()
+        viewModel.onMicrophonePermissionResult(granted = false)
 
         viewModel.ask()
-        assertEquals(Magic8BallPersonality.MYSTICAL, llmGateway.requests.single().personality)
+
+        assertNull(viewModel.state.value?.notice)
     }
+
+    @Test
+    fun `a permission granted in the system settings is picked up on return`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.onHoldStart()
+        viewModel.onMicrophonePermissionResult(granted = false)
+
+        viewModel.onMicrophonePermissionChecked(granted = false)
+        assertEquals(VoiceStatus.PermissionDenied, viewModel.state.value?.voice)
+
+        viewModel.onMicrophonePermissionChecked(granted = true)
+        assertEquals(VoiceStatus.Ready, viewModel.state.value?.voice)
+
+        viewModel.onHoldStart()
+        assertEquals(BallPhase.Listening(""), viewModel.phase)
+    }
+
+    @Test
+    fun `a permission taken away in the system settings is asked for again`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+        val effects = viewModel.collectEffects(this)
+
+        viewModel.onMicrophonePermissionChecked(granted = false)
+        viewModel.onHoldStart()
+        runCurrent()
+
+        assertEquals(listOf<EightBallEffect>(EightBallEffect.RequestMicrophonePermission), effects)
+        assertEquals(0, speech.sessions.size)
+    }
+
+    @Test
+    fun `without a recognizer the app is tap and shake only and says so once`() = runTest {
+        speech.available = false
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+        val effects = viewModel.collectEffects(this)
+        assertEquals(VoiceStatus.Unsupported, viewModel.state.value?.voice)
+
+        viewModel.onHoldStart()
+        assertEquals(Notice.VoiceUnsupported, viewModel.state.value?.notice)
+        assertEquals(0, speech.sessions.size)
+
+        viewModel.onHoldEnd()
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+        assertNull(viewModel.state.value?.notice)
+        finishThinking()
+
+        viewModel.onHoldStart()
+        assertNull(viewModel.state.value?.notice)
+        assertFalse(EightBallEffect.RequestMicrophonePermission in effects)
+
+        shake(afterCooldown = true)
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+    }
+
+    @Test
+    fun `a recognizer installed later is noticed when the screen comes back`() = runTest {
+        speech.available = false
+        val viewModel = createViewModel(resumed = true)
+
+        speech.available = true
+        viewModel.setResumed(false)
+        viewModel.setResumed(true)
+
+        assertEquals(VoiceStatus.Ready, viewModel.state.value?.voice)
+    }
+
+    // The hands-free equivalent of holding
+
+    @Test
+    fun `toggling listens and toggling again ends the question`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.toggleVoiceQuestion()
+        assertEquals(BallPhase.Listening(handsFree = true), viewModel.phase)
+        val session = speech.sessions.single()
+        session.hear("Is it time")
+
+        viewModel.toggleVoiceQuestion()
+        assertTrue(session.stopRequested)
+        session.finish("Is it time?")
+
+        assertEquals("Is it time?", llmGateway.requests.single().question)
+    }
+
+    @Test
+    fun `hands-free listening that hears nothing just stops`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.toggleVoiceQuestion()
+        speech.sessions.single().finish(null)
+
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertEquals(0, llmGateway.requests.size)
+    }
+
+    @Test
+    fun `hands-free listening answers by itself once the question has been heard`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.toggleVoiceQuestion()
+        speech.sessions.single().finish("Is it time?")
+        finishThinking()
+
+        assertEquals("Is it time?", (viewModel.phase as BallPhase.Answered).question)
+    }
+
+    // Privacy: what is passed on
+
+    @Test
+    fun `a question is passed on with the user's ai choice, whatever it is`() = runTest {
+        userSettings.saved.value = UserSettings(aiAnswersEnabled = false)
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        speech.sessions.single().finish("Will it rain?")
+
+        // The data layer never sends a question while useAi is false.
+        val request = llmGateway.requests.single()
+        assertEquals(false, request.useAi)
+        assertEquals("Will it rain?", request.question)
+    }
+
+    @Test
+    fun `a transcript of only spaces is no question`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        speech.sessions.single().hear("   ")
+        viewModel.onHoldEnd()
+        speech.sessions.single().finish("  ")
+
+        assertNull(llmGateway.requests.single().question)
+    }
+
+    // Failures are never shown
 
     @Test
     fun `a failed answer becomes the fallback answer, not an error`() = runTest {
@@ -237,9 +720,10 @@ class EightBallViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.ask()
-        finishCycle()
+        finishThinking()
 
-        assertEquals(AnswerText.Fallback, viewModel.state.value.history.single().answer)
+        assertEquals(AnswerText.Fallback, (viewModel.phase as BallPhase.Answered).answer)
+        assertNull(viewModel.state.value?.notice)
     }
 
     @Test
@@ -248,9 +732,9 @@ class EightBallViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.ask()
-        finishCycle()
+        finishThinking()
 
-        assertEquals(AnswerText.Fallback, viewModel.state.value.history.single().answer)
+        assertEquals(AnswerText.Fallback, (viewModel.phase as BallPhase.Answered).answer)
     }
 
     @Test
@@ -259,13 +743,13 @@ class EightBallViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.ask()
-        finishCycle()
-        assertEquals(AnswerText.Fallback, viewModel.state.value.history.single().answer)
+        finishThinking()
+        assertEquals(AnswerText.Fallback, (viewModel.phase as BallPhase.Answered).answer)
 
         llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER) }
         viewModel.ask()
-        finishCycle()
-        assertEquals(AnswerText.Plain(FakeLlmGateway.ANSWER), viewModel.state.value.history.first().answer)
+        finishThinking()
+        assertEquals(AnswerText.Plain(FakeLlmGateway.ANSWER), (viewModel.phase as BallPhase.Answered).answer)
     }
 
     @Test
@@ -275,49 +759,182 @@ class EightBallViewModelTest {
 
         viewModel.ask()
         advanceTimeBy(MAX_THINKING_MS - 1)
-        assertEquals(BallPhase.Thinking, viewModel.state.value.phase)
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
 
         advanceTimeBy(1)
         runCurrent()
-        val phase = viewModel.state.value.phase
-        assertTrue(phase is BallPhase.Answered && phase.entry.answer == AnswerText.Fallback)
+        assertEquals(AnswerText.Fallback, (viewModel.phase as BallPhase.Answered).answer)
     }
 
+    // Effects
+
     @Test
-    fun `effects announce the start and then the answer`() = runTest {
+    fun `a tap announces the ask and then the answer`() = runTest {
         val viewModel = createViewModel()
-        val effects = mutableListOf<EightBallEffect>()
-        backgroundScope.launch { viewModel.effects.collect(effects::add) }
+        val effects = viewModel.collectEffects(this)
 
         viewModel.ask()
         runCurrent()
         assertEquals(listOf<EightBallEffect>(EightBallEffect.AskStarted), effects)
 
-        advanceTimeBy(MIN_THINKING_MS)
-        runCurrent()
+        finishThinking()
         assertEquals(listOf(EightBallEffect.AskStarted, EightBallEffect.AnswerRevealed), effects)
     }
 
+    @Test
+    fun `a spoken question announces listening, the release and then the answer`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+        val effects = viewModel.collectEffects(this)
+
+        viewModel.onHoldStart()
+        viewModel.onHoldEnd()
+        speech.sessions.single().finish("Will it rain?")
+        finishThinking()
+
+        assertEquals(
+            listOf(
+                EightBallEffect.ListeningStarted,
+                EightBallEffect.ListeningStopped,
+                EightBallEffect.AnswerRevealed
+            ),
+            effects
+        )
+    }
+
+    // Closing, asking again and the history
+
+    @Test
+    fun `closing an answer goes back to rest`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.ask()
+        finishThinking()
+
+        viewModel.dismiss()
+        runCurrent()
+
+        assertEquals(BallPhase.Idle, viewModel.phase)
+    }
+
+    @Test
+    fun `closing while thinking drops the question and nothing is answered or saved`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.ask()
+        runCurrent()
+        assertTrue(viewModel.phase is BallPhase.Thinking)
+
+        viewModel.dismiss()
+        finishThinking()
+
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertEquals(emptyList<Any>(), viewModel.state.value?.history)
+    }
+
+    @Test
+    fun `closing while listening releases the microphone and goes back to rest`() = runTest {
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+        viewModel.ask()
+        finishThinking()
+        viewModel.onHoldStart()
+        runCurrent()
+        assertTrue(viewModel.phase is BallPhase.Listening)
+
+        viewModel.dismiss()
+        runCurrent()
+
+        assertEquals(BallPhase.Idle, viewModel.phase)
+        assertFalse(speech.sessions.single().active)
+    }
+
+    @Test
+    fun `every answer is saved with its question and who wrote it, newest first`() = runTest {
+        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
+        viewModel.ask()
+        finishThinking()
+
+        llmGateway.answer = { Magic8BallResult.Success("Without a doubt", fromAi = true) }
+        viewModel.onHoldStart()
+        runCurrent()
+        speech.sessions.single().finish("Will it rain?")
+        viewModel.onHoldEnd()
+        finishThinking()
+
+        val saved = viewModel.state.value?.history.orEmpty()
+        assertEquals(listOf("Will it rain?", ""), saved.map { it.question })
+        assertEquals(listOf("Without a doubt", FakeLlmGateway.ANSWER), saved.map { it.answer })
+        assertEquals(listOf(true, false), saved.map { it.fromAi })
+    }
+
+    @Test
+    fun `an answer the app had to make up is saved without a text`() = runTest {
+        llmGateway.answer = { Magic8BallResult.Failure(LlmError.Network) }
+        val viewModel = createViewModel()
+        viewModel.ask()
+        finishThinking()
+
+        assertEquals(listOf<String?>(null), viewModel.state.value?.history?.map { it.answer })
+    }
+
+    @Test
+    fun `an entry can be deleted and put back, and all of them cleared`() = runTest {
+        val viewModel = createViewModel()
+        repeat(3) {
+            viewModel.ask()
+            finishThinking()
+        }
+        val saved = viewModel.state.value!!.history
+        assertEquals(listOf(NOW, NOW, NOW), saved.map { it.askedAtMillis })
+
+        viewModel.deleteHistoryEntry(saved[1].id)
+        runCurrent()
+        assertEquals(listOf(saved[0], saved[2]), viewModel.state.value?.history)
+
+        viewModel.restoreHistoryEntry(saved[1])
+        runCurrent()
+        assertEquals(saved, viewModel.state.value?.history)
+
+        viewModel.clearHistory()
+        runCurrent()
+        assertEquals(emptyList<Any>(), viewModel.state.value?.history)
+    }
+
+    private val EightBallViewModel.phase: BallPhase? get() = state.value?.phase
+
+    private fun EightBallViewModel.collectEffects(scope: TestScope): List<EightBallEffect> {
+        val collected = mutableListOf<EightBallEffect>()
+        scope.backgroundScope.launch { effects.collect(collected::add) }
+        return collected
+    }
+
     /** Delivers a shake and lets the resulting state reach the subscribers. */
-    private suspend fun TestScope.shake() {
+    private suspend fun TestScope.shake(afterCooldown: Boolean = false) {
+        if (afterCooldown) advanceTimeBy(COOLDOWN_MS)
+        runCurrent()
         motionGateway.events.emit(ShakeEvent.Started)
         runCurrent()
     }
 
-    /** Lets the answer arrive and the cooldown pass, so the ball can be asked again. */
-    private fun TestScope.finishCycle() {
-        advanceTimeBy(MIN_THINKING_MS + COOLDOWN_MS)
+    /** Lets the answer arrive. */
+    private fun TestScope.finishThinking() {
+        advanceTimeBy(MIN_THINKING_MS)
         runCurrent()
     }
 
-    private fun createViewModel(detectionEnabled: Boolean = false): EightBallViewModel {
+    private fun createViewModel(
+        resumed: Boolean = false,
+        microphoneGranted: Boolean = false
+    ): EightBallViewModel {
         val viewModel = EightBallViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
             observeShakeUseCase = ObserveShakeUseCase(motionGateway),
             userSettingsRepository = userSettings,
+            aiAnswersAvailability = aiAvailability,
+            speechListener = speech,
+            history = history,
+            clock = clock,
             queryConfig = queryConfig
         )
-        viewModel.setShakeDetectionEnabled(detectionEnabled)
+        viewModel.onMicrophonePermissionChecked(microphoneGranted)
+        viewModel.setResumed(resumed)
         return viewModel
     }
 
@@ -330,20 +947,49 @@ class EightBallViewModelTest {
 
     /** Stands for the settings file: what is saved here outlives a ViewModel. */
     private class FakeUserSettingsRepository : UserSettingsRepository {
-        val saved = MutableStateFlow(UserSettings())
-        override val settings = saved
+        val saved = MutableStateFlow<UserSettings?>(UserSettings())
+        override val settings = saved.filterNotNull()
 
         override suspend fun setLanguage(language: AppLanguage) {
-            saved.update { it.copy(language = language) }
+            saved.update { it?.copy(language = language) }
         }
 
         override suspend fun setPersonality(personality: Magic8BallPersonality) {
-            saved.update { it.copy(personality = personality) }
+            saved.update { it?.copy(personality = personality) }
         }
 
         override suspend fun setAiAnswersEnabled(enabled: Boolean) {
-            saved.update { it.copy(aiAnswersEnabled = enabled) }
+            saved.update { it?.copy(aiAnswersEnabled = enabled) }
         }
+
+        override suspend fun setVoiceQuestionsEnabled(enabled: Boolean) {
+            saved.update { it?.copy(voiceQuestionsEnabled = enabled) }
+        }
+    }
+
+    /** Stands for the history file: newest first, as the real one keeps it. */
+    private class FakeAnswerHistoryRepository : AnswerHistoryRepository {
+        override val entries = MutableStateFlow<List<HistoryEntry>>(emptyList())
+
+        override suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean) {
+            entries.update { listOf(HistoryEntry(it.size + 1L, question, answer, askedAtMillis, fromAi)) + it }
+        }
+
+        override suspend fun remove(id: Long) {
+            entries.update { old -> old.filterNot { it.id == id } }
+        }
+
+        override suspend fun restore(entry: HistoryEntry) {
+            entries.update { old -> (old + entry).sortedByDescending { it.id } }
+        }
+
+        override suspend fun clear() {
+            entries.value = emptyList()
+        }
+    }
+
+    private class FakeAiAnswersAvailability : AiAnswersAvailability {
+        override val isAvailable = MutableStateFlow(false)
     }
 
     private class FakeLlmGateway : LlmGateway {
@@ -360,9 +1006,47 @@ class EightBallViewModelTest {
         }
     }
 
+    /** A recognizer driven by the test: one [Session] per time the app listens. */
+    private class FakeSpeechListener : SpeechListener {
+        var available = true
+        var failure: Exception? = null
+        val sessions = mutableListOf<Session>()
+
+        override fun isAvailable(): Boolean = available
+
+        override fun listen(language: AppLanguage, stop: Deferred<Unit>): Flow<SpeechEvent> = flow {
+            val session = Session(language, stop)
+            sessions += session
+            failure?.let { throw it }
+            try {
+                for (event in session.events) emit(event)
+            } finally {
+                session.active = false
+            }
+        }
+
+        class Session(val language: AppLanguage, private val stop: Deferred<Unit>) {
+            val events = Channel<SpeechEvent>(Channel.UNLIMITED)
+            var active = true
+
+            val stopRequested: Boolean get() = stop.isCompleted
+
+            fun hear(words: String) {
+                events.trySend(SpeechEvent.Transcript(words, isFinal = false))
+            }
+
+            /** The recognizer is done: with [question] as what it understood, or with nothing. */
+            fun finish(question: String?) {
+                question?.let { events.trySend(SpeechEvent.Transcript(it, isFinal = true)) }
+                events.close()
+            }
+        }
+    }
+
     private companion object {
         const val MIN_THINKING_MS = 1_000L
         const val MAX_THINKING_MS = 5_000L
         const val COOLDOWN_MS = 500L
+        const val NOW = 1_800_000_000_000L
     }
 }

@@ -69,7 +69,7 @@ The project follows a strict **Clean Architecture** pattern, modularized to sepa
 ```text
 :app-wear           # Wear OS application: entry point & DI orchestration
 ├── :feature:chat   # Wear presentation layer (UI, ViewModel)
-:app-phone          # Phone/tablet application: single Compose (Material 3) screen & its ViewModel
+:app-phone          # Phone/tablet application: one Compose (Material 3) screen, its ViewModel & speech recognition
 ├── :core:domain    # Business logic (UseCases, Repository Interfaces, Policies)
 ├── :core:data      # Data implementation (Repositories, DataSources, API)
 ├── :core:network   # Network infrastructure (Retrofit, OkHttp, API Keys)
@@ -82,7 +82,21 @@ Both applications share `:core:domain`, `:core:data`, `:core:network`, `:core:mo
 
 ### Phone & tablet app
 
-`:app-phone` exists so the app can also be tested and installed on phones and tablets. One screen: an optional question field, the ball (tap it or shake the device), the animated answer, a personality switch and the last 5 answers (kept in memory only). The typed question never leaves the device: it is only shown on screen, and the request for an answer is the same fixed trigger the watch sends.
+`:app-phone` is the app for phones and tablets. Its layout follows the listen-and-identify apps people already know: a flat disc with the "8" in the middle that beats slowly, one line above it, and a second page with the history one swipe away, with dots at the top telling which page is in front. It has one dark palette over a soft gradient, whatever the system's theme.
+
+*   **Ask out loud**: hold the ball and say your question; let go to end it. Rings around the ball grow with your voice and the words appear under it. When AI answers are on, the recognised question is what Gemini answers.
+*   **Stages**: "Hold to ask" at rest; "Listening…" with the rings; "Thinking…" with ripples leaving the ball; then the ball grows and its "8" gives way to the die with the answer, the question above it. The window comes up as soon as the ball starts thinking, which has two fine borders, with a grey die deep in it, swaying, and a band of light crossing it; with the answer the die floats up until it fills the window, tips, rocks upright as if in liquid, takes the accent colour and shows the text, which is written on the die and moves with it. Colour is kept for the answer: everything else is greys over a near-black blue. The answer stays until you close it or ask again; the close button or the back gesture also cancels a question in progress.
+*   **Recents**: the page to the left (swipe, or the button in the corner) lists the answers: answer, question, how long ago and whether it was AI or classic, An entry goes away with its delete button, with "Undo" for a moment; "Clear all" sits at the top and asks first. The history is a domain repository (`AnswerHistoryRepository` in `:core:domain`) implemented over one private file (`FileAnswerHistoryRepository` in `:core:data`) and bound only in the phone app; it holds at most 50 entries and is never backed up or sent anywhere.
+*   **Or don't**: a short tap asks without a question, and so does shaking the phone (only while the app is on screen and the ball is at rest).
+*   **Settings** (one bottom sheet): language (English / Español, switched at once, Spanish by default on a Spanish-language device), answer style (Sarcastic / Mystical / Neutral), AI answers and voice questions. With voice questions off the app is tap-and-shake only. All four are saved with the same DataStore file layout the watch uses.
+*   **Microphone**: `RECORD_AUDIO` is requested the first time you ask out loud. If it is denied, or the device has no speech recognition service, the app behaves exactly as with voice questions off; it says so once, never blocks, and the settings sheet offers a way to grant it.
+*   **Speech recognition** uses Android's `SpeechRecognizer` behind a domain gateway (`SpeechListener`): the on-device recognizer where the device has one for the app's language (Android 12+), otherwise the device's default recognition service. It runs only while you hold.
+*   **Privacy**: when a question was recognised *and* AI answers are in use, the question text (one line, at most 200 characters) is sent to Gemini as the user message so the answer responds to it; the system instruction stays the app's own, tells the model to treat that text only as a question, and answers over 6 words are rejected. A tap or a shake sends the same fixed trigger the watch sends. With AI answers off, unavailable, slow or failing, the answer is a bundled one and nothing is sent. The question and its answer are kept only in the on-device "Recents" history (latest 50, excluded from backups, deletable one by one or all at once). See [the privacy policy](docs/PRIVACY_POLICY.md).
+*   **Quality**: animations are drawn in the draw/layer phase only (no recomposition per frame), run at their designed speed whatever the system's animation scale is (the ball is the app, so its motion is a product decision; everything else follows the system setting), and come with haptics; edge-to-edge, one dark palette, portrait on phones and free rotation on tablets and foldables; TalkBack and switch users get "Ask" and "Ask by voice" actions and hear the answer announced.
+
+The watch app shares all of this. Its screen is the ball: a shake asks, and while AI answers are in use (the only thing that can answer a question) holding the screen listens to one, with the words shown under the "8" as they are heard. Speech recognition is a domain gateway (`SpeechListener` in `:core:domain`) implemented once over Android's `SpeechRecognizer` (`AndroidSpeechListener` in `:core:data`) and used by both apps.
+
+`./gradlew :app-phone:recordRoborazziDebug` renders the screen's states on the JVM (no device needed) into `app-phone/build/outputs/roborazzi/`.
 
 ### Builds & version codes
 

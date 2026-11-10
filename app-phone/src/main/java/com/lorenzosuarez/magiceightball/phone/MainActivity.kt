@@ -2,8 +2,12 @@ package com.lorenzosuarez.magiceightball.phone
 
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -20,7 +24,9 @@ class MainActivity : ComponentActivity() {
     // of width up, so tablets and foldables keep rotating freely, which is what the check asks for.
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // The app is dark whatever the system's setting, so the bars' icons are always light.
+        val bars = SystemBarStyle.dark(Color.TRANSPARENT)
+        enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
         super.onCreate(savedInstanceState)
 
         // Set both ways: a requested orientation outlives the activity being recreated, so a
@@ -36,5 +42,23 @@ class MainActivity : ComponentActivity() {
                 EightBallScreen(viewModel)
             }
         }
+        holdFirstFrameUntilSettingsAreRead()
+    }
+
+    /**
+     * Keeps the launch screen up for the few milliseconds it takes to read the saved choices,
+     * so the first frame the user sees is already in their language and with their settings.
+     */
+    private fun holdFirstFrameUntilSettingsAreRead() {
+        val content: View = findViewById(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    if (viewModel.state.value == null) return false
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    return true
+                }
+            }
+        )
     }
 }

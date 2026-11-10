@@ -1,14 +1,10 @@
 package com.example.magiceightball.feature.chat.components
 
-import android.graphics.BlurMaskFilter
 import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Shader
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,65 +12,52 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
-import kotlin.math.ceil
-
-object PredictionTriangleDefaults {
-    val BackgroundColor = Color(0xFF1E50F3)
-    val GlowColor = Color(0xFF4B79FF)
-    val BorderColor = Color(0xFF102875).copy(alpha = 0.8f)
-    val TextColor = Color.White
-    val BorderWidth = 2.dp
-}
+import kotlinx.coroutines.withContext
 
 /**
- * The glowing triangular face of the die. Shows a shimmer placeholder while [isLoading] and
- * cross-fades to [text] once the answer is in.
+ * The triangular face of the die. While [isLoading] it is grey, with placeholder bars that a
+ * highlight sweeps across; once the answer is in, the accent washes over it and [text] fades in.
  *
- * Glow, fill and border are drawn in one pass from objects that are rebuilt only when the size
- * or the colours change; the blurred glow in particular is rendered once into a bitmap.
+ * Both fills are built once per size; the change of colour only changes how much of each is
+ * drawn, so it neither recomposes nor allocates.
  */
 @Composable
 fun PredictionTriangle(
     text: String,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false,
-    backgroundColor: Color = PredictionTriangleDefaults.BackgroundColor,
-    glowColor: Color = PredictionTriangleDefaults.GlowColor,
-    borderColor: Color = PredictionTriangleDefaults.BorderColor,
-    textColor: Color = PredictionTriangleDefaults.TextColor
+    isLoading: Boolean = false
 ) {
+    val answered = remember { Animatable(if (isLoading) 0f else 1f) }
+    LaunchedEffect(isLoading) {
+        withContext(DesignedMotion) {
+            answered.animateTo(if (isLoading) 0f else 1f, tween(COLOUR_FADE_MILLIS))
+        }
+    }
+
     Box(
         modifier = modifier.drawWithCache {
             if (size.isEmpty()) return@drawWithCache onDrawBehind {}
 
-            val triangle = InvertedTriangleGeometry(size)
-            val path = triangle.toPath()
-            val glowRadius = triangle.cornerRadius
-            val glow = renderGlow(path, size, glowRadius, glowColor)
-            val glowOffset = Offset(-glowRadius, -glowRadius)
-            val border = Stroke(width = PredictionTriangleDefaults.BorderWidth.toPx())
+            val path = InvertedTriangleGeometry(size).toPath()
 
             onDrawBehind {
-                drawImage(glow, topLeft = glowOffset)
-                drawPath(path, backgroundColor)
-                drawPath(path, borderColor, style = border)
+                val colour = answered.value
+                if (colour < 1f) drawPath(path, BallColors.DieThinking, alpha = 1f - colour)
+                if (colour > 0f) drawPath(path, BallColors.DieAnswered, alpha = colour)
             }
         }
     ) {
@@ -89,29 +72,12 @@ fun PredictionTriangle(
             } else {
                 TriangleFittedText(
                     text = text,
-                    color = textColor,
+                    color = BallColors.OnAccent,
                     modifier = Modifier.fillMaxSize()
                 )
             }
         }
     }
-}
-
-/** Renders the outer glow of [path] once, into a bitmap padded by [radius] on every side. */
-private fun renderGlow(path: Path, size: Size, radius: Float, color: Color): ImageBitmap {
-    val bitmap = ImageBitmap(
-        width = ceil(size.width + 2f * radius).toInt(),
-        height = ceil(size.height + 2f * radius).toInt()
-    )
-    val paint = Paint().apply {
-        this.color = color
-        asFrameworkPaint().maskFilter = BlurMaskFilter(radius, BlurMaskFilter.Blur.OUTER)
-    }
-    Canvas(bitmap).apply {
-        translate(radius, radius)
-        drawPath(path, paint)
-    }
-    return bitmap
 }
 
 /**
@@ -122,13 +88,18 @@ private fun renderGlow(path: Path, size: Size, radius: Float, color: Color): Ima
  */
 @Composable
 private fun ThinkingShimmer(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "ThinkingShimmer")
-    val sweep = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(SHIMMER_SWEEP_MILLIS, easing = LinearEasing)),
-        label = "ThinkingShimmerSweep"
-    )
+    // Driven by the display's frames, so the highlight keeps sweeping whatever the system's
+    // animation scale is: it is the app saying it is working.
+    val sweep = remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) {
+        val start = withFrameNanos { it }
+        while (true) {
+            withFrameNanos { now ->
+                val elapsedMillis = (now - start) / NANOS_PER_MILLI
+                sweep.floatValue = (elapsedMillis % SHIMMER_SWEEP_MILLIS).toFloat() / SHIMMER_SWEEP_MILLIS
+            }
+        }
+    }
 
     Spacer(
         modifier.drawWithCache {
@@ -148,7 +119,7 @@ private fun ThinkingShimmer(modifier: Modifier = Modifier) {
                 .apply { this.shader = shader }
 
             onDrawBehind {
-                shaderMatrix.setTranslate(lerp(sweepStart, sweepEnd, sweep.value), 0f)
+                shaderMatrix.setTranslate(lerp(sweepStart, sweepEnd, sweep.floatValue), 0f)
                 shader.setLocalMatrix(shaderMatrix)
                 drawIntoCanvas { canvas ->
                     val nativeCanvas = canvas.nativeCanvas
@@ -172,7 +143,9 @@ private fun ThinkingShimmer(modifier: Modifier = Modifier) {
 }
 
 private const val CONTENT_FADE_MILLIS = 250
-private const val SHIMMER_SWEEP_MILLIS = 1200
+private const val COLOUR_FADE_MILLIS = 450
+private const val SHIMMER_SWEEP_MILLIS = 1200L
+private const val NANOS_PER_MILLI = 1_000_000L
 private const val SHIMMER_BAR_HEIGHT_FRACTION = 0.067f
 private const val SHIMMER_BAND_WIDTH_FRACTION = 0.4f
 

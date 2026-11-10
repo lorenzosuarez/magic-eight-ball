@@ -30,7 +30,8 @@ class DataStoreUserSettingsRepositoryTest {
                 UserSettings(
                     language = AppLanguage.SPANISH,
                     personality = Magic8BallPersonality.SARCASTIC,
-                    aiAnswersEnabled = true
+                    aiAnswersEnabled = true,
+                    voiceQuestionsEnabled = true
                 ),
                 repository.settings.first()
             )
@@ -45,11 +46,12 @@ class DataStoreUserSettingsRepositoryTest {
     }
 
     @Test
-    fun `the three choices survive a new launch`() = runTest {
+    fun `every choice survives a new launch`() = runTest {
         withRepository(deviceLanguageCode = "en") { repository ->
             repository.setLanguage(AppLanguage.SPANISH)
             repository.setPersonality(Magic8BallPersonality.MYSTICAL)
             repository.setAiAnswersEnabled(false)
+            repository.setVoiceQuestionsEnabled(false)
         }
 
         withRepository(deviceLanguageCode = "en") { repository ->
@@ -57,7 +59,8 @@ class DataStoreUserSettingsRepositoryTest {
                 UserSettings(
                     language = AppLanguage.SPANISH,
                     personality = Magic8BallPersonality.MYSTICAL,
-                    aiAnswersEnabled = false
+                    aiAnswersEnabled = false,
+                    voiceQuestionsEnabled = false
                 ),
                 repository.settings.first()
             )
@@ -72,6 +75,25 @@ class DataStoreUserSettingsRepositoryTest {
 
         withRepository(deviceLanguageCode = "es") { repository ->
             assertEquals(AppLanguage.ENGLISH, repository.settings.first().language)
+        }
+    }
+
+    @Test
+    fun `settings saved before voice questions existed keep them on`() = runTest {
+        withRepository(deviceLanguageCode = "en") { repository ->
+            repository.setPersonality(Magic8BallPersonality.MYSTICAL)
+            repository.setAiAnswersEnabled(false)
+        }
+
+        withRepository(deviceLanguageCode = "en") { repository ->
+            assertEquals(
+                UserSettings(
+                    personality = Magic8BallPersonality.MYSTICAL,
+                    aiAnswersEnabled = false,
+                    voiceQuestionsEnabled = true
+                ),
+                repository.settings.first()
+            )
         }
     }
 

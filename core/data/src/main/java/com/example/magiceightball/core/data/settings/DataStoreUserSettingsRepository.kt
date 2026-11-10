@@ -43,7 +43,9 @@ class DataStoreUserSettingsRepository(
                 personality = Magic8BallPersonality.entries
                     .find { it.name == preferences[PERSONALITY] }
                     ?: defaults.personality,
-                aiAnswersEnabled = preferences[AI_ANSWERS_ENABLED] ?: defaults.aiAnswersEnabled
+                aiAnswersEnabled = preferences[AI_ANSWERS_ENABLED] ?: defaults.aiAnswersEnabled,
+                voiceQuestionsEnabled = preferences[VOICE_QUESTIONS_ENABLED]
+                    ?: defaults.voiceQuestionsEnabled
             )
         }
         .distinctUntilChanged()
@@ -60,6 +62,10 @@ class DataStoreUserSettingsRepository(
         save { it[AI_ANSWERS_ENABLED] = enabled }
     }
 
+    override suspend fun setVoiceQuestionsEnabled(enabled: Boolean) {
+        save { it[VOICE_QUESTIONS_ENABLED] = enabled }
+    }
+
     /** A choice that cannot be written is dropped: the app keeps showing the saved one. */
     private suspend fun save(change: (MutablePreferences) -> Unit) {
         try {
@@ -74,5 +80,6 @@ class DataStoreUserSettingsRepository(
         val LANGUAGE = stringPreferencesKey("language")
         val PERSONALITY = stringPreferencesKey("personality")
         val AI_ANSWERS_ENABLED = booleanPreferencesKey("ai_answers_enabled")
+        val VOICE_QUESTIONS_ENABLED = booleanPreferencesKey("voice_questions_enabled")
     }
 }

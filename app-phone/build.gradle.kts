@@ -49,6 +49,13 @@ android {
     buildFeatures {
         compose = true
     }
+    bundle {
+        // The language is chosen in the app, not by the device: every installation needs both
+        // languages, so Google Play must not strip the one the device does not use.
+        language {
+            enableSplit = false
+        }
+    }
     testOptions {
         // Robolectric renders the real screen for the screenshot test, so it needs the resources.
         unitTests.isIncludeAndroidResources = true
@@ -81,4 +88,5 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.ui.test.junit4)
 }

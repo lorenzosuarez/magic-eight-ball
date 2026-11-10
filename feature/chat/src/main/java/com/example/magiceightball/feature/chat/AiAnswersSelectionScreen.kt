@@ -2,8 +2,8 @@ package com.example.magiceightball.feature.chat
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.magiceightball.feature.chat.components.ConsoleMenu
-import com.example.magiceightball.feature.chat.components.ConsoleOption
+import com.example.magiceightball.feature.chat.components.SettingsMenu
+import com.example.magiceightball.feature.chat.components.SettingsOption
 
 /**
  * Lets the user choose whether answers come from the AI service.
@@ -20,17 +20,17 @@ fun AiAnswersSelectionScreen(
 ) {
     val isOn = isEnabled && isAvailable
 
-    ConsoleMenu(
+    SettingsMenu(
         title = localizedString(Strings.AiTitle),
         caption = if (isAvailable) null else localizedString(Strings.AiUnavailable)
     ) {
-        ConsoleOption(
+        SettingsOption(
             label = localizedString(Strings.AiOn),
             isSelected = isOn,
             onClick = { onEnabledChange(true) },
             enabled = isAvailable
         )
-        ConsoleOption(
+        SettingsOption(
             label = localizedString(Strings.AiOff),
             isSelected = !isOn,
             onClick = { onEnabledChange(false) },
