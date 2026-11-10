@@ -20,10 +20,16 @@ class Magic8BallRepositoryImpl @Inject constructor(
             is Magic8BallResult.Success -> remoteResult
             is Magic8BallResult.Failure -> {
                 if (shouldFallback(remoteResult.error)) {
-                    val fallbackMessage = localDataSource.getRandomMessage(request.languageCode)
+                    val fallbackMessage = localDataSource.getRandomMessage(
+                        request.languageCode,
+                        request.personality
+                    )
                     Magic8BallResult.Success(fallbackMessage)
                 } else {
-                    val fallbackMessage = localDataSource.getRandomMessage(request.languageCode)
+                    val fallbackMessage = localDataSource.getRandomMessage(
+                        request.languageCode,
+                        request.personality
+                    )
                     Magic8BallResult.Success(fallbackMessage)
                 }
             }

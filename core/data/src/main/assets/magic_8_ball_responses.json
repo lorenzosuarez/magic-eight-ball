@@ -1,166 +1,210 @@
 {
-  "en": [
-    {
-      "index": 1,
-      "message": "Don't bet on it."
-    },
-    {
-      "index": 2,
-      "message": "In your dreams."
-    },
-    {
-      "index": 3,
-      "message": "Outcome looks bleak."
-    },
-    {
-      "index": 4,
-      "message": "Laughable idea."
-    },
-    {
-      "index": 5,
-      "message": "Ask someone who cares."
-    },
-    {
-      "index": 6,
-      "message": "Meh, maybe?"
-    },
-    {
-      "index": 7,
-      "message": "Signs point to chaos."
-    },
-    {
-      "index": 8,
-      "message": "Outlook grim."
-    },
-    {
-      "index": 9,
-      "message": "Nope. Just nope."
-    },
-    {
-      "index": 10,
-      "message": "Try again, if you dare."
-    },
-    {
-      "index": 11,
-      "message": "The stars say... yikes."
-    },
-    {
-      "index": 12,
-      "message": "Seriously? No."
-    },
-    {
-      "index": 13,
-      "message": "My sources are laughing."
-    },
-    {
-      "index": 14,
-      "message": "Cannot predict (too boring)."
-    },
-    {
-      "index": 15,
-      "message": "Concentrate harder."
-    },
-    {
-      "index": 16,
-      "message": "Very doubtful, obviously."
-    },
-    {
-      "index": 17,
-      "message": "Absolutely not."
-    },
-    {
-      "index": 18,
-      "message": "A definitive maybe."
-    },
-    {
-      "index": 19,
-      "message": "Don't count on it, pal."
-    },
-    {
-      "index": 20,
-      "message": "You're doomed."
-    }
-  ],
-  "es": [
-    {
-      "index": 1,
-      "message": "Ni en tus sueños."
-    },
-    {
-      "index": 2,
-      "message": "Olvídalo, amigo."
-    },
-    {
-      "index": 3,
-      "message": "El futuro pinta mal."
-    },
-    {
-      "index": 4,
-      "message": "Idea ridícula."
-    },
-    {
-      "index": 5,
-      "message": "Pregúntale a otro."
-    },
-    {
-      "index": 6,
-      "message": "Meh, quizás."
-    },
-    {
-      "index": 7,
-      "message": "Puede ser..."
-    },
-    {
-      "index": 8,
-      "message": "Panorama sombrío."
-    },
-    {
-      "index": 9,
-      "message": "No. Simplemente no."
-    },
-    {
-      "index": 10,
-      "message": "Intenta si te atreves."
-    },
-    {
-      "index": 11,
-      "message": "Los astros dicen... uf."
-    },
-    {
-      "index": 12,
-      "message": "¿En serio? No."
-    },
-    {
-      "index": 13,
-      "message": "Mis fuentes se ríen."
-    },
-    {
-      "index": 14,
-      "message": "Aburrido, no predigo."
-    },
-    {
-      "index": 15,
-      "message": "Concéntrate más."
-    },
-    {
-      "index": 16,
-      "message": "Muy dudoso, obvio."
-    },
-    {
-      "index": 17,
-      "message": "Absolutamente no."
-    },
-    {
-      "index": 18,
-      "message": "Un rotundo quizás."
-    },
-    {
-      "index": 19,
-      "message": "No cuentes con ello."
-    },
-    {
-      "index": 20,
-      "message": "Estás condenado."
-    }
-  ]
+  "en": {
+    "sarcastic": [
+      "Don't bet on it.",
+      "In your dreams.",
+      "Ask someone who cares.",
+      "Signs point to chaos.",
+      "Nope. Just nope.",
+      "The stars say... yikes.",
+      "My sources are laughing.",
+      "A definitive maybe.",
+      "Yes. Regrettably.",
+      "Sure, what could go wrong?",
+      "Bold of you to ask.",
+      "Yes, on a technicality.",
+      "Hard pass. Next question.",
+      "Yes, against my advice.",
+      "Lower your expectations.",
+      "I'd say yes, but no.",
+      "Ask again never.",
+      "My lawyer says no.",
+      "Yes. Don't make it weird.",
+      "Outlook: comedic.",
+      "Fine. Yes. Happy now?",
+      "The void says no.",
+      "Maybe, if pigs unionize.",
+      "Reply hazy. Shake harder.",
+      "Yes. Screenshot this.",
+      "Not in this timeline.",
+      "Flip a coin instead.",
+      "Doubtful. Deeply doubtful.",
+      "Sure. Miracles happen.",
+      "I've seen worse ideas. Once.",
+      "Yes, shockingly.",
+      "Unclear. Blame yourself.",
+      "No, but nice try.",
+      "Ha. No.",
+      "Probably. Don't gloat.",
+      "Fate shrugged. So, maybe.",
+      "Yes. I checked twice.",
+      "I cringed. That's a no.",
+      "Chances: slim to tragic.",
+      "Maybe. Bribes help.",
+      "Spoiler: it ends badly.",
+      "Odds are good. Suspiciously.",
+      "Could be worse. Barely.",
+      "Yes. Mark the calendar.",
+      "Ask again after coffee.",
+      "Not a chance, champ.",
+      "It's a yes. Stay humble.",
+      "Maybe. I'm not invested."
+    ],
+    "mystical": [
+      "The owl nods at midnight.",
+      "Yes, whispers the tide.",
+      "The stars lean toward yes.",
+      "Not while the moon wanes.",
+      "The mist hides its answer.",
+      "Ask when the wind turns.",
+      "The river already knows.",
+      "Three ravens say no.",
+      "The embers glow with yes.",
+      "A closed door, for now.",
+      "So it is written.",
+      "The runes fall silent.",
+      "The pendulum swings yes.",
+      "The oracle smiles upon you.",
+      "The seed has not woken.",
+      "Shadows gather. Turn back.",
+      "The old path says yes.",
+      "Patience ripens the answer.",
+      "The wheel is still turning.",
+      "Dawn will carry your answer.",
+      "The serpent shakes its head.",
+      "Fortune opens her hand.",
+      "The well runs dry here.",
+      "Yes, when the frost melts.",
+      "Two moons must pass.",
+      "The cards refuse to speak.",
+      "What you seek seeks you.",
+      "The candle gutters. No.",
+      "An ancient yes echoes.",
+      "Smoke curls toward doubt.",
+      "The fates weave in favor.",
+      "Not yet, weary wanderer.",
+      "Listen. The silence agrees.",
+      "The tide withdraws. No.",
+      "The answer sleeps in you.",
+      "The spirits nod thrice.",
+      "Storm clouds veil the sign.",
+      "The gate stands open.",
+      "Even mountains must wait.",
+      "The bones say otherwise.",
+      "Destiny has already agreed.",
+      "The compass spins wildly.",
+      "A comet blesses this path.",
+      "The lantern flickers: maybe.",
+      "The ashes answer: no.",
+      "The veil is too thick."
+    ]
+  },
+  "es": {
+    "sarcastic": [
+      "Ni en tus sueños.",
+      "Sí, lamentablemente.",
+      "¡Qué valiente pregunta!",
+      "No. Simplemente no.",
+      "Mis fuentes se ríen.",
+      "Un rotundo quizás.",
+      "Sí, contra mi consejo.",
+      "¿Qué podría salir mal?",
+      "Baja tus expectativas.",
+      "El 30 de febrero, sí.",
+      "Bueno, sí. ¿Feliz?",
+      "Sí, cómo no.",
+      "Cuando llueva sopa.",
+      "Mejor lanza una moneda.",
+      "Dudoso. Muy dudoso.",
+      "Sí, de puro milagro.",
+      "No, pero buen intento.",
+      "Ja. No.",
+      "Sí, pero no presumas.",
+      "Sí, sorprendentemente.",
+      "Ni de broma.",
+      "Spoiler: termina mal.",
+      "Podría ser peor.",
+      "Sin café no adivino.",
+      "Sí. Revisé dos veces.",
+      "En otra vida, quizás.",
+      "No, y no insistas.",
+      "Ni con suerte.",
+      "Pronóstico: de risa.",
+      "Sí, y te arrepentirás.",
+      "Soñar no cuesta nada.",
+      "Técnicamente, sí.",
+      "Quizás. Me da igual.",
+      "El destino bostezó.",
+      "Sí. Increíble, ¿no?",
+      "Ya quisieras.",
+      "Mañana tampoco.",
+      "Agita más fuerte.",
+      "Incierto. Culpa tuya.",
+      "Sí, qué remedio.",
+      "Señales: puro caos.",
+      "Ni lo intentes.",
+      "Sí. Raro, pero sí.",
+      "Puede ser. Lo dudo.",
+      "Obvio que no.",
+      "Sí. No te acostumbres.",
+      "Pregúntale al espejo.",
+      "Depende. ¿Cuánto hay?",
+      "No en este siglo.",
+      "Adelante. Yo miro."
+    ],
+    "mystical": [
+      "El búho asiente.",
+      "Sí, susurra la marea.",
+      "La luna dice no.",
+      "La niebla lo oculta.",
+      "El río lo sabe.",
+      "Tres cuervos lo niegan.",
+      "Así está escrito.",
+      "Las runas callan.",
+      "Sigue esa estrella.",
+      "El oráculo te sonríe.",
+      "La semilla aún duerme.",
+      "Las sombras advierten.",
+      "El sendero dice sí.",
+      "Paciencia, caminante.",
+      "La rueda aún gira.",
+      "El alba lo dirá.",
+      "La fortuna te mira.",
+      "El pozo está seco.",
+      "Tras el deshielo, sí.",
+      "Faltan dos lunas.",
+      "Las cartas enmudecen.",
+      "Tu anhelo te busca.",
+      "La vela se apaga: no.",
+      "Resuena un sí antiguo.",
+      "El humo duda.",
+      "El destino ya lo tejió.",
+      "No en esta luna.",
+      "El silencio otorga.",
+      "La marea se retira.",
+      "Ya lo sabes, viajero.",
+      "Los espíritus dicen sí.",
+      "Nubes velan la señal.",
+      "El portal está abierto.",
+      "Hasta el sol espera.",
+      "Los huesos cayeron mal.",
+      "El cometa lo bendice.",
+      "La brújula gira sola.",
+      "Las cenizas dicen no.",
+      "El velo es espeso.",
+      "Pregunta al viento.",
+      "La serpiente sisea: no.",
+      "Vuelve al amanecer.",
+      "El fuego responde: sí.",
+      "El eco calla.",
+      "La montaña aprueba.",
+      "Aún no, alma inquieta.",
+      "El trueno dijo sí.",
+      "Ni el sabio lo sabe.",
+      "Los astros titubean.",
+      "Buen augurio: avanza.",
+      "Mal presagio: detente.",
+      "Escucha a la lluvia."
+    ]
+  }
 }
