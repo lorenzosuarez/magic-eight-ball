@@ -12,6 +12,7 @@ import com.example.magiceightball.core.domain.model.UserSettings
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
+import com.lorenzosuarez.magiceightball.phone.history.AnswerHistory
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechEvent
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechListener
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,6 +45,7 @@ class EightBallViewModel @Inject constructor(
     private val userSettingsRepository: UserSettingsRepository,
     aiAnswersAvailability: AiAnswersAvailability,
     private val speechListener: SpeechListener,
+    private val history: AnswerHistory,
     private val queryConfig: QueryConfig
 ) : ViewModel() {
 
@@ -58,6 +60,7 @@ class EightBallViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val voiceInputs = combine(speechAvailable, microphone, ::Pair)
+    private val noticeAndHistory = combine(notice, history.entries, ::Pair)
 
     /**
      * Null until the saved choices have been read, so the screen never shows a default that is
@@ -69,15 +72,16 @@ class EightBallViewModel @Inject constructor(
         settings,
         aiAnswersAvailability.isAvailable,
         voiceInputs,
-        notice
-    ) { phase, saved, aiAvailable, (speech, microphone), notice ->
+        noticeAndHistory
+    ) { phase, saved, aiAvailable, (speech, microphone), (notice, history) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
                 settings = it,
                 aiAnswersAvailable = aiAvailable,
                 voice = voiceStatus(it, speech, microphone),
-                notice = notice
+                notice = notice,
+                history = history
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -108,6 +112,7 @@ class EightBallViewModel @Inject constructor(
 
     init {
         observeShakes()
+        viewModelScope.launch { history.load() }
     }
 
     fun setLanguage(language: AppLanguage) {
@@ -203,6 +208,33 @@ class EightBallViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The main action once an answer is showing: listens to a new question without anything
+     * being held, and where the app cannot listen, asks without a question.
+     */
+    fun askAgain() {
+        if (!startListening(handsFree = true)) ask()
+    }
+
+    /** Closes whatever is on screen, a question in progress included, and goes back to rest. */
+    fun dismiss() {
+        if (phase.value is BallPhase.Idle) return
+        val cycle = cycleJob?.also { it.cancel() }
+        viewModelScope.launch {
+            // An abandoned listening puts back what was there before; rest comes after that.
+            cycle?.join()
+            if (cycleJob === cycle) phase.value = BallPhase.Idle
+        }
+    }
+
+    fun deleteHistoryEntry(id: Long) {
+        viewModelScope.launch { history.remove(id) }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch { history.clear() }
+    }
+
     /** A question is in progress, even one whose coroutine has not shown its first state yet. */
     private fun isBusy(): Boolean =
         cycleJob?.isActive == true || phase.value is BallPhase.Listening || phase.value is BallPhase.Thinking
@@ -243,7 +275,7 @@ class EightBallViewModel @Inject constructor(
 
         cycleJob = viewModelScope.launch {
             clearNotice()
-            phase.value = BallPhase.Listening()
+            phase.value = BallPhase.Listening(handsFree = handsFree)
             _effects.trySend(EightBallEffect.ListeningStarted)
 
             val transcript = MutableStateFlow("")
@@ -294,8 +326,8 @@ class EightBallViewModel @Inject constructor(
                     is SpeechEvent.Level -> _voiceLevel.value = event.value
                     is SpeechEvent.Transcript -> {
                         transcript.value = event.text.trim()
-                        if (phase.value is BallPhase.Listening) {
-                            phase.value = BallPhase.Listening(transcript.value)
+                        (phase.value as? BallPhase.Listening)?.let {
+                            phase.value = it.copy(transcript = transcript.value)
                         }
                     }
                 }
@@ -330,6 +362,11 @@ class EightBallViewModel @Inject constructor(
         minimumThinking.join()
 
         phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = answer)
+        // Outside this question's own job: closing the answer at once must not lose its entry.
+        viewModelScope.launch {
+            val plain = answer as? AnswerText.Plain
+            history.add(question, plain?.value, System.currentTimeMillis(), plain?.fromAi == true)
+        }
         _effects.trySend(EightBallEffect.AnswerRevealed)
     }
 
@@ -338,7 +375,8 @@ class EightBallViewModel @Inject constructor(
      * wrong ends in [AnswerText.Fallback]: the user never sees an error.
      *
      * Privacy: a question the app heard is passed on so the AI service can answer it; the data
-     * layer sends it only when AI answers are in use, capped in length, and nothing stores it.
+     * layer sends it only when AI answers are in use, capped in length. It is kept, with its
+     * answer, in the history on this device only.
      * A tap or a shake carries no question, and then only the fixed [ASK_TRIGGER] is sent.
      */
     private suspend fun requestAnswer(settings: UserSettings, question: String): AnswerText {
@@ -359,7 +397,7 @@ class EightBallViewModel @Inject constructor(
         }
         return when (result) {
             is Magic8BallResult.Success ->
-                result.message.takeIf { it.isNotBlank() }?.let(AnswerText::Plain)
+                result.message.takeIf { it.isNotBlank() }?.let { AnswerText.Plain(it, result.fromAi) }
             is Magic8BallResult.Failure, null -> null
         } ?: AnswerText.Fallback
     }

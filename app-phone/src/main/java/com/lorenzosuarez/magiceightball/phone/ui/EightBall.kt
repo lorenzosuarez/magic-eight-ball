@@ -55,10 +55,10 @@ enum class BallMode {
     /** At rest, its "8" towards the user. */
     Idle,
 
-    /** As [Idle], glowing and swelling with the user's voice. */
+    /** As [Idle], glowing, with rings around it that grow with the user's voice. */
     Listening,
 
-    /** Spinning. */
+    /** Spinning, with ripples leaving it. */
     Thinking,
 
     /** Its window towards the user, the die and its answer floating in it. */
@@ -139,7 +139,23 @@ fun EightBall(
         label = "listening"
     )
 
-    // Without animations the ball does not pulse with the voice; its glow still says it listens.
+    val thinking = animateFloatAsState(
+        targetValue = if (mode == BallMode.Thinking) 1f else 0f,
+        animationSpec = tween(RINGS_FADE_MS),
+        label = "thinking"
+    )
+
+    // The clock of the rings: it runs only while there are rings to move.
+    val pulse = remember { Animatable(0f) }
+    val ringsMove = (mode == BallMode.Listening || mode == BallMode.Thinking) && !reducedMotion
+    LaunchedEffect(ringsMove) {
+        while (ringsMove) {
+            pulse.snapTo(0f)
+            pulse.animateTo(1f, tween(RING_PULSE_MS, easing = LinearEasing))
+        }
+    }
+
+    // Without animations the ball does not pulse with the voice; its still rings say it listens.
     val voiceMotion: () -> Float = if (reducedMotion) NoVoiceMotion else voiceLevel
 
     val accent = MaterialTheme.colorScheme.primary
@@ -154,7 +170,14 @@ fun EightBall(
             .drawWithCache {
                 val surroundings = BallSurroundings(size.center, size.minDimension / 2f, accent, onDarkBackground)
                 onDrawBehind {
-                    with(surroundings) { draw(listening = listening.value, level = voiceMotion()) }
+                    with(surroundings) {
+                        draw(
+                            listening = listening.value,
+                            thinking = thinking.value,
+                            level = voiceMotion(),
+                            pulse = pulse.value
+                        )
+                    }
                 }
             }
             .graphicsLayer {
@@ -202,13 +225,17 @@ private suspend fun Animatable<Float, *>.settleOn(faceAngle: Float, velocity: Fl
     snapTo(faceAngle)
 }
 
-/** The soft light around the ball and the shadow under it. Built once per size and theme. */
+/**
+ * The soft light around the ball, the rings that say it listens or thinks and the shadow under
+ * it. Built once per size and theme.
+ */
 private class BallSurroundings(
     private val center: Offset,
     private val radius: Float,
-    accent: Color,
+    private val accent: Color,
     private val onDarkBackground: Boolean
 ) {
+    private val rippleStroke = Stroke(width = radius * RIPPLE_WIDTH)
     private val glowRadius = radius * GLOW_RADIUS
     private val glowBrush = Brush.radialGradient(
         0f to accent,
@@ -228,7 +255,35 @@ private class BallSurroundings(
         radius = shadowRadius
     )
 
-    fun DrawScope.draw(listening: Float, level: Float) {
+    fun DrawScope.draw(listening: Float, thinking: Float, level: Float, pulse: Float) {
+        // Listening: discs one inside the other, breathing slowly and pushed out by the voice.
+        if (listening > 0f) {
+            for (ring in RING_COUNT downTo 1) {
+                val breath = 0.5f + 0.5f * sin(TWO_PI * (pulse - ring * RING_BREATH_LAG))
+                val reach = RING_STEP * ring * (RING_REST + (1f - RING_REST) * breath) +
+                    RING_VOICE_REACH * level * ring / RING_COUNT
+                drawCircle(
+                    color = accent,
+                    radius = radius * (1f + reach * listening),
+                    center = center,
+                    alpha = listening * RING_ALPHA
+                )
+            }
+        }
+        // Thinking: thin ripples leaving the ball one after the other.
+        if (thinking > 0f) {
+            repeat(RIPPLE_COUNT) { ripple ->
+                val progress = (pulse + ripple.toFloat() / RIPPLE_COUNT) % 1f
+                drawCircle(
+                    color = accent,
+                    radius = radius * (1.04f + RIPPLE_REACH * progress),
+                    center = center,
+                    alpha = thinking * RIPPLE_ALPHA * (1f - progress),
+                    style = rippleStroke
+                )
+            }
+        }
+
         val restAlpha = if (onDarkBackground) GLOW_REST_ALPHA_DARK else GLOW_REST_ALPHA_LIGHT
         scale(scale = 1f + listening * (GLOW_LISTEN_GROWTH + GLOW_VOICE_GROWTH * level), pivot = center) {
             drawCircle(
@@ -538,6 +593,24 @@ private const val GLOW_REST_ALPHA_DARK = 0.26f
 private const val GLOW_LISTEN_ALPHA = 0.3f
 private const val GLOW_LISTEN_GROWTH = 0.1f
 private const val GLOW_VOICE_GROWTH = 0.22f
+
+/** Rings while listening: how far each one stands from the next, relative to the ball's radius. */
+private const val RING_COUNT = 3
+private const val RING_STEP = 0.1f
+private const val RING_REST = 0.6f
+private const val RING_BREATH_LAG = 0.16f
+private const val RING_VOICE_REACH = 0.28f
+private const val RING_ALPHA = 0.1f
+private const val RING_PULSE_MS = 2400
+private const val RINGS_FADE_MS = 260
+
+/** Ripples while thinking. */
+private const val RIPPLE_COUNT = 2
+private const val RIPPLE_REACH = 0.34f
+private const val RIPPLE_ALPHA = 0.5f
+private const val RIPPLE_WIDTH = 0.02f
+
+private const val TWO_PI = (2.0 * Math.PI).toFloat()
 private const val SHADOW_FLATNESS = 0.14f
 private const val SHADOW_ALPHA_LIGHT = 0.28f
 private const val SHADOW_ALPHA_DARK = 0.6f

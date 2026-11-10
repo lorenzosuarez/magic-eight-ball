@@ -6,10 +6,10 @@ This policy explains how the Magic 8 Ball app (package `com.lorenzosuarez.magice
 
 ## Summary
 - No account or sign-in, no ads, no analytics and no crash-reporting tools.
-- The only things the app saves on your device are your choices in the app (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions). The developer runs no server that receives your data.
+- The only things the app saves on your device are your choices in the app (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) and, on phones and tablets, a list of your latest questions and answers ("Recents"). The developer runs no server that receives your data.
 - You can switch AI answers off in the app at any time.
 - The app connects to two Google services, both described below: Firebase Remote Config, to check its settings, and, when AI answers are switched on, the Gemini API.
-- **Phones and tablets only:** you can ask your question out loud. The app uses the microphone only while you hold the screen to ask, your speech is turned into text by your device's speech recognition service, and that text is sent to the Gemini API only when AI answers are switched on. The app does not store your voice or your question. You can switch voice questions off, and the app works without the microphone.
+- **Phones and tablets only:** you can ask your question out loud. The app uses the microphone only while you hold the screen to ask, your speech is turned into text by your device's speech recognition service, and that text is sent to the Gemini API only when AI answers are switched on. The app never stores your voice. The text of your question is saved, with its answer, only in the "Recents" list on your device, which you can clear at any time. You can switch voice questions off, and the app works without the microphone.
 - **The watch app** has no microphone feature and never sends anything you say or write.
 
 ## What the app sends, and to whom
@@ -31,7 +31,16 @@ The phone and tablet app lets you hold the screen and say your question. This is
 - **When the microphone is used.** Only while you are holding the screen to ask (or, with an accessibility service, between choosing "Ask by voice" and the end of your question), and only while the app is on screen. The app does not listen at any other time and never in the background.
 - **Who turns your speech into text.** The app does not process or record audio itself. It hands the listening to the speech recognition service of your device, through Android's standard speech recognition feature. Where your device offers on-device recognition for the app's language (Android 12 and later), the app uses it, and the audio is processed on the device. Otherwise the app uses your device's default speech recognition provider, which is typically Google and which may send the audio to its own servers to recognise it. That provider handles the audio under its own privacy policy (for Google, the [Google Privacy Policy](https://policies.google.com/privacy)); you can see or change the provider in your device's settings.
 - **What happens to the text.** The recognised question is shown on screen under the ball. If AI answers are switched on, it is sent to the Gemini API as described above; if they are off or not available, it is not sent anywhere by the app.
-- **What is kept.** Nothing. The app does not save audio or the recognised question to storage and has no history: the question stays in memory only until you ask again or the app is closed.
+- **What is kept.** Audio is never saved. The recognised question is saved, together with its answer, in the "Recents" list described below, on your device only.
+
+## Recents: your latest questions and answers (phones and tablets only)
+The phone and tablet app keeps a list of the latest answers the ball gave you, so you can read them again. The watch app keeps no such list.
+
+- **What is saved.** For each answer: the text of your question if you asked out loud (nothing for a tap or a shake), the answer, the date and time, and whether the answer was written by AI or came from the app's built-in list.
+- **Where.** In a private file in the app's own storage on your device. It is not sent to the developer, to Google or to anyone else, it is not synchronised between devices, and it is not included in device backups or device-to-device transfers.
+- **How much.** At most the latest 50 answers; older ones are deleted automatically as new ones arrive.
+- **Your control.** You can delete any single entry, or all of them with "Clear all", from the list itself. Clearing the app's data or uninstalling the app also deletes the list.
+- **Sharing.** An answer leaves the app only when you choose "Share", and then goes only to the app you pick.
 
 ## Sensors and permissions
 - **Motion sensor (accelerometer):** used only on your device to detect a shake. Sensor readings are not stored or sent anywhere. No permission is required.
@@ -42,10 +51,10 @@ The phone and tablet app lets you hold the screen and say your question. This is
 The watch app does not request the microphone. Neither version requests location, camera, contacts, body sensors or any other sensitive permission.
 
 ## Information stored on your device
-The app saves your choices (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) in a small settings file on your device, so they are still there the next time you open the app. They stay on the device, are not sent anywhere on their own, and are removed when you clear the app's data or uninstall it. The latest answer, and on phones and tablets the latest recognised question, are kept in memory only. The app stores nothing else of its own. Firebase stores its installation identifier and the latest settings on the device. Nothing is included in device backups.
+The app saves your choices (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) in a small settings file on your device, so they are still there the next time you open the app. They stay on the device, are not sent anywhere on their own, and are removed when you clear the app's data or uninstall it. On phones and tablets the app also saves the "Recents" list described above (at most your latest 50 questions and answers), which is removed the same way or from the list itself. On the watch, the latest answer is kept in memory only. The app stores nothing else of its own. Firebase stores its installation identifier and the latest settings on the device. Nothing is included in device backups.
 
 ## Retention and deletion
-The developer does not collect or store your information, so there is nothing for the developer to keep or delete. Information received by Google, or by your device's speech recognition provider, is handled under their policies as described above.
+The developer does not collect or store your information, so there is nothing for the developer to keep or delete. What the app saves on your device stays there until you delete it, as described above. Information received by Google, or by your device's speech recognition provider, is handled under their policies as described above.
 
 ## Children
 The app is not directed at children, and the developer does not knowingly collect personal information from children.

@@ -24,6 +24,7 @@ import com.lorenzosuarez.magiceightball.phone.BallPhase
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.Notice
 import com.lorenzosuarez.magiceightball.phone.VoiceStatus
+import com.lorenzosuarez.magiceightball.phone.history.HistoryEntry
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -47,7 +48,28 @@ import java.time.Duration
 class EightBallScreenshotTest {
 
     @Test
-    fun phone_idle_light() = capture("phone_1_ask_light", EightBallUiState())
+    fun phone_idle_light() = capture("phone_1_ask_light", EightBallUiState(history = HISTORY))
+
+    @Test
+    fun phone_thinking_light() = capture(
+        name = "phone_18_thinking_light",
+        state = EightBallUiState(phase = BallPhase.Thinking("Should I order pizza tonight?"))
+    )
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_idle_spanish_no_history_dark() = capture(
+        name = "phone_19_ask_spanish_no_history_dark",
+        state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH))
+    )
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_idle_history_spanish_large_font() = capture(
+        name = "phone_20_small_phone_history_spanish_large_font",
+        state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), history = HISTORY),
+        fontScale = 2f
+    )
 
     @Test
     fun phone_listening_light() = capture(
@@ -247,13 +269,20 @@ class EightBallScreenshotTest {
             ProvideAppLanguage(state.settings.language) {
                 EightBallContent(
                     state = state,
+                    now = NOW,
                     voiceLevel = { voiceLevel },
-                    reducedMotion = false,
+                    // A stage whose animation never ends would never come to rest for its picture.
+                    reducedMotion = state.phase is BallPhase.Listening || state.phase is BallPhase.Thinking,
                     onAsk = {},
                     onHoldStart = {},
                     onHoldEnd = {},
                     onHoldCancel = {},
                     onToggleVoiceQuestion = {},
+                    onAskAgain = {},
+                    onDismiss = {},
+                    onShare = {},
+                    onDeleteHistoryEntry = {},
+                    onClearHistory = {},
                     onOpenSettings = {}
                 )
                 overlay()
@@ -289,6 +318,15 @@ private const val TABLET = "w600dp-h960dp-xhdpi"
 
 /** 1920 x 1200 px, the same tablet on its side. */
 private const val TABLET_LANDSCAPE = "w960dp-h600dp-land-night-xhdpi"
+
+private const val NOW = 1_800_000_000_000L
+private const val MINUTE = 60_000L
+
+private val HISTORY = listOf(
+    HistoryEntry(3, "Should I order pizza tonight?", "Yes. Screenshot this.", NOW - 20_000L, fromAi = true),
+    HistoryEntry(2, "", "Don't count on it.", NOW - 12 * MINUTE, fromAi = false),
+    HistoryEntry(1, "Will I finish my book this month?", null, NOW - 26 * 60 * MINUTE, fromAi = false)
+)
 
 private val ANSWERED = EightBallUiState(
     phase = BallPhase.Answered(

@@ -2,12 +2,49 @@
 <resources>
     <string name="app_name" translatable="false">Magic 8 Ball</string>
 
-    <!-- Hint under the ball -->
-    <string name="hint_voice">Hold and ask, or just shake</string>
-    <string name="hint_tap">Tap or shake to ask</string>
-    <string name="hint_listening">Listening…</string>
+    <!-- What to do, above the ball: one title and one supporting line per stage -->
+    <string name="idle_title_voice">Hold the ball and ask</string>
+    <string name="idle_hint_voice">Or tap it, or shake your phone, for a quick answer</string>
+    <string name="idle_title_tap">Tap the ball to ask</string>
+    <string name="idle_hint_tap">Or shake your phone</string>
+    <string name="listening_title">Listening…</string>
+    <string name="listening_hint_hold">Let go when you\'re done</string>
+    <string name="listening_hint_hands_free">Tap the ball when you\'re done</string>
+    <string name="thinking_title">Thinking…</string>
+    <string name="thinking_hint">One moment</string>
+    <string name="answer_title">The ball says</string>
     <string name="notice_microphone_denied">The microphone is off, so tap or shake to ask. You can allow it in settings.</string>
     <string name="notice_voice_unsupported">This device can\'t listen to questions. Tap or shake to ask.</string>
+
+    <!-- Result -->
+    <string name="question_quoted">“%1$s”</string>
+    <string name="action_ask_again">Ask again</string>
+    <string name="action_share">Share</string>
+    <string name="action_close">Close</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="source_ai">AI</string>
+    <string name="source_classic">Classic</string>
+    <string name="source_ai_answer">AI answer</string>
+    <string name="source_classic_answer">Classic answer</string>
+    <string name="share_answer">The Magic 8 Ball says: “%1$s”</string>
+    <string name="share_question_and_answer">I asked the Magic 8 Ball: “%1$s”\nIt said: “%2$s”</string>
+
+    <!-- History -->
+    <string name="history_title">Recents</string>
+    <string name="history_empty">Your questions and answers will show up here.</string>
+    <string name="history_footer">Saved only on this device (the latest %1$d).</string>
+    <string name="history_no_question">Quick question</string>
+    <string name="history_entry_meta" translatable="false">%1$s · %2$s</string>
+    <string name="history_more">More options</string>
+    <string name="history_delete">Delete</string>
+    <string name="history_clear_all">Clear all</string>
+    <string name="history_clear_title">Clear all recents?</string>
+    <string name="history_clear_text">Every saved question and answer will be deleted from this device. This can\'t be undone.</string>
+    <string name="history_show">Show recents</string>
+    <string name="time_just_now">Just now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_days_ago">%1$d d ago</string>
 
     <!-- Ball -->
     <string name="ball_description">Magic 8 ball</string>
@@ -39,8 +76,8 @@
     <string name="settings_voice_allow">Allow</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
-    <string name="privacy_voice_and_ai">Your spoken question is turned into text by your device\'s speech service and sent to Google\'s Gemini for the answer. The app never stores it.</string>
-    <string name="privacy_voice_only">Your spoken question is turned into text by your device\'s speech service only to show it to you. It isn\'t sent to Gemini or stored.</string>
-    <string name="privacy_ai_only">Answers come from Google\'s Gemini. The app doesn\'t listen, and no question is sent.</string>
-    <string name="privacy_none">Answers come from the app itself. The app doesn\'t listen, and nothing you ask leaves this device.</string>
+    <string name="privacy_voice_and_ai">Your spoken question is turned into text by your device\'s speech service and sent to Google\'s Gemini for the answer. Your questions and answers are saved in Recents, on this device only.</string>
+    <string name="privacy_voice_only">Your spoken question is turned into text by your device\'s speech service. It isn\'t sent to Gemini. Your questions and answers are saved in Recents, on this device only.</string>
+    <string name="privacy_ai_only">Answers come from Google\'s Gemini. The app doesn\'t listen, and no question is sent. Answers are saved in Recents, on this device only.</string>
+    <string name="privacy_none">Answers come from the app itself. The app doesn\'t listen, and nothing leaves this device. Answers are saved in Recents, on this device only.</string>
 </resources>
