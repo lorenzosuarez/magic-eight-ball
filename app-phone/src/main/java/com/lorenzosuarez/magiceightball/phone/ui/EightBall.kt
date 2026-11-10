@@ -1,10 +1,13 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.EaseOutSine
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Spacer
@@ -47,7 +50,6 @@ import com.example.magiceightball.core.common.BrandPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -61,17 +63,20 @@ enum class BallMode {
     /** As [Idle], with rings around it that grow with the user's voice. */
     Listening,
 
-    /** Its window towards the user, the die turning in it. */
+    /** Its window towards the user, the die deep in it, grey, swaying. */
     Thinking,
 
-    /** Larger, the die at rest in the window with the answer on it. */
+    /** Larger, the die risen to the window, upright, with the answer on it. */
     Answered
 }
 
 /**
  * The ball, drawn flat: a disc with its "8", which beats slowly at rest and has rings around it
- * while it listens. To answer, the "8" gives way to the window, where the die turns while the
- * ball thinks; then the ball grows, the die slows to a stop and [answer] appears on it.
+ * while it listens. To answer, the "8" gives way to the window. While the ball thinks the die
+ * hangs deep in the liquid, small and grey, swaying, with a light crossing it. With the answer
+ * the ball grows and the die floats up: it comes close enough to fill the window, tips, rocks
+ * back and forth ever less, and comes to rest upright, taking its colour and showing [answer].
+ * The answer is written on the die and moves with it.
  *
  * Every animated value, [voiceLevel] included, is read in the draw or layer phase only, so an
  * animation frame never recomposes or re-measures anything, and all brushes, paths and text
@@ -94,36 +99,38 @@ fun EightBall(
     val answered = mode == BallMode.Answered
     val windowUp = answered || mode == BallMode.Thinking
     val face = remember { Animatable(if (windowUp) 1f else 0f) }
-    val dieSize = remember { Animatable(if (answered) 1f else DIE_THINKING_SIZE) }
-    val dieTurn = remember { Animatable(0f) }
+    val risen = remember { Animatable(if (answered) 1f else 0f) }
+    val tilt = remember { Animatable(0f) }
     val text = remember { Animatable(if (answered) 1f else 0f) }
     val colour = remember { Animatable(if (answered) 1f else 0f) }
-    val turning = remember { TurnMemory() }
     // The die keeps its text while it fades, after the answer is gone from the state.
     val shownAnswer = remember { LastAnswer() }.also { if (answer != null) it.text = answer }.text
 
     LaunchedEffect(mode, reducedMotion) {
-        val carriedVelocity = if (turning.turning) DIE_DEGREES_PER_SECOND else 0f
-        turning.turning = false
         when (mode) {
             BallMode.Thinking -> {
                 launch { text.animateTo(0f, tween(TEXT_OUT_MS)) }
                 launch { colour.animateTo(0f, tween(TEXT_OUT_MS)) }
                 launch { face.animateTo(1f, FaceSpring) }
-                launch { dieSize.animateTo(DIE_THINKING_SIZE, tween(DIE_RESIZE_MS)) }
-                if (!reducedMotion) {
-                    turning.turning = true
-                    // Half a turn to get up to speed, then on at that speed.
-                    dieTurn.animateTo(dieTurn.value + 180f, tween(DIE_TURN_MS, easing = SpeedUp))
-                    while (true) {
-                        dieTurn.animateTo(dieTurn.value + 360f, tween(DIE_TURN_MS, easing = LinearEasing))
-                    }
+                launch { risen.animateTo(0f, tween(SINK_MS)) }
+                if (reducedMotion) {
+                    tilt.snapTo(0f)
+                } else {
+                    // Half a sway to one side, then from side to side for as long as it thinks.
+                    tilt.animateTo(SWAY_DEGREES, tween(SWAY_MS / 2, easing = EaseOutSine))
+                    tilt.animateTo(
+                        targetValue = -SWAY_DEGREES,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(SWAY_MS, easing = EaseInOutSine),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
                 }
             }
             BallMode.Answered -> {
                 launch { face.animateTo(1f, FaceSpring) }
-                launch { dieSize.animateTo(1f, GrowSpring) }
-                // Colour is the answer arriving: it washes over the die as it slows down.
+                launch { risen.animateTo(1f, RiseSpring) }
+                // Colour is the answer arriving: it washes over the die as it comes up.
                 launch {
                     delay(COLOUR_IN_DELAY_MS)
                     colour.animateTo(1f, tween(COLOUR_IN_MS))
@@ -132,18 +139,19 @@ fun EightBall(
                     delay(TEXT_IN_DELAY_MS)
                     text.animateTo(1f, tween(TEXT_IN_MS))
                 }
-                // The die looks the same every third of a turn: it stops on the next one that
-                // leaves it room to slow down, without ever turning back.
-                val stop = ceil((dieTurn.value + DIE_BRAKING_DEGREES) / DIE_SYMMETRY) * DIE_SYMMETRY
-                dieTurn.animateTo(stop, BrakeSpring, initialVelocity = carriedVelocity)
-                dieTurn.snapTo(0f)
+                if (reducedMotion) {
+                    tilt.snapTo(0f)
+                } else {
+                    // Coming up tips the die over; the liquid then rocks it upright.
+                    tilt.animateTo(0f, SettleSpring, initialVelocity = RISE_TIP_DEGREES_PER_SECOND)
+                }
             }
             BallMode.Idle, BallMode.Listening -> {
                 launch { text.animateTo(0f, tween(TEXT_OUT_MS)) }
                 face.animateTo(0f, tween(FACE_BACK_MS))
                 colour.snapTo(0f)
-                dieTurn.snapTo(0f)
-                dieSize.snapTo(DIE_THINKING_SIZE)
+                tilt.snapTo(0f)
+                risen.snapTo(0f)
             }
         }
     }
@@ -246,8 +254,8 @@ fun EightBall(
                     with(ball) {
                         draw(
                             face = face.value,
-                            dieSize = dieSize.value,
-                            dieTurnDegrees = dieTurn.value,
+                            risen = risen.value,
+                            tiltDegrees = tilt.value,
                             colour = colour.value,
                             shimmer = shimmer.floatValue,
                             shimmerAlpha = thinking.value,
@@ -266,11 +274,6 @@ private fun beat(pulse: Float): Float = 0.5f - 0.5f * cos(TWO_PI * pulse)
 
 private class LastAnswer {
     var text: String? = null
-}
-
-/** Whether the last animation left the die turning, so the next one starts at that speed. */
-private class TurnMemory {
-    var turning = false
 }
 
 /** What surrounds the ball: a faint halo at rest and rings while listening. */
@@ -344,6 +347,13 @@ private class BallDrawing(
     )
     private val liquidOutline = Path().apply { addOval(Rect(center, liquidRadius)) }
 
+    /** The window's two borders, drawn over the die: a fine light edge and a darker one inside it. */
+    private val rimStroke = Stroke(width = radius * RIM_WIDTH)
+    private val rimRadius = liquidRadius - rimStroke.width / 2f
+    private val innerRimStroke = Stroke(width = radius * INNER_RIM_WIDTH)
+    private val innerRimRadius = liquidRadius - rimStroke.width - radius * RIM_GAP - innerRimStroke.width / 2f
+    private val dieDepth = liquidRadius * DIE_DEPTH
+
     // The die: a triangle pointing down, close enough to the window that its three corners are
     // out of sight. That leaves its face, where the answer is written, as wide as the window allows.
     private val dieRadius = liquidRadius * DIE_RADIUS
@@ -386,17 +396,18 @@ private class BallDrawing(
 
     /**
      * @param face 0 for the "8", 1 for the window; in between one gives way to the other.
-     * @param dieSize the die's size relative to the one it has at rest with its answer.
-     * @param dieTurnDegrees how far the die has turned around its centre.
+     * @param risen 0 for the die deep in the liquid, small and low; 1 for the die at the window,
+     * close enough to fill it.
+     * @param tiltDegrees how far the die leans to one side; the answer leans with it.
      * @param colour 0 for the grey die that is still thinking, 1 for the die with its answer.
      * @param shimmer how far across the die the band of light is, from 0 to 1.
      * @param shimmerAlpha how much of that light shows.
-     * @param textAlpha how clearly the answer shows; it is never turned with the die.
+     * @param textAlpha how clearly the answer shows.
      */
     fun DrawScope.draw(
         face: Float,
-        dieSize: Float,
-        dieTurnDegrees: Float,
+        risen: Float,
+        tiltDegrees: Float,
         colour: Float,
         shimmer: Float,
         shimmerAlpha: Float,
@@ -415,8 +426,9 @@ private class BallDrawing(
                 drawCircle(liquidBrush, liquidRadius, center, alpha = face)
                 clipPath(liquidOutline) {
                     withTransform({
-                        rotate(dieTurnDegrees, pivot = center)
-                        scale(dieSize, pivot = center)
+                        translate(top = dieDepth * (1f - risen))
+                        rotate(tiltDegrees, pivot = center)
+                        scale(DIE_DEEP_SIZE + (1f - DIE_DEEP_SIZE) * risen, pivot = center)
                     }) {
                         if (colour < 1f) drawDie(thinkingBrush, alpha = face * (1f - colour))
                         if (colour > 0f) drawDie(dieBrush, alpha = face * colour)
@@ -432,14 +444,15 @@ private class BallDrawing(
                                 }
                             }
                         }
-                    }
-                    if (textAlpha > 0f) {
-                        // The answer comes forward as it clears.
-                        scale(TEXT_START_SCALE + (1f - TEXT_START_SCALE) * textAlpha, pivot = center) {
+                        // Written on the die: it rises, leans and settles with it, and so
+                        // never leaves it.
+                        if (textAlpha > 0f) {
                             answerLayout?.let { drawText(it.layout, topLeft = it.topLeft, alpha = textAlpha * face) }
                         }
                     }
                 }
+                drawCircle(WindowRimInner, innerRimRadius, center, alpha = face, style = innerRimStroke)
+                drawCircle(WindowRim, rimRadius, center, alpha = face, style = rimStroke)
             }
         }
     }
@@ -523,39 +536,41 @@ private class BallDrawing(
 
 private val FaceSpring = spring<Float>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)
 
-/** No overshoot anywhere: things arrive and stay. */
+/** The ball grows and the die comes up without overshoot: they arrive and stay. */
 private val GrowSpring = spring<Float>(dampingRatio = 1f, stiffness = 90f)
-private val BrakeSpring = spring<Float>(dampingRatio = 1f, stiffness = 55f)
+private val RiseSpring = spring<Float>(dampingRatio = 1f, stiffness = 55f)
 
-/** Accelerates evenly from rest, ending at the speed of a linear turn of twice the angle. */
-private val SpeedUp = Easing { fraction -> fraction * fraction }
+/**
+ * The die rocking upright in the liquid: it passes the vertical a few times, each time by
+ * less, and stops.
+ */
+private val SettleSpring = spring<Float>(dampingRatio = 0.28f, stiffness = 34f)
 
 private const val FACE_BACK_MS = 220
 private const val FACE_SHRINK = 0.3f
 private const val STAGE_FADE_MS = 260
 
-/** The die while the ball thinks: small enough to be seen whole as it turns. */
-private const val DIE_THINKING_SIZE = 0.58f
-private const val DIE_RESIZE_MS = 200
-private const val DIE_TURN_MS = 1500
-private const val DIE_DEGREES_PER_SECOND = 360f * 1000f / DIE_TURN_MS
+/** The die deep in the liquid, while the ball thinks: its size and how far down it hangs. */
+private const val DIE_DEEP_SIZE = 0.46f
+private const val DIE_DEPTH = 0.14f
+private const val SINK_MS = 200
 
-/** A triangle looks the same every third of a turn. */
-private const val DIE_SYMMETRY = 120f
+/** How far the thinking die sways to each side, and how long one sway takes. */
+private const val SWAY_DEGREES = 7f
+private const val SWAY_MS = 1300
 
-/** The least the die still turns once the answer is here, so it never stops dead. */
-private const val DIE_BRAKING_DEGREES = 70f
+/** The push to one side that coming up gives the die. */
+private const val RISE_TIP_DEGREES_PER_SECOND = -150f
+
+/** The answer's colour, and then its text, as the die comes up. */
+private const val COLOUR_IN_DELAY_MS = 200L
+private const val COLOUR_IN_MS = 600
+private const val TEXT_IN_DELAY_MS = 450L
+private const val TEXT_IN_MS = 450
+private const val TEXT_OUT_MS = 100
+
 private const val SHIMMER_MS = 1400L
 private const val NANOS_PER_MILLI = 1_000_000L
-/** The answer waits for the die to be all but still. */
-private const val TEXT_IN_DELAY_MS = 750L
-private const val TEXT_IN_MS = 320
-private const val TEXT_OUT_MS = 100
-private const val TEXT_START_SCALE = 0.94f
-
-/** The answer's colour and then its text, each once the die has slowed enough for it. */
-private const val COLOUR_IN_DELAY_MS = 250L
-private const val COLOUR_IN_MS = 520
 
 /** The band of light that crosses the thinking die: its width in half-dies, and its strength. */
 private const val SHIMMER_WIDTH = 0.9f
@@ -583,12 +598,21 @@ private const val RING_VOICE_REACH = 0.4f
 private const val RING_ALPHA = 0.07f
 private const val RING_PULSE_MS = 2100
 
+/** The window's borders and the gap between them, relative to the ball's radius. */
+private const val RIM_WIDTH = 0.012f
+private const val RIM_GAP = 0.022f
+private const val INNER_RIM_WIDTH = 0.02f
+
 /** Radii of the two faces, relative to the ball's. */
 private const val EIGHT_RADIUS = 0.46f
 private const val WINDOW_RADIUS = 0.86f
 
-/** The die's circumradius relative to the window's: above 1, its corners are out of sight. */
-private const val DIE_RADIUS = 1.18f
+/**
+ * The die's circumradius relative to the window's. Well above 1: the risen die comes close
+ * enough that its corners are out of sight and most of the window is the die, so there is
+ * always die under the answer.
+ */
+private const val DIE_RADIUS = 1.36f
 
 /** A wide outline in the die's own colour rounds its corners. */
 private const val DIE_EDGE_WIDTH = 0.05f
@@ -596,7 +620,7 @@ private const val DIE_EDGE_WIDTH = 0.05f
 private const val DIE_TEXT_MAX_SIZE = 0.3f
 private const val DIE_TEXT_MIN_SIZE = 0.1f
 private const val DIE_TEXT_SIZE_STEPS = 12
-private const val DIE_TEXT_SIDE_PADDING = 0.09f
+private const val DIE_TEXT_SIDE_PADDING = 0.15f
 private val DIE_TEXT_TOPS = floatArrayOf(0.26f, 0.2f, 0.14f, 0.09f)
 private val DIE_TEXT_WIDTHS = floatArrayOf(1f, 0.85f, 0.7f, 0.55f)
 
@@ -608,6 +632,8 @@ private val DiscTop = Color(BrandPalette.BALL_TOP)
 private val DiscBottom = Color(BrandPalette.BALL_BOTTOM)
 private val WindowCenter = Color(BrandPalette.WINDOW_CENTER)
 private val WindowEdge = Color(BrandPalette.WINDOW_EDGE)
+private val WindowRim = Color(BrandPalette.WINDOW_RIM)
+private val WindowRimInner = Color(BrandPalette.WINDOW_RIM_INNER)
 private val DieThinkingTop = Color(BrandPalette.DIE_THINKING_TOP)
 private val DieThinkingBottom = Color(BrandPalette.DIE_THINKING_BOTTOM)
 private val Accent = Color(BrandPalette.ACCENT)
