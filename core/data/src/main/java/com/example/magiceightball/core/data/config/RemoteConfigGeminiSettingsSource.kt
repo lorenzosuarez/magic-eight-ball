@@ -1,6 +1,7 @@
 package com.example.magiceightball.core.data.config
 
 import android.content.Context
+import com.example.magiceightball.core.common.GeminiConfig
 import com.google.firebase.FirebaseApp
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
@@ -18,6 +19,8 @@ import javax.inject.Singleton
  * Remote Config parameters (both default to "off" when absent):
  * - [KEY_ENABLED] (Boolean): turns Gemini answers on or off from the Firebase console.
  * - [KEY_API_KEY] (String): the Gemini API key; when blank, the build-time key is used instead.
+ * - [KEY_MODEL] (String, optional): the Gemini model ID; when blank, [GeminiConfig.defaultModelId].
+ *   Lets a retired model be replaced from the console without a new release.
  *
  * When the app is built without `google-services.json`, Firebase is not initialised and the
  * build-time key alone decides: Gemini is used only if that key is present.
@@ -28,7 +31,8 @@ import javax.inject.Singleton
 @Singleton
 class RemoteConfigGeminiSettingsSource @Inject constructor(
     @ApplicationContext private val context: Context,
-    @Named("BuildGeminiApiKey") private val buildApiKey: String
+    @Named("BuildGeminiApiKey") private val buildApiKey: String,
+    private val geminiConfig: GeminiConfig
 ) : GeminiSettingsSource {
 
     private val availability = MutableStateFlow(false)
@@ -52,10 +56,15 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
 
     override fun current(): GeminiSettings {
         val config = remoteConfig
-            ?: return GeminiSettings(enabled = buildApiKey.isNotBlank(), apiKey = buildApiKey)
+            ?: return GeminiSettings(
+                enabled = buildApiKey.isNotBlank(),
+                apiKey = buildApiKey,
+                modelId = geminiConfig.defaultModelId
+            )
         return GeminiSettings(
             enabled = config.getBoolean(KEY_ENABLED),
-            apiKey = config.getString(KEY_API_KEY).trim().ifBlank { buildApiKey }
+            apiKey = config.getString(KEY_API_KEY).trim().ifBlank { buildApiKey },
+            modelId = config.getString(KEY_MODEL).trim().ifBlank { geminiConfig.defaultModelId }
         )
     }
 
@@ -79,6 +88,7 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
     private companion object {
         const val KEY_ENABLED = "gemini_enabled"
         const val KEY_API_KEY = "gemini_api_key"
+        const val KEY_MODEL = "gemini_model"
         const val MIN_FETCH_INTERVAL_SECONDS = 3600L
         const val FETCH_TIMEOUT_SECONDS = 10L
     }

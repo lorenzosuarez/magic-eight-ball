@@ -2,9 +2,13 @@ package com.example.magiceightball.core.data.config
 
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 
-/** Whether answers may come from Gemini, and with which key. */
-data class GeminiSettings(val enabled: Boolean, val apiKey: String) {
-    val isUsable: Boolean get() = enabled && apiKey.isNotBlank()
+/** Whether answers may come from Gemini, with which key and which model. */
+data class GeminiSettings(val enabled: Boolean, val apiKey: String, val modelId: String) {
+    val isUsable: Boolean get() = enabled && apiKey.isNotBlank() && modelId.isNotBlank()
+
+    /** Keeps the key out of logs and crash reports. */
+    override fun toString(): String =
+        "GeminiSettings(enabled=$enabled, apiKey=${if (apiKey.isBlank()) "<none>" else "<set>"}, modelId=$modelId)"
 }
 
 /**

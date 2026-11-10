@@ -19,7 +19,7 @@ import org.junit.Test
 class Magic8BallRepositoryImplTest {
 
     private val remoteDataSource = mockk<GeminiRemoteDataSource> {
-        coEvery { fetchMagic8BallMessage(any(), any()) } returns Magic8BallResult.Success(REMOTE_ANSWER)
+        coEvery { fetchMagic8BallMessage(any(), any(), any()) } returns Magic8BallResult.Success(REMOTE_ANSWER)
     }
     private val localDataSource = object : LocalDataSource {
         override suspend fun getRandomMessage(
@@ -35,7 +35,7 @@ class Magic8BallRepositoryImplTest {
         val request = Magic8BallRequest(useAi = true)
 
         assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request))
-        coVerify(exactly = 1) { remoteDataSource.fetchMagic8BallMessage(request, API_KEY) }
+        coVerify(exactly = 1) { remoteDataSource.fetchMagic8BallMessage(request, API_KEY, MODEL) }
     }
 
     @Test
@@ -43,32 +43,32 @@ class Magic8BallRepositoryImplTest {
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = false))
 
         assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), result)
-        coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any()) }
+        coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) }
     }
 
     @Test
     fun `no request is sent to gemini while it is switched off remotely`() = runTest {
-        geminiSettings.settings = GeminiSettings(enabled = false, apiKey = API_KEY)
+        geminiSettings.settings = GeminiSettings(enabled = false, apiKey = API_KEY, modelId = MODEL)
 
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
 
         assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), result)
-        coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any()) }
+        coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) }
     }
 
     @Test
     fun `no request is sent to gemini without a key`() = runTest {
-        geminiSettings.settings = GeminiSettings(enabled = true, apiKey = "")
+        geminiSettings.settings = GeminiSettings(enabled = true, apiKey = "", modelId = MODEL)
 
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
 
         assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), result)
-        coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any()) }
+        coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) }
     }
 
     @Test
     fun `a failed gemini request ends in a bundled answer`() = runTest {
-        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
             Magic8BallResult.Failure(LlmError.Network)
 
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
@@ -85,7 +85,7 @@ class Magic8BallRepositoryImplTest {
     }
 
     private class FakeGeminiSettingsSource : GeminiSettingsSource {
-        var settings = GeminiSettings(enabled = true, apiKey = API_KEY)
+        var settings = GeminiSettings(enabled = true, apiKey = API_KEY, modelId = MODEL)
         var refreshCount = 0
 
         override val isAvailable = MutableStateFlow(true)
@@ -97,6 +97,7 @@ class Magic8BallRepositoryImplTest {
 
     private companion object {
         const val API_KEY = "key"
+        const val MODEL = "gemini-test-model"
         const val REMOTE_ANSWER = "Remote answer"
         const val LOCAL_ANSWER = "Local answer"
     }

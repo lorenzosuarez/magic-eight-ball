@@ -32,7 +32,8 @@ data class Content(
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Part(
-    val text: String
+    /** Absent on parts that carry only metadata (for example a thought signature). */
+    val text: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")

@@ -30,7 +30,7 @@ class Magic8BallRepositoryImpl @Inject constructor(
             val settings = withContext(Dispatchers.IO) { geminiSettings.current() }
             if (settings.isUsable) {
                 val remote = withTimeoutOrNull(REMOTE_BUDGET_MS) {
-                    remoteDataSource.fetchMagic8BallMessage(request, settings.apiKey)
+                    remoteDataSource.fetchMagic8BallMessage(request, settings.apiKey, settings.modelId)
                 }
                 if (remote is Magic8BallResult.Success) return remote
             }
