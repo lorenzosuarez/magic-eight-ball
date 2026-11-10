@@ -56,7 +56,8 @@ fun SettingsSheet(
     onVoiceQuestionsChange: (Boolean) -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareApp: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onShowAdPrivacyOptions: (() -> Unit)? = null
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -71,7 +72,8 @@ fun SettingsSheet(
                 onAiAnswersChange = onAiAnswersChange,
                 onVoiceQuestionsChange = onVoiceQuestionsChange,
                 onAllowMicrophone = onAllowMicrophone,
-                onShareApp = onShareApp
+                onShareApp = onShareApp,
+                onShowAdPrivacyOptions = onShowAdPrivacyOptions
             )
         }
     }
@@ -87,7 +89,8 @@ internal fun SettingsContent(
     onVoiceQuestionsChange: (Boolean) -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareApp: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowAdPrivacyOptions: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -159,6 +162,15 @@ internal fun SettingsContent(
             icon = R.drawable.ic_share,
             onClick = onShareApp
         )
+
+        if (onShowAdPrivacyOptions != null) {
+            ActionRow(
+                title = stringResource(R.string.settings_ad_privacy),
+                supporting = stringResource(R.string.settings_ad_privacy_hint),
+                icon = R.drawable.ic_settings,
+                onClick = onShowAdPrivacyOptions
+            )
+        }
 
         Text(
             text = stringResource(state.privacyNoteRes()),

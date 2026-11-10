@@ -5,6 +5,8 @@ import com.example.magiceightball.core.common.DefaultDispatcherProvider
 import com.example.magiceightball.core.common.DispatcherProvider
 import com.example.magiceightball.core.data.history.FileAnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
+import com.lorenzosuarez.magiceightball.phone.ads.AdMobAdsController
+import com.lorenzosuarez.magiceightball.phone.ads.AdsController
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,7 +16,7 @@ import java.io.File
 import java.time.Clock
 import javax.inject.Singleton
 
-/** What only the phone app needs: the history, which the watch does not keep, and the time. */
+/** What only the phone app needs: the history and the ads, which the watch has none of, and the time. */
 @Module
 @InstallIn(SingletonComponent::class)
 object PhoneModule {
@@ -26,6 +28,10 @@ object PhoneModule {
     @Provides
     @Singleton
     fun provideClock(): Clock = Clock.systemUTC()
+
+    @Provides
+    @Singleton
+    fun provideAdsController(impl: AdMobAdsController): AdsController = impl
 
     @Provides
     @Singleton

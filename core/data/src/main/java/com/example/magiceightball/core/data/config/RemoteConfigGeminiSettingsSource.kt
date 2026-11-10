@@ -21,6 +21,8 @@ import javax.inject.Singleton
  * - [KEY_API_KEY] (String): the Gemini API key; when blank, the build-time key is used instead.
  * - [KEY_MODEL] (String, optional): the Gemini model ID; when blank, [GeminiConfig.defaultModelId].
  *   Lets a retired model be replaced from the console without a new release.
+ * - [KEY_DAILY_LIMIT] (Number, optional): how many AI answers one device may ask for per day;
+ *   when absent or not positive, [GeminiSettings.DEFAULT_DAILY_LIMIT].
  *
  * When the app is built without `google-services.json`, Firebase is not initialised and the
  * build-time key alone decides: Gemini is used only if that key is present.
@@ -64,7 +66,10 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
         return GeminiSettings(
             enabled = config.getBoolean(KEY_ENABLED),
             apiKey = config.getString(KEY_API_KEY).trim().ifBlank { buildApiKey },
-            modelId = config.getString(KEY_MODEL).trim().ifBlank { geminiConfig.defaultModelId }
+            modelId = config.getString(KEY_MODEL).trim().ifBlank { geminiConfig.defaultModelId },
+            // Absent or not a positive number: the built-in limit.
+            dailyLimit = config.getLong(KEY_DAILY_LIMIT).toInt().takeIf { it > 0 }
+                ?: GeminiSettings.DEFAULT_DAILY_LIMIT
         )
     }
 
@@ -89,6 +94,7 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
         const val KEY_ENABLED = "gemini_enabled"
         const val KEY_API_KEY = "gemini_api_key"
         const val KEY_MODEL = "gemini_model"
+        const val KEY_DAILY_LIMIT = "gemini_daily_limit"
         const val MIN_FETCH_INTERVAL_SECONDS = 3600L
         const val FETCH_TIMEOUT_SECONDS = 10L
     }

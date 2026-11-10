@@ -11,14 +11,21 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lorenzosuarez.magiceightball.phone.ads.AdsController
 import com.lorenzosuarez.magiceightball.phone.ui.EightBallScreen
 import com.lorenzosuarez.magiceightball.phone.ui.MagicEightBallPhoneTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val viewModel: EightBallViewModel by viewModels()
+
+    @Inject
+    lateinit var ads: AdsController
 
     // Portrait is a product decision for phones only: R.bool.portrait_only is false from 600dp
     // of width up, so tablets and foldables keep rotating freely, which is what the check asks for.
@@ -38,10 +45,20 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val adPrivacyOptionsRequired by ads.privacyOptionsRequired.collectAsStateWithLifecycle()
             MagicEightBallPhoneTheme {
-                EightBallScreen(viewModel)
+                EightBallScreen(
+                    viewModel = viewModel,
+                    onAnswerDismissed = { ads.onAnswerDismissed(this) },
+                    onShowAdPrivacyOptions = if (adPrivacyOptionsRequired) {
+                        { ads.showPrivacyOptions(this) }
+                    } else {
+                        null
+                    }
+                )
             }
         }
+        ads.start(this)
         holdFirstFrameUntilSettingsAreRead()
     }
 

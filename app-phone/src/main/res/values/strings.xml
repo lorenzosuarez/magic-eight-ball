@@ -3,8 +3,8 @@
     <string name="app_name" translatable="false">Magic 8 Ball</string>
 
     <!-- The one line under the ball -->
-    <string name="hint_hold">Hold to ask</string>
-    <string name="hint_tap">Tap to ask</string>
+    <string name="hint_hold">Hold or shake to ask</string>
+    <string name="hint_tap">Tap or shake to ask</string>
     <string name="hint_listening">Listening…</string>
     <string name="hint_speak">Say your question</string>
     <string name="hint_thinking">Thinking…</string>
@@ -67,6 +67,8 @@
     <string name="settings_share_app">Share the app</string>
     <string name="settings_share_app_hint">Tell someone about the Magic 8 Ball</string>
     <string name="share_app_text">Ask the Magic 8 Ball anything: %1$s</string>
+    <string name="settings_ad_privacy">Ad privacy choices</string>
+    <string name="settings_ad_privacy_hint">Review what you allowed for ads</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">Your spoken question is turned into text by your device\'s speech service and sent to Google\'s Gemini for the answer. Your questions and answers are saved in Recents, on this device only.</string>

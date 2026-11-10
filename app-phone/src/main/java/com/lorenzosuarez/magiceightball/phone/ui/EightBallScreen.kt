@@ -115,9 +115,16 @@ import kotlinx.coroutines.launch
 /**
  * The screen wired to its [viewModel] and to the platform: the microphone permission, the
  * lifecycle, haptics, sharing and the settings sheet.
+ *
+ * @param onAnswerDismissed called when the user closes an answer they have read.
+ * @param onShowAdPrivacyOptions opens the ad privacy choices; null where none have to be offered.
  */
 @Composable
-fun EightBallScreen(viewModel: EightBallViewModel) {
+fun EightBallScreen(
+    viewModel: EightBallViewModel,
+    onAnswerDismissed: () -> Unit = {},
+    onShowAdPrivacyOptions: (() -> Unit)? = null
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -200,7 +207,13 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
                 onHoldEnd = viewModel::onHoldEnd,
                 onHoldCancel = viewModel::onHoldCancel,
                 onToggleVoiceQuestion = viewModel::toggleVoiceQuestion,
-                onDismiss = viewModel::dismiss,
+                onDismiss = {
+                    // Closing an answer, as opposed to cancelling a question, is told apart:
+                    // it is the one moment the app may use for something of its own.
+                    val closesAnAnswer = current.phase is BallPhase.Answered
+                    viewModel.dismiss()
+                    if (closesAnAnswer) onAnswerDismissed()
+                },
                 onDeleteHistoryEntry = viewModel::deleteHistoryEntry,
                 onRestoreHistoryEntry = viewModel::restoreHistoryEntry,
                 onClearHistory = viewModel::clearHistory,
@@ -219,6 +232,7 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
                         permissionRequest.launch(Manifest.permission.RECORD_AUDIO)
                     },
                     onShareApp = { context.shareText(shareAppText) },
+                    onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                     onDismiss = { settingsOpen = false }
                 )
             }

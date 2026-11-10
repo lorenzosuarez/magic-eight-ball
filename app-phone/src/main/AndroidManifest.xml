@@ -32,6 +32,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MagicEightBall">
 
+        <!-- Required by the Google Mobile Ads SDK; see app-phone/build.gradle.kts for where it comes from. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
