@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
+    <string name="hint_hold">Mantén presionado para preguntar</string>
     <string name="hint_tap">Toca para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
     <string name="hint_speak">Di tu pregunta</string>
@@ -51,7 +52,7 @@
     <string name="settings_ai_off">Respuestas clásicas de la app</string>
     <string name="settings_ai_unavailable">No disponible por ahora</string>
     <string name="settings_voice">Preguntas por voz</string>
-    <string name="settings_voice_on">Toca el micrófono y pregunta en voz alta</string>
+    <string name="settings_voice_on">Mantén presionada la bola y pregunta en voz alta</string>
     <string name="settings_voice_off">Solo tocar o agitar</string>
     <string name="settings_voice_denied">Necesita acceso al micrófono</string>
     <string name="settings_voice_unsupported">Este dispositivo no tiene reconocimiento de voz</string>

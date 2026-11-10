@@ -46,10 +46,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -225,9 +223,9 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
  * The stateless screen, in two pages side by side with dots that tell which one is in front:
  * the ball, where the app opens, and to its left the history.
  *
- * On the ball's page everything has one place: what to do above the ball, the ball, what was
- * heard under it, and the microphone at the bottom. A tap on the ball asks without a question;
- * the microphone listens to one. While a question is in progress there is only that page, with
+ * On the ball's page everything has one place: what to do above the ball, the ball, and what
+ * was heard under it. Holding the ball listens to a question for as long as the hold lasts; a
+ * tap asks without one. While a question is in progress there is only that page, with
  * a way to cancel.
  *
  * @param now the current time, for the history's "5 min ago".
@@ -395,8 +393,8 @@ private fun PageDots(current: Int, modifier: Modifier = Modifier) {
 }
 
 /**
- * The ball's page. From top to bottom, each in a place that never moves: what to do, the ball,
- * what was heard, and the microphone.
+ * The ball's page. From top to bottom, each in a place that never moves: what to do, the ball
+ * and what was heard.
  */
 @Composable
 private fun Stage(
@@ -412,7 +410,7 @@ private fun Stage(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
             minOf(maxWidth * BALL_WIDTH_FRACTION, BALL_MAX_SIZE),
-            maxHeight - TITLE_HEIGHT - CAPTION_HEIGHT - ACTIONS_HEIGHT - BALL_GAP * 2
+            maxHeight - TITLE_HEIGHT - CAPTION_HEIGHT - BALL_GAP * 2
         ).coerceAtLeast(BALL_MIN_SIZE)
 
         Column(
@@ -448,11 +446,6 @@ private fun Stage(
                     .widthIn(max = TEXT_MAX_WIDTH)
                     .fillMaxWidth()
                     .heightIn(min = CAPTION_HEIGHT)
-            )
-            Actions(
-                state = state,
-                onToggleVoiceQuestion = onToggleVoiceQuestion,
-                modifier = Modifier.height(ACTIONS_HEIGHT)
             )
         }
     }
@@ -574,6 +567,7 @@ private fun Ball(
  */
 @Composable
 private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
+    val voiceReady = state.voice.isReady
     AnimatedContent(
         targetState = state.phase,
         modifier = modifier,
@@ -590,7 +584,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
                         when (phase) {
                             is BallPhase.Listening -> R.string.hint_listening
                             is BallPhase.Thinking -> R.string.hint_thinking
-                            else -> R.string.hint_tap
+                            else -> if (voiceReady) R.string.hint_hold else R.string.hint_tap
                         }
                     ),
                     style = MaterialTheme.typography.titleLarge,
@@ -671,44 +665,6 @@ private fun QuietText(text: String, modifier: Modifier = Modifier, maxLines: Int
     )
 }
 
-/**
- * At the bottom: the microphone, which listens to a question and, lit while it does, ends it.
- * It is not there where the app cannot listen, nor while the ball thinks.
- */
-@Composable
-private fun Actions(
-    state: EightBallUiState,
-    onToggleVoiceQuestion: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val listening = state.phase is BallPhase.Listening
-
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        if (state.voice.isReady && state.phase !is BallPhase.Thinking) {
-            FilledIconButton(
-                onClick = onToggleVoiceQuestion,
-                modifier = Modifier.size(MIC_SIZE),
-                colors = if (listening) {
-                    IconButtonDefaults.filledIconButtonColors()
-                } else {
-                    IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_mic),
-                    contentDescription = stringResource(
-                        if (listening) R.string.action_finish_question else R.string.action_ask_by_voice
-                    ),
-                    modifier = Modifier.size(MIC_ICON_SIZE)
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun String.quoted(): String = if (isEmpty()) "" else stringResource(R.string.question_quoted, this)
 
@@ -765,7 +721,7 @@ internal const val BALL_PAGE = 1
 private const val PAGE_COUNT = 2
 private const val DOT_OFF_ALPHA = 0.35f
 
-private const val BALL_WIDTH_FRACTION = 0.54f
+private const val BALL_WIDTH_FRACTION = 0.58f
 private val BALL_MAX_SIZE = 320.dp
 private val BALL_MIN_SIZE = 96.dp
 
@@ -775,9 +731,6 @@ private val TOP_BAR_HEIGHT = 56.dp
 private val TEXT_MAX_WIDTH = 480.dp
 private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 104.dp
-private val ACTIONS_HEIGHT = 72.dp
-private val MIC_SIZE = 64.dp
-private val MIC_ICON_SIZE = 28.dp
 private const val CAPTION_MAX_LINES = 3
 
 /** From this font scale up, the answer is also written under the ball. */
