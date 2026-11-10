@@ -17,16 +17,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -43,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.lorenzosuarez.magiceightball.phone.R
+import kotlinx.coroutines.flow.first
 import java.text.DateFormat
 import java.util.Date
 import kotlin.math.abs
@@ -146,12 +150,14 @@ private fun HistoryRow(
 ) {
     val currentEntry by rememberUpdatedState(entry)
     val currentOnDelete by rememberUpdatedState(onDelete)
-    val swipe = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value != SwipeToDismissBoxValue.Settled) currentOnDelete(currentEntry)
-            true
-        }
-    )
+    val swipe = rememberSwipeToDismissBoxState()
+    // Once the row has come to rest off to one side, and only then: the state may be asked
+    // more than once whether it accepts a value, but it arrives there once.
+    LaunchedEffect(swipe) {
+        snapshotFlow { swipe.currentValue }
+            .first { it != SwipeToDismissBoxValue.Settled }
+        currentOnDelete(currentEntry)
+    }
 
     SwipeToDismissBox(
         state = swipe,
@@ -164,7 +170,7 @@ private fun HistoryRow(
                 modifier = Modifier
                     .fillMaxSize()
                     .drawBehind {
-                        val offset = swipe.requireOffset()
+                        val offset = swipe.offsetOrZero()
                         if (offset > 0f) {
                             drawRect(color, size = Size(offset, size.height))
                         } else if (offset < 0f) {
@@ -183,7 +189,7 @@ private fun HistoryRow(
                     contentDescription = null,
                     modifier = Modifier.graphicsLayer {
                         // Shown once there is red enough behind it.
-                        alpha = if (abs(swipe.requireOffset()) > DELETE_ICON_REVEAL.toPx()) 1f else 0f
+                        alpha = if (abs(swipe.offsetOrZero()) > DELETE_ICON_REVEAL.toPx()) 1f else 0f
                     },
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -233,6 +239,17 @@ private fun HistoryRow(
         }
     }
 }
+
+/**
+ * How far the row has been swiped, and 0 while it has not moved.
+ *
+ * The state only knows its offset once the row has been laid out, and a list builds rows ahead
+ * of laying them out, so the offset must not be asked for before the row has moved: a row that
+ * is not settled has an offset, by definition.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+private fun SwipeToDismissBoxState.offsetOrZero(): Float =
+    if (dismissDirection == SwipeToDismissBoxValue.Settled) 0f else requireOffset()
 
 /** "Just now", "5 min ago", "2 h ago", "3 d ago", then the date, in the app's language. */
 @Composable
