@@ -73,7 +73,22 @@ class WatchScreenshotTest {
                 machineState = ChatStateMachine.Listening("Should I order pizza tonight"),
                 aiAnswersAvailable = true,
                 canAskByVoice = true
-            )
+            ),
+            voiceLevel = { 0.7f }
+        )
+    }
+
+    @Test
+    fun listening_long_question_spanish() = capture("watch_9_listening_long_spanish", AppLanguage.SPANISH) {
+        ChatScreenContent(
+            ChatState(
+                machineState = ChatStateMachine.Listening(
+                    "me gustaría saber si este año por fin voy a poder terminar de escribir mi libro"
+                ),
+                aiAnswersAvailable = true,
+                canAskByVoice = true
+            ),
+            voiceLevel = { 0.2f }
         )
     }
 

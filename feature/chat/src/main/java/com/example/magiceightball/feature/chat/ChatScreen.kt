@@ -7,6 +7,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -24,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,9 +55,12 @@ import androidx.wear.compose.foundation.pager.VerticalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import com.example.magiceightball.core.designsystem.theme.MagicEightBallTheme
 import com.example.magiceightball.feature.chat.components.BallColors
+import com.example.magiceightball.feature.chat.components.DesignedMotion
 import com.example.magiceightball.feature.chat.components.PredictionTriangle
 import com.example.magiceightball.feature.chat.components.PredictionTriangleAnimator
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -81,6 +88,16 @@ fun ChatScreen(
         onPauseOrDispose { viewModel.setShakeDetectionEnabled(false) }
     }
 
+    // The voice level is smoothed here and only ever read while drawing the rings.
+    val voiceLevel = remember { Animatable(0f) }
+    LaunchedEffect(viewModel) {
+        withContext(DesignedMotion) {
+            viewModel.voiceLevel.collectLatest { level ->
+                voiceLevel.animateTo(level, spring(stiffness = Spring.StiffnessMedium))
+            }
+        }
+    }
+
     ChatEffects(
         effects = viewModel.effects,
         onRequestMicrophonePermission = { microphoneRequest.launch(Manifest.permission.RECORD_AUDIO) }
@@ -94,6 +111,7 @@ fun ChatScreen(
             when (page) {
                 PAGE_PREDICTION -> ChatScreenContent(
                     state = state,
+                    voiceLevel = { voiceLevel.value },
                     onHoldStart = viewModel::onHoldStart,
                     onHoldEnd = viewModel::onHoldEnd,
                     onHoldCancel = viewModel::onHoldCancel
@@ -149,11 +167,14 @@ private fun ChatEffects(effects: Flow<ChatEffect>, onRequestMicrophonePermission
  * The ball, which is the whole screen: its "8" (at rest, and while it listens) or its window
  * with the die (thinking / answer) sliding over it. Where the app may listen, holding the
  * screen asks a question out loud for as long as the hold lasts.
+ *
+ * @param voiceLevel how loud the voice is while listening, from 0 to 1; read while drawing only.
  */
 @Composable
 fun ChatScreenContent(
     state: ChatState,
     modifier: Modifier = Modifier,
+    voiceLevel: () -> Float = { 0f },
     onHoldStart: () -> Unit = {},
     onHoldEnd: () -> Unit = {},
     onHoldCancel: () -> Unit = {}
@@ -184,7 +205,8 @@ fun ChatScreenContent(
                 ChatStateMachine.Idle, is ChatStateMachine.Listening -> ChatScreenIdle(
                     usesAiAnswers = state.usesAiAnswers,
                     canAskByVoice = state.canAskByVoice,
-                    listening = machine as? ChatStateMachine.Listening
+                    listening = machine as? ChatStateMachine.Listening,
+                    voiceLevel = voiceLevel
                 )
                 // One call site for thinking and answer: two would be two different composables,
                 // and the die would be rebuilt (losing its motion and cross-fade) on the answer.

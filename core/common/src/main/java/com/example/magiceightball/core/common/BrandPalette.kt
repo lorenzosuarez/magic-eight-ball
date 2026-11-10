@@ -23,6 +23,13 @@ object BrandPalette {
     const val BALL_TOP = 0xFF5C6773
     const val BALL_BOTTOM = 0xFF3F4853
 
+    /**
+     * The ball seen from so close that it fills the screen, as on the watch: the same greys,
+     * deeper, so that what is written on it stands out and a small screen does not glare.
+     */
+    const val BALL_CLOSE_TOP = 0xFF333C47
+    const val BALL_CLOSE_BOTTOM = 0xFF1D242D
+
     /** The window in the ball, from its centre to its edge. */
     const val WINDOW_CENTER = 0xFF131C28
     const val WINDOW_EDGE = 0xFF080D14
