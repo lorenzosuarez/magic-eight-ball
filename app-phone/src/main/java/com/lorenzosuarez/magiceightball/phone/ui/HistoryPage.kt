@@ -17,15 +17,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -37,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -150,7 +152,18 @@ private fun HistoryRow(
 ) {
     val currentEntry by rememberUpdatedState(entry)
     val currentOnDelete by rememberUpdatedState(onDelete)
-    val swipe = rememberSwipeToDismissBoxState()
+    // Remembered for this showing of the row only, not saved with it: an entry that is put back
+    // by "Undo" has the same key, and a saved state would bring it back already swiped away,
+    // which would delete it again.
+    val density = LocalDensity.current
+    val positionalThreshold = SwipeToDismissBoxDefaults.positionalThreshold
+    val swipe = remember(density) {
+        SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            density = density,
+            positionalThreshold = positionalThreshold
+        )
+    }
     // Once the row has come to rest off to one side, and only then: the state may be asked
     // more than once whether it accepts a value, but it arrives there once.
     LaunchedEffect(swipe) {

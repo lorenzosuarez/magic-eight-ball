@@ -426,6 +426,21 @@ class EightBallViewModelTest {
     }
 
     @Test
+    fun `a recognizer that gives up is started again while the finger is still down`() = runTest {
+        val viewModel = createViewModel(microphoneGranted = true)
+
+        viewModel.onHoldStart()
+        speech.sessions.single().finish(null)
+        advanceTimeBy(EightBallViewModel.LISTEN_RETRY_MS)
+        runCurrent()
+        assertEquals(2, speech.sessions.size)
+        assertTrue(speech.sessions.last().active)
+
+        speech.sessions.last().finish("Will it rain?")
+        assertEquals(BallPhase.Thinking("Will it rain?"), viewModel.phase)
+    }
+
+    @Test
     fun `a recognizer that fails is a question nobody heard, never an error`() = runTest {
         speech.failure = IllegalStateException("recognizer died")
         val viewModel = createViewModel(microphoneGranted = true)

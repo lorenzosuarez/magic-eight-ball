@@ -31,6 +31,12 @@ class FileAnswerHistoryRepository(
     private val mutex = Mutex()
     private var loaded = false
 
+    /**
+     * The highest id given out so far. An id is never given twice, even after its entry was
+     * removed, so an entry that is put back can never find its place taken.
+     */
+    private var lastId = 0L
+
     override val entries: Flow<List<HistoryEntry>> = flow {
         change { it }
         emitAll(state)
@@ -39,7 +45,7 @@ class FileAnswerHistoryRepository(
     override suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean) =
         change { old ->
             val entry = HistoryEntry(
-                id = (old.maxOfOrNull { it.id } ?: 0L) + 1,
+                id = ++lastId,
                 question = question,
                 answer = answer,
                 askedAtMillis = askedAtMillis,
@@ -60,6 +66,7 @@ class FileAnswerHistoryRepository(
         withContext(io) {
             if (!loaded) {
                 state.value = read()
+                lastId = state.value.maxOfOrNull { it.id } ?: 0L
                 loaded = true
             }
             val updated = transform(state.value)

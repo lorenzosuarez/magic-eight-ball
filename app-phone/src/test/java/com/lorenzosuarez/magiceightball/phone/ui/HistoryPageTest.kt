@@ -3,6 +3,9 @@ package com.lorenzosuarez.magiceightball.phone.ui
 import android.app.Application
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -88,6 +91,35 @@ class HistoryPageTest {
         compose.waitForIdle()
 
         assertEquals(listOf(entries[1], entries[3]), deleted)
+    }
+
+    @Test
+    fun `an entry swiped away and put back stays, and is not deleted again`() {
+        var shown by mutableStateOf(entries.take(5))
+        compose.setContent {
+            MagicEightBallPhoneTheme {
+                HistoryContent(
+                    entries = shown,
+                    now = 0L,
+                    onDelete = { entry ->
+                        deleted += entry
+                        shown = shown - entry
+                    },
+                    onClearAll = {}
+                )
+            }
+        }
+
+        compose.onNodeWithText("Answer 1").performTouchInput { swipeRight(endX = centerX + SWIPE_PX) }
+        compose.waitForIdle()
+        assertEquals(listOf(entries[1]), deleted)
+
+        // "Undo": the same entry, with the same id, is in the list again.
+        shown = entries.take(5)
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Answer 1").assertIsDisplayed()
+        assertEquals(listOf(entries[1]), deleted)
     }
 
     @Test

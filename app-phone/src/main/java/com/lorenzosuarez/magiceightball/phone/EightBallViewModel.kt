@@ -278,7 +278,7 @@ class EightBallViewModel @Inject constructor(
             _effects.trySend(EightBallEffect.ListeningStarted)
 
             val transcript = MutableStateFlow("")
-            val heard = async { hear(settings.language, release, transcript) }
+            val heard = async { hear(settings.language, release, transcript, untilReleased = !handsFree) }
             try {
                 // The question ends when the user lets go, or when the recognizer has heard
                 // the end of it. A recognizer that gives up empty-handed while the finger is
@@ -313,12 +313,37 @@ class EightBallViewModel @Inject constructor(
      * transcript, or the latest partial one when no final one came. Empty when nothing was
      * understood. Publishes the words, to [transcript] and to the screen, and the voice level
      * as they arrive.
+     *
+     * @param untilReleased true while something is held: a recognizer that gives up on silence
+     * is then started again, so that whoever takes a moment before speaking is still heard.
      */
     private suspend fun hear(
         language: AppLanguage,
         release: CompletableDeferred<Unit>,
-        transcript: MutableStateFlow<String>
+        transcript: MutableStateFlow<String>,
+        untilReleased: Boolean
     ): String {
+        try {
+            var attempts = 0
+            do {
+                listenOnce(language, release, transcript)
+            } while (
+                untilReleased && transcript.value.isEmpty() && ++attempts < MAX_LISTEN_ATTEMPTS &&
+                // A short breath between attempts, cut short by the release.
+                withTimeoutOrNull(LISTEN_RETRY_MS) { release.await() } == null
+            )
+        } finally {
+            _voiceLevel.value = 0f
+        }
+        return transcript.value
+    }
+
+    /** One run of the recognizer, from its start to its giving up, finishing or failing. */
+    private suspend fun listenOnce(
+        language: AppLanguage,
+        release: CompletableDeferred<Unit>,
+        transcript: MutableStateFlow<String>
+    ) {
         try {
             speechListener.listen(language, release).collect { event ->
                 when (event) {
@@ -335,10 +360,7 @@ class EightBallViewModel @Inject constructor(
             throw e
         } catch (_: Exception) {
             // A recognizer that breaks is a question nobody heard, not an error to show.
-        } finally {
-            _voiceLevel.value = 0f
         }
-        return transcript.value
     }
 
     /** Stops listening without asking anything and puts the ball back as it was. */
@@ -465,5 +487,9 @@ class EightBallViewModel @Inject constructor(
 
         /** How long the last words may take to be recognized once the user has let go. */
         const val FINAL_TRANSCRIPT_TIMEOUT_MS = 1_500L
+
+        /** How many times in a row the recognizer is started for one hold, and how far apart. */
+        const val MAX_LISTEN_ATTEMPTS = 6
+        const val LISTEN_RETRY_MS = 250L
     }
 }

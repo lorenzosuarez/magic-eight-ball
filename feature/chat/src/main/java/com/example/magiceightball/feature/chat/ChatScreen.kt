@@ -36,11 +36,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -229,6 +232,18 @@ fun ChatScreenContent(
     }
 }
 
+/**
+ * Waits for every finger to lift, wherever it has wandered. False when another gesture, the
+ * pager's swipe for instance, has taken the touch for itself.
+ */
+private suspend fun AwaitPointerEventScope.awaitLift(): Boolean {
+    while (true) {
+        val event = awaitPointerEvent()
+        if (event.changes.any { it.isConsumed }) return false
+        if (event.changes.none { it.pressed }) return true
+    }
+}
+
 private val ChatStateMachine.showsTheEight: Boolean
     get() = this is ChatStateMachine.Idle || this is ChatStateMachine.Listening
 
@@ -247,7 +262,18 @@ private fun Modifier.holdToAsk(
     val currentOnHoldEnd by rememberUpdatedState(onHoldEnd)
     val currentOnHoldCancel by rememberUpdatedState(onHoldCancel)
 
-    pointerInput(enabled) {
+    val askByVoice = localizedString(Strings.AskByVoice)
+
+    // For those who cannot hold: a long click starts listening, and the question ends by itself
+    // when they stop talking.
+    semantics {
+        if (enabled) {
+            onLongClick(label = askByVoice) {
+                currentOnHoldStart()
+                true
+            }
+        }
+    }.pointerInput(enabled) {
         if (!enabled) return@pointerInput
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false)
@@ -259,7 +285,14 @@ private fun Modifier.holdToAsk(
             }
             if (stillDown) {
                 currentOnHoldStart()
-                if (waitForUpOrCancellation() != null) currentOnHoldEnd() else currentOnHoldCancel()
+                // Whatever ends the gesture ends the hold: a lift asks, and anything else
+                // (a swipe taken by the pager, the gesture being torn down) cancels.
+                var lifted = false
+                try {
+                    lifted = awaitLift()
+                } finally {
+                    if (lifted) currentOnHoldEnd() else currentOnHoldCancel()
+                }
             }
         }
     }
