@@ -1,3 +1,4 @@
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -8,6 +9,28 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Release signing credentials live OUTSIDE the repository.
+// Default: ~/.android-keys/magic8ball-keystore.properties
+// Override: -Pmagic8ball.keystoreProperties=/path/file.properties or env MAGIC8BALL_KEYSTORE_PROPERTIES.
+// Keys: storeFile (absolute, or relative to the properties file), storePassword, keyAlias, keyPassword.
+// If the file or the keystore is missing, release builds still succeed but produce UNSIGNED artifacts.
+val releaseKeystorePropertiesFile = File(
+    providers.gradleProperty("magic8ball.keystoreProperties").orNull
+        ?: System.getenv("MAGIC8BALL_KEYSTORE_PROPERTIES")
+        ?: "${System.getProperty("user.home")}/.android-keys/magic8ball-keystore.properties"
+)
+val releaseKeystoreProperties = Properties().apply {
+    if (releaseKeystorePropertiesFile.isFile) {
+        releaseKeystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+val releaseStoreFile: File? = releaseKeystoreProperties.getProperty("storeFile")?.let { path ->
+    File(path).let { if (it.isAbsolute) it else File(releaseKeystorePropertiesFile.parentFile, path) }
+}
+val hasReleaseSigning = releaseStoreFile?.isFile == true &&
+    listOf("storePassword", "keyAlias", "keyPassword")
+        .all { !releaseKeystoreProperties.getProperty(it).isNullOrBlank() }
+
 android {
     namespace = "com.example.magiceightball"
     compileSdk = 36
@@ -16,29 +39,33 @@ android {
         applicationId = "com.lorenzosuarez.magiceightball"
         minSdk = 30
         targetSdk = 36
-        versionCode = 100
+        versionCode = 101
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    val keystorePropertiesFile = rootProject.file("keystore.properties")
-    val keystoreProperties = Properties()
-    if (keystorePropertiesFile.exists()) {
-        keystoreProperties.load(keystorePropertiesFile.inputStream())
-    }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-            storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
-            storePassword = keystoreProperties.getProperty("storePassword")
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = releaseKeystoreProperties.getProperty("storePassword")
+                keyAlias = releaseKeystoreProperties.getProperty("keyAlias")
+                keyPassword = releaseKeystoreProperties.getProperty("keyPassword")
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                logger.warn(
+                    "Release signing not configured ($releaseKeystorePropertiesFile missing or incomplete): " +
+                        "release artifacts will be UNSIGNED."
+                )
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
