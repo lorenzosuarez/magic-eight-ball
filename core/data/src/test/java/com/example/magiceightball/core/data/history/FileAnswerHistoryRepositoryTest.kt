@@ -68,6 +68,20 @@ class FileAnswerHistoryRepositoryTest {
     }
 
     @Test
+    fun `an entry removed and put back keeps its place even if another answer came in between`() = runTest {
+        val history = open()
+        history.add("first", "a", 1L, fromAi = false)
+        history.add("newest", "b", 2L, fromAi = false)
+        val newest = history.entries.first().first()
+
+        history.remove(newest.id)
+        history.add("in between", "c", 3L, fromAi = false)
+        history.restore(newest)
+
+        assertEquals(listOf("in between", "newest", "first"), history.entries.first().map { it.question })
+    }
+
+    @Test
     fun `clearing leaves nothing behind, not even the file`() = runTest {
         val history = open()
         history.add("q", "a", 1L, fromAi = false)

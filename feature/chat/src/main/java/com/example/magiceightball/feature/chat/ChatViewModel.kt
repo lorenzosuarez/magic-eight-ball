@@ -164,7 +164,9 @@ class ChatViewModel @Inject constructor(
 
     /** The hold was taken away rather than ended, by a swipe for instance: nothing is asked. */
     fun onHoldCancel() {
-        if (machineState.value is ChatStateMachine.Listening) cycleJob?.cancel()
+        val listening = machineState.value as? ChatStateMachine.Listening ?: return
+        // A question that has already been heard to its end is not undone by a later touch.
+        if (!listening.finished) cycleJob?.cancel()
     }
 
     /**

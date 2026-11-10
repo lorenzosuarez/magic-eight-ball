@@ -31,6 +31,7 @@ internal object Strings {
     val ShakeHint = LocalizedString(R.string.shake_hint, R.string.shake_hint_es)
     val ShakeHintAi = LocalizedString(R.string.shake_hint_ai, R.string.shake_hint_ai_es)
     val HoldHint = LocalizedString(R.string.hold_hint, R.string.hold_hint_es)
+    val AskByVoice = LocalizedString(R.string.ask_by_voice, R.string.ask_by_voice_es)
     val Listening = LocalizedString(R.string.listening, R.string.listening_es)
     val AnswerFallback = LocalizedString(R.string.answer_fallback, R.string.answer_fallback_es)
 

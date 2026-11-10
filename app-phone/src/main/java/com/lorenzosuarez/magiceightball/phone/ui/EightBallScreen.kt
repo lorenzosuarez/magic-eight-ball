@@ -71,6 +71,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -525,7 +526,14 @@ private fun Ball(
                             false -> Unit
                             null -> {
                                 currentOnHoldStart()
-                                if (waitForUpOrCancellation() != null) currentOnHoldEnd() else currentOnHoldCancel()
+                                // Ended by lifting, wherever the finger has wandered while
+                                // talking; cancelled by anything else that ends the gesture.
+                                var lifted = false
+                                try {
+                                    lifted = awaitLift()
+                                } finally {
+                                    if (lifted) currentOnHoldEnd() else currentOnHoldCancel()
+                                }
                             }
                         }
                     } finally {
@@ -689,6 +697,18 @@ private fun String.quoted(): String = if (isEmpty()) "" else stringResource(R.st
 private fun AnswerText.text(): String = when (this) {
     is AnswerText.Plain -> value
     AnswerText.Fallback -> stringResource(R.string.answer_fallback)
+}
+
+/**
+ * Waits for every finger to lift, inside the ball or not: a thumb drifts while its owner talks.
+ * False when another gesture, a scroll for instance, has taken the touch for itself.
+ */
+private suspend fun AwaitPointerEventScope.awaitLift(): Boolean {
+    while (true) {
+        val event = awaitPointerEvent()
+        if (event.changes.any { it.isConsumed }) return false
+        if (event.changes.none { it.pressed }) return true
+    }
 }
 
 /** Hands [text] to whichever app the user picks. */

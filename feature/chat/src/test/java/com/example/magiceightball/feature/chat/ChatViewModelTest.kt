@@ -388,6 +388,11 @@ class ChatViewModelTest {
         // The whole question stays on screen for a moment before the ball thinks about it.
         assertEquals(ChatStateMachine.Listening("Will it rain?", finished = true), viewModel.machineState)
 
+        // A touch that comes and goes meanwhile does not undo a question already heard.
+        viewModel.onHoldCancel()
+        runCurrent()
+        assertEquals(ChatStateMachine.Listening("Will it rain?", finished = true), viewModel.machineState)
+
         advanceTimeBy(HEARD_QUESTION_MS)
         runCurrent()
         assertEquals(ChatStateMachine.Running, viewModel.machineState)

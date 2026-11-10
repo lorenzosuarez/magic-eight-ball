@@ -43,21 +43,24 @@ class AndroidSpeechListener @Inject constructor(
         var finished = false
 
         /**
-         * Starts the next recognizer in line; false when there is none left, or when the
-         * service refuses to start, which is one more way of not hearing the question.
+         * Starts the next recognizer in line that can be started; false when there is none
+         * left. One that cannot be created or refuses to start is passed over for the next.
          */
         fun startNext(listener: RecognitionListener): Boolean {
             recognizer?.destroy()
             recognizer = null
-            val factory = factories.getOrNull(next++) ?: return false
-            return try {
-                recognizer = factory().also {
-                    it.setRecognitionListener(listener)
-                    it.startListening(intent)
+            while (true) {
+                val factory = factories.getOrNull(next++) ?: return false
+                try {
+                    recognizer = factory().also {
+                        it.setRecognitionListener(listener)
+                        it.startListening(intent)
+                    }
+                    return true
+                } catch (_: RuntimeException) {
+                    recognizer?.destroy()
+                    recognizer = null
                 }
-                true
-            } catch (_: RuntimeException) {
-                false
             }
         }
 

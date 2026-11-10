@@ -13,6 +13,8 @@
     <string name="shake_hint_ai_es">Agita para respuestas IA</string>
     <string name="hold_hint">Hold to ask, or shake</string>
     <string name="hold_hint_es">Mantén presionado o agita</string>
+    <string name="ask_by_voice">Ask by voice</string>
+    <string name="ask_by_voice_es">Preguntar por voz</string>
     <string name="listening">Listening…</string>
     <string name="listening_es">Te escucho…</string>
     <string name="answer_fallback">Ask again later</string>
