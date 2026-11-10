@@ -377,8 +377,10 @@ class ChatViewModelTest {
 
         val session = speech.sessions.single()
         session.hear("Will it")
+        session.level(0.6f)
         runCurrent()
         assertEquals(ChatStateMachine.Listening("Will it"), viewModel.machineState)
+        assertEquals(0.6f, viewModel.voiceLevel.value)
 
         viewModel.onHoldEnd()
         session.finish("Will it rain?")
@@ -390,6 +392,7 @@ class ChatViewModelTest {
         assertEquals(ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER)), viewModel.machineState)
         assertEquals("Will it rain?", llmGateway.requests.single().question)
         assertEquals(false, session.active)
+        assertEquals(0f, viewModel.voiceLevel.value)
     }
 
     @Test
@@ -497,6 +500,10 @@ class ChatViewModelTest {
 
             fun hear(words: String) {
                 events.trySend(SpeechEvent.Transcript(words, isFinal = false))
+            }
+
+            fun level(value: Float) {
+                events.trySend(SpeechEvent.Level(value))
             }
 
             /** The recognizer is done: with [question] as what it understood, or with nothing. */

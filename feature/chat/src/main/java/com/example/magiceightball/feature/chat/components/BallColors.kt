@@ -21,15 +21,16 @@ internal object BallColors {
     )
 
     /** The ball, which on the watch is the whole screen, lit from above. */
-    val BallBottom = Color(BrandPalette.BALL_BOTTOM)
-    val Ball = Brush.verticalGradient(listOf(Color(BrandPalette.BALL_TOP), BallBottom))
+    val BallBottom = Color(BrandPalette.BALL_CLOSE_BOTTOM)
+    val Ball = Brush.verticalGradient(listOf(Color(BrandPalette.BALL_CLOSE_TOP), BallBottom))
 
     /** The window in the ball, from its centre to its edge. */
     val WindowCenter = Color(BrandPalette.WINDOW_CENTER)
     val WindowEdge = Color(BrandPalette.WINDOW_EDGE)
 
     /** The window's two borders, in the ball's own greys: a lighter edge and a darker one inside it. */
-    val WindowRim = Color(BrandPalette.WINDOW_RIM)
+    // A little lighter than the ball it is cut into, which here is the deeper one.
+    val WindowRim = Color(BrandPalette.BALL_TOP)
     val WindowRimInner = Color(BrandPalette.WINDOW_RIM_INNER)
 
     /** The die while the ball thinks, and the die with its answer. */

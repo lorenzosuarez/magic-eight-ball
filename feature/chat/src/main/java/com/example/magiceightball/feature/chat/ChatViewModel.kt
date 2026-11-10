@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -78,6 +79,14 @@ class ChatViewModel @Inject constructor(
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _voiceLevel = MutableStateFlow(0f)
+
+    /**
+     * How loud the voice is while listening, from 0 to 1. Kept out of [state] because it changes
+     * many times a second and only ever drives a drawing.
+     */
+    val voiceLevel: StateFlow<Float> = _voiceLevel.asStateFlow()
 
     private val _effects = Channel<ChatEffect>(Channel.BUFFERED)
     val effects: Flow<ChatEffect> = _effects.receiveAsFlow()
@@ -227,8 +236,8 @@ class ChatViewModel @Inject constructor(
 
     /**
      * Listens until the recognizer is done and returns the question it understood, empty when
-     * it understood nothing. Publishes the words, to [transcript] and to the screen, as they
-     * arrive.
+     * it understood nothing. Publishes the words, to [transcript] and to the screen, and the
+     * voice level as they arrive.
      */
     private suspend fun hear(
         language: AppLanguage,
@@ -237,10 +246,13 @@ class ChatViewModel @Inject constructor(
     ): String {
         try {
             speechListener.listen(language, release).collect { event ->
-                if (event is SpeechEvent.Transcript) {
-                    transcript.value = event.text.trim()
-                    if (machineState.value is ChatStateMachine.Listening) {
-                        machineState.value = ChatStateMachine.Listening(transcript.value)
+                when (event) {
+                    is SpeechEvent.Level -> _voiceLevel.value = event.value
+                    is SpeechEvent.Transcript -> {
+                        transcript.value = event.text.trim()
+                        if (machineState.value is ChatStateMachine.Listening) {
+                            machineState.value = ChatStateMachine.Listening(transcript.value)
+                        }
                     }
                 }
             }
@@ -248,6 +260,8 @@ class ChatViewModel @Inject constructor(
             throw e
         } catch (_: Exception) {
             // A recognizer that breaks is a question nobody heard, not an error to show.
+        } finally {
+            _voiceLevel.value = 0f
         }
         return transcript.value
     }
