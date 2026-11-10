@@ -110,6 +110,24 @@ class WatchScreenshotTest {
     }
 
     @Test
+    fun long_word_answer_spanish() = capture("watch_10_long_word_spanish", AppLanguage.SPANISH, ANSWER_SETTLE_MS) {
+        ChatScreenContent(
+            ChatState(machineState = ChatStateMachine.Completed(AnswerText.Plain("Sí, sorprendentemente.")))
+        )
+    }
+
+    @Test
+    fun longest_ai_answer() = capture("watch_11_longest_ai_answer", settleMs = ANSWER_SETTLE_MS) {
+        ChatScreenContent(
+            ChatState(
+                machineState = ChatStateMachine.Completed(
+                    AnswerText.Plain("Absolutely, unquestionably, overwhelmingly, extraordinarily, undoubtedly yes.")
+                )
+            )
+        )
+    }
+
+    @Test
     fun answer_style_spanish() = capture("watch_4_answer_style_spanish", AppLanguage.SPANISH) {
         PersonalitySelectionScreen(selectedPersonality = Magic8BallPersonality.NEUTRAL, onPersonalitySelected = {})
     }

@@ -19,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,12 +27,14 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import com.example.magiceightball.feature.chat.LocalAppLanguage
-import kotlin.math.max
+import kotlin.math.abs
 import kotlin.math.min
+import kotlin.math.sqrt
 
 /**
  * Draws [text], as it is written, inside an inverted triangle that fills this composable, at the
- * largest font size at which every line stays clear of the slanted edges.
+ * largest font size at which every line stays clear of the slanted edges and, when the die is
+ * seen through a round [glass], inside that too.
  *
  * The text is measured with the exact style it is drawn with, once per size of the triangle,
  * and drawn directly: there is no subcomposition and no extra layout pass.
@@ -42,11 +43,12 @@ import kotlin.math.min
 internal fun TriangleFittedText(
     text: String,
     color: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    glass: GlassOverDie? = null
 ) {
     val textMeasurer = rememberTextMeasurer()
     val baseStyle = MaterialTheme.typography.bodyMedium
-    // Hyphenation follows the language of the app, not the one of the device.
+    // Line breaking follows the language of the app, not the one of the device.
     val locale = Locale(LocalAppLanguage.current.code)
     val style = remember(baseStyle, color, locale) {
         baseStyle.copy(
@@ -54,8 +56,7 @@ internal fun TriangleFittedText(
             fontWeight = FontWeight.SemiBold,
             localeList = LocaleList(locale),
             textAlign = TextAlign.Center,
-            hyphens = Hyphens.Auto,
-            lineBreak = LineBreak.Paragraph
+            lineBreak = LineBreak.Heading
         )
     }
 
@@ -74,6 +75,7 @@ internal fun TriangleFittedText(
                         style = style,
                         textMeasurer = textMeasurer,
                         triangle = InvertedTriangleGeometry(size),
+                        glass = glass,
                         density = this
                     )
                 }
@@ -84,84 +86,97 @@ internal fun TriangleFittedText(
     )
 }
 
+/**
+ * The round glass the die is seen through, in the die's own measures: its centre is on the
+ * die's axis, [centerY] of the die's height down from its top, and its radius is [radius] of
+ * that height.
+ */
+class GlassOverDie(val centerY: Float, val radius: Float)
+
 private class FittedText(val layout: TextLayoutResult, val topLeft: Offset)
 
 /**
- * Binary search over the candidate font sizes for the largest one that fits. Falls back to the
- * smallest size, ellipsized, when even that one does not fit.
+ * From the largest font size down, tries a few wrapping widths and a few heights, and keeps the
+ * first layout whose every line is whole and inside the die (and the glass). So a short answer is large,
+ * on as many lines as suit it, near the middle; a long one is smaller and uses the whole width
+ * near the top. Falls back to the smallest size, ellipsized, when nothing fits.
  */
 private fun fitTextInTriangle(
     text: String,
     style: TextStyle,
     textMeasurer: TextMeasurer,
     triangle: InvertedTriangleGeometry,
+    glass: GlassOverDie?,
     density: Density
 ): FittedText {
     val height = triangle.size.height
-    val edgePadding = with(density) { EDGE_PADDING.toPx() }
-    val textWidth = (triangle.maxWidth - 2f * edgePadding).toInt().coerceAtLeast(1)
-    val left = (triangle.size.width - textWidth) / 2f
-    val minFontPx = height * MIN_FONT_HEIGHT_FRACTION
-    val fontStepPx = height * (MAX_FONT_HEIGHT_FRACTION - MIN_FONT_HEIGHT_FRACTION) / (FONT_STEPS - 1)
+    val centerX = triangle.size.width / 2f
+    val edgePadding = triangle.size.width * EDGE_PADDING_FRACTION
 
-    fun layoutAt(step: Int): TextLayoutResult {
+    /** Half the room for a line whose box runs from [top] to [bottom]. */
+    fun halfRoom(top: Float, bottom: Float): Float {
+        var half = min(triangle.widthAt(top), triangle.widthAt(bottom)) / 2f
+        if (glass != null) {
+            val fromCenter = maxOf(abs(top - height * glass.centerY), abs(bottom - height * glass.centerY))
+            val radius = height * glass.radius
+            half = min(half, sqrt((radius * radius - fromCenter * fromCenter).coerceAtLeast(0f)))
+        }
+        return half - edgePadding
+    }
+
+    fun layoutAt(fontPx: Float, maxWidth: Float): TextLayoutResult {
         // Sized from the triangle, not from the user's font scale: the text always fills the
         // shape as far as it can, and a larger scale could only push it out of the shape.
-        val fontSize = with(density) { (minFontPx + fontStepPx * step).toSp() }
+        val fontSize = with(density) { fontPx.toSp() }
         return textMeasurer.measure(
             text = text,
             style = style.copy(fontSize = fontSize, lineHeight = fontSize * LINE_HEIGHT_FACTOR),
             overflow = TextOverflow.Ellipsis,
             maxLines = MAX_LINES,
-            constraints = Constraints.fixedWidth(textWidth)
+            constraints = Constraints(maxWidth = maxWidth.toInt().coerceAtLeast(1))
         )
     }
 
-    var best: FittedText? = null
-    var low = 0
-    var high = FONT_STEPS - 1
-    while (low <= high) {
-        val step = (low + high) / 2
-        val layout = layoutAt(step)
-        val top = if (layout.hasVisualOverflow) null else topInside(triangle, layout, edgePadding)
-        if (top != null) {
-            best = FittedText(layout, Offset(left, top))
-            low = step + 1
-        } else {
-            high = step - 1
+    fun TextLayoutResult.fitsAt(top: Float): Boolean = !hasVisualOverflow &&
+        (0 until lineCount).all { line ->
+            // Words stay whole: one cut at a line's end reads worse than a smaller answer.
+            val breaksAWord = line < lineCount - 1 && !text[getLineEnd(line) - 1].isWhitespace()
+            !breaksAWord &&
+                (getLineRight(line) - getLineLeft(line)) / 2f <=
+                halfRoom(top + getLineTop(line), top + getLineBottom(line))
+        }
+
+    fun place(layout: TextLayoutResult, top: Float) =
+        FittedText(layout, Offset(centerX - layout.size.width / 2f, top))
+
+    val middle = height * (glass?.centerY ?: VISUAL_CENTER_FRACTION)
+
+    for (step in 0 until FONT_STEPS) {
+        val fontPx = height * (MAX_FONT_HEIGHT_FRACTION -
+            (MAX_FONT_HEIGHT_FRACTION - MIN_FONT_HEIGHT_FRACTION) * step / (FONT_STEPS - 1))
+        for (widthFraction in WRAP_WIDTHS) {
+            val layout = layoutAt(fontPx, (triangle.maxWidth - 2f * edgePadding) * widthFraction)
+            // As near the middle of what is seen as the lines allow, then higher, where the
+            // die is wider.
+            val centered = middle - layout.size.height / 2f
+            for (lift in TOP_LIFTS) {
+                val top = centered - height * lift
+                if (top >= height * MIN_TOP_FRACTION && layout.fitsAt(top)) return place(layout, top)
+            }
         }
     }
-    return best ?: FittedText(layoutAt(0), Offset(left, height * MIN_TOP_FRACTION))
+    val smallest = layoutAt(height * MIN_FONT_HEIGHT_FRACTION, triangle.maxWidth - 2f * edgePadding)
+    return place(smallest, height * MIN_TOP_FRACTION)
 }
 
-/**
- * Vertical position at which every line of [layout] fits inside [triangle], as close as
- * possible to the visual centre of the triangle, or null if there is no such position.
- */
-private fun topInside(
-    triangle: InvertedTriangleGeometry,
-    layout: TextLayoutResult,
-    edgePadding: Float
-): Float? {
-    val height = triangle.size.height
-    var minTop = height * MIN_TOP_FRACTION
-    var maxTop = Float.POSITIVE_INFINITY
-    for (line in 0 until layout.lineCount) {
-        val requiredWidth = layout.getLineRight(line) - layout.getLineLeft(line) + 2f * edgePadding
-        minTop = max(minTop, triangle.highestYWithWidth(requiredWidth) - layout.getLineTop(line))
-        maxTop = min(maxTop, triangle.lowestYWithWidth(requiredWidth) - layout.getLineBottom(line))
-    }
-    if (maxTop < minTop) return null
-
-    val centeredTop = height * VISUAL_CENTER_FRACTION - layout.size.height / 2f
-    return centeredTop.coerceIn(minTop, maxTop)
-}
-
-private val EDGE_PADDING = 6.dp
+/** Clear of the die's edges and of the glass's, as a share of the die's width. */
+private const val EDGE_PADDING_FRACTION = 0.05f
 private const val MAX_LINES = 6
-private const val LINE_HEIGHT_FACTOR = 1.3f
-private const val FONT_STEPS = 13
-private const val MAX_FONT_HEIGHT_FRACTION = 0.15f
+private const val LINE_HEIGHT_FACTOR = 1.16f
+private const val FONT_STEPS = 20
+private const val MAX_FONT_HEIGHT_FRACTION = 0.19f
 private const val MIN_FONT_HEIGHT_FRACTION = 0.05f
-private const val MIN_TOP_FRACTION = 0.15f
-private const val VISUAL_CENTER_FRACTION = 0.42f
+private const val MIN_TOP_FRACTION = 0.06f
+private const val VISUAL_CENTER_FRACTION = 0.36f
+private val WRAP_WIDTHS = floatArrayOf(1f, 0.85f, 0.7f, 0.55f)
+private val TOP_LIFTS = floatArrayOf(0f, 0.04f, 0.08f, 0.12f, 0.16f, 0.2f)
