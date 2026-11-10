@@ -39,7 +39,7 @@ The phone and tablet app keeps a list of the latest answers the ball gave you, s
 - **What is saved.** For each answer: the text of your question if you asked out loud (nothing for a tap or a shake), the answer, the date and time, and whether the answer was written by AI or came from the app's built-in list.
 - **Where.** In a private file in the app's own storage on your device. It is not sent to the developer, to Google or to anyone else, it is not synchronised between devices, and it is not included in device backups or device-to-device transfers.
 - **How much.** At most the latest 50 answers; older ones are deleted automatically as new ones arrive.
-- **Your control.** You can delete any single entry (swipe it away or use its delete button; "Undo" brings it back for a few seconds), or all of them with "Clear all", from the list itself. Clearing the app's data or uninstalling the app also deletes the list.
+- **Your control.** You can delete any single entry (with its delete button; "Undo" brings it back for a few seconds), or all of them with "Clear all", from the list itself. Clearing the app's data or uninstalling the app also deletes the list.
 - **Sharing.** The app has no way to send your questions or answers anywhere. "Share the app" in the settings hands only a short text with the app's Google Play link to the app you pick.
 
 ## Sensors and permissions

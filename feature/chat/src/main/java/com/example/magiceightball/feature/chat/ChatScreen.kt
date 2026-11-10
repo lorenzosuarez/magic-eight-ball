@@ -6,6 +6,7 @@ import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -27,14 +28,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
@@ -62,6 +66,7 @@ import com.example.magiceightball.feature.chat.components.BallColors
 import com.example.magiceightball.feature.chat.components.DesignedMotion
 import com.example.magiceightball.feature.chat.components.PredictionTriangle
 import com.example.magiceightball.feature.chat.components.PredictionTriangleAnimator
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
@@ -102,13 +107,33 @@ fun ChatScreen(
         }
     }
 
+    var pageDotsShown by remember { mutableStateOf(true) }
+    LaunchedEffect(pagerState.isScrollInProgress) {
+        if (pagerState.isScrollInProgress) {
+            pageDotsShown = true
+        } else {
+            delay(PAGE_DOTS_LINGER_MILLIS)
+            pageDotsShown = false
+        }
+    }
+
+    // The app arrives from the launch screen rather than replacing it at a stroke.
+    val intro = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        withContext(DesignedMotion) { intro.animateTo(1f, tween(INTRO_MILLIS)) }
+    }
+
     ChatEffects(
         effects = viewModel.effects,
         onRequestMicrophonePermission = { microphoneRequest.launch(Manifest.permission.RECORD_AUDIO) }
     )
 
     CompositionLocalProvider(LocalAppLanguage provides state.settings.language) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = intro.value }
+        ) {
             VerticalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
@@ -136,9 +161,14 @@ fun ChatScreen(
                     )
                 }
             }
-            // Dots at the side say there is more below the ball. They step aside while a
-            // question is in progress, when there is only the ball.
-            if (state.machineState is ChatStateMachine.Idle) {
+            // Dots at the side say there is more below the ball. They show when the app opens
+            // and while the pages move, then leave the screen to its content; and never
+            // while a question is in progress, when there is only the ball.
+            AnimatedVisibility(
+                visible = pageDotsShown && state.machineState is ChatStateMachine.Idle,
+                enter = fadeIn(tween(PAGE_DOTS_FADE_MILLIS)),
+                exit = fadeOut(tween(PAGE_DOTS_FADE_MILLIS))
+            ) {
                 VerticalPageIndicator(
                     pagerState = pagerState,
                     selectedColor = BallColors.OnSurface,
@@ -374,6 +404,11 @@ private const val PAGE_PERSONALITY = 2
 private const val PAGE_AI_ANSWERS = 3
 private const val PAGE_COUNT = 4
 private const val PAGE_DOT_OFF_ALPHA = 0.35f
+
+/** How long the page dots stay once the pages have stopped moving, and how they come and go. */
+private const val PAGE_DOTS_LINGER_MILLIS = 1_800L
+private const val PAGE_DOTS_FADE_MILLIS = 250
+private const val INTRO_MILLIS = 420
 
 private const val TRANSITION_MILLIS = 300
 

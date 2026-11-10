@@ -47,7 +47,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -66,6 +65,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -174,19 +175,24 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
     }
 
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
+
+    // The app arrives rather than appears: from the launch screen, which shows the ball on the
+    // window's plain colour, the ball grows to its size while everything else fades in.
+    val intro = remember { Animatable(0f) }
+    val ready = state != null
+    DesignedMotionEffect(ready) {
+        if (ready) intro.animateTo(1f, tween(INTRO_MS))
+    }
     val playStoreUrl = PLAY_STORE_URL + context.packageName
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Backdrop)
-    ) {
-        // Nothing but the background until the saved choices are known.
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Nothing but the window's own background until the saved choices are known.
         val current = state ?: return@Box
         ProvideAppLanguage(current.settings.language) {
             EightBallContent(
                 state = current,
                 now = now,
+                intro = { intro.value },
                 voiceLevel = { voiceLevel.value },
                 still = false,
                 onAsk = viewModel::ask,
@@ -230,6 +236,8 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
  * a way to cancel.
  *
  * @param now the current time, for the history's "5 min ago".
+ * @param intro how far the app has arrived from the launch screen, from 0 to 1; read while
+ * drawing only.
  * @param voiceLevel read while drawing only; see [EightBall].
  * @param onDeleteHistoryEntry deletes at once; the screen then offers to undo it, which calls
  * [onRestoreHistoryEntry].
@@ -252,7 +260,8 @@ internal fun EightBallContent(
     onClearHistory: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    initialPage: Int = BALL_PAGE
+    initialPage: Int = BALL_PAGE,
+    intro: () -> Float = { 1f }
 ) {
     val atRest = state.phase is BallPhase.Idle
     val busy = state.phase is BallPhase.Listening || state.phase is BallPhase.Thinking
@@ -287,7 +296,8 @@ internal fun EightBallContent(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Backdrop)
+            // Over the window's plain colour, which the launch screen leaves behind.
+            .drawBehind { drawRect(Backdrop, alpha = intro()) }
     ) {
         HorizontalPager(
             state = pagerState,
@@ -308,6 +318,7 @@ internal fun EightBallContent(
             } else {
                 Stage(
                     state = state,
+                    intro = intro,
                     voiceLevel = voiceLevel,
                     still = still,
                     onAsk = onAsk,
@@ -329,6 +340,7 @@ internal fun EightBallContent(
         // Over both pages: where the user is, and the ways out of here.
         Box(
             modifier = Modifier
+                .graphicsLayer { alpha = intro() }
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .fillMaxWidth()
                 .height(TOP_BAR_HEIGHT)
@@ -365,13 +377,7 @@ internal fun EightBallContent(
 
 @Composable
 private fun BarButton(icon: Int, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    IconButton(onClick = onClick, modifier = modifier) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = description,
-            tint = MaterialTheme.colorScheme.onSurface
-        )
-    }
+    AppIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
 }
 
 /** One dot per page, the one in front brighter. Decoration: the pages announce themselves. */
@@ -400,6 +406,7 @@ private fun PageDots(current: Int, modifier: Modifier = Modifier) {
 @Composable
 private fun Stage(
     state: EightBallUiState,
+    intro: () -> Float,
     voiceLevel: () -> Float,
     still: Boolean,
     onAsk: () -> Unit,
@@ -422,6 +429,7 @@ private fun Stage(
             Title(
                 state = state,
                 modifier = Modifier
+                    .graphicsLayer { alpha = intro() }
                     .padding(horizontal = 32.dp)
                     .widthIn(max = TEXT_MAX_WIDTH)
                     .fillMaxWidth()
@@ -437,12 +445,21 @@ private fun Stage(
                 onHoldEnd = onHoldEnd,
                 onHoldCancel = onHoldCancel,
                 onToggleVoiceQuestion = onToggleVoiceQuestion,
-                modifier = Modifier.size(ballSize)
+                modifier = Modifier
+                    .size(ballSize)
+                    .graphicsLayer {
+                        // From the size the launch screen draws it at, to its own.
+                        val from = (LAUNCH_BALL_SIZE.toPx() / size.minDimension).coerceAtMost(1f)
+                        val scale = from + (1f - from) * intro()
+                        scaleX = scale
+                        scaleY = scale
+                    }
             )
             Spacer(Modifier.height(BALL_GAP))
             Caption(
                 state = state,
                 modifier = Modifier
+                    .graphicsLayer { alpha = intro() }
                     .padding(horizontal = 32.dp)
                     .widthIn(max = TEXT_MAX_WIDTH)
                     .fillMaxWidth()
@@ -596,7 +613,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
                         }
                     ),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
@@ -752,6 +769,10 @@ private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?i
 private const val HOLD_DELAY_MS = 180L
 
 private const val CLOCK_TICK_MS = 30_000L
+
+/** The arrival from the launch screen, and the size that screen draws the ball at. */
+private const val INTRO_MS = 520
+private val LAUNCH_BALL_SIZE = 192.dp
 
 internal const val HISTORY_PAGE = 0
 internal const val BALL_PAGE = 1
