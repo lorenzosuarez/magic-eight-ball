@@ -1,12 +1,13 @@
-package com.lorenzosuarez.magiceightball.phone.history
+package com.example.magiceightball.core.data.history
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.magiceightball.core.domain.model.HistoryEntry
+import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
+import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository.Companion.MAX_ENTRIES
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -14,67 +15,56 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
 import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
- * One answer the ball gave.
+ * Keeps the history in one private [file]. Nothing here touches the network, and the app that
+ * uses it excludes its files from backups, so the history never leaves the device.
  *
- * @property question what was asked out loud; empty for a tap or a shake.
- * @property answer the answer as shown; null when none could be obtained and the app gave its own.
- * @property fromAi true when the AI service wrote the answer, false for a bundled one.
+ * The file is read once, the first time it is needed, and rewritten on every change, on [io].
  */
-data class HistoryEntry(
-    val id: Long,
-    val question: String,
-    val answer: String?,
-    val askedAtMillis: Long,
-    val fromAi: Boolean
-)
+class FileAnswerHistoryRepository(
+    private val file: File,
+    private val io: CoroutineDispatcher
+) : AnswerHistoryRepository {
 
-/**
- * The latest [MAX_ENTRIES] answers, newest first, kept in one private file on this device and
- * nowhere else: the file is excluded from backups and nothing here touches the network.
- */
-@Singleton
-class AnswerHistory(private val file: File, private val io: CoroutineDispatcher) {
-
-    @Inject
-    constructor(@ApplicationContext context: Context) : this(File(context.filesDir, FILE_NAME), Dispatchers.IO)
-
-    private val _entries = MutableStateFlow<List<HistoryEntry>>(emptyList())
-    val entries: StateFlow<List<HistoryEntry>> = _entries.asStateFlow()
-
+    private val state = MutableStateFlow<List<HistoryEntry>>(emptyList())
     private val mutex = Mutex()
     private var loaded = false
 
-    /** Reads the saved entries. Every other call does it too when this one has not run yet. */
-    suspend fun load() = change { it }
-
-    suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean) = change { old ->
-        val entry = HistoryEntry(
-            id = (old.maxOfOrNull { it.id } ?: 0L) + 1,
-            question = question,
-            answer = answer,
-            askedAtMillis = askedAtMillis,
-            fromAi = fromAi
-        )
-        (listOf(entry) + old).take(MAX_ENTRIES)
+    override val entries: Flow<List<HistoryEntry>> = flow {
+        change { it }
+        emitAll(state)
     }
 
-    suspend fun remove(id: Long) = change { old -> old.filterNot { it.id == id } }
+    override suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean) =
+        change { old ->
+            val entry = HistoryEntry(
+                id = (old.maxOfOrNull { it.id } ?: 0L) + 1,
+                question = question,
+                answer = answer,
+                askedAtMillis = askedAtMillis,
+                fromAi = fromAi
+            )
+            (listOf(entry) + old).take(MAX_ENTRIES)
+        }
 
-    suspend fun clear() = change { emptyList() }
+    override suspend fun remove(id: Long) = change { old -> old.filterNot { it.id == id } }
+
+    override suspend fun restore(entry: HistoryEntry) = change { old ->
+        if (old.any { it.id == entry.id }) old else (old + entry).sortedByDescending { it.id }.take(MAX_ENTRIES)
+    }
+
+    override suspend fun clear() = change { emptyList() }
 
     private suspend fun change(transform: (List<HistoryEntry>) -> List<HistoryEntry>) = mutex.withLock {
         withContext(io) {
             if (!loaded) {
-                _entries.value = read()
+                state.value = read()
                 loaded = true
             }
-            val updated = transform(_entries.value)
-            if (updated != _entries.value) {
-                _entries.value = updated
+            val updated = transform(state.value)
+            if (updated != state.value) {
+                state.value = updated
                 write(updated)
             }
         }
@@ -105,7 +95,7 @@ class AnswerHistory(private val file: File, private val io: CoroutineDispatcher)
                 file.delete()
                 return
             }
-            val pending = File(file.path + ".tmp")
+            val pending = File(file.path + PENDING_SUFFIX)
             DataOutputStream(pending.outputStream().buffered()).use { output ->
                 output.writeInt(FORMAT)
                 output.writeInt(entries.size)
@@ -124,13 +114,11 @@ class AnswerHistory(private val file: File, private val io: CoroutineDispatcher)
         }
     }
 
-    companion object {
-        const val MAX_ENTRIES = 50
-
-        private const val FILE_NAME = "history.bin"
-        private const val FORMAT = 1
+    private companion object {
+        const val FORMAT = 1
+        const val PENDING_SUFFIX = ".tmp"
 
         /** Far above any question or answer, and far below what writeUTF can hold. */
-        private const val MAX_TEXT_LENGTH = 2_000
+        const val MAX_TEXT_LENGTH = 2_000
     }
 }

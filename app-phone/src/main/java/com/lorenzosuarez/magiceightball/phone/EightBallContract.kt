@@ -1,7 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.UserSettings
-import com.lorenzosuarez.magiceightball.phone.history.HistoryEntry
 
 /**
  * UI state of the single screen.

@@ -4,6 +4,7 @@ import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.gateway.MotionGateway
 import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
@@ -11,10 +12,10 @@ import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.model.ShakeEvent
 import com.example.magiceightball.core.domain.model.UserSettings
+import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
-import com.lorenzosuarez.magiceightball.phone.history.AnswerHistory
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechEvent
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechListener
 import kotlinx.coroutines.Deferred
@@ -38,7 +39,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EightBallViewModelTest {
@@ -57,14 +60,8 @@ class EightBallViewModelTest {
     private val userSettings = FakeUserSettingsRepository()
     private val aiAvailability = FakeAiAnswersAvailability()
     private val speech = FakeSpeechListener()
-
-    @get:Rule
-    val files = TemporaryFolder()
-
-    /** The real history over a file of its own: what is saved there outlives a ViewModel. */
-    private val history by lazy { newHistory() }
-
-    private fun newHistory() = AnswerHistory(files.root.resolve("history.bin"), mainDispatcherRule.testDispatcher)
+    private val history = FakeAnswerHistoryRepository()
+    private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
 
     // Start-up and settings
 
@@ -863,44 +860,26 @@ class EightBallViewModelTest {
     }
 
     @Test
-    fun `the history survives the view model, and entries can be deleted one by one or all at once`() = runTest {
-        val first = createViewModel()
+    fun `an entry can be deleted and put back, and all of them cleared`() = runTest {
+        val viewModel = createViewModel()
         repeat(3) {
-            first.ask()
+            viewModel.ask()
             finishThinking()
         }
+        val saved = viewModel.state.value!!.history
+        assertEquals(listOf(NOW, NOW, NOW), saved.map { it.askedAtMillis })
 
-        val reopened = AnswerHistory(files.root.resolve("history.bin"), mainDispatcherRule.testDispatcher)
-        reopened.load()
-        assertEquals(3, reopened.entries.value.size)
-
-        first.deleteHistoryEntry(first.state.value!!.history.first().id)
+        viewModel.deleteHistoryEntry(saved[1].id)
         runCurrent()
-        assertEquals(2, first.state.value?.history?.size)
+        assertEquals(listOf(saved[0], saved[2]), viewModel.state.value?.history)
 
-        first.clearHistory()
+        viewModel.restoreHistoryEntry(saved[1])
         runCurrent()
-        assertEquals(emptyList<Any>(), first.state.value?.history)
-        assertEquals(emptyList<Any>(), newHistory().apply { load() }.entries.value)
-    }
+        assertEquals(saved, viewModel.state.value?.history)
 
-    @Test
-    fun `only the latest fifty answers are kept`() = runTest {
-        val history = newHistory()
-        repeat(AnswerHistory.MAX_ENTRIES + 5) { history.add("q$it", "a$it", it.toLong(), fromAi = false) }
-
-        val kept = newHistory().apply { load() }.entries.value
-        assertEquals(AnswerHistory.MAX_ENTRIES, kept.size)
-        assertEquals("q54", kept.first().question)
-        assertEquals("q5", kept.last().question)
-        assertEquals(kept.size, kept.map { it.id }.toSet().size)
-    }
-
-    @Test
-    fun `a damaged history file is an empty history`() = runTest {
-        files.root.resolve("history.bin").writeBytes(byteArrayOf(0, 0, 0, 1, 0, 0, 0, 9, 1))
-
-        assertEquals(emptyList<Any>(), newHistory().apply { load() }.entries.value)
+        viewModel.clearHistory()
+        runCurrent()
+        assertEquals(emptyList<Any>(), viewModel.state.value?.history)
     }
 
     private val EightBallViewModel.phase: BallPhase? get() = state.value?.phase
@@ -936,6 +915,7 @@ class EightBallViewModelTest {
             aiAnswersAvailability = aiAvailability,
             speechListener = speech,
             history = history,
+            clock = clock,
             queryConfig = queryConfig
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
@@ -969,6 +949,27 @@ class EightBallViewModelTest {
 
         override suspend fun setVoiceQuestionsEnabled(enabled: Boolean) {
             saved.update { it?.copy(voiceQuestionsEnabled = enabled) }
+        }
+    }
+
+    /** Stands for the history file: newest first, as the real one keeps it. */
+    private class FakeAnswerHistoryRepository : AnswerHistoryRepository {
+        override val entries = MutableStateFlow<List<HistoryEntry>>(emptyList())
+
+        override suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean) {
+            entries.update { listOf(HistoryEntry(it.size + 1L, question, answer, askedAtMillis, fromAi)) + it }
+        }
+
+        override suspend fun remove(id: Long) {
+            entries.update { old -> old.filterNot { it.id == id } }
+        }
+
+        override suspend fun restore(entry: HistoryEntry) {
+            entries.update { old -> (old + entry).sortedByDescending { it.id } }
+        }
+
+        override suspend fun clear() {
+            entries.value = emptyList()
         }
     }
 
@@ -1031,5 +1032,6 @@ class EightBallViewModelTest {
         const val MIN_THINKING_MS = 1_000L
         const val MAX_THINKING_MS = 5_000L
         const val COOLDOWN_MS = 500L
+        const val NOW = 1_800_000_000_000L
     }
 }

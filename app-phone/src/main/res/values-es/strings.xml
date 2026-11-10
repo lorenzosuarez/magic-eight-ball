@@ -3,26 +3,25 @@
     <!-- The one line under the ball -->
     <string name="hint_tap">Toca para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
+    <string name="hint_speak">Di tu pregunta</string>
     <string name="hint_thinking">Pensando…</string>
     <string name="notice_microphone_denied">El micrófono está desactivado: toca o agita para preguntar. Puedes permitirlo en configuración.</string>
     <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas. Toca o agita para preguntar.</string>
 
     <!-- Result -->
     <string name="question_quoted">«%1$s»</string>
-    <string name="action_share">Compartir</string>
     <string name="action_close">Cerrar</string>
     <string name="action_cancel">Cancelar</string>
     <string name="source_ai">IA</string>
     <string name="source_classic">Clásica</string>
-    <string name="share_answer">La Bola Mágica 8 dice: «%1$s»</string>
-    <string name="share_question_and_answer">Le pregunté a la Bola Mágica 8: «%1$s»\nRespondió: «%2$s»</string>
 
     <!-- History -->
     <string name="history_title">Recientes</string>
     <string name="history_empty">Tus respuestas aparecerán aquí, guardadas solo en este dispositivo</string>
     <string name="history_footer">Guardado solo en este dispositivo</string>
-    <string name="history_more">Más opciones</string>
     <string name="history_delete">Borrar</string>
+    <string name="history_deleted">Respuesta borrada</string>
+    <string name="action_undo">Deshacer</string>
     <string name="history_clear_all">Borrar todo</string>
     <string name="history_clear_title">¿Borrar todos los recientes?</string>
     <string name="history_clear_text">Se borrarán de este dispositivo todas las preguntas y respuestas guardadas. No se puede deshacer.</string>
@@ -57,6 +56,9 @@
     <string name="settings_voice_denied">Necesita acceso al micrófono</string>
     <string name="settings_voice_unsupported">Este dispositivo no tiene reconocimiento de voz</string>
     <string name="settings_voice_allow">Permitir</string>
+    <string name="settings_share_app">Compartir la app</string>
+    <string name="settings_share_app_hint">Cuéntale a alguien sobre la Bola Mágica 8</string>
+    <string name="share_app_text">Pregúntale lo que quieras a la Bola Mágica 8: %1$s</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">El servicio de voz de tu dispositivo convierte tu pregunta en texto, que se envía a Gemini, de Google, para responderla. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
