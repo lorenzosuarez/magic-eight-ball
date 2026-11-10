@@ -47,11 +47,14 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -97,6 +100,7 @@ import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.lorenzosuarez.magiceightball.phone.AnswerText
 import com.lorenzosuarez.magiceightball.phone.BallPhase
 import com.lorenzosuarez.magiceightball.phone.EightBallEffect
@@ -104,7 +108,6 @@ import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.EightBallViewModel
 import com.lorenzosuarez.magiceightball.phone.Notice
 import com.lorenzosuarez.magiceightball.phone.R
-import com.lorenzosuarez.magiceightball.phone.history.HistoryEntry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -172,6 +175,7 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
     }
 
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    val playStoreUrl = PLAY_STORE_URL + context.packageName
 
     Box(
         modifier = Modifier
@@ -192,12 +196,13 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
                 onHoldCancel = viewModel::onHoldCancel,
                 onToggleVoiceQuestion = viewModel::toggleVoiceQuestion,
                 onDismiss = viewModel::dismiss,
-                onShare = context::shareText,
                 onDeleteHistoryEntry = viewModel::deleteHistoryEntry,
+                onRestoreHistoryEntry = viewModel::restoreHistoryEntry,
                 onClearHistory = viewModel::clearHistory,
                 onOpenSettings = { settingsOpen = true }
             )
             if (settingsOpen) {
+                val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
                 SettingsSheet(
                     state = current,
                     onLanguageSelected = viewModel::setLanguage,
@@ -208,6 +213,7 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
                         askedFromSettings = true
                         permissionRequest.launch(Manifest.permission.RECORD_AUDIO)
                     },
+                    onShareApp = { context.shareText(shareAppText) },
                     onDismiss = { settingsOpen = false }
                 )
             }
@@ -226,7 +232,8 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
  *
  * @param now the current time, for the history's "5 min ago".
  * @param voiceLevel read while drawing only; see [EightBall].
- * @param onShare receives the text to hand to another app.
+ * @param onDeleteHistoryEntry deletes at once; the screen then offers to undo it, which calls
+ * [onRestoreHistoryEntry].
  * @param initialPage the page in front at first: [BALL_PAGE] or [HISTORY_PAGE].
  */
 @Composable
@@ -241,8 +248,8 @@ internal fun EightBallContent(
     onHoldCancel: () -> Unit,
     onToggleVoiceQuestion: () -> Unit,
     onDismiss: () -> Unit,
-    onShare: (String) -> Unit,
     onDeleteHistoryEntry: (Long) -> Unit,
+    onRestoreHistoryEntry: (HistoryEntry) -> Unit,
     onClearHistory: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -253,6 +260,20 @@ internal fun EightBallContent(
     val pagerState = rememberPagerState(initialPage = initialPage) { PAGE_COUNT }
     val onBallPage = pagerState.currentPage == BALL_PAGE
     val scope = rememberCoroutineScope()
+
+    // Deleting needs no confirmation because it can be taken back for a moment.
+    val snackbars = remember { SnackbarHostState() }
+    val deletedMessage = stringResource(R.string.history_deleted)
+    val undoLabel = stringResource(R.string.action_undo)
+    val deleteWithUndo: (HistoryEntry) -> Unit = { entry ->
+        onDeleteHistoryEntry(entry.id)
+        scope.launch {
+            // One at a time: the latest deletion is the one that can be undone.
+            snackbars.currentSnackbarData?.dismiss()
+            val result = snackbars.showSnackbar(deletedMessage, undoLabel, duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) onRestoreHistoryEntry(entry)
+        }
+    }
 
     // A question, however it was started, brings the ball to the front.
     LaunchedEffect(atRest) {
@@ -281,8 +302,7 @@ internal fun EightBallContent(
                 HistoryContent(
                     entries = state.history,
                     now = now,
-                    onShare = onShare,
-                    onDelete = onDeleteHistoryEntry,
+                    onDelete = deleteWithUndo,
                     onClearAll = onClearHistory,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -295,11 +315,17 @@ internal fun EightBallContent(
                     onHoldStart = onHoldStart,
                     onHoldEnd = onHoldEnd,
                     onHoldCancel = onHoldCancel,
-                    onToggleVoiceQuestion = onToggleVoiceQuestion,
-                    onShare = onShare
+                    onToggleVoiceQuestion = onToggleVoiceQuestion
                 )
             }
         }
+
+        SnackbarHost(
+            hostState = snackbars,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+        )
 
         // Over both pages: where the user is, and the ways out of here.
         Box(
@@ -381,8 +407,7 @@ private fun Stage(
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
     onHoldCancel: () -> Unit,
-    onToggleVoiceQuestion: () -> Unit,
-    onShare: (String) -> Unit
+    onToggleVoiceQuestion: () -> Unit
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
@@ -427,7 +452,6 @@ private fun Stage(
             Actions(
                 state = state,
                 onToggleVoiceQuestion = onToggleVoiceQuestion,
-                onShare = onShare,
                 modifier = Modifier.height(ACTIONS_HEIGHT)
             )
         }
@@ -610,7 +634,10 @@ private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
                 },
                 modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
             )
-            is BallPhase.Listening -> Text(
+            // Until the first words arrive, this is where they will be written.
+            is BallPhase.Listening -> if (phase.transcript.isEmpty()) {
+                QuietText(stringResource(R.string.hint_speak))
+            } else Text(
                 text = phase.transcript,
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.headlineSmall,
@@ -645,27 +672,19 @@ private fun QuietText(text: String, modifier: Modifier = Modifier, maxLines: Int
 }
 
 /**
- * At the bottom: the microphone, which listens to a question and, lit while it does, ends it;
- * and beside it, with an answer, the way to share it. No microphone where the app cannot
- * listen, nor while the ball thinks.
+ * At the bottom: the microphone, which listens to a question and, lit while it does, ends it.
+ * It is not there where the app cannot listen, nor while the ball thinks.
  */
 @Composable
 private fun Actions(
     state: EightBallUiState,
     onToggleVoiceQuestion: () -> Unit,
-    onShare: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val phase = state.phase
-    val listening = phase is BallPhase.Listening
-    val answered = phase as? BallPhase.Answered
+    val listening = state.phase is BallPhase.Listening
 
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (state.voice.isReady && phase !is BallPhase.Thinking) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (state.voice.isReady && state.phase !is BallPhase.Thinking) {
             FilledIconButton(
                 onClick = onToggleVoiceQuestion,
                 modifier = Modifier.size(MIC_SIZE),
@@ -683,23 +702,7 @@ private fun Actions(
                     contentDescription = stringResource(
                         if (listening) R.string.action_finish_question else R.string.action_ask_by_voice
                     ),
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        }
-        if (answered != null) {
-            val shareText = shareText(answered.question, answered.answer.text())
-            FilledTonalIconButton(
-                onClick = { onShare(shareText) },
-                modifier = Modifier.size(MIC_SIZE),
-                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_share),
-                    contentDescription = stringResource(R.string.action_share)
+                    modifier = Modifier.size(MIC_ICON_SIZE)
                 )
             }
         }
@@ -749,6 +752,9 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 private val StageEnter = fadeIn(tween(durationMillis = 220, delayMillis = 60)) +
     slideInVertically(spring(stiffness = Spring.StiffnessMediumLow)) { it / 4 }
 
+/** Where the app lives in the store; the app's own id completes it. */
+private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id="
+
 /** A press shorter than this is a tap; from here on it is a hold, and the app listens. */
 private const val HOLD_DELAY_MS = 180L
 
@@ -771,6 +777,7 @@ private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 104.dp
 private val ACTIONS_HEIGHT = 72.dp
 private val MIC_SIZE = 64.dp
+private val MIC_ICON_SIZE = 28.dp
 private const val CAPTION_MAX_LINES = 3
 
 /** From this font scale up, the answer is also written under the ball. */
@@ -800,8 +807,8 @@ private fun EightBallContentPreview() {
             onHoldCancel = {},
             onToggleVoiceQuestion = {},
             onDismiss = {},
-            onShare = {},
             onDeleteHistoryEntry = {},
+            onRestoreHistoryEntry = {},
             onClearHistory = {},
             onOpenSettings = {}
         )

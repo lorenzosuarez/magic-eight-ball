@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.UserSettings
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -24,7 +25,6 @@ import com.lorenzosuarez.magiceightball.phone.BallPhase
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.Notice
 import com.lorenzosuarez.magiceightball.phone.VoiceStatus
-import com.lorenzosuarez.magiceightball.phone.history.HistoryEntry
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -215,6 +215,7 @@ class EightBallScreenshotTest {
                                 onAiAnswersChange = {},
                                 onVoiceQuestionsChange = {},
                                 onAllowMicrophone = {},
+                                onShareApp = {},
                                 modifier = Modifier.padding(top = 24.dp)
                             )
                         }
@@ -265,6 +266,7 @@ class EightBallScreenshotTest {
                     onAiAnswersChange = {},
                     onVoiceQuestionsChange = {},
                     onAllowMicrophone = {},
+                    onShareApp = {},
                     onDismiss = {}
                 )
             })
@@ -295,8 +297,8 @@ class EightBallScreenshotTest {
                     onHoldCancel = {},
                     onToggleVoiceQuestion = {},
                     onDismiss = {},
-                    onShare = {},
                     onDeleteHistoryEntry = {},
+                    onRestoreHistoryEntry = {},
                     onClearHistory = {},
                     onOpenSettings = {},
                     initialPage = initialPage

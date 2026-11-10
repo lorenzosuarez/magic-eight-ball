@@ -4,15 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.model.ShakeEvent
 import com.example.magiceightball.core.domain.model.UserSettings
+import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
-import com.lorenzosuarez.magiceightball.phone.history.AnswerHistory
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechEvent
 import com.lorenzosuarez.magiceightball.phone.speech.SpeechListener
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Clock
 import javax.inject.Inject
 
 @HiltViewModel
@@ -45,7 +47,8 @@ class EightBallViewModel @Inject constructor(
     private val userSettingsRepository: UserSettingsRepository,
     aiAnswersAvailability: AiAnswersAvailability,
     private val speechListener: SpeechListener,
-    private val history: AnswerHistory,
+    private val history: AnswerHistoryRepository,
+    private val clock: Clock,
     private val queryConfig: QueryConfig
 ) : ViewModel() {
 
@@ -112,7 +115,6 @@ class EightBallViewModel @Inject constructor(
 
     init {
         observeShakes()
-        viewModelScope.launch { history.load() }
     }
 
     fun setLanguage(language: AppLanguage) {
@@ -221,6 +223,11 @@ class EightBallViewModel @Inject constructor(
 
     fun deleteHistoryEntry(id: Long) {
         viewModelScope.launch { history.remove(id) }
+    }
+
+    /** Undoes [deleteHistoryEntry]. */
+    fun restoreHistoryEntry(entry: HistoryEntry) {
+        viewModelScope.launch { history.restore(entry) }
     }
 
     fun clearHistory() {
@@ -357,7 +364,7 @@ class EightBallViewModel @Inject constructor(
         // Outside this question's own job: closing the answer at once must not lose its entry.
         viewModelScope.launch {
             val plain = answer as? AnswerText.Plain
-            history.add(question, plain?.value, System.currentTimeMillis(), plain?.fromAi == true)
+            history.add(question, plain?.value, clock.millis(), plain?.fromAi == true)
         }
         _effects.trySend(EightBallEffect.AnswerRevealed)
     }

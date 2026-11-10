@@ -1,6 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +17,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SegmentedButton
@@ -26,6 +29,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -50,6 +54,7 @@ fun SettingsSheet(
     onAiAnswersChange: (Boolean) -> Unit,
     onVoiceQuestionsChange: (Boolean) -> Unit,
     onAllowMicrophone: () -> Unit,
+    onShareApp: () -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
@@ -64,7 +69,8 @@ fun SettingsSheet(
                 onPersonalitySelected = onPersonalitySelected,
                 onAiAnswersChange = onAiAnswersChange,
                 onVoiceQuestionsChange = onVoiceQuestionsChange,
-                onAllowMicrophone = onAllowMicrophone
+                onAllowMicrophone = onAllowMicrophone,
+                onShareApp = onShareApp
             )
         }
     }
@@ -79,6 +85,7 @@ internal fun SettingsContent(
     onAiAnswersChange: (Boolean) -> Unit,
     onVoiceQuestionsChange: (Boolean) -> Unit,
     onAllowMicrophone: () -> Unit,
+    onShareApp: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -143,6 +150,13 @@ internal fun SettingsContent(
                 onCheckedChange = onVoiceQuestionsChange
             )
         }
+
+        ActionRow(
+            title = stringResource(R.string.settings_share_app),
+            supporting = stringResource(R.string.settings_share_app_hint),
+            icon = R.drawable.ic_share,
+            onClick = onShareApp
+        )
 
         Text(
             text = stringResource(state.privacyNoteRes()),
@@ -212,6 +226,27 @@ private fun SwitchRow(
         SettingText(title, supporting, enabled, Modifier.weight(1f))
         Spacer(Modifier.width(16.dp))
         Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+    }
+}
+
+/** Something to do rather than to set: the whole row is the button. */
+@Composable
+private fun ActionRow(title: String, supporting: String, @DrawableRes icon: Int, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .heightIn(min = 72.dp)
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(16.dp))
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
