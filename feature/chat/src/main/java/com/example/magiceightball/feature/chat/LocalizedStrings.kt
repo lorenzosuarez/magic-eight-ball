@@ -44,6 +44,9 @@ internal object Strings {
     val PersonalityMystical =
         LocalizedString(R.string.personality_mystical, R.string.personality_mystical_es)
 
+    val PersonalityNeutral =
+        LocalizedString(R.string.personality_neutral, R.string.personality_neutral_es)
+
     val AiTitle = LocalizedString(R.string.ai_title, R.string.ai_title_es)
     val AiOn = LocalizedString(R.string.ai_on, R.string.ai_on_es)
     val AiOff = LocalizedString(R.string.ai_off, R.string.ai_off_es)

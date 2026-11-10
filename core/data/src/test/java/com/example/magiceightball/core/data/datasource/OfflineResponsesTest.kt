@@ -2,6 +2,7 @@ package com.example.magiceightball.core.data.datasource
 
 import com.example.magiceightball.core.data.model.Magic8BallDataDto
 import com.example.magiceightball.core.data.model.PersonalityResponsesDto
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality.MYSTICAL
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality.SARCASTIC
 import kotlinx.serialization.json.Json
@@ -63,7 +64,7 @@ class OfflineResponsesTest {
         val caps = mapOf("en" to (28 to 6), "es" to (23 to 6))
         val all = mutableListOf<String>()
         for ((language, cap) in caps) {
-            for (personality in listOf(SARCASTIC, MYSTICAL)) {
+            for (personality in Magic8BallPersonality.entries) {
                 val messages = bundled.messagesFor(language, personality)
                 assertTrue("$language/$personality has ${messages.size}", messages.size >= 40)
                 messages.forEach { message ->

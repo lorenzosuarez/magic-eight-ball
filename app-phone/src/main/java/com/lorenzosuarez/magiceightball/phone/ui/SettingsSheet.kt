@@ -309,6 +309,7 @@ private fun AppLanguage.labelRes(): Int = when (this) {
 private fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.SARCASTIC -> R.string.style_sarcastic
     Magic8BallPersonality.MYSTICAL -> R.string.style_mystical
+    Magic8BallPersonality.NEUTRAL -> R.string.style_neutral
 }
 
 /** Material's emphasis for disabled content. */

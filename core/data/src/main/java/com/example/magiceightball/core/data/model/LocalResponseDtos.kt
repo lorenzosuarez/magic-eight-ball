@@ -12,11 +12,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PersonalityResponsesDto(
     val sarcastic: List<String> = emptyList(),
-    val mystical: List<String> = emptyList()
+    val mystical: List<String> = emptyList(),
+    val neutral: List<String> = emptyList()
 ) {
     fun forPersonality(personality: Magic8BallPersonality): List<String> = when (personality) {
         Magic8BallPersonality.SARCASTIC -> sarcastic
         Magic8BallPersonality.MYSTICAL -> mystical
+        Magic8BallPersonality.NEUTRAL -> neutral
     }
 }
 
