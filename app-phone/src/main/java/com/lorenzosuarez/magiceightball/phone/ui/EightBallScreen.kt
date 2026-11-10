@@ -1,7 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -35,30 +34,25 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetScaffoldState
-import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,7 +72,6 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -94,11 +87,10 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewLightDark
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.view.HapticFeedbackConstantsCompat
@@ -184,7 +176,7 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(Backdrop)
     ) {
         // Nothing but the background until the saved choices are known.
         val current = state ?: return@Box
@@ -199,7 +191,6 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
                 onHoldEnd = viewModel::onHoldEnd,
                 onHoldCancel = viewModel::onHoldCancel,
                 onToggleVoiceQuestion = viewModel::toggleVoiceQuestion,
-                onAskAgain = viewModel::askAgain,
                 onDismiss = viewModel::dismiss,
                 onShare = context::shareText,
                 onDeleteHistoryEntry = viewModel::deleteHistoryEntry,
@@ -225,24 +216,19 @@ fun EightBallScreen(viewModel: EightBallViewModel) {
 }
 
 /**
- * The stateless screen: the ball, one short text under it, and nothing else that is not needed
- * right now.
+ * The stateless screen, in two pages side by side with dots that tell which one is in front:
+ * the ball, where the app opens, and to its left the history.
  *
- * - at rest, a single hint and "Recents" peeking from the bottom;
- * - listening, rings around the ball and the words as they are heard;
- * - thinking, the ball shaken, over the question;
- * - the answer on the ball, with "ask again" and "share", until it is closed or replaced.
- *
- * The ball is the one main action throughout. The history sheet is only there at rest, so
- * nothing competes with a question in progress or with its answer.
+ * On the ball's page everything has one place: what to do above the ball, the ball, what was
+ * heard under it, and the microphone at the bottom. A tap on the ball asks without a question;
+ * the microphone listens to one. While a question is in progress there is only that page, with
+ * a way to cancel.
  *
  * @param now the current time, for the history's "5 min ago".
  * @param voiceLevel read while drawing only; see [EightBall].
  * @param onShare receives the text to hand to another app.
+ * @param initialPage the page in front at first: [BALL_PAGE] or [HISTORY_PAGE].
  */
-@OptIn(ExperimentalMaterial3Api::class)
-// The scaffold's padding is the sheet's peek, and the stage is meant to run under the sheet.
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 internal fun EightBallContent(
     state: EightBallUiState,
@@ -254,87 +240,141 @@ internal fun EightBallContent(
     onHoldEnd: () -> Unit,
     onHoldCancel: () -> Unit,
     onToggleVoiceQuestion: () -> Unit,
-    onAskAgain: () -> Unit,
     onDismiss: () -> Unit,
     onShare: (String) -> Unit,
     onDeleteHistoryEntry: (Long) -> Unit,
     onClearHistory: () -> Unit,
     onOpenSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialPage: Int = BALL_PAGE
 ) {
     val atRest = state.phase is BallPhase.Idle
-    // The sheet can be hidden, but only by the app: a swipe down stops at the peek.
-    val sheetState = rememberStandardBottomSheetState(
-        initialValue = if (atRest) SheetValue.PartiallyExpanded else SheetValue.Hidden,
-        confirmValueChange = { it != SheetValue.Hidden },
-        skipHiddenState = false
-    )
-    val scaffoldState = rememberBottomSheetScaffoldState(sheetState)
-    val sheetExpanded = sheetState.targetValue == SheetValue.Expanded
+    val busy = state.phase is BallPhase.Listening || state.phase is BallPhase.Thinking
+    val pagerState = rememberPagerState(initialPage = initialPage) { PAGE_COUNT }
+    val onBallPage = pagerState.currentPage == BALL_PAGE
     val scope = rememberCoroutineScope()
 
-    // A question, however it was started, takes the history away until the ball is at rest again.
+    // A question, however it was started, brings the ball to the front.
     LaunchedEffect(atRest) {
-        if (atRest) sheetState.partialExpand() else sheetState.hide()
+        if (!atRest) pagerState.animateScrollToPage(BALL_PAGE)
     }
-    BackHandler(enabled = sheetExpanded) {
-        scope.launch { sheetState.partialExpand() }
+    BackHandler(enabled = atRest && !onBallPage) {
+        scope.launch { pagerState.animateScrollToPage(BALL_PAGE) }
     }
     // Back closes a question in progress or an answer, like the close button.
     BackHandler(enabled = !atRest, onBack = onDismiss)
 
-    val navigationBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val peek = HISTORY_PEEK
-
-    BottomSheetScaffold(
-        sheetContent = {
-            HistoryContent(
-                entries = state.history,
-                now = now,
-                canExpand = !sheetExpanded,
-                onExpand = { scope.launch { sheetState.expand() } },
-                onShare = onShare,
-                onDelete = onDeleteHistoryEntry,
-                onClearAll = onClearHistory,
-                // Pulled up, the sheet stops short of the top: the screen behind it stays in sight.
-                modifier = Modifier.heightIn(
-                    min = peek + navigationBar,
-                    max = LocalConfiguration.current.screenHeightDp.dp * HISTORY_MAX_HEIGHT_FRACTION
-                )
-            )
-        },
-        modifier = modifier,
-        scaffoldState = scaffoldState,
-        sheetPeekHeight = peek + navigationBar,
-        sheetContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        containerColor = MaterialTheme.colorScheme.surface
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Backdrop)
     ) {
-        Stage(
-            state = state,
-            historyPeek = peek,
-            voiceLevel = voiceLevel,
-            reducedMotion = reducedMotion,
-            onAsk = onAsk,
-            onHoldStart = onHoldStart,
-            onHoldEnd = onHoldEnd,
-            onHoldCancel = onHoldCancel,
-            onToggleVoiceQuestion = onToggleVoiceQuestion,
-            onAskAgain = onAskAgain,
-            onDismiss = onDismiss,
-            onShare = onShare,
-            onOpenSettings = onOpenSettings
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(top = TOP_BAR_HEIGHT),
+            userScrollEnabled = atRest
+        ) { page ->
+            if (page == HISTORY_PAGE) {
+                HistoryContent(
+                    entries = state.history,
+                    now = now,
+                    onShare = onShare,
+                    onDelete = onDeleteHistoryEntry,
+                    onClearAll = onClearHistory,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Stage(
+                    state = state,
+                    voiceLevel = voiceLevel,
+                    reducedMotion = reducedMotion,
+                    onAsk = onAsk,
+                    onHoldStart = onHoldStart,
+                    onHoldEnd = onHoldEnd,
+                    onHoldCancel = onHoldCancel,
+                    onToggleVoiceQuestion = onToggleVoiceQuestion,
+                    onShare = onShare
+                )
+            }
+        }
+
+        // Over both pages: where the user is, and the ways out of here.
+        Box(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .fillMaxWidth()
+                .height(TOP_BAR_HEIGHT)
+                .padding(horizontal = 8.dp)
+        ) {
+            when {
+                !atRest -> BarButton(
+                    icon = R.drawable.ic_close,
+                    description = stringResource(if (busy) R.string.action_cancel else R.string.action_close),
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                )
+                onBallPage -> BarButton(
+                    icon = R.drawable.ic_history,
+                    description = stringResource(R.string.history_title),
+                    onClick = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
+                    modifier = Modifier.align(Alignment.CenterStart)
+                )
+            }
+            if (atRest) {
+                PageDots(current = pagerState.currentPage, modifier = Modifier.align(Alignment.Center))
+            }
+            if (!busy) {
+                BarButton(
+                    icon = R.drawable.ic_settings,
+                    description = stringResource(R.string.settings_title),
+                    onClick = onOpenSettings,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BarButton(icon: Int, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.onSurface
         )
     }
 }
 
+/** One dot per page, the one in front brighter. Decoration: the pages announce themselves. */
+@Composable
+private fun PageDots(current: Int, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        repeat(PAGE_COUNT) { page ->
+            Box(
+                Modifier
+                    .size(7.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = if (page == current) 1f else DOT_OFF_ALPHA
+                        ),
+                        shape = CircleShape
+                    )
+            )
+        }
+    }
+}
+
 /**
- * Everything but the history: the ball, as large as the window allows and always in the same
- * place, and one short text under it. The answer itself is on the ball.
+ * The ball's page. From top to bottom, each in a place that never moves: what to do, the ball,
+ * what was heard, and the microphone.
  */
 @Composable
 private fun Stage(
     state: EightBallUiState,
-    historyPeek: Dp,
     voiceLevel: () -> Float,
     reducedMotion: Boolean,
     onAsk: () -> Unit,
@@ -342,64 +382,28 @@ private fun Stage(
     onHoldEnd: () -> Unit,
     onHoldCancel: () -> Unit,
     onToggleVoiceQuestion: () -> Unit,
-    onAskAgain: () -> Unit,
-    onDismiss: () -> Unit,
-    onShare: (String) -> Unit,
-    onOpenSettings: () -> Unit
+    onShare: (String) -> Unit
 ) {
-    val atRest = state.phase is BallPhase.Idle
-    val busy = state.phase is BallPhase.Listening || state.phase is BallPhase.Thinking
-
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            // Kept free in every stage, so the ball does not move when the history comes and goes.
-            .padding(bottom = historyPeek)
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
             minOf(maxWidth * BALL_WIDTH_FRACTION, BALL_MAX_SIZE),
-            maxHeight - TOP_BAR_HEIGHT - BALL_GAP - CAPTION_HEIGHT
+            maxHeight - TITLE_HEIGHT - CAPTION_HEIGHT - ACTIONS_HEIGHT - BALL_GAP * 2
         ).coerceAtLeast(BALL_MIN_SIZE)
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(TOP_BAR_HEIGHT)
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AnimatedVisibility(visible = !atRest, enter = fadeIn(), exit = fadeOut()) {
-                IconButton(onClick = onDismiss) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_close),
-                        contentDescription = stringResource(
-                            if (busy) R.string.action_cancel else R.string.action_close
-                        ),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Spacer(Modifier.weight(1f))
-            AnimatedVisibility(visible = !busy, enter = fadeIn(), exit = fadeOut()) {
-                IconButton(onClick = onOpenSettings) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings),
-                        contentDescription = stringResource(R.string.settings_title),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = TOP_BAR_HEIGHT),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Title(
+                state = state,
+                modifier = Modifier
+                    .padding(horizontal = 32.dp)
+                    .widthIn(max = TEXT_MAX_WIDTH)
+                    .fillMaxWidth()
+                    .heightIn(min = TITLE_HEIGHT)
+            )
+            Spacer(Modifier.height(BALL_GAP))
             Ball(
                 state = state,
                 voiceLevel = voiceLevel,
@@ -414,13 +418,17 @@ private fun Stage(
             Spacer(Modifier.height(BALL_GAP))
             Caption(
                 state = state,
-                onAskAgain = onAskAgain,
-                onShare = onShare,
                 modifier = Modifier
                     .padding(horizontal = 32.dp)
                     .widthIn(max = TEXT_MAX_WIDTH)
                     .fillMaxWidth()
                     .heightIn(min = CAPTION_HEIGHT)
+            )
+            Actions(
+                state = state,
+                onToggleVoiceQuestion = onToggleVoiceQuestion,
+                onShare = onShare,
+                modifier = Modifier.height(ACTIONS_HEIGHT)
             )
         }
     }
@@ -537,22 +545,52 @@ private fun Ball(
 }
 
 /**
- * The one text under the ball: what to do at rest, the words as they are heard, the question
- * while the ball thinks, and with the answer, the question again over what can be done next.
- * The words being heard just update; every other change is animated.
- *
- * The text on the die is as large as the die allows and cannot follow the system's font size,
- * so with a large font the answer is written here instead of the question.
+ * Above the ball, one line that says where things stand: what to do at rest, that the app is
+ * listening or thinking, and with an answer, the question it answers.
  */
 @Composable
-private fun Caption(
-    state: EightBallUiState,
-    onAskAgain: () -> Unit,
-    onShare: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
+    AnimatedContent(
+        targetState = state.phase,
+        modifier = modifier,
+        transitionSpec = { StageEnter togetherWith fadeOut(tween(durationMillis = 120)) },
+        contentAlignment = Alignment.BottomCenter,
+        contentKey = { (it as? BallPhase.Answered)?.id ?: it::class },
+        label = "title"
+    ) { phase ->
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+            when (phase) {
+                is BallPhase.Answered -> QuietText(phase.question.quoted(), maxLines = 2)
+                else -> Text(
+                    text = stringResource(
+                        when (phase) {
+                            is BallPhase.Listening -> R.string.hint_listening
+                            is BallPhase.Thinking -> R.string.hint_thinking
+                            else -> R.string.hint_tap
+                        }
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Under the ball, the user's own words: as they are heard, then while the ball thinks about
+ * them. At rest it is empty, but for the one-off explanations about the microphone.
+ *
+ * The text on the die is as large as the die allows and cannot follow the system's font size,
+ * so with a large font the answer is written here as well.
+ */
+@Composable
+private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
     val notice = state.notice
-    val voiceReady = state.voice.isReady
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
 
     AnimatedContent(
@@ -564,72 +602,37 @@ private fun Caption(
         label = "caption"
     ) { phase ->
         when (phase) {
-            BallPhase.Idle -> CaptionText(
+            BallPhase.Idle -> QuietText(
                 text = when (notice) {
                     Notice.MicrophoneDenied -> stringResource(R.string.notice_microphone_denied)
                     Notice.VoiceUnsupported -> stringResource(R.string.notice_voice_unsupported)
-                    null -> stringResource(if (voiceReady) R.string.hint_voice else R.string.hint_tap)
+                    null -> ""
                 },
                 modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
             )
-            is BallPhase.Listening -> if (phase.transcript.isEmpty()) {
-                CaptionText(
-                    stringResource(
-                        if (phase.handsFree) R.string.hint_listening_hands_free else R.string.hint_listening
-                    )
-                )
-            } else {
-                Text(
-                    text = phase.transcript,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = CAPTION_MAX_LINES,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            is BallPhase.Thinking -> CaptionText(phase.question.quoted())
-            is BallPhase.Answered -> {
-                val answer = phase.answer.text()
-                val shareText = shareText(phase.question, answer)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    when {
-                        largeFont -> Text(
-                            text = answer,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center
-                        )
-                        phase.question.isNotEmpty() -> CaptionText(phase.question.quoted(), maxLines = 2)
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FilledTonalButton(onClick = onAskAgain, modifier = Modifier.heightIn(min = 48.dp)) {
-                            Text(stringResource(R.string.action_ask_again))
-                        }
-                        FilledTonalIconButton(onClick = { onShare(shareText) }, modifier = Modifier.size(48.dp)) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_share),
-                                contentDescription = stringResource(R.string.action_share),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            is BallPhase.Listening -> Text(
+                text = phase.transcript,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = CAPTION_MAX_LINES,
+                overflow = TextOverflow.Ellipsis
+            )
+            is BallPhase.Thinking -> QuietText(phase.question.quoted())
+            is BallPhase.Answered -> Text(
+                text = if (largeFont) phase.answer.text() else "",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
 
 @Composable
-private fun CaptionText(text: String, modifier: Modifier = Modifier, maxLines: Int = CAPTION_MAX_LINES) {
+private fun QuietText(text: String, modifier: Modifier = Modifier, maxLines: Int = CAPTION_MAX_LINES) {
     Text(
         text = text,
         modifier = modifier.fillMaxWidth(),
@@ -639,6 +642,68 @@ private fun CaptionText(text: String, modifier: Modifier = Modifier, maxLines: I
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis
     )
+}
+
+/**
+ * At the bottom: the microphone, which listens to a question and, lit while it does, ends it;
+ * and beside it, with an answer, the way to share it. No microphone where the app cannot
+ * listen, nor while the ball thinks.
+ */
+@Composable
+private fun Actions(
+    state: EightBallUiState,
+    onToggleVoiceQuestion: () -> Unit,
+    onShare: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val phase = state.phase
+    val listening = phase is BallPhase.Listening
+    val answered = phase as? BallPhase.Answered
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (state.voice.isReady && phase !is BallPhase.Thinking) {
+            FilledIconButton(
+                onClick = onToggleVoiceQuestion,
+                modifier = Modifier.size(MIC_SIZE),
+                colors = if (listening) {
+                    IconButtonDefaults.filledIconButtonColors()
+                } else {
+                    IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_mic),
+                    contentDescription = stringResource(
+                        if (listening) R.string.action_finish_question else R.string.action_ask_by_voice
+                    ),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+        if (answered != null) {
+            val shareText = shareText(answered.question, answered.answer.text())
+            FilledTonalIconButton(
+                onClick = { onShare(shareText) },
+                modifier = Modifier.size(MIC_SIZE),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_share),
+                    contentDescription = stringResource(R.string.action_share)
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -689,25 +754,29 @@ private const val HOLD_DELAY_MS = 180L
 
 private const val CLOCK_TICK_MS = 30_000L
 
-private const val BALL_WIDTH_FRACTION = 0.8f
-private val BALL_MAX_SIZE = 440.dp
+internal const val HISTORY_PAGE = 0
+internal const val BALL_PAGE = 1
+private const val PAGE_COUNT = 2
+private const val DOT_OFF_ALPHA = 0.35f
+
+private const val BALL_WIDTH_FRACTION = 0.54f
+private val BALL_MAX_SIZE = 320.dp
 private val BALL_MIN_SIZE = 96.dp
-private val BALL_GAP = 40.dp
+
+/** Wide enough for the ball to grow into when it shows an answer. */
+private val BALL_GAP = 56.dp
 private val TOP_BAR_HEIGHT = 56.dp
 private val TEXT_MAX_WIDTH = 480.dp
+private val TITLE_HEIGHT = 64.dp
+private val CAPTION_HEIGHT = 104.dp
+private val ACTIONS_HEIGHT = 72.dp
+private val MIC_SIZE = 64.dp
 private const val CAPTION_MAX_LINES = 3
-
-/** Room kept under the ball, so it stays put whatever is written there. */
-private val CAPTION_HEIGHT = 112.dp
 
 /** From this font scale up, the answer is also written under the ball. */
 private const val LARGE_FONT_SCALE = 1.3f
 
-/** How much of the history sheet shows at rest: its handle and its title. */
-private val HISTORY_PEEK = 92.dp
-private const val HISTORY_MAX_HEIGHT_FRACTION = 0.86f
-
-@PreviewLightDark
+@Preview
 @Preview(name = "Tablet", widthDp = 840, heightDp = 1200)
 @Preview(name = "Large font", fontScale = 2f)
 @Composable
@@ -730,7 +799,6 @@ private fun EightBallContentPreview() {
             onHoldEnd = {},
             onHoldCancel = {},
             onToggleVoiceQuestion = {},
-            onAskAgain = {},
             onDismiss = {},
             onShare = {},
             onDeleteHistoryEntry = {},

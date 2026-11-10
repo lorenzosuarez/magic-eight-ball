@@ -3,16 +3,14 @@
     <string name="app_name" translatable="false">Magic 8 Ball</string>
 
     <!-- The one line under the ball -->
-    <string name="hint_voice">Hold to ask</string>
     <string name="hint_tap">Tap to ask</string>
     <string name="hint_listening">Listening…</string>
-    <string name="hint_listening_hands_free">Listening… tap when you\'re done</string>
+    <string name="hint_thinking">Thinking…</string>
     <string name="notice_microphone_denied">The microphone is off, so tap or shake to ask. You can allow it in settings.</string>
     <string name="notice_voice_unsupported">This device can\'t listen to questions. Tap or shake to ask.</string>
 
     <!-- Result -->
     <string name="question_quoted">“%1$s”</string>
-    <string name="action_ask_again">Ask again</string>
     <string name="action_share">Share</string>
     <string name="action_close">Close</string>
     <string name="action_cancel">Cancel</string>
@@ -31,7 +29,6 @@
     <string name="history_clear_all">Clear all</string>
     <string name="history_clear_title">Clear all recents?</string>
     <string name="history_clear_text">Every saved question and answer will be deleted from this device. This can\'t be undone.</string>
-    <string name="history_show">Show recents</string>
     <string name="time_just_now">Just now</string>
     <string name="time_minutes_ago">%1$d min ago</string>
     <string name="time_hours_ago">%1$d h ago</string>
@@ -60,7 +57,7 @@
     <string name="settings_ai_off">Classic answers from the app</string>
     <string name="settings_ai_unavailable">Not available right now</string>
     <string name="settings_voice">Voice questions</string>
-    <string name="settings_voice_on">Hold the screen and ask out loud</string>
+    <string name="settings_voice_on">Tap the microphone and ask out loud</string>
     <string name="settings_voice_off">Tap or shake only</string>
     <string name="settings_voice_denied">Needs access to the microphone</string>
     <string name="settings_voice_unsupported">This device has no speech recognition</string>

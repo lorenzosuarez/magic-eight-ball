@@ -834,33 +834,6 @@ class EightBallViewModelTest {
     }
 
     @Test
-    fun `asking again listens without a hold when the app may listen`() = runTest {
-        val viewModel = createViewModel(resumed = true, microphoneGranted = true)
-        viewModel.ask()
-        finishThinking()
-
-        viewModel.askAgain()
-        runCurrent()
-
-        assertEquals(BallPhase.Listening(handsFree = true), viewModel.phase)
-    }
-
-    @Test
-    fun `asking again asks without a question when the app may not listen`() = runTest {
-        val viewModel = createViewModel()
-        viewModel.setVoiceQuestionsEnabled(false)
-        viewModel.ask()
-        finishThinking()
-
-        viewModel.askAgain()
-        finishThinking()
-
-        assertEquals(2, llmGateway.requests.size)
-        assertEquals(0, speech.sessions.size)
-        assertEquals(2, viewModel.state.value?.history?.size)
-    }
-
-    @Test
     fun `every answer is saved with its question and who wrote it, newest first`() = runTest {
         val viewModel = createViewModel(resumed = true, microphoneGranted = true)
         viewModel.ask()

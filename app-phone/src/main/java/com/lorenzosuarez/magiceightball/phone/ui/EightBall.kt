@@ -1,7 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -9,7 +8,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -28,7 +26,6 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
@@ -44,7 +41,6 @@ import androidx.compose.ui.unit.em
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -52,34 +48,32 @@ import kotlin.math.sqrt
 
 /** What the ball is showing. */
 enum class BallMode {
-    /** At rest, its "8" towards the user. */
+    /** At rest, its "8" towards the user, beating slowly. */
     Idle,
 
-    /** As [Idle], glowing, with rings around it that grow with the user's voice. */
+    /** As [Idle], with rings around it that grow with the user's voice. */
     Listening,
 
-    /** Spinning, with ripples leaving it. */
+    /** As [Idle], with ripples leaving it. */
     Thinking,
 
-    /** Its window towards the user, the die and its answer floating in it. */
+    /** Larger, its window towards the user, the die and its answer in it. */
     Answered
 }
 
 /**
- * The ball: a sphere with its "8" on one side and its window on the other. It turns around
- * while [BallMode.Thinking] and comes to rest on the window, where the die surfaces with
- * [answer] written on it.
+ * The ball, drawn flat: a disc with its "8", which beats slowly at rest. Rings surround it while
+ * it listens, ripples leave it while it thinks, and for the answer it grows and its "8" gives
+ * way to the window, where the die surfaces with [answer] written on it.
  *
  * Every animated value, [voiceLevel] included, is read in the draw or layer phase only, so an
  * animation frame never recomposes or re-measures anything, and all brushes, paths and text
- * layouts are built once per size and answer. The ball keeps its own colours in both themes;
- * only the glow around it takes the theme's.
+ * layouts are built once per size and answer.
  *
  * @param answer the text on the die while [BallMode.Answered]; ignored otherwise.
- * @param pressed whether a finger is on the screen: the ball gives way a little.
+ * @param pressed whether a finger is on the ball: it gives way a little.
  * @param voiceLevel how loud the voice is, from 0 to 1, while [BallMode.Listening].
- * @param reducedMotion true to change faces without the spin and not to pulse with the voice, for
- * users who turned animations off.
+ * @param reducedMotion true to keep the ball still, for users who turned animations off.
  */
 @Composable
 fun EightBall(
@@ -91,48 +85,19 @@ fun EightBall(
     modifier: Modifier = Modifier
 ) {
     val answered = mode == BallMode.Answered
-    val turn = remember { Animatable(if (answered) WINDOW_ANGLE else EIGHT_ANGLE) }
+    val face = remember { Animatable(if (answered) 1f else 0f) }
     val die = remember { Animatable(if (answered) 1f else 0f) }
-    val spin = remember { SpinMemory() }
-    // The answer arrives with a small swell that settles at once.
-    val pop = remember { Animatable(0f) }
     // The die keeps its text while it sinks back, after the answer is gone from the state.
     val shownAnswer = remember { LastAnswer() }.also { if (answer != null) it.text = answer }.text
 
-    LaunchedEffect(mode, reducedMotion) {
-        val carriedVelocity = if (spin.spinning) SPIN_DEGREES_PER_SECOND else 0f
-        spin.spinning = false
-        when (mode) {
-            BallMode.Thinking -> {
-                launch { die.animateTo(0f, tween(DIE_HIDE_MS)) }
-                if (reducedMotion) {
-                    turn.snapTo(WINDOW_ANGLE)
-                } else {
-                    spin.spinning = true
-                    // Half a turn to get up to speed, then whole turns at that speed.
-                    turn.animateTo(turn.value + 180f, tween(SPIN_TURN_MS, easing = SpinUp))
-                    while (true) {
-                        turn.animateTo(turn.value + 360f, tween(SPIN_TURN_MS, easing = LinearEasing))
-                    }
-                }
-            }
-            BallMode.Answered -> {
-                launch {
-                    delay(DIE_REVEAL_DELAY_MS)
-                    die.animateTo(1f, DieSpring)
-                }
-                if (!reducedMotion) {
-                    launch {
-                        pop.animateTo(1f, tween(POP_RISE_MS))
-                        pop.animateTo(0f, PopSpring)
-                    }
-                }
-                turn.settleOn(WINDOW_ANGLE, carriedVelocity)
-            }
-            BallMode.Idle, BallMode.Listening -> {
-                launch { die.animateTo(0f, tween(DIE_HIDE_MS)) }
-                turn.settleOn(EIGHT_ANGLE, carriedVelocity)
-            }
+    LaunchedEffect(answered) {
+        if (answered) {
+            launch { face.animateTo(1f, FaceSpring) }
+            delay(DIE_REVEAL_DELAY_MS)
+            die.animateTo(1f, DieSpring)
+        } else {
+            launch { die.animateTo(0f, tween(DIE_HIDE_MS)) }
+            face.animateTo(0f, tween(FACE_BACK_MS))
         }
     }
 
@@ -141,76 +106,72 @@ fun EightBall(
         animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
         label = "press"
     )
+    val resting = animateFloatAsState(
+        targetValue = if (mode == BallMode.Idle) 1f else 0f,
+        animationSpec = tween(STAGE_FADE_MS),
+        label = "resting"
+    )
     val listening = animateFloatAsState(
         targetValue = if (mode == BallMode.Listening) 1f else 0f,
         animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
         label = "listening"
     )
-
     val thinking = animateFloatAsState(
         targetValue = if (mode == BallMode.Thinking) 1f else 0f,
-        animationSpec = tween(RINGS_FADE_MS),
+        animationSpec = tween(STAGE_FADE_MS),
         label = "thinking"
     )
+    val grown = animateFloatAsState(
+        targetValue = if (answered) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow),
+        label = "grown"
+    )
 
-    // The clock of the rings: it runs only while there are rings to move.
+    // One clock for the heartbeat, the rings and the ripples: it runs only while something moves.
     val pulse = remember { Animatable(0f) }
-    val ringsMove = (mode == BallMode.Listening || mode == BallMode.Thinking) && !reducedMotion
-    LaunchedEffect(ringsMove) {
-        while (ringsMove) {
+    val period = when (mode) {
+        BallMode.Idle -> HEARTBEAT_MS
+        BallMode.Listening -> RING_PULSE_MS
+        BallMode.Thinking -> RIPPLE_MS
+        BallMode.Answered -> 0
+    }
+    LaunchedEffect(period, reducedMotion) {
+        while (period > 0 && !reducedMotion) {
             pulse.snapTo(0f)
-            pulse.animateTo(1f, tween(RING_PULSE_MS, easing = LinearEasing))
+            pulse.animateTo(1f, tween(period, easing = LinearEasing))
         }
+        pulse.snapTo(0f)
     }
 
-    // At rest the ball floats, barely: enough to look alive and to invite a touch.
-    val float = remember { Animatable(0f) }
-    val floats = mode == BallMode.Idle && !reducedMotion
-    LaunchedEffect(floats) {
-        while (floats) {
-            float.snapTo(0f)
-            float.animateTo(1f, tween(FLOAT_MS, easing = LinearEasing))
-        }
-        float.snapTo(0f)
-    }
-
-    // Without animations the ball does not pulse with the voice; its still rings say it listens.
+    // Without animations the ball does not move with the voice; its still rings say it listens.
     val voiceMotion: () -> Float = if (reducedMotion) NoVoiceMotion else voiceLevel
-
-    val accent = MaterialTheme.colorScheme.primary
-    val onDarkBackground = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val textMeasurer = rememberTextMeasurer()
 
     Spacer(
         modifier = modifier
             .aspectRatio(1f)
-            // Behind the ball and outside its layer: the glow and the shadow do not shrink
-            // and swell with it.
+            // Behind the ball and outside its layer: the rings do not shrink and swell with it.
             .drawWithCache {
-                val surroundings = BallSurroundings(size.center, size.minDimension / 2f, accent, onDarkBackground)
+                val rings = BallRings(size.center, size.minDimension / 2f)
                 onDrawBehind {
-                    with(surroundings) {
+                    with(rings) {
                         draw(
+                            resting = resting.value,
                             listening = listening.value,
                             thinking = thinking.value,
                             level = voiceMotion(),
-                            pulse = pulse.value,
-                            reveal = pop.value
+                            pulse = pulse.value
                         )
                     }
                 }
             }
             .graphicsLayer {
                 val scale = 1f - PRESS_SHRINK * press.value +
+                    HEARTBEAT_SWELL * beat(pulse.value) * resting.value +
                     VOICE_SWELL * listening.value * voiceMotion() +
-                    POP_SWELL * pop.value
+                    ANSWER_GROWTH * grown.value
                 scaleX = scale
                 scaleY = scale
-                translationY = -sin(TWO_PI * float.value) * size.height * FLOAT_TRAVEL
-                // While it thinks the ball is shaken, as a real one would be.
-                val shake = TWO_PI * pulse.value * SHAKES_PER_PULSE
-                rotationZ = sin(shake) * SHAKE_DEGREES * thinking.value
-                translationX = cos(shake) * size.width * SHAKE_TRAVEL * thinking.value
             }
             .drawWithCache {
                 val ball = BallDrawing(
@@ -218,12 +179,10 @@ fun EightBall(
                     center = size.center,
                     radius = size.minDimension / 2f,
                     answer = shownAnswer,
-                    textMeasurer = textMeasurer,
-                    accent = accent,
-                    onDarkBackground = onDarkBackground
+                    textMeasurer = textMeasurer
                 )
                 onDrawBehind {
-                    with(ball) { draw(turnDegrees = turn.value, dieReveal = die.value) }
+                    with(ball) { draw(face = face.value, dieReveal = die.value) }
                 }
             }
     )
@@ -231,58 +190,27 @@ fun EightBall(
 
 private val NoVoiceMotion: () -> Float = { 0f }
 
-/** Whether the last animation left the ball spinning, so the next one starts at that speed. */
-private class SpinMemory {
-    var spinning = false
-}
+/** A heartbeat over one turn of the clock: up and back down, smoothly, from 0 to 1 to 0. */
+private fun beat(pulse: Float): Float = 0.5f - 0.5f * cos(TWO_PI * pulse)
 
 private class LastAnswer {
     var text: String? = null
 }
 
-/**
- * Brings the ball to rest on the face at [faceAngle], turning on in the direction it spins and
- * arriving with a little overshoot. Afterwards the angle is brought back into one turn.
- */
-private suspend fun Animatable<Float, *>.settleOn(faceAngle: Float, velocity: Float) {
-    // The next time that face comes round, at least a short way ahead when the ball is moving.
-    val lead = if (velocity > 0f) SETTLE_LEAD_DEGREES else 0f
-    val target = ceil((value + lead - faceAngle) / 360f) * 360f + faceAngle
-    animateTo(target, SettleSpring, initialVelocity = velocity)
-    snapTo(faceAngle)
-}
-
-/**
- * The soft light around the ball, the rings that say it listens or thinks and the shadow under
- * it. Built once per size and theme.
- */
-private class BallSurroundings(
-    private val center: Offset,
-    private val radius: Float,
-    private val accent: Color,
-    private val onDarkBackground: Boolean
-) {
+/** What surrounds the ball: a faint halo at rest, rings while listening, ripples while thinking. */
+private class BallRings(private val center: Offset, private val radius: Float) {
     private val rippleStroke = Stroke(width = radius * RIPPLE_WIDTH)
-    private val glowRadius = radius * GLOW_RADIUS
-    private val glowBrush = Brush.radialGradient(
-        0f to accent,
-        0.5f to accent.copy(alpha = 0.55f),
-        1f to accent.copy(alpha = 0f),
-        center = center,
-        radius = glowRadius
-    )
 
-    private val shadowCenter = Offset(center.x, center.y + radius * 1.08f)
-    private val shadowRadius = radius * 0.9f
-    private val shadowBrush = Brush.radialGradient(
-        0f to Color.Black,
-        0.55f to Color.Black.copy(alpha = 0.5f),
-        1f to Color.Transparent,
-        center = shadowCenter,
-        radius = shadowRadius
-    )
-
-    fun DrawScope.draw(listening: Float, thinking: Float, level: Float, pulse: Float, reveal: Float) {
+    fun DrawScope.draw(resting: Float, listening: Float, thinking: Float, level: Float, pulse: Float) {
+        // At rest: one halo that follows the heartbeat.
+        if (resting > 0f) {
+            drawCircle(
+                color = RingColor,
+                radius = radius * (1f + HALO_REACH * (0.6f + 0.4f * beat(pulse))),
+                center = center,
+                alpha = resting * HALO_ALPHA
+            )
+        }
         // Listening: discs one inside the other, breathing slowly and pushed out by the voice.
         if (listening > 0f) {
             for (ring in RING_COUNT downTo 1) {
@@ -290,116 +218,50 @@ private class BallSurroundings(
                 val reach = RING_STEP * ring * (RING_REST + (1f - RING_REST) * breath) +
                     RING_VOICE_REACH * level * ring / RING_COUNT
                 drawCircle(
-                    color = accent,
+                    color = RingColor,
                     radius = radius * (1f + reach * listening),
                     center = center,
                     alpha = listening * RING_ALPHA
                 )
             }
         }
-        // Thinking: thin ripples leaving the ball one after the other.
+        // Thinking: ripples leaving the ball one after the other.
         if (thinking > 0f) {
             repeat(RIPPLE_COUNT) { ripple ->
                 val progress = (pulse + ripple.toFloat() / RIPPLE_COUNT) % 1f
                 drawCircle(
-                    color = accent,
-                    radius = radius * (1.04f + RIPPLE_REACH * progress),
+                    color = RingColor,
+                    radius = radius * (1.02f + RIPPLE_REACH * progress),
                     center = center,
                     alpha = thinking * RIPPLE_ALPHA * (1f - progress),
                     style = rippleStroke
                 )
             }
         }
-
-        val restAlpha = if (onDarkBackground) GLOW_REST_ALPHA_DARK else GLOW_REST_ALPHA_LIGHT
-        scale(scale = 1f + listening * (GLOW_LISTEN_GROWTH + GLOW_VOICE_GROWTH * level), pivot = center) {
-            drawCircle(
-                brush = glowBrush,
-                radius = glowRadius,
-                center = center,
-                alpha = (restAlpha + listening * GLOW_LISTEN_ALPHA + reveal * GLOW_REVEAL_ALPHA).coerceIn(0f, 1f)
-            )
-        }
-        scale(scaleX = 1f, scaleY = SHADOW_FLATNESS, pivot = shadowCenter) {
-            drawCircle(
-                brush = shadowBrush,
-                radius = shadowRadius,
-                center = shadowCenter,
-                alpha = if (onDarkBackground) SHADOW_ALPHA_DARK else SHADOW_ALPHA_LIGHT
-            )
-        }
     }
 }
 
-/**
- * Everything the ball is made of, built once per size and answer; [draw] then only places it.
- *
- * The two faces are caps of the sphere seen from the front: turning by an angle a moves a
- * cap's centre sideways by sin(a) and narrows it by cos(a), and a cap is hidden while it faces
- * away.
- */
+/** Everything the ball is made of, built once per size and answer; [draw] then only places it. */
 private class BallDrawing(
     density: Density,
     private val center: Offset,
     private val radius: Float,
     answer: String?,
-    textMeasurer: TextMeasurer,
-    accent: Color,
-    onDarkBackground: Boolean
+    textMeasurer: TextMeasurer
 ) {
-    private val outline = Path().apply { addOval(Rect(center, radius)) }
-
-    private val bodyBrush = Brush.radialGradient(
-        0f to BodyLit,
-        0.42f to BodyMid,
-        1f to BodyDeep,
-        center = Offset(center.x - radius * 0.32f, center.y - radius * 0.38f),
-        radius = radius * 1.5f
-    )
-
-    /** Light from the surroundings catching the edge; stronger where the ball needs to stand out. */
-    private val rimBrush = Brush.radialGradient(
-        0f to Color.Transparent,
-        0.86f to Color.Transparent,
-        1f to Color.White.copy(alpha = if (onDarkBackground) 0.2f else 0.09f),
-        center = center,
-        radius = radius
-    )
-
-    /** The glow's colour reflected on the underside. */
-    private val bounceCenter = Offset(center.x + radius * 0.2f, center.y + radius * 0.95f)
-    private val bounceRadius = radius * 0.8f
-    private val bounceBrush = Brush.radialGradient(
-        0f to accent.copy(alpha = if (onDarkBackground) 0.3f else 0.22f),
-        1f to accent.copy(alpha = 0f),
-        center = bounceCenter,
-        radius = bounceRadius
-    )
-
-    /** The reflection of a soft light above and to the left: a blurred oval lying on the curve. */
-    private val glossCenter = Offset(center.x - radius * 0.36f, center.y - radius * 0.5f)
-    private val glossRadius = radius * 0.5f
-    private val glossBrush = Brush.radialGradient(
-        0f to Color.White.copy(alpha = 0.4f),
-        0.5f to Color.White.copy(alpha = 0.12f),
-        1f to Color.Transparent,
-        center = glossCenter,
-        radius = glossRadius
+    private val discBrush = Brush.verticalGradient(
+        0f to DiscTop,
+        1f to DiscBottom,
+        startY = center.y - radius,
+        endY = center.y + radius
     )
 
     // The "8" side.
     private val eightRadius = radius * EIGHT_RADIUS
-    private val eightTravel = radius * capTravel(EIGHT_RADIUS)
-    private val eightDiscBrush = Brush.verticalGradient(
-        0f to Color.White,
-        1f to EightDiscShade,
-        startY = center.y - eightRadius,
-        endY = center.y + eightRadius
-    )
     private val eight: TextLayoutResult = textMeasurer.measure(
         text = "8",
         style = TextStyle(
-            color = BodyDeep,
+            color = DiscBottom,
             fontSize = with(density) { (eightRadius * 1.5f).toSp() },
             fontWeight = FontWeight.Black,
             platformStyle = PlatformTextStyle(includeFontPadding = false)
@@ -411,29 +273,7 @@ private class BallDrawing(
     )
 
     // The window side.
-    private val windowRadius = radius * WINDOW_RADIUS
-    private val windowTravel = radius * capTravel(WINDOW_RADIUS)
-    private val bezelBrush = Brush.linearGradient(
-        0f to BezelLit,
-        1f to BezelDeep,
-        start = Offset(center.x - windowRadius, center.y - windowRadius),
-        end = Offset(center.x + windowRadius, center.y + windowRadius)
-    )
-    private val liquidRadius = windowRadius * 0.94f
-    private val liquidBrush = Brush.radialGradient(
-        0f to LiquidLit,
-        1f to LiquidDeep,
-        center = center,
-        radius = liquidRadius
-    )
-    private val depthBrush = Brush.radialGradient(
-        0f to Color.Transparent,
-        0.7f to Color.Transparent,
-        1f to Color.Black.copy(alpha = 0.55f),
-        center = center,
-        radius = liquidRadius
-    )
-
+    private val liquidRadius = radius * WINDOW_RADIUS
     private val liquidOutline = Path().apply { addOval(Rect(center, liquidRadius)) }
 
     // The die: a triangle pointing down, close enough to the window that its three corners are
@@ -453,70 +293,41 @@ private class BallDrawing(
         startY = dieTop,
         endY = center.y + dieRadius
     )
-    private val dieEdge = Stroke(width = dieRadius * 0.07f, join = StrokeJoin.Round)
-    private val dieHighlight = Stroke(width = dieRadius * 0.014f, join = StrokeJoin.Round)
+    private val dieEdge = Stroke(width = dieRadius * 0.05f, join = StrokeJoin.Round)
 
     private val answerLayout: FittedText? = answer?.takeIf { it.isNotBlank() }?.let {
         fitInDie(it, textMeasurer, density)
     }
 
-    fun DrawScope.draw(turnDegrees: Float, dieReveal: Float) {
-        val angle = turnDegrees * DEGREES_TO_RADIANS
-        val sine = sin(angle)
-        val cosine = cos(angle)
+    /** @param face 0 for the "8", 1 for the window; in between one gives way to the other. */
+    fun DrawScope.draw(face: Float, dieReveal: Float) {
+        drawCircle(discBrush, radius, center)
 
-        clipPath(outline) {
-            drawCircle(bodyBrush, radius, center)
-            drawCircle(bounceBrush, bounceRadius, bounceCenter)
-
-            if (cosine > FACE_EDGE) {
-                withTransform({
-                    translate(left = sine * eightTravel)
-                    scale(scaleX = cosine, scaleY = 1f, pivot = center)
-                }) {
-                    drawCircle(eightDiscBrush, eightRadius, center)
-                    drawText(eight, topLeft = eightTopLeft)
-                }
-            }
-            if (cosine < -FACE_EDGE) {
-                withTransform({
-                    translate(left = -sine * windowTravel)
-                    scale(scaleX = -cosine, scaleY = 1f, pivot = center)
-                }) {
-                    drawWindow(dieReveal)
-                }
-            }
-
-            drawCircle(rimBrush, radius, center)
-            withTransform({
-                rotate(degrees = GLOSS_TILT_DEGREES, pivot = glossCenter)
-                scale(scaleX = 1.3f, scaleY = 0.62f, pivot = glossCenter)
-            }) {
-                drawCircle(glossBrush, glossRadius, glossCenter)
+        if (face < 1f) {
+            scale(1f - FACE_SHRINK * face, pivot = center) {
+                drawCircle(Color.White, eightRadius, center, alpha = 1f - face)
+                drawText(eight, topLeft = eightTopLeft, alpha = 1f - face)
             }
         }
-    }
-
-    private fun DrawScope.drawWindow(dieReveal: Float) {
-        drawCircle(bezelBrush, windowRadius, center)
-        drawCircle(liquidBrush, liquidRadius, center)
-
-        if (dieReveal > 0f) {
-            val alpha = dieReveal.coerceIn(0f, 1f)
-            // The die comes up from the dark: it grows, rises and clears as it surfaces.
-            clipPath(liquidOutline) {
-                withTransform({
-                    translate(top = (1f - dieReveal) * dieRadius * DIE_RISE)
-                    scale(DIE_START_SCALE + (1f - DIE_START_SCALE) * dieReveal, pivot = center)
-                }) {
-                    drawPath(diePath, dieBrush, alpha = alpha)
-                    drawPath(diePath, dieBrush, alpha = alpha, style = dieEdge)
-                    drawPath(diePath, DieEdgeLight, alpha = alpha * 0.5f, style = dieHighlight)
-                    answerLayout?.let { drawText(it.layout, topLeft = it.topLeft, alpha = alpha) }
+        if (face > 0f) {
+            scale(1f - FACE_SHRINK * (1f - face), pivot = center) {
+                drawCircle(Liquid, liquidRadius, center, alpha = face)
+                if (dieReveal > 0f) {
+                    val alpha = (dieReveal * face).coerceIn(0f, 1f)
+                    // The die comes up from the dark: it grows, rises and clears as it surfaces.
+                    clipPath(liquidOutline) {
+                        withTransform({
+                            translate(top = (1f - dieReveal) * dieRadius * DIE_RISE)
+                            scale(DIE_START_SCALE + (1f - DIE_START_SCALE) * dieReveal, pivot = center)
+                        }) {
+                            drawPath(diePath, dieBrush, alpha = alpha)
+                            drawPath(diePath, dieBrush, alpha = alpha, style = dieEdge)
+                            answerLayout?.let { drawText(it.layout, topLeft = it.topLeft, alpha = alpha) }
+                        }
+                    }
                 }
             }
         }
-        drawCircle(depthBrush, liquidRadius, center)
     }
 
     /**
@@ -588,76 +399,50 @@ private class BallDrawing(
     }
 
     private class FittedText(val layout: TextLayoutResult, val topLeft: Offset)
-
-    private companion object {
-        /** How far a cap of this relative radius travels sideways: the cosine of its half angle. */
-        fun capTravel(relativeRadius: Float): Float = sqrt(1f - relativeRadius * relativeRadius)
-    }
 }
 
-/** Accelerates evenly from rest, ending at the speed of a linear turn of the same duration. */
-private val SpinUp = Easing { fraction -> fraction * fraction }
-
-private val SettleSpring = spring<Float>(dampingRatio = 0.58f, stiffness = 70f)
+private val FaceSpring = spring<Float>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)
 private val DieSpring = spring<Float>(dampingRatio = 0.5f, stiffness = 140f)
-private val PopSpring = spring<Float>(dampingRatio = 0.5f, stiffness = 120f)
 
-private const val EIGHT_ANGLE = 0f
-private const val WINDOW_ANGLE = 180f
-private const val SPIN_TURN_MS = 640
-private const val SPIN_DEGREES_PER_SECOND = 360f * 1000f / SPIN_TURN_MS
-private const val SETTLE_LEAD_DEGREES = 100f
-private const val DIE_REVEAL_DELAY_MS = 220L
+private const val FACE_BACK_MS = 220
+private const val FACE_SHRINK = 0.3f
+private const val DIE_REVEAL_DELAY_MS = 160L
 private const val DIE_HIDE_MS = 140
 private const val DIE_START_SCALE = 0.5f
 private const val DIE_RISE = 0.22f
+private const val STAGE_FADE_MS = 260
 
-private const val PRESS_SHRINK = 0.045f
-private const val VOICE_SWELL = 0.05f
-private const val POP_SWELL = 0.04f
-private const val POP_RISE_MS = 140
-private const val FLOAT_MS = 5200
-private const val FLOAT_TRAVEL = 0.012f
-private const val SHAKES_PER_PULSE = 3f
-private const val SHAKE_DEGREES = 3.5f
-private const val SHAKE_TRAVEL = 0.012f
+private const val PRESS_SHRINK = 0.05f
+private const val VOICE_SWELL = 0.04f
 
-private const val GLOW_RADIUS = 1.75f
-private const val GLOW_REST_ALPHA_LIGHT = 0.16f
-private const val GLOW_REST_ALPHA_DARK = 0.26f
-private const val GLOW_LISTEN_ALPHA = 0.3f
-private const val GLOW_REVEAL_ALPHA = 0.3f
-private const val GLOW_LISTEN_GROWTH = 0.1f
-private const val GLOW_VOICE_GROWTH = 0.22f
+/** The heartbeat at rest: slow and small enough to be felt more than seen. */
+private const val HEARTBEAT_MS = 2400
+private const val HEARTBEAT_SWELL = 0.03f
+private const val HALO_REACH = 0.1f
+private const val HALO_ALPHA = 0.05f
+
+/** How much larger the ball is while it shows an answer, so the answer can be read. */
+private const val ANSWER_GROWTH = 0.3f
 
 /** Rings while listening: how far each one stands from the next, relative to the ball's radius. */
 private const val RING_COUNT = 3
-private const val RING_STEP = 0.1f
+private const val RING_STEP = 0.16f
 private const val RING_REST = 0.6f
 private const val RING_BREATH_LAG = 0.16f
-private const val RING_VOICE_REACH = 0.28f
-private const val RING_ALPHA = 0.1f
+private const val RING_VOICE_REACH = 0.4f
+private const val RING_ALPHA = 0.07f
 private const val RING_PULSE_MS = 2100
-private const val RINGS_FADE_MS = 260
 
 /** Ripples while thinking. */
-private const val RIPPLE_COUNT = 2
-private const val RIPPLE_REACH = 0.34f
-private const val RIPPLE_ALPHA = 0.35f
+private const val RIPPLE_COUNT = 3
+private const val RIPPLE_REACH = 0.7f
+private const val RIPPLE_ALPHA = 0.3f
 private const val RIPPLE_WIDTH = 0.012f
-
-private const val TWO_PI = (2.0 * Math.PI).toFloat()
-private const val SHADOW_FLATNESS = 0.14f
-private const val SHADOW_ALPHA_LIGHT = 0.28f
-private const val SHADOW_ALPHA_DARK = 0.6f
+private const val RIPPLE_MS = 1800
 
 /** Radii of the two faces, relative to the ball's. */
-private const val EIGHT_RADIUS = 0.43f
-private const val WINDOW_RADIUS = 0.74f
-
-/** A face this close to edge-on is not drawn. */
-private const val FACE_EDGE = 0.02f
-private const val GLOSS_TILT_DEGREES = -38f
+private const val EIGHT_RADIUS = 0.46f
+private const val WINDOW_RADIUS = 0.86f
 
 /** The die's circumradius relative to the window's: above 1, its corners are out of sight. */
 private const val DIE_RADIUS = 1.18f
@@ -670,16 +455,11 @@ private val DIE_TEXT_TOPS = floatArrayOf(0.26f, 0.2f, 0.14f, 0.09f)
 private val DIE_TEXT_WIDTHS = floatArrayOf(1f, 0.85f, 0.7f, 0.55f)
 
 private const val SIN_60 = 0.8660254f
-private const val DEGREES_TO_RADIANS = (Math.PI / 180.0).toFloat()
+private const val TWO_PI = (2.0 * Math.PI).toFloat()
 
-private val BodyLit = Color(0xFF50545E)
-private val BodyMid = Color(0xFF1D1E23)
-private val BodyDeep = Color(0xFF08080A)
-private val EightDiscShade = Color(0xFFDCDFE6)
-private val BezelLit = Color(0xFF3A3D47)
-private val BezelDeep = Color(0xFF020203)
-private val LiquidLit = Color(0xFF1C2678)
-private val LiquidDeep = Color(0xFF05071E)
+private val RingColor = Color.White
+private val DiscTop = Color(0xFF5C6773)
+private val DiscBottom = Color(0xFF3F4853)
+private val Liquid = Color(0xFF070C24)
 private val DieLit = Color(0xFF6C8AFF)
 private val DieDeep = Color(0xFF2C41CC)
-private val DieEdgeLight = Color(0xFFB9C6FF)

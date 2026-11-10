@@ -9,7 +9,7 @@ This policy explains how the Magic 8 Ball app (package `com.lorenzosuarez.magice
 - The only things the app saves on your device are your choices in the app (language, personality, whether to use AI answers and, on phones and tablets, whether to use voice questions) and, on phones and tablets, a list of your latest questions and answers ("Recents"). The developer runs no server that receives your data.
 - You can switch AI answers off in the app at any time.
 - The app connects to two Google services, both described below: Firebase Remote Config, to check its settings, and, when AI answers are switched on, the Gemini API.
-- **Phones and tablets only:** you can ask your question out loud. The app uses the microphone only while you hold the screen to ask, your speech is turned into text by your device's speech recognition service, and that text is sent to the Gemini API only when AI answers are switched on. The app never stores your voice. The text of your question is saved, with its answer, only in the "Recents" list on your device, which you can clear at any time. You can switch voice questions off, and the app works without the microphone.
+- **Phones and tablets only:** you can ask your question out loud. The app uses the microphone only while it is listening to a question you started (by tapping the microphone button or holding the ball), your speech is turned into text by your device's speech recognition service, and that text is sent to the Gemini API only when AI answers are switched on. The app never stores your voice. The text of your question is saved, with its answer, only in the "Recents" list on your device, which you can clear at any time. You can switch voice questions off, and the app works without the microphone.
 - **The watch app** has no microphone feature and never sends anything you say or write.
 
 ## What the app sends, and to whom
@@ -26,9 +26,9 @@ The watch app has no text or voice input. On both versions, the request never in
 If the request fails or your device is offline, the app shows an answer from the built-in list instead.
 
 ## Voice questions (phones and tablets only)
-The phone and tablet app lets you hold the screen and say your question. This is optional: you can switch "Voice questions" off in the app's settings, or decline the microphone permission, and then the app answers to a tap or a shake only.
+The phone and tablet app lets you tap the microphone button, or hold the ball, and say your question. This is optional: you can switch "Voice questions" off in the app's settings, or decline the microphone permission, and then the app answers to a tap or a shake only.
 
-- **When the microphone is used.** Only while you are holding the screen to ask (or, with an accessibility service, between choosing "Ask by voice" and the end of your question), and only while the app is on screen. The app does not listen at any other time and never in the background.
+- **When the microphone is used.** Only between the moment you tap the microphone button (or start holding the ball) and the end of your question, which comes when you tap again, let go, pause, or cancel, and only while the app is on screen. The app does not listen at any other time and never in the background.
 - **Who turns your speech into text.** The app does not process or record audio itself. It hands the listening to the speech recognition service of your device, through Android's standard speech recognition feature. Where your device offers on-device recognition for the app's language (Android 12 and later), the app uses it, and the audio is processed on the device. Otherwise the app uses your device's default speech recognition provider, which is typically Google and which may send the audio to its own servers to recognise it. That provider handles the audio under its own privacy policy (for Google, the [Google Privacy Policy](https://policies.google.com/privacy)); you can see or change the provider in your device's settings.
 - **What happens to the text.** The recognised question is shown on screen under the ball. If AI answers are switched on, it is sent to the Gemini API as described above; if they are off or not available, it is not sent anywhere by the app.
 - **What is kept.** Audio is never saved. The recognised question is saved, together with its answer, in the "Recents" list described below, on your device only.
@@ -45,7 +45,7 @@ The phone and tablet app keeps a list of the latest answers the ball gave you, s
 ## Sensors and permissions
 - **Motion sensor (accelerometer):** used only on your device to detect a shake. Sensor readings are not stored or sent anywhere. No permission is required.
 - **Internet and network state** (`INTERNET`, `ACCESS_NETWORK_STATE`): used to contact Firebase Remote Config and the Gemini API.
-- **Microphone** (`RECORD_AUDIO`), phones and tablets only: requested the first time you hold the screen to ask out loud, and used only as described under "Voice questions". You can refuse it or take it back in your device's settings at any time; the app keeps working by tap and shake.
+- **Microphone** (`RECORD_AUDIO`), phones and tablets only: requested the first time you ask out loud, and used only as described under "Voice questions". You can refuse it or take it back in your device's settings at any time; the app keeps working by tap and shake.
 - **Wake lock** (`WAKE_LOCK`), watch only: declared by the app but not used by the current version.
 
 The watch app does not request the microphone. Neither version requests location, camera, contacts, body sensors or any other sensitive permission.
