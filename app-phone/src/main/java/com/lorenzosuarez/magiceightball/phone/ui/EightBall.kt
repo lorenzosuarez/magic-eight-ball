@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -172,14 +174,12 @@ fun EightBall(
         label = "grown"
     )
 
-    // One clock for the heartbeat, the rings and the light that crosses the die: it runs only
-    // while one of them is on screen.
+    // One clock for the heartbeat and the rings: it runs only while one of them is on screen.
     val pulse = remember { Animatable(0f) }
     val period = when (mode) {
         BallMode.Idle -> HEARTBEAT_MS
         BallMode.Listening -> RING_PULSE_MS
-        BallMode.Thinking -> SHIMMER_MS
-        BallMode.Answered -> 0
+        BallMode.Thinking, BallMode.Answered -> 0
     }
     LaunchedEffect(period, reducedMotion) {
         while (period > 0 && !reducedMotion) {
@@ -187,6 +187,22 @@ fun EightBall(
             pulse.animateTo(1f, tween(period, easing = LinearEasing))
         }
         pulse.snapTo(0f)
+    }
+
+    // The light that crosses the thinking die is the app saying it is working, so it is the one
+    // motion that runs even for users who turned animations off: it follows the display's
+    // frames directly, which that setting does not stop. Nothing moves; a highlight passes.
+    val shimmer = remember { mutableFloatStateOf(0f) }
+    val shimmers = mode == BallMode.Thinking
+    LaunchedEffect(shimmers) {
+        if (!shimmers) return@LaunchedEffect
+        val start = withFrameNanos { it }
+        while (true) {
+            withFrameNanos { now ->
+                val elapsedMs = (now - start) / NANOS_PER_MILLI
+                shimmer.floatValue = (elapsedMs % SHIMMER_MS).toFloat() / SHIMMER_MS
+            }
+        }
     }
 
     // Without animations the ball does not move with the voice; its still rings say it listens.
@@ -233,7 +249,7 @@ fun EightBall(
                             dieSize = dieSize.value,
                             dieTurnDegrees = dieTurn.value,
                             colour = colour.value,
-                            shimmer = pulse.value,
+                            shimmer = shimmer.floatValue,
                             shimmerAlpha = thinking.value,
                             textAlpha = text.value
                         )
@@ -529,7 +545,8 @@ private const val DIE_SYMMETRY = 120f
 
 /** The least the die still turns once the answer is here, so it never stops dead. */
 private const val DIE_BRAKING_DEGREES = 70f
-private const val SHIMMER_MS = 1500
+private const val SHIMMER_MS = 1400L
+private const val NANOS_PER_MILLI = 1_000_000L
 /** The answer waits for the die to be all but still. */
 private const val TEXT_IN_DELAY_MS = 750L
 private const val TEXT_IN_MS = 320
@@ -541,8 +558,8 @@ private const val COLOUR_IN_DELAY_MS = 250L
 private const val COLOUR_IN_MS = 520
 
 /** The band of light that crosses the thinking die: its width in half-dies, and its strength. */
-private const val SHIMMER_WIDTH = 1.1f
-private const val SHIMMER_ALPHA = 0.38f
+private const val SHIMMER_WIDTH = 0.9f
+private const val SHIMMER_ALPHA = 0.55f
 
 private const val PRESS_SHRINK = 0.05f
 private const val VOICE_SWELL = 0.04f

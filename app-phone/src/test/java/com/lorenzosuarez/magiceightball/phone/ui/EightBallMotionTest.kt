@@ -92,7 +92,36 @@ class EightBallMotionTest {
         compose.waitForIdle()
     }
 
+    /**
+     * Users who turned animations off still see that the ball is working: the die stays put and
+     * the light keeps crossing it. The frames are the record of it.
+     */
+    @Test
+    fun the_thinking_die_shimmers_even_without_animations() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MagicEightBallPhoneTheme {
+                Box(Modifier.background(Backdrop).padding(48.dp)) {
+                    EightBall(
+                        mode = BallMode.Thinking,
+                        answer = null,
+                        pressed = false,
+                        voiceLevel = { 0f },
+                        reducedMotion = true,
+                        modifier = Modifier.size(144.dp)
+                    )
+                }
+            }
+        }
+
+        repeat(SHIMMER_FRAMES) { index ->
+            compose.mainClock.advanceTimeBy(FRAME_MS)
+            compose.onRoot().captureRoboImage("build/outputs/roborazzi/motion/still_%02d.png".format(index))
+        }
+    }
+
     private companion object {
+        const val SHIMMER_FRAMES = 6
         const val FRAME_MS = 200L
         const val THINKING_FRAMES = 12
         const val ANSWER_FRAMES = 12

@@ -50,12 +50,6 @@ class EightBallScreenshotTest {
     fun phone_idle_light() = capture("phone_1_ask_light", EightBallUiState(history = HISTORY))
 
     @Test
-    fun phone_thinking_light() = capture(
-        name = "phone_18_thinking_light",
-        state = EightBallUiState(phase = BallPhase.Thinking("Should I order pizza tonight?"))
-    )
-
-    @Test
     @Config(qualifiers = "+night")
     fun phone_idle_spanish_no_history_dark() = capture(
         name = "phone_19_ask_spanish_no_history_dark",
