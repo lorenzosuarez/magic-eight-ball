@@ -115,6 +115,20 @@ class EightBallScreenshotTest {
     )
 
     @Test
+    fun phone_ai_answer_spanish() = capture(
+        name = "phone_23_ai_answer_spanish",
+        state = EightBallUiState(
+            phase = BallPhase.Answered(
+                id = 0,
+                question = "¿Me conviene pedir pizza hoy?",
+                answer = AnswerText.Plain("Tu estómago ya decidió.", fromAi = true)
+            ),
+            settings = UserSettings(language = AppLanguage.SPANISH),
+            aiAnswersAvailable = true
+        )
+    )
+
+    @Test
     fun phone_settings_light() = captureWithSettings("phone_7_settings_light", ANSWERED)
 
     @Test

@@ -227,7 +227,13 @@ class ChatViewModel @Inject constructor(
                 val question = withTimeoutOrNull(FINAL_TRANSCRIPT_TIMEOUT_MS) { heard.await() }
                     ?: transcript.value.also { heard.cancel() }
 
-                if (question.isNotBlank()) answer(settings, question)
+                if (question.isNotBlank()) {
+                    // Whether or not the words showed up as they were said, the question is
+                    // shown whole before the ball starts on it.
+                    machineState.value = ChatStateMachine.Listening(question, finished = true)
+                    delay(HEARD_QUESTION_MS)
+                    answer(settings, question)
+                }
             } finally {
                 machineState.value = ChatStateMachine.Idle
             }
@@ -250,7 +256,8 @@ class ChatViewModel @Inject constructor(
                     is SpeechEvent.Level -> _voiceLevel.value = event.value
                     is SpeechEvent.Transcript -> {
                         transcript.value = event.text.trim()
-                        if (machineState.value is ChatStateMachine.Listening) {
+                        val listening = machineState.value as? ChatStateMachine.Listening
+                        if (listening != null && !listening.finished) {
                             machineState.value = ChatStateMachine.Listening(transcript.value)
                         }
                     }
@@ -323,5 +330,8 @@ class ChatViewModel @Inject constructor(
 
         /** How long the last words may take to be recognized once the user has let go. */
         const val FINAL_TRANSCRIPT_TIMEOUT_MS = 1_500L
+
+        /** How long the question that was understood stays on screen before the ball thinks. */
+        const val HEARD_QUESTION_MS = 1_200L
     }
 }

@@ -28,8 +28,12 @@ data class ChatState(
 sealed interface ChatStateMachine {
     data object Idle : ChatStateMachine
 
-    /** @property transcript what has been understood so far; empty until the first words. */
-    data class Listening(val transcript: String = "") : ChatStateMachine
+    /**
+     * @property transcript what has been understood so far; empty until the first words.
+     * @property finished true once the question is over and [transcript] is all of it: it stays
+     * on screen for a moment, so the user sees what the ball is about to answer.
+     */
+    data class Listening(val transcript: String = "", val finished: Boolean = false) : ChatStateMachine
     data object Running : ChatStateMachine
     data class Completed(val answer: AnswerText) : ChatStateMachine
 }
