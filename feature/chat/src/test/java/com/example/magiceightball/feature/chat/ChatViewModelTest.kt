@@ -385,6 +385,11 @@ class ChatViewModelTest {
         viewModel.onHoldEnd()
         session.finish("Will it rain?")
         runCurrent()
+        // The whole question stays on screen for a moment before the ball thinks about it.
+        assertEquals(ChatStateMachine.Listening("Will it rain?", finished = true), viewModel.machineState)
+
+        advanceTimeBy(HEARD_QUESTION_MS)
+        runCurrent()
         assertEquals(ChatStateMachine.Running, viewModel.machineState)
 
         advanceTimeBy(MIN_THINKING_MS)
@@ -566,5 +571,6 @@ class ChatViewModelTest {
         const val MAX_THINKING_MS = 5_000L
         const val HOLD_MS = 3_000L
         const val COOLDOWN_MS = 1_000L
+        const val HEARD_QUESTION_MS = 1_200L
     }
 }

@@ -53,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.wear.compose.foundation.pager.VerticalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
+import androidx.wear.compose.material3.VerticalPageIndicator
 import com.example.magiceightball.core.designsystem.theme.MagicEightBallTheme
 import com.example.magiceightball.feature.chat.components.BallColors
 import com.example.magiceightball.feature.chat.components.DesignedMotion
@@ -104,30 +105,41 @@ fun ChatScreen(
     )
 
     CompositionLocalProvider(LocalAppLanguage provides state.settings.language) {
-        VerticalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            when (page) {
-                PAGE_PREDICTION -> ChatScreenContent(
-                    state = state,
-                    voiceLevel = { voiceLevel.value },
-                    onHoldStart = viewModel::onHoldStart,
-                    onHoldEnd = viewModel::onHoldEnd,
-                    onHoldCancel = viewModel::onHoldCancel
-                )
-                PAGE_LANGUAGE -> LanguageSelectionScreen(
-                    selectedLanguage = state.settings.language,
-                    onLanguageSelected = viewModel::setLanguage
-                )
-                PAGE_PERSONALITY -> PersonalitySelectionScreen(
-                    selectedPersonality = state.settings.personality,
-                    onPersonalitySelected = viewModel::setPersonality
-                )
-                PAGE_AI_ANSWERS -> AiAnswersSelectionScreen(
-                    isEnabled = state.settings.aiAnswersEnabled,
-                    isAvailable = state.aiAnswersAvailable,
-                    onEnabledChange = viewModel::setAiAnswersEnabled
+        Box(modifier = Modifier.fillMaxSize()) {
+            VerticalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    PAGE_PREDICTION -> ChatScreenContent(
+                        state = state,
+                        voiceLevel = { voiceLevel.value },
+                        onHoldStart = viewModel::onHoldStart,
+                        onHoldEnd = viewModel::onHoldEnd,
+                        onHoldCancel = viewModel::onHoldCancel
+                    )
+                    PAGE_LANGUAGE -> LanguageSelectionScreen(
+                        selectedLanguage = state.settings.language,
+                        onLanguageSelected = viewModel::setLanguage
+                    )
+                    PAGE_PERSONALITY -> PersonalitySelectionScreen(
+                        selectedPersonality = state.settings.personality,
+                        onPersonalitySelected = viewModel::setPersonality
+                    )
+                    PAGE_AI_ANSWERS -> AiAnswersSelectionScreen(
+                        isEnabled = state.settings.aiAnswersEnabled,
+                        isAvailable = state.aiAnswersAvailable,
+                        onEnabledChange = viewModel::setAiAnswersEnabled
+                    )
+                }
+            }
+            // Dots at the side say there is more below the ball. They step aside while a
+            // question is in progress, when there is only the ball.
+            if (state.machineState is ChatStateMachine.Idle) {
+                VerticalPageIndicator(
+                    pagerState = pagerState,
+                    selectedColor = BallColors.OnSurface,
+                    unselectedColor = BallColors.OnSurface.copy(alpha = PAGE_DOT_OFF_ALPHA)
                 )
             }
         }
@@ -328,6 +340,7 @@ private const val PAGE_LANGUAGE = 1
 private const val PAGE_PERSONALITY = 2
 private const val PAGE_AI_ANSWERS = 3
 private const val PAGE_COUNT = 4
+private const val PAGE_DOT_OFF_ALPHA = 0.35f
 
 private const val TRANSITION_MILLIS = 300
 

@@ -13,6 +13,7 @@
     <string name="question_quoted">«%1$s»</string>
     <string name="action_close">Cerrar</string>
     <string name="action_cancel">Cancelar</string>
+    <string name="answer_from_ai">Respondido con IA</string>
     <string name="source_ai">IA</string>
     <string name="source_classic">Clásica</string>
 

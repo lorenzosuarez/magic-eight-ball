@@ -80,7 +80,8 @@ fun ChatScreenIdle(
         content = {
             EightBadge(
                 name = localizedString(Strings.Title),
-                listening = listening != null,
+                // Once the question is over the rings go: the app is no longer listening.
+                listening = listening != null && !listening.finished,
                 voiceLevel = voiceLevel
             )
             Text(

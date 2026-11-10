@@ -601,7 +601,8 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
 
 /**
  * Under the ball, the user's own words: as they are heard, then while the ball thinks about
- * them. At rest it is empty, but for the one-off explanations about the microphone.
+ * them. At rest it is empty, but for the one-off explanations about the microphone; under an
+ * answer the AI service wrote, a quiet note says so.
  *
  * The text on the die is as large as the die allows and cannot follow the system's font size,
  * so with a large font the answer is written here as well.
@@ -641,13 +642,29 @@ private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
                 overflow = TextOverflow.Ellipsis
             )
             is BallPhase.Thinking -> QuietText(phase.question.quoted())
-            is BallPhase.Answered -> Text(
-                text = if (largeFont) phase.answer.text() else "",
+            is BallPhase.Answered -> Column(
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (largeFont) {
+                    Text(
+                        text = phase.answer.text(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                // Said quietly, and only when it is true: who wrote this answer.
+                if ((phase.answer as? AnswerText.Plain)?.fromAi == true) {
+                    Text(
+                        text = stringResource(R.string.answer_from_ai),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = AI_NOTE_ALPHA),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }
@@ -732,6 +749,9 @@ private val TEXT_MAX_WIDTH = 480.dp
 private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 104.dp
 private const val CAPTION_MAX_LINES = 3
+
+/** How faint the note under an answer the AI wrote is. */
+private const val AI_NOTE_ALPHA = 0.7f
 
 /** From this font scale up, the answer is also written under the ball. */
 private const val LARGE_FONT_SCALE = 1.3f
