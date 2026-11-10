@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -24,7 +24,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -48,7 +47,8 @@ import com.example.magiceightball.core.designsystem.R as DesignR
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    // Nothing is drawn until the saved choices are known, so no default flashes by first.
+    val state = viewModel.state.collectAsStateWithLifecycle().value ?: return
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
 
     // Shakes only count while the prediction page is settled on screen and the app is resumed.
@@ -60,21 +60,27 @@ fun ChatScreen(
 
     ChatHaptics(viewModel.effects)
 
-    VerticalPager(
-        state = pagerState,
-        modifier = Modifier.fillMaxSize()
-    ) { page ->
-        when (page) {
-            PAGE_PREDICTION -> ChatScreenContent(state)
-            PAGE_LANGUAGE -> LanguageSelectionScreen(
-                selectedLanguage = state.language,
-                onLanguageSelected = viewModel::setLanguage
-            )
-            PAGE_PERSONALITY -> PersonalitySelectionScreen(
-                selectedPersonality = state.personality,
-                language = state.language,
-                onPersonalitySelected = viewModel::setPersonality
-            )
+    CompositionLocalProvider(LocalAppLanguage provides state.settings.language) {
+        VerticalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            when (page) {
+                PAGE_PREDICTION -> ChatScreenContent(state)
+                PAGE_LANGUAGE -> LanguageSelectionScreen(
+                    selectedLanguage = state.settings.language,
+                    onLanguageSelected = viewModel::setLanguage
+                )
+                PAGE_PERSONALITY -> PersonalitySelectionScreen(
+                    selectedPersonality = state.settings.personality,
+                    onPersonalitySelected = viewModel::setPersonality
+                )
+                PAGE_AI_ANSWERS -> AiAnswersSelectionScreen(
+                    isEnabled = state.settings.aiAnswersEnabled,
+                    isAvailable = state.aiAnswersAvailable,
+                    onEnabledChange = viewModel::setAiAnswersEnabled
+                )
+            }
         }
     }
 }
@@ -131,7 +137,7 @@ fun ChatScreenContent(state: ChatState, modifier: Modifier = Modifier) {
             label = "ChatScreenTransition"
         ) { machine ->
             when (machine) {
-                ChatStateMachine.Idle -> ChatScreenIdle(titleRes = state.titleRes)
+                ChatStateMachine.Idle -> ChatScreenIdle(usesAiAnswers = state.usesAiAnswers)
                 // One call site for thinking and answer: two would be two different composables,
                 // and the die would be rebuilt (losing its motion and cross-fade) on the answer.
                 ChatStateMachine.Running, is ChatStateMachine.Completed ->
@@ -156,7 +162,7 @@ private fun Prediction(answer: AnswerText?) {
                     text = when (answer) {
                         null -> ""
                         is AnswerText.Plain -> answer.value
-                        is AnswerText.Resource -> stringResource(answer.resId)
+                        AnswerText.Fallback -> localizedString(Strings.AnswerFallback)
                     },
                     isLoading = answer == null
                 )
@@ -204,7 +210,8 @@ private fun PredictionWindow(
 private const val PAGE_PREDICTION = 0
 private const val PAGE_LANGUAGE = 1
 private const val PAGE_PERSONALITY = 2
-private const val PAGE_COUNT = 3
+private const val PAGE_AI_ANSWERS = 3
+private const val PAGE_COUNT = 4
 
 private const val TRANSITION_MILLIS = 300
 private val EnterFromEnd =
@@ -251,7 +258,7 @@ private fun ChatScreenPreviewWearRoundRunning() {
 @Composable
 private fun ChatScreenPreviewWearLargeRoundFallback() {
     ChatScreenPreview(
-        ChatStateMachine.Completed(AnswerText.Resource(R.string.answer_fallback)),
+        ChatStateMachine.Completed(AnswerText.Fallback),
         screenSizeDp = 240
     )
 }

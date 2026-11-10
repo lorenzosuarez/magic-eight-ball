@@ -16,15 +16,19 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
+import com.example.magiceightball.feature.chat.LocalAppLanguage
 import kotlin.math.max
 import kotlin.math.min
 
@@ -43,16 +47,19 @@ internal fun TriangleFittedText(
 ) {
     val textMeasurer = rememberTextMeasurer()
     val baseStyle = MaterialTheme.typography.bodyMedium
-    val style = remember(baseStyle, color) {
+    // Upper case and hyphenation follow the language of the app, not the one of the device.
+    val locale = Locale(LocalAppLanguage.current.code)
+    val style = remember(baseStyle, color, locale) {
         baseStyle.copy(
             color = color,
             fontWeight = FontWeight.Bold,
+            localeList = LocaleList(locale),
             textAlign = TextAlign.Center,
             hyphens = Hyphens.Auto,
             lineBreak = LineBreak.Paragraph
         )
     }
-    val displayText = remember(text) { text.uppercase() }
+    val displayText = remember(text, locale) { text.toUpperCase(locale) }
 
     Spacer(
         modifier

@@ -1,7 +1,6 @@
 package com.example.magiceightball.feature.chat
 
 import android.widget.Toast
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -14,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,20 +31,21 @@ private val startupToastShown = AtomicBoolean(false)
 
 /**
  * Idle screen displayed when the chat is not active: the title exactly in the centre and a
- * helper line a fixed distance below it.
+ * short hint a fixed distance below it.
  *
  * Both are positioned in a single layout pass, so they are in place from the very first frame.
  *
- * @param titleRes Resource id for the title text.
+ * @param usesAiAnswers Whether a shake asks the AI service, which the hint then says.
  * @param modifier Modifier applied to the root layout.
  */
 @Composable
-fun ChatScreenIdle(@StringRes titleRes: Int, modifier: Modifier = Modifier) {
+fun ChatScreenIdle(usesAiAnswers: Boolean, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val language = LocalAppLanguage.current
 
     LaunchedEffect(Unit) {
         if (startupToastShown.compareAndSet(false, true)) {
-            Toast.makeText(context, R.string.shake_to_start, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, Strings.ShakeToStart.resId(language), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -58,14 +57,15 @@ fun ChatScreenIdle(@StringRes titleRes: Int, modifier: Modifier = Modifier) {
     Layout(
         content = {
             Text(
-                text = stringResource(titleRes),
+                text = localizedString(Strings.Title),
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 style = titleStyle
             )
             Text(
-                text = stringResource(R.string.uses_gemini_api),
+                text = localizedString(if (usesAiAnswers) Strings.ShakeHintAi else Strings.ShakeHint),
                 color = HelperColor,
+                textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyExtraSmall
             )
         },
@@ -99,7 +99,7 @@ private val HelperColor = Color.LightGray.copy(alpha = 0.5f)
 private fun ChatScreenIdlePreview() {
     MagicEightBallTheme {
         ChatScreenIdle(
-            titleRes = R.string.title_main,
+            usesAiAnswers = true,
             modifier = Modifier
                 .size(192.dp)
                 .background(Color.Black, shape = CircleShape)

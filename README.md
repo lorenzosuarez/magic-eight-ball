@@ -28,6 +28,7 @@ Experience the complete journey from startup to prediction.
 *   **🧠 Hybrid AI Engine**:
     *   **Local Fallback**: Instant, zero-latency responses using a local database when offline.
     *   **Cloud Intelligence**: Taps into the Gemini API for unique, witty, and varied predictions when connected.
+    *   **Your Call**: An "AI answers" page lets the user switch AI answers off (or back on) at any time. Gemini is asked only when the user's choice is on, the developer's remote switch is on and a key is available; when AI answers are not available the page says so instead of offering a toggle that does nothing.
     *   **Smart Retry Policies**: Robust network handling with exponential backoff and strict safety filters.
 
 *   **🎨 Premium Wear OS Experience**:
@@ -41,7 +42,11 @@ Experience the complete journey from startup to prediction.
 
 *   **🌍 Multi-Language Support**:
     *   Seamlessly toggle between **English** and **Spanish**.
+    *   Every text in the app follows the language chosen in the app; on first launch it is Spanish on a Spanish-language watch and English otherwise.
     *   **Dynamic System Prompts**: The AI's personae and language instructions are injected dynamically based on user preference.
+
+*   **💾 Remembers Your Choices**:
+    *   Language, personality and the AI answers choice are saved on the watch with Jetpack DataStore and restored before the first frame. Nothing else is stored.
 
 ## Tech Stack 🛠️
 
@@ -54,6 +59,7 @@ Built with modern Android development standards and best practices:
 *   **Networking**: [Retrofit](https://square.github.io/retrofit/) + [OkHttp](https://square.github.io/okhttp/)
 *   **AI Integration**: [Google Gemini API](https://ai.google.dev/)
 *   **Concurrency**: Kotlin Coroutines & Flow
+*   **Persistence**: [Jetpack DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (Preferences)
 *   **Serialization**: Kotlinx Serialization
 
 ## Architecture 🏗️
@@ -87,7 +93,7 @@ The app builds and runs with no setup at all: without Firebase it answers from t
 
         | Parameter | Type | Meaning |
         |:---|:---|:---|
-        | `gemini_enabled` | Boolean | Turns Gemini answers on or off. Off when missing. |
+        | `gemini_enabled` | Boolean | Turns Gemini answers on or off for everyone. Off when missing. Each user can still switch AI answers off in the app. |
         | `gemini_api_key` | String | The Gemini API key from [Google AI Studio](https://aistudio.google.com/). |
 
     The app checks Remote Config at launch and at most once an hour, so a change can take up to an hour to reach a watch. Values in Remote Config can be read by anyone with the app, so restrict the key to the Generative Language API and set a quota.

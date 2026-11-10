@@ -1,28 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The app has its own language setting, so every text exists once per language here
+    (name / name_es) and is paired in LocalizedStrings.kt instead of in values-es.
+-->
 <resources>
-    <string name="app_name">Magic 8 Ball</string>
-    <string name="status_shaking">Shaking…</string>
-    <string name="status_idle">Idle</string>
-    <string name="prompt_magic_question">Give me a mystical prediction about the immediate future.</string>
-    <string name="err_unknown">Unknown error</string>
-    <string name="err_prefix">Error: %s</string>
+    <!-- Ball -->
     <string name="title_main">Magic 8 Ball</string>
     <string name="title_main_es">Bola Mágica 8</string>
+    <string name="shake_hint">Shake for answers</string>
+    <string name="shake_hint_es">Agita para respuestas</string>
+    <string name="shake_hint_ai">Shake for AI answers</string>
+    <string name="shake_hint_ai_es">Agita para respuestas IA</string>
     <string name="shake_to_start">Shake to start</string>
-    <string name="uses_gemini_api">Uses Gemini API</string>
+    <string name="shake_to_start_es">Agita para empezar</string>
     <string name="answer_fallback">Ask again later</string>
     <string name="answer_fallback_es">Pregunta más tarde</string>
-    
-    <!-- Language Selection -->
-    <string name="lang_select_title">SELECT_LANG:</string>
-    <string name="lang_english">ENGLISH</string>
-    <string name="lang_spanish">ESPAÑOL</string>
 
-    <!-- Personality Selection -->
+    <!-- Language selection: each language is listed under its own name -->
+    <string name="lang_title">LANGUAGE:</string>
+    <string name="lang_title_es">IDIOMA:</string>
+    <string name="lang_english" translatable="false">ENGLISH</string>
+    <string name="lang_spanish" translatable="false">ESPAÑOL</string>
+
+    <!-- Personality selection -->
     <string name="personality_title">PERSONALITY:</string>
     <string name="personality_title_es">PERSONALIDAD:</string>
     <string name="personality_sarcastic">SARCASTIC</string>
     <string name="personality_sarcastic_es">SARCÁSTICO</string>
     <string name="personality_mystical">MYSTICAL</string>
     <string name="personality_mystical_es">MÍSTICO</string>
+
+    <!-- AI answers selection -->
+    <string name="ai_title">AI ANSWERS:</string>
+    <string name="ai_title_es">RESPUESTAS IA:</string>
+    <string name="ai_on">ON</string>
+    <string name="ai_on_es">SÍ</string>
+    <string name="ai_off">OFF</string>
+    <string name="ai_off_es">NO</string>
+    <string name="ai_unavailable">Not available yet</string>
+    <string name="ai_unavailable_es">Aún no disponible</string>
 </resources>

@@ -1,8 +1,8 @@
 package com.example.magiceightball.feature.chat
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.feature.chat.components.ConsoleMenu
 import com.example.magiceightball.feature.chat.components.ConsoleOption
 
@@ -11,14 +11,14 @@ fun LanguageSelectionScreen(
     selectedLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit
 ) {
-    ConsoleMenu(title = stringResource(R.string.lang_select_title)) {
+    ConsoleMenu(title = localizedString(Strings.LanguageTitle)) {
         ConsoleOption(
-            label = stringResource(R.string.lang_english),
+            label = localizedString(Strings.LanguageEnglish),
             isSelected = selectedLanguage == AppLanguage.ENGLISH,
             onClick = { onLanguageSelected(AppLanguage.ENGLISH) }
         )
         ConsoleOption(
-            label = stringResource(R.string.lang_spanish),
+            label = localizedString(Strings.LanguageSpanish),
             isSelected = selectedLanguage == AppLanguage.SPANISH,
             onClick = { onLanguageSelected(AppLanguage.SPANISH) }
         )

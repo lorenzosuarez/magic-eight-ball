@@ -1,13 +1,15 @@
 package com.example.magiceightball.feature.chat
 
-import androidx.annotation.StringRes
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
+import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.model.ShakeEvent
+import com.example.magiceightball.core.domain.model.UserSettings
+import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,22 +36,27 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val sendMessageUseCase: SendMessageUseCase,
     private val observeShakeUseCase: ObserveShakeUseCase,
-    private val queryConfig: QueryConfig,
-    private val savedStateHandle: SavedStateHandle
+    private val userSettingsRepository: UserSettingsRepository,
+    aiAnswersAvailability: AiAnswersAvailability,
+    private val queryConfig: QueryConfig
 ) : ViewModel() {
 
     private val machineState = MutableStateFlow<ChatStateMachine>(ChatStateMachine.Idle)
     private val shakeDetectionEnabled = MutableStateFlow(false)
-    private val language = savedStateHandle.getStateFlow(KEY_LANGUAGE, AppLanguage.ENGLISH)
-    private val personality =
-        savedStateHandle.getStateFlow(KEY_PERSONALITY, Magic8BallPersonality.SARCASTIC)
 
-    val state: StateFlow<ChatState> = combine(machineState, language, personality, ::chatState)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MS),
-            initialValue = chatState(machineState.value, language.value, personality.value)
-        )
+    /** The saved choices; null until they have been read, right after launch. */
+    private val settings: StateFlow<UserSettings?> = userSettingsRepository.settings
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /**
+     * Null until the saved choices have been read, so the screen never shows a default that is
+     * about to be replaced. Kept up to date without subscribers: the activity reads it to hold
+     * the splash screen until then.
+     */
+    val state: StateFlow<ChatState?> =
+        combine(machineState, settings, aiAnswersAvailability.isAvailable) { machine, saved, aiAvailable ->
+            saved?.let { ChatState(machine, it, aiAvailable) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _effects = Channel<ChatEffect>(Channel.BUFFERED)
     val effects: Flow<ChatEffect> = _effects.receiveAsFlow()
@@ -61,11 +68,15 @@ class ChatViewModel @Inject constructor(
     }
 
     fun setLanguage(language: AppLanguage) {
-        savedStateHandle[KEY_LANGUAGE] = language
+        viewModelScope.launch { userSettingsRepository.setLanguage(language) }
     }
 
     fun setPersonality(personality: Magic8BallPersonality) {
-        savedStateHandle[KEY_PERSONALITY] = personality
+        viewModelScope.launch { userSettingsRepository.setPersonality(personality) }
+    }
+
+    fun setAiAnswersEnabled(enabled: Boolean) {
+        viewModelScope.launch { userSettingsRepository.setAiAnswersEnabled(enabled) }
     }
 
     /**
@@ -99,13 +110,15 @@ class ChatViewModel @Inject constructor(
 
     private fun startCycle() {
         if (cycleJob?.isActive == true) return
+        // No answer can be asked for before the choices it depends on are known.
+        val settings = settings.value ?: return
 
         cycleJob = viewModelScope.launch {
             try {
                 machineState.value = ChatStateMachine.Running
                 _effects.trySend(ChatEffect.ShakeDetected)
 
-                val answer = fetchAnswer()
+                val answer = fetchAnswer(settings)
 
                 machineState.value = ChatStateMachine.Completed(answer)
                 _effects.trySend(ChatEffect.AnswerRevealed)
@@ -121,30 +134,25 @@ class ChatViewModel @Inject constructor(
      * Requests an answer and waits at least [QueryConfig.minThinkingMs], so the thinking
      * animation never flashes by, and at most [QueryConfig.maxThinkingMs] for the request.
      */
-    private suspend fun fetchAnswer(): AnswerText = coroutineScope {
-        val language = language.value
-        val personality = personality.value
-
-        val request = async { requestAnswer(language, personality) }
+    private suspend fun fetchAnswer(settings: UserSettings): AnswerText = coroutineScope {
+        val request = async { requestAnswer(settings) }
         delay(queryConfig.minThinkingMs)
 
         when (val result = request.await()) {
             is Magic8BallResult.Success ->
                 result.message.takeIf { it.isNotBlank() }?.let(AnswerText::Plain)
             is Magic8BallResult.Failure, null -> null
-        } ?: AnswerText.Resource(fallbackAnswerRes(language))
+        } ?: AnswerText.Fallback
     }
 
     /** Returns null when the request times out or fails unexpectedly. */
-    private suspend fun requestAnswer(
-        language: AppLanguage,
-        personality: Magic8BallPersonality
-    ): Magic8BallResult? = try {
+    private suspend fun requestAnswer(settings: UserSettings): Magic8BallResult? = try {
         withTimeoutOrNull(queryConfig.maxThinkingMs) {
             sendMessageUseCase(
                 trigger = SHAKE_TRIGGER,
-                languageCode = language.code,
-                personality = personality
+                languageCode = settings.language.code,
+                personality = settings.personality,
+                useAi = settings.aiAnswersEnabled
             )
         }
     } catch (e: CancellationException) {
@@ -154,29 +162,6 @@ class ChatViewModel @Inject constructor(
     }
 
     private companion object {
-        const val KEY_LANGUAGE = "language"
-        const val KEY_PERSONALITY = "personality"
         const val SHAKE_TRIGGER = "shake"
-        const val STATE_SUBSCRIPTION_TIMEOUT_MS = 5_000L
-
-        fun chatState(
-            machine: ChatStateMachine,
-            language: AppLanguage,
-            personality: Magic8BallPersonality
-        ) = ChatState(
-            machineState = machine,
-            titleRes = when (language) {
-                AppLanguage.ENGLISH -> R.string.title_main
-                AppLanguage.SPANISH -> R.string.title_main_es
-            },
-            language = language,
-            personality = personality
-        )
-
-        @StringRes
-        fun fallbackAnswerRes(language: AppLanguage): Int = when (language) {
-            AppLanguage.ENGLISH -> R.string.answer_fallback
-            AppLanguage.SPANISH -> R.string.answer_fallback_es
-        }
     }
 }

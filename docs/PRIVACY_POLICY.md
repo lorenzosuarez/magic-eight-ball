@@ -6,13 +6,14 @@ This policy explains how the Magic 8 Ball app for Wear OS (package `com.lorenzos
 
 ## Summary
 - No account or sign-in, no ads, no analytics and no crash-reporting tools.
-- The app does not save personal information on your watch, and the developer runs no server that receives your data.
+- The only things the app saves on your watch are your three choices in the app (language, personality, and whether to use AI answers). The developer runs no server that receives your data.
+- You can switch AI answers off in the app at any time.
 - The app connects to two Google services, both described below: Firebase Remote Config, to check its settings, and, when AI answers are switched on, the Gemini API.
 
 ## What the app sends, and to whom
 **Firebase Remote Config.** When the app starts, and at most about once an hour while you use it, it asks Google's Firebase Remote Config service for its current settings, such as whether AI answers are switched on. This request includes a random installation identifier created by Firebase for this copy of the app, and basic app and device information (for example app version, language, country and operating system version). It does not include your name, account or location. Google handles this under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy).
 
-**Gemini API.** AI answers can be switched on or off by the developer. While they are off, the app shows answers from a list built into the app and sends nothing when you shake. While they are on, a shake sends a request over an encrypted HTTPS connection to Google's Gemini API (`generativelanguage.googleapis.com`). That request contains only:
+**Gemini API.** AI answers are used only when both you and the developer have them switched on: you choose on the "AI answers" page of the app (on by default), and the developer can switch them on or off for everyone. When the developer has them switched off, that page shows them as not available. While AI answers are off, by your choice or the developer's, the app shows answers from a list built into the app and sends nothing to the Gemini API when you shake. While they are on, a shake sends a request over an encrypted HTTPS connection to Google's Gemini API (`generativelanguage.googleapis.com`). That request contains only:
 - a fixed instruction written by the developer, which reflects the personality (Sarcastic or Mystical) and answer language (English or Spanish) you chose in the app;
 - the fixed word "shake";
 - technical generation settings and the developer's API key.
@@ -29,7 +30,7 @@ If the request fails or your watch is offline, the app shows an answer from the 
 The app does not request location, microphone, camera, contacts, body sensors or any other sensitive permission.
 
 ## Information stored on your watch
-Your language and personality choices and the latest answer are kept in memory only. The app does not write personal information to files or databases. Firebase stores its installation identifier and the latest settings on the watch. Nothing is included in device backups.
+The app saves your three choices (language, personality, and whether to use AI answers) in a small settings file on your watch, so they are still there the next time you open the app. They stay on the watch, are not sent anywhere on their own, and are removed when you clear the app's data or uninstall it. The latest answer is kept in memory only. The app stores nothing else of its own. Firebase stores its installation identifier and the latest settings on the watch. Nothing is included in device backups.
 
 ## Retention and deletion
 The developer does not collect or store your information, so there is nothing for the developer to keep or delete. Information received by Google is handled under Google's policies linked above.

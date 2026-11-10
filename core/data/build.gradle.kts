@@ -20,6 +20,10 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    testOptions {
+        // android.util.Log is a no-op in local unit tests.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -32,6 +36,9 @@ dependencies {
     // Remote Config: Gemini kill switch and API key
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)
+
+    // User settings
+    implementation(libs.datastore.preferences)
 
     // DI
     implementation(libs.hilt.android)
