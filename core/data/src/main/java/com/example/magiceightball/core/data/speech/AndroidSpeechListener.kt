@@ -1,4 +1,4 @@
-package com.lorenzosuarez.magiceightball.phone.speech
+package com.example.magiceightball.core.data.speech
 
 import android.content.Context
 import android.content.Intent
@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.example.magiceightball.core.domain.gateway.SpeechEvent
+import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.AppLanguage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Deferred
@@ -23,7 +25,7 @@ import javax.inject.Inject
  * [SpeechListener] backed by the platform [SpeechRecognizer].
  *
  * The on-device recognizer is preferred where the device has one (Android 12+), so the audio
- * does not leave the phone; otherwise, or when it lacks the language, the device's default
+ * does not leave the device; otherwise, or when it lacks the language, the device's default
  * recognition service is used. A recognizer lives exactly as long as one [listen] collection
  * and is created, used and destroyed on the main thread, as the platform requires.
  */

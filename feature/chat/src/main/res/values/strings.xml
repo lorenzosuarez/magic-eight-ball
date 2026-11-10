@@ -11,8 +11,10 @@
     <string name="shake_hint_es">Agita para respuestas</string>
     <string name="shake_hint_ai">Shake for AI answers</string>
     <string name="shake_hint_ai_es">Agita para respuestas IA</string>
-    <string name="shake_to_start">Shake to start</string>
-    <string name="shake_to_start_es">Agita para empezar</string>
+    <string name="hold_hint">Hold to ask, or shake</string>
+    <string name="hold_hint_es">Mantén presionado o agita</string>
+    <string name="listening">Listening…</string>
+    <string name="listening_es">Te escucho…</string>
     <string name="answer_fallback">Ask again later</string>
     <string name="answer_fallback_es">Pregunta más tarde</string>
 

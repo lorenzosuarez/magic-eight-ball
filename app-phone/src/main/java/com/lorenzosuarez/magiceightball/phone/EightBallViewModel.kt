@@ -3,6 +3,8 @@ package com.lorenzosuarez.magiceightball.phone
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
+import com.example.magiceightball.core.domain.gateway.SpeechEvent
+import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -14,9 +16,9 @@ import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
-import com.lorenzosuarez.magiceightball.phone.speech.SpeechEvent
-import com.lorenzosuarez.magiceightball.phone.speech.SpeechListener
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Clock
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
@@ -37,8 +39,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
-import java.time.Clock
-import javax.inject.Inject
 
 @HiltViewModel
 class EightBallViewModel @Inject constructor(

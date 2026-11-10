@@ -30,7 +30,8 @@ internal object Strings {
     val Title = LocalizedString(R.string.title_main, R.string.title_main_es)
     val ShakeHint = LocalizedString(R.string.shake_hint, R.string.shake_hint_es)
     val ShakeHintAi = LocalizedString(R.string.shake_hint_ai, R.string.shake_hint_ai_es)
-    val ShakeToStart = LocalizedString(R.string.shake_to_start, R.string.shake_to_start_es)
+    val HoldHint = LocalizedString(R.string.hold_hint, R.string.hold_hint_es)
+    val Listening = LocalizedString(R.string.listening, R.string.listening_es)
     val AnswerFallback = LocalizedString(R.string.answer_fallback, R.string.answer_fallback_es)
 
     val LanguageTitle = LocalizedString(R.string.lang_title, R.string.lang_title_es)

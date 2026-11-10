@@ -62,6 +62,22 @@ class WatchScreenshotTest {
     fun idle() = capture("watch_1_idle") { ChatScreenContent(ChatState(aiAnswersAvailable = true)) }
 
     @Test
+    fun idle_can_ask_by_voice_spanish() = capture("watch_7_idle_voice_spanish", AppLanguage.SPANISH) {
+        ChatScreenContent(ChatState(aiAnswersAvailable = true, canAskByVoice = true))
+    }
+
+    @Test
+    fun listening() = capture("watch_8_listening") {
+        ChatScreenContent(
+            ChatState(
+                machineState = ChatStateMachine.Listening("Should I order pizza tonight"),
+                aiAnswersAvailable = true,
+                canAskByVoice = true
+            )
+        )
+    }
+
+    @Test
     fun thinking() = capture("watch_2_thinking") {
         ChatScreenContent(ChatState(machineState = ChatStateMachine.Running))
     }
