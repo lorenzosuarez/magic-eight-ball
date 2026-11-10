@@ -1,7 +1,13 @@
 package com.example.magiceightball.feature.chat
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.SystemClock
+import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -84,10 +90,18 @@ fun ChatScreen(
     val state = viewModel.state.collectAsStateWithLifecycle().value ?: return
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val context = LocalContext.current
+    // Once the system no longer shows its dialog, a hold opens the app's page in the system
+    // settings instead: on a watch there is no shorter way to the permission.
+    var microphoneAskedAtMillis by remember { mutableStateOf(0L) }
     val microphoneRequest = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-        viewModel::onMicrophonePermissionResult
-    )
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        viewModel.onMicrophonePermissionResult(granted)
+        // A refusal that comes back at once is the system's, not the user's.
+        val answeredBySystem =
+            SystemClock.elapsedRealtime() - microphoneAskedAtMillis < DIALOG_SKIPPED_MILLIS
+        if (!granted && answeredBySystem) context.openAppSettings()
+    }
 
     // Shakes only count while the prediction page is settled on screen and the app is resumed.
     val isPredictionPageSettled = pagerState.settledPage == PAGE_PREDICTION
@@ -128,7 +142,10 @@ fun ChatScreen(
 
     ChatEffects(
         effects = viewModel.effects,
-        onRequestMicrophonePermission = { microphoneRequest.launch(Manifest.permission.RECORD_AUDIO) }
+        onRequestMicrophonePermission = {
+            microphoneAskedAtMillis = SystemClock.elapsedRealtime()
+            microphoneRequest.launch(Manifest.permission.RECORD_AUDIO)
+        }
     )
 
     CompositionLocalProvider(LocalAppLanguage provides state.settings.language) {
@@ -438,6 +455,9 @@ private const val PAGE_DOTS_LINGER_MILLIS = 1_800L
 private const val PAGE_DOTS_FADE_MILLIS = 250
 private const val INTRO_MILLIS = 420
 
+/** No one reads the system's permission dialog and answers it in less than this. */
+private const val DIALOG_SKIPPED_MILLIS = 1_000L
+
 private const val TRANSITION_MILLIS = 300
 
 /** A press shorter than this is not a hold: it leaves room for taps and swipes. */
@@ -519,5 +539,16 @@ private fun ChatScreenPreview(machineState: ChatStateMachine, screenSizeDp: Int 
             state = ChatState(machineState = machineState),
             modifier = Modifier.size(screenSizeDp.dp)
         )
+    }
+}
+
+/** The app's page in the system settings, where a refused permission can still be granted. */
+private fun Context.openAppSettings() {
+    val settings = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        startActivity(settings)
+    } catch (_: ActivityNotFoundException) {
+        // A watch without that page: the shake still answers.
     }
 }

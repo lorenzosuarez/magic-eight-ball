@@ -9,7 +9,7 @@ import com.example.magiceightball.core.domain.model.UserSettings
  * choice in [settings] has no effect and answers are the bundled ones.
  * @property canAskByVoice whether holding the screen listens to a question. Only when the AI
  * service is the one answering, since nothing else can answer a question, and the watch can
- * listen and has not been refused the microphone.
+ * listen. Without the microphone permission a hold asks for it, after a refusal too.
  */
 data class ChatState(
     val machineState: ChatStateMachine = ChatStateMachine.Idle,

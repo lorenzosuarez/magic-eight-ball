@@ -542,7 +542,7 @@ class EightBallViewModelTest {
     }
 
     @Test
-    fun `a denied permission behaves like voice questions off and explains itself once`() = runTest {
+    fun `after a refusal a hold asks for the permission again and never answers unasked`() = runTest {
         val viewModel = createViewModel()
         val effects = viewModel.collectEffects(this)
 
@@ -555,17 +555,40 @@ class EightBallViewModelTest {
         runCurrent()
         assertNull(viewModel.state.value?.notice)
 
-        // From now on a hold is a long tap: no new request, no listening, no notice.
+        // A hold is still someone wanting to speak: asked again, and no answer to nothing.
         viewModel.onHoldStart()
         viewModel.onHoldEnd()
-        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+        runCurrent()
+        assertEquals(BallPhase.Idle, viewModel.phase)
         assertEquals(0, speech.sessions.size)
-        assertNull(viewModel.state.value?.notice)
-        assertEquals(1, effects.count { it == EightBallEffect.RequestMicrophonePermission })
+        assertEquals(0, llmGateway.requests.size)
+        assertEquals(2, effects.count { it == EightBallEffect.RequestMicrophonePermission })
 
-        finishThinking()
+        // Refused again, by the user or by a system that no longer asks: explained again.
         viewModel.onMicrophonePermissionResult(granted = false)
-        assertNull(viewModel.state.value?.notice)
+        assertEquals(Notice.MicrophoneDenied, viewModel.state.value?.notice)
+
+        // A tap keeps asking the ball, and granting it at last makes the next hold listen.
+        viewModel.ask()
+        assertEquals(BallPhase.Thinking(""), viewModel.phase)
+        finishThinking()
+        viewModel.onHoldStart()
+        viewModel.onMicrophonePermissionResult(granted = true)
+        viewModel.onHoldStart()
+        assertEquals(BallPhase.Listening(""), viewModel.phase)
+    }
+
+    @Test
+    fun `a permission request that never got its answer does not block the next hold`() = runTest {
+        val viewModel = createViewModel()
+        val effects = viewModel.collectEffects(this)
+
+        viewModel.onHoldStart()
+        viewModel.onMicrophonePermissionChecked(granted = false)
+        viewModel.onHoldStart()
+        runCurrent()
+
+        assertEquals(2, effects.count { it == EightBallEffect.RequestMicrophonePermission })
     }
 
     @Test

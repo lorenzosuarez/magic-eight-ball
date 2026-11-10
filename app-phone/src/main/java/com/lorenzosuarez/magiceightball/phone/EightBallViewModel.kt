@@ -148,6 +148,8 @@ class EightBallViewModel @Inject constructor(
 
     /** Reports what the system says about the microphone permission, outside of a request. */
     fun onMicrophonePermissionChecked(granted: Boolean) {
+        // A request whose answer never came must not leave every later hold waiting for it.
+        awaitingPermission = false
         microphone.value = when {
             granted -> MicrophoneAccess.Granted
             // Taken away in the system settings: it can be asked for again.
@@ -156,11 +158,14 @@ class EightBallViewModel @Inject constructor(
         }
     }
 
-    /** Reports the user's answer to the permission request. Never blocks: no means tap and shake. */
+    /**
+     * Reports the user's answer to the permission request. Never blocks: no means tap and
+     * shake. A refusal is explained every time, since it answers something the user just did.
+     */
     fun onMicrophonePermissionResult(granted: Boolean) {
         awaitingPermission = false
         microphone.value = if (granted) MicrophoneAccess.Granted else MicrophoneAccess.Denied
-        if (!granted) giveNoticeOnce(Notice.MicrophoneDenied)
+        if (!granted) giveNotice(Notice.MicrophoneDenied)
     }
 
     /** A tap or a shake: asks the ball without a question. Ignored while one is in progress. */
@@ -242,7 +247,7 @@ class EightBallViewModel @Inject constructor(
      * @param handsFree true when nothing is being held, so a question that ends in silence must
      * end the listening too instead of waiting for a release that will never come.
      * @return true when the gesture was taken as a spoken question: the app listens, or is
-     * asking for the permission to. False when voice questions are off, denied or impossible.
+     * asking for the permission to. False when voice questions are off or impossible.
      */
     private fun startListening(handsFree: Boolean): Boolean {
         if (awaitingPermission) return true
@@ -258,8 +263,9 @@ class EightBallViewModel @Inject constructor(
                 listenAndAnswer(settings, handsFree)
                 true
             }
-            MicrophoneAccess.Denied -> false
-            MicrophoneAccess.NotAsked -> {
+            // A hold after a refusal is the user wanting to speak after all: asked again, and
+            // where the system no longer shows its dialog, the refusal is explained again.
+            MicrophoneAccess.NotAsked, MicrophoneAccess.Denied -> {
                 awaitingPermission = true
                 _effects.trySend(EightBallEffect.RequestMicrophonePermission)
                 true
@@ -451,7 +457,10 @@ class EightBallViewModel @Inject constructor(
     }
 
     private fun giveNoticeOnce(what: Notice) {
-        if (!noticesGiven.add(what)) return
+        if (noticesGiven.add(what)) giveNotice(what)
+    }
+
+    private fun giveNotice(what: Notice) {
         noticeJob?.cancel()
         noticeJob = viewModelScope.launch {
             notice.value = what
