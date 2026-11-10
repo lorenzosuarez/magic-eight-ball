@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
-    <string name="hint_hold">Mantén presionado o agita para preguntar</string>
+    <string name="hint_hold">Mantén presionado\no agita para preguntar</string>
     <string name="hint_tap">Toca o agita para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
     <string name="hint_speak">Di tu pregunta</string>

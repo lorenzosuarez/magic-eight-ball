@@ -30,7 +30,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * The triangular face of the die. While [isLoading] it is grey, with placeholder bars that a
- * highlight sweeps across; once the answer is in, the accent washes over it and [text] fades in.
+ * highlight sweeps across; once the answer is in, the accent washes over it and [text] fades in,
+ * kept inside the round [glass] the die is seen through.
  *
  * Both fills are built once per size; the change of colour only changes how much of each is
  * drawn, so it neither recomposes nor allocates.
@@ -39,7 +40,8 @@ import kotlinx.coroutines.withContext
 fun PredictionTriangle(
     text: String,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    glass: GlassOverDie? = null
 ) {
     val answered = remember { Animatable(if (isLoading) 0f else 1f) }
     LaunchedEffect(isLoading) {
@@ -72,7 +74,8 @@ fun PredictionTriangle(
             } else {
                 TriangleFittedText(
                     text = text,
-                    color = BallColors.OnAccent,
+                    color = BallColors.AnswerInk,
+                    glass = glass,
                     modifier = Modifier.fillMaxSize()
                 )
             }

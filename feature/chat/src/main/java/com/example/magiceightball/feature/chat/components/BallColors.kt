@@ -31,7 +31,11 @@ internal object BallColors {
     /** The window's two borders, in the ball's own greys: a lighter edge and a darker one inside it. */
     // A little lighter than the ball it is cut into, which here is the deeper one.
     val WindowRim = Color(BrandPalette.BALL_TOP)
-    val WindowRimInner = Color(BrandPalette.WINDOW_RIM_INNER)
+    val BezelTop = Color(0xFF05070B)
+    val BezelBottom = Color(0xFF2B323D)
+
+    /** The answer as seen through the liquid: not quite white, not quite solid. */
+    val AnswerInk = Color(0xFFDDE6FF).copy(alpha = 0.86f)
 
     /** The die while the ball thinks, and the die with its answer. */
     val DieThinking = Brush.verticalGradient(

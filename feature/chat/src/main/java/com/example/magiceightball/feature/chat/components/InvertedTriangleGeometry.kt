@@ -59,6 +59,23 @@ internal class InvertedTriangleGeometry(val size: Size) {
         }
     }
 
+    /**
+     * Width of the triangle at height [y], with the same approximations as above, which err on
+     * the narrow side.
+     */
+    fun widthAt(y: Float): Float {
+        val radius = cornerRadius
+        return when {
+            y < 0f || y > size.height -> 0f
+            y < radius -> min(maxWidth, size.width - 2f * radius + y)
+            y <= size.height - radius -> {
+                val sideSlope = (size.height - 2f * radius) / (size.width - 2f * radius)
+                maxWidth - (y - radius) / sideSlope
+            }
+            else -> max(0f, radius - 2f * (y - (size.height - radius)))
+        }
+    }
+
     private companion object {
         const val CORNER_RADIUS_FRACTION = 0.2f
     }

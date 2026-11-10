@@ -354,6 +354,33 @@ private class BallDrawing(
     private val glassRadius = liquidRadius - rimStroke.width - innerRimStroke.width
     private val liquidOutline = Path().apply { addOval(Rect(center, glassRadius)) }
 
+    /** The inner border as a bevel: in shadow at the top, catching a little light at the bottom. */
+    private val bezelBrush = Brush.verticalGradient(
+        0f to BezelTop,
+        1f to BezelBottom,
+        startY = center.y - liquidRadius,
+        endY = center.y + liquidRadius
+    )
+
+    /** The window sits in the ball: a soft shadow on the ball around it. */
+    private val recessRadius = liquidRadius * (1f + RECESS_REACH)
+    private val recessBrush = Brush.radialGradient(
+        0f to Color.Black.copy(alpha = RECESS_ALPHA),
+        1f / (1f + RECESS_REACH) to Color.Black.copy(alpha = RECESS_ALPHA),
+        1f to Color.Transparent,
+        center = center,
+        radius = recessRadius
+    )
+
+    /** The liquid over the die: clear in the middle, darker towards the glass's edge. */
+    private val depthBrush = Brush.radialGradient(
+        0f to Color.Transparent,
+        DEPTH_CLEAR to Color.Transparent,
+        1f to Color.Black.copy(alpha = DEPTH_ALPHA),
+        center = center,
+        radius = glassRadius
+    )
+
     // The die: a triangle pointing down, close enough to the window that its three corners are
     // out of sight. That leaves its face, where the answer is written, as wide as the window allows.
     private val dieRadius = liquidRadius * DIE_RADIUS
@@ -423,6 +450,9 @@ private class BallDrawing(
         fitInDie(it, textMeasurer, density)
     }
 
+    /** How the answer was fitted: whether every line is inside the die, and at what size. */
+    val answerFit: AnswerFit? = answerLayout?.let { AnswerFit(it.fits, it.fontSizePx / dieRadius) }
+
     /**
      * @param face 0 for the "8", 1 for the window; in between one gives way to the other.
      * @param risen 0 for the die deep in the liquid, small, in the middle; 1 for the die at the window,
@@ -452,6 +482,7 @@ private class BallDrawing(
         }
         if (face > 0f) {
             scale(1f - FACE_SHRINK * (1f - face), pivot = center) {
+                drawCircle(recessBrush, recessRadius, center, alpha = face)
                 drawCircle(liquidBrush, liquidRadius, center, alpha = face)
                 clipPath(liquidOutline) {
                     withTransform({
@@ -480,8 +511,9 @@ private class BallDrawing(
                             answerLayout?.let { drawText(it.layout, topLeft = it.topLeft, alpha = textAlpha * face) }
                         }
                     }
+                    drawCircle(depthBrush, glassRadius, center, alpha = face)
                 }
-                drawCircle(WindowRimInner, innerRimRadius, center, alpha = face, style = innerRimStroke)
+                drawCircle(bezelBrush, innerRimRadius, center, alpha = face, style = innerRimStroke)
                 drawCircle(WindowRim, rimRadius, center, alpha = face, style = rimStroke)
             }
         }
@@ -508,14 +540,14 @@ private class BallDrawing(
         fun halfWidthBetween(top: Float, bottom: Float): Float {
             val die = dieHalfWidth * (1f - bottom / dieHeight)
             val fromCenter = maxOf(abs(dieTop + top - center.y), abs(dieTop + bottom - center.y))
-            val window = sqrt((liquidRadius * liquidRadius - fromCenter * fromCenter).coerceAtLeast(0f))
+            val window = sqrt((glassRadius * glassRadius - fromCenter * fromCenter).coerceAtLeast(0f))
             return minOf(die, window) - sidePadding
         }
 
         fun layout(fontSizePx: Float, maxWidth: Float): TextLayoutResult = textMeasurer.measure(
             text = text,
             style = TextStyle(
-                color = Color.White,
+                color = AnswerInk,
                 fontSize = with(density) { fontSizePx.toSp() },
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
@@ -537,9 +569,11 @@ private class BallDrawing(
                     lineWidth / 2f <= halfWidthBetween(topDepth + getLineTop(line), topDepth + getLineBottom(line))
             }
 
-        fun place(layout: TextLayoutResult, topDepth: Float) = FittedText(
+        fun place(layout: TextLayoutResult, topDepth: Float, fontSizePx: Float, fits: Boolean = true) = FittedText(
             layout = layout,
-            topLeft = Offset(center.x - layout.size.width / 2f, dieTop + topDepth)
+            topLeft = Offset(center.x - layout.size.width / 2f, dieTop + topDepth),
+            fontSizePx = fontSizePx,
+            fits = fits
         )
 
         val largest = dieRadius * DIE_TEXT_MAX_SIZE
@@ -551,18 +585,40 @@ private class BallDrawing(
                 val widest = halfWidthBetween(topDepth, topDepth + fontSize) * 2f
                 for (widthFraction in DIE_TEXT_WIDTHS) {
                     val candidate = layout(fontSize, widest * widthFraction)
-                    if (candidate.fitsFrom(topDepth)) return place(candidate, topDepth)
+                    if (candidate.fitsFrom(topDepth)) return place(candidate, topDepth, fontSize)
                 }
             }
         }
         // Longer than a die can hold: as small as it gets, from the very top.
         val topDepth = dieHeight * DIE_TEXT_TOPS.last()
         val widest = halfWidthBetween(topDepth, topDepth + smallest) * 2f
-        return place(layout(smallest, widest * DIE_TEXT_WIDTHS.last()), topDepth)
+        return place(layout(smallest, widest * DIE_TEXT_WIDTHS.last()), topDepth, smallest, fits = false)
     }
 
-    private class FittedText(val layout: TextLayoutResult, val topLeft: Offset)
+    private class FittedText(
+        val layout: TextLayoutResult,
+        val topLeft: Offset,
+        val fontSizePx: Float,
+        val fits: Boolean
+    )
 }
+
+/** @property fontSize the answer's font size relative to the die's radius. */
+internal class AnswerFit(val fits: Boolean, val fontSize: Float)
+
+/** How [answer] is fitted on the die of a ball [diameterPx] across; for tests of the fitting. */
+internal fun fitAnswerInBall(
+    answer: String,
+    diameterPx: Float,
+    density: Density,
+    textMeasurer: TextMeasurer
+): AnswerFit? = BallDrawing(
+    density = density,
+    center = Offset(diameterPx / 2f, diameterPx / 2f),
+    radius = diameterPx / 2f,
+    answer = answer,
+    textMeasurer = textMeasurer
+).answerFit
 
 private val FaceSpring = spring<Float>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)
 
@@ -638,11 +694,24 @@ private const val RING_PULSE_MS = 2100
 
 /** The window's two borders, relative to the ball's radius. */
 private const val RIM_WIDTH = 0.012f
-private const val INNER_RIM_WIDTH = 0.03f
+private const val INNER_RIM_WIDTH = 0.05f
+private val BezelTop = Color(0xFF05070B)
+private val BezelBottom = Color(0xFF2B323D)
+
+/** The shadow around the window, as a share of its radius, and how dark it starts. */
+private const val RECESS_REACH = 0.14f
+private const val RECESS_ALPHA = 0.38f
+
+/** Where the liquid starts to darken, as a share of the glass's radius, and how dark it gets. */
+private const val DEPTH_CLEAR = 0.55f
+private const val DEPTH_ALPHA = 0.6f
+
+/** The answer as seen through the liquid: not quite white, not quite solid. */
+private val AnswerInk = Color(0xFFDDE6FF).copy(alpha = 0.86f)
 
 /** Radii of the two faces, relative to the ball's. */
 private const val EIGHT_RADIUS = 0.46f
-private const val WINDOW_RADIUS = 0.86f
+private const val WINDOW_RADIUS = 0.70f
 
 /**
  * The die's circumradius relative to the window's. Well above 1: the risen die comes close
@@ -655,8 +724,15 @@ private const val DIE_RADIUS = 1.36f
 private const val DIE_EDGE_WIDTH = 0.05f
 
 private const val DIE_TEXT_MAX_SIZE = 0.3f
-private const val DIE_TEXT_MIN_SIZE = 0.1f
-private const val DIE_TEXT_SIZE_STEPS = 12
+
+/**
+ * The answer's font size, relative to the die's radius, from the largest tried to the smallest.
+ * The bundled answers all fit well above [DIE_TEXT_READABLE_SIZE]; the sizes under it are only
+ * for an unusually long answer from the AI, which is better small than cut off.
+ */
+private const val DIE_TEXT_MIN_SIZE = 0.05f
+internal const val DIE_TEXT_READABLE_SIZE = 0.1f
+private const val DIE_TEXT_SIZE_STEPS = 20
 private const val DIE_TEXT_SIDE_PADDING = 0.15f
 private val DIE_TEXT_TOPS = floatArrayOf(0.26f, 0.2f, 0.14f, 0.09f)
 private val DIE_TEXT_WIDTHS = floatArrayOf(1f, 0.85f, 0.7f, 0.55f)
@@ -670,7 +746,6 @@ private val DiscBottom = Color(BrandPalette.BALL_BOTTOM)
 private val WindowCenter = Color(BrandPalette.WINDOW_CENTER)
 private val WindowEdge = Color(BrandPalette.WINDOW_EDGE)
 private val WindowRim = Color(BrandPalette.WINDOW_RIM)
-private val WindowRimInner = Color(BrandPalette.WINDOW_RIM_INNER)
 private val DieThinkingTop = Color(BrandPalette.DIE_THINKING_TOP)
 private val DieThinkingBottom = Color(BrandPalette.DIE_THINKING_BOTTOM)
 private val Accent = Color(BrandPalette.ACCENT)

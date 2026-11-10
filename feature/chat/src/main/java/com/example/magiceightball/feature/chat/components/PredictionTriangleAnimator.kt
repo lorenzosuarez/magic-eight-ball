@@ -78,7 +78,7 @@ private const val MAX_SWAY_DEGREES = 7f
 private const val SUBMERGED_SCALE = 0.5f
 
 /** How far below the middle the risen die rests, as a share of its own height. */
-private const val RISEN_DROP = 0.08f
+internal const val RISEN_DROP = 0.08f
 
 /** The push to one side that coming up gives the die, in sways per second. */
 private const val RISE_TIP_SWAYS_PER_SECOND = -21f

@@ -38,6 +38,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
@@ -64,8 +65,10 @@ import androidx.wear.compose.material3.VerticalPageIndicator
 import com.example.magiceightball.core.designsystem.theme.MagicEightBallTheme
 import com.example.magiceightball.feature.chat.components.BallColors
 import com.example.magiceightball.feature.chat.components.DesignedMotion
+import com.example.magiceightball.feature.chat.components.GlassOverDie
 import com.example.magiceightball.feature.chat.components.PredictionTriangle
 import com.example.magiceightball.feature.chat.components.PredictionTriangleAnimator
+import com.example.magiceightball.feature.chat.components.RISEN_DROP
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
@@ -334,7 +337,20 @@ private fun Modifier.holdToAsk(
 @Composable
 private fun Prediction(answer: AnswerText?) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            // The window sits in the ball: a soft shadow on the ball around it.
+            .drawWithCache {
+                val windowRadius = size.minDimension / 2f * WINDOW_SCREEN_FRACTION
+                val reach = windowRadius * (1f + RECESS_REACH)
+                val recess = Brush.radialGradient(
+                    0f to Color.Black.copy(alpha = RECESS_ALPHA),
+                    1f / (1f + RECESS_REACH) to Color.Black.copy(alpha = RECESS_ALPHA),
+                    1f to Color.Transparent,
+                    radius = reach
+                )
+                onDrawBehind { drawCircle(recess, radius = reach) }
+            },
         contentAlignment = Alignment.Center
     ) {
         PredictionWindow(Modifier.fillMaxSize(WINDOW_SCREEN_FRACTION)) {
@@ -345,7 +361,8 @@ private fun Prediction(answer: AnswerText?) {
                         is AnswerText.Plain -> answer.value
                         AnswerText.Fallback -> localizedString(Strings.AnswerFallback)
                     },
-                    isLoading = answer == null
+                    isLoading = answer == null,
+                    glass = GlassOverRisenDie
                 )
             }
         }
@@ -374,10 +391,21 @@ private fun PredictionWindow(
                 val rimRadius = (size.minDimension - rim.width) / 2f
                 val innerRim = Stroke(width = WindowInnerRimWidth.toPx())
                 val innerRimRadius = rimRadius - rim.width / 2f - innerRim.width / 2f
+                // The inner border as a bevel: in shadow at the top, a little light at the bottom.
+                val bezel = Brush.verticalGradient(listOf(BallColors.BezelTop, BallColors.BezelBottom))
+                // The liquid over the die: clear in the middle, darker towards the glass's edge.
+                val glassRadius = innerRimRadius - innerRim.width / 2f
+                val depth = Brush.radialGradient(
+                    0f to Color.Transparent,
+                    DEPTH_CLEAR to Color.Transparent,
+                    1f to Color.Black.copy(alpha = DEPTH_ALPHA),
+                    radius = glassRadius
+                )
                 onDrawWithContent {
                     drawCircle(window)
                     drawContent()
-                    drawCircle(BallColors.WindowRimInner, radius = innerRimRadius, style = innerRim)
+                    drawCircle(depth, radius = glassRadius)
+                    drawCircle(bezel, radius = innerRimRadius, style = innerRim)
                     drawCircle(BallColors.WindowRim, radius = rimRadius, style = rim)
                 }
             }
@@ -423,8 +451,16 @@ private val ExitToEnd =
 private val ExitToStart =
     slideOutHorizontally(tween(TRANSITION_MILLIS)) { -it } + fadeOut(tween(TRANSITION_MILLIS))
 
-/** Share of the screen taken by the window (160dp on a 192dp screen). */
-private const val WINDOW_SCREEN_FRACTION = 0.83f
+/** Share of the screen taken by the window (142dp on a 192dp screen): the rest is the ball. */
+private const val WINDOW_SCREEN_FRACTION = 0.74f
+
+/** The shadow around the window, as a share of its radius, and how dark it starts. */
+private const val RECESS_REACH = 0.14f
+private const val RECESS_ALPHA = 0.38f
+
+/** Where the liquid starts to darken, as a share of the glass's radius, and how dark it gets. */
+private const val DEPTH_CLEAR = 0.55f
+private const val DEPTH_ALPHA = 0.6f
 
 /**
  * Die box relative to the window diameter. Nearly as wide as the window: the risen die fills
@@ -433,9 +469,21 @@ private const val WINDOW_SCREEN_FRACTION = 0.83f
 private const val DIE_WIDTH_FRACTION = 0.96f
 private const val DIE_HEIGHT_FRACTION = 0.86f
 
-private val WindowFallbackDiameter = 160.dp
+/** The glass's diameter relative to the window's: what the borders leave (5dp of 71dp a side). */
+private const val GLASS_WINDOW_FRACTION = 0.92f
+
+/**
+ * The glass as the risen die has it over itself: the die's box is centred in the window and
+ * then dropped by [RISEN_DROP] of its height, and the glass is the window less its two borders.
+ */
+private val GlassOverRisenDie = GlassOverDie(
+    centerY = 0.5f - RISEN_DROP,
+    radius = GLASS_WINDOW_FRACTION / 2f / DIE_HEIGHT_FRACTION
+)
+
+private val WindowFallbackDiameter = 142.dp
 private val WindowRimWidth = 1.dp
-private val WindowInnerRimWidth = 2.5.dp
+private val WindowInnerRimWidth = 4.dp
 
 @Preview(name = "ChatScreen - Wear Round Completed", showBackground = true, widthDp = 192, heightDp = 192)
 @Composable
