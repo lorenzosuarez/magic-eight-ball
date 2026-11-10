@@ -1,8 +1,10 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.example.magiceightball.core.common.BrandPalette
@@ -49,5 +51,8 @@ val Backdrop = Brush.verticalGradient(
 
 @Composable
 fun MagicEightBallPhoneTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = Colors, content = content)
+    MaterialTheme(colorScheme = Colors) {
+        // Rows and everything else that is simply clickable answer a touch the same way.
+        CompositionLocalProvider(LocalIndication provides PressHighlight, content = content)
+    }
 }

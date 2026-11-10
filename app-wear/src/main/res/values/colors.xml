@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Midway between BrandPalette.BALL_CLOSE_TOP and BALL_CLOSE_BOTTOM, which the ball is drawn with. -->
+    <color name="ball">#28303A</color>
+</resources>

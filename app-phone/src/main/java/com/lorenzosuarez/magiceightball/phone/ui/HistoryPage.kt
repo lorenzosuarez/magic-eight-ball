@@ -1,45 +1,26 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxDefaults
-import androidx.compose.material3.SwipeToDismissBoxState
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -48,14 +29,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.lorenzosuarez.magiceightball.phone.R
-import kotlinx.coroutines.flow.first
 import java.text.DateFormat
 import java.util.Date
-import kotlin.math.abs
 
 /**
- * The history page: the latest answers, newest first. An entry goes away with a swipe to
- * either side or with its delete button; "Clear all", always in sight at the top, asks first.
+ * The history page: the latest answers, newest first. An entry goes away with its delete
+ * button; "Clear all", always in sight at the top, asks first.
  *
  * @param now the current time, for "5 min ago".
  * @param onDelete receives the entry to delete; the caller offers to undo it.
@@ -82,8 +61,8 @@ internal fun HistoryContent(
                 modifier = Modifier
                     .weight(1f)
                     .semantics { heading() },
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             if (entries.isNotEmpty()) {
@@ -138,11 +117,7 @@ internal fun HistoryContent(
     }
 }
 
-/**
- * One answer: what the ball said, what was asked, how long ago and who wrote it. It can be
- * swiped away to either side; the button at its end does the same for those who do not swipe.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** One answer: what the ball said, what was asked, how long ago and who wrote it. */
 @Composable
 private fun HistoryRow(
     entry: HistoryEntry,
@@ -150,119 +125,47 @@ private fun HistoryRow(
     onDelete: (HistoryEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currentEntry by rememberUpdatedState(entry)
-    val currentOnDelete by rememberUpdatedState(onDelete)
-    // Remembered for this showing of the row only, not saved with it: an entry that is put back
-    // by "Undo" has the same key, and a saved state would bring it back already swiped away,
-    // which would delete it again.
-    val density = LocalDensity.current
-    val positionalThreshold = SwipeToDismissBoxDefaults.positionalThreshold
-    val swipe = remember(density) {
-        SwipeToDismissBoxState(
-            initialValue = SwipeToDismissBoxValue.Settled,
-            density = density,
-            positionalThreshold = positionalThreshold
-        )
-    }
-    // Once the row has come to rest off to one side, and only then: the state may be asked
-    // more than once whether it accepts a value, but it arrives there once.
-    LaunchedEffect(swipe) {
-        snapshotFlow { swipe.currentValue }
-            .first { it != SwipeToDismissBoxValue.Settled }
-        currentOnDelete(currentEntry)
-    }
-
-    SwipeToDismissBox(
-        state = swipe,
-        modifier = modifier,
-        backgroundContent = {
-            // Red only where the row has moved away from, so the row itself needs no background
-            // of its own and the page's gradient shows through it.
-            val color = MaterialTheme.colorScheme.errorContainer
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .drawBehind {
-                        val offset = swipe.offsetOrZero()
-                        if (offset > 0f) {
-                            drawRect(color, size = Size(offset, size.height))
-                        } else if (offset < 0f) {
-                            drawRect(color, topLeft = Offset(size.width + offset, 0f), size = Size(-offset, size.height))
-                        }
-                    }
-                    .padding(horizontal = 24.dp),
-                contentAlignment = if (swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                    Alignment.CenterStart
-                } else {
-                    Alignment.CenterEnd
-                }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_delete),
-                    contentDescription = null,
-                    modifier = Modifier.graphicsLayer {
-                        // Shown once there is red enough behind it.
-                        alpha = if (abs(swipe.offsetOrZero()) > DELETE_ICON_REVEAL.toPx()) 1f else 0f
-                    },
-                    tint = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-        }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, top = 10.dp, end = 12.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 24.dp, top = 10.dp, end = 4.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = entry.answer ?: stringResource(R.string.answer_fallback),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (entry.question.isNotEmpty()) {
                 Text(
-                    text = entry.answer ?: stringResource(R.string.answer_fallback),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 3,
+                    text = entry.question,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (entry.question.isNotEmpty()) {
-                    Text(
-                        text = entry.question,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Text(
-                    text = stringResource(
-                        R.string.history_entry_meta,
-                        timeAgo(entry.askedAtMillis, now),
-                        stringResource(if (entry.fromAi) R.string.source_ai else R.string.source_classic)
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-            IconButton(onClick = { onDelete(entry) }) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.history_delete),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = stringResource(
+                    R.string.history_entry_meta,
+                    timeAgo(entry.askedAtMillis, now),
+                    stringResource(if (entry.fromAi) R.string.source_ai else R.string.source_classic)
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
+        AppIconButton(
+            icon = R.drawable.ic_delete,
+            description = stringResource(R.string.history_delete),
+            onClick = { onDelete(entry) },
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
-
-/**
- * How far the row has been swiped, and 0 while it has not moved.
- *
- * The state only knows its offset once the row has been laid out, and a list builds rows ahead
- * of laying them out, so the offset must not be asked for before the row has moved: a row that
- * is not settled has an offset, by definition.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-private fun SwipeToDismissBoxState.offsetOrZero(): Float =
-    if (dismissDirection == SwipeToDismissBoxValue.Settled) 0f else requireOffset()
 
 /** "Just now", "5 min ago", "2 h ago", "3 d ago", then the date, in the app's language. */
 @Composable
@@ -278,9 +181,6 @@ private fun timeAgo(thenMillis: Long, nowMillis: Long): String {
             .format(Date(thenMillis))
     }
 }
-
-/** How far a row has to be swiped before the delete icon shows behind it. */
-private val DELETE_ICON_REVEAL = 56.dp
 
 private const val MILLIS_PER_MINUTE = 60_000L
 private const val MINUTES_PER_HOUR = 60
