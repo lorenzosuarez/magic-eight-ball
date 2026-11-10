@@ -94,6 +94,8 @@ fun EightBall(
     val turn = remember { Animatable(if (answered) WINDOW_ANGLE else EIGHT_ANGLE) }
     val die = remember { Animatable(if (answered) 1f else 0f) }
     val spin = remember { SpinMemory() }
+    // The answer arrives with a small swell that settles at once.
+    val pop = remember { Animatable(0f) }
     // The die keeps its text while it sinks back, after the answer is gone from the state.
     val shownAnswer = remember { LastAnswer() }.also { if (answer != null) it.text = answer }.text
 
@@ -118,6 +120,12 @@ fun EightBall(
                 launch {
                     delay(DIE_REVEAL_DELAY_MS)
                     die.animateTo(1f, DieSpring)
+                }
+                if (!reducedMotion) {
+                    launch {
+                        pop.animateTo(1f, tween(POP_RISE_MS))
+                        pop.animateTo(0f, PopSpring)
+                    }
                 }
                 turn.settleOn(WINDOW_ANGLE, carriedVelocity)
             }
@@ -155,6 +163,17 @@ fun EightBall(
         }
     }
 
+    // At rest the ball floats, barely: enough to look alive and to invite a touch.
+    val float = remember { Animatable(0f) }
+    val floats = mode == BallMode.Idle && !reducedMotion
+    LaunchedEffect(floats) {
+        while (floats) {
+            float.snapTo(0f)
+            float.animateTo(1f, tween(FLOAT_MS, easing = LinearEasing))
+        }
+        float.snapTo(0f)
+    }
+
     // Without animations the ball does not pulse with the voice; its still rings say it listens.
     val voiceMotion: () -> Float = if (reducedMotion) NoVoiceMotion else voiceLevel
 
@@ -175,15 +194,23 @@ fun EightBall(
                             listening = listening.value,
                             thinking = thinking.value,
                             level = voiceMotion(),
-                            pulse = pulse.value
+                            pulse = pulse.value,
+                            reveal = pop.value
                         )
                     }
                 }
             }
             .graphicsLayer {
-                val scale = 1f - PRESS_SHRINK * press.value + VOICE_SWELL * listening.value * voiceMotion()
+                val scale = 1f - PRESS_SHRINK * press.value +
+                    VOICE_SWELL * listening.value * voiceMotion() +
+                    POP_SWELL * pop.value
                 scaleX = scale
                 scaleY = scale
+                translationY = -sin(TWO_PI * float.value) * size.height * FLOAT_TRAVEL
+                // While it thinks the ball is shaken, as a real one would be.
+                val shake = TWO_PI * pulse.value * SHAKES_PER_PULSE
+                rotationZ = sin(shake) * SHAKE_DEGREES * thinking.value
+                translationX = cos(shake) * size.width * SHAKE_TRAVEL * thinking.value
             }
             .drawWithCache {
                 val ball = BallDrawing(
@@ -255,7 +282,7 @@ private class BallSurroundings(
         radius = shadowRadius
     )
 
-    fun DrawScope.draw(listening: Float, thinking: Float, level: Float, pulse: Float) {
+    fun DrawScope.draw(listening: Float, thinking: Float, level: Float, pulse: Float, reveal: Float) {
         // Listening: discs one inside the other, breathing slowly and pushed out by the voice.
         if (listening > 0f) {
             for (ring in RING_COUNT downTo 1) {
@@ -290,7 +317,7 @@ private class BallSurroundings(
                 brush = glowBrush,
                 radius = glowRadius,
                 center = center,
-                alpha = (restAlpha + listening * GLOW_LISTEN_ALPHA).coerceIn(0f, 1f)
+                alpha = (restAlpha + listening * GLOW_LISTEN_ALPHA + reveal * GLOW_REVEAL_ALPHA).coerceIn(0f, 1f)
             )
         }
         scale(scaleX = 1f, scaleY = SHADOW_FLATNESS, pivot = shadowCenter) {
@@ -573,6 +600,7 @@ private val SpinUp = Easing { fraction -> fraction * fraction }
 
 private val SettleSpring = spring<Float>(dampingRatio = 0.58f, stiffness = 70f)
 private val DieSpring = spring<Float>(dampingRatio = 0.5f, stiffness = 140f)
+private val PopSpring = spring<Float>(dampingRatio = 0.5f, stiffness = 120f)
 
 private const val EIGHT_ANGLE = 0f
 private const val WINDOW_ANGLE = 180f
@@ -585,12 +613,20 @@ private const val DIE_START_SCALE = 0.5f
 private const val DIE_RISE = 0.22f
 
 private const val PRESS_SHRINK = 0.045f
-private const val VOICE_SWELL = 0.07f
+private const val VOICE_SWELL = 0.05f
+private const val POP_SWELL = 0.04f
+private const val POP_RISE_MS = 140
+private const val FLOAT_MS = 5200
+private const val FLOAT_TRAVEL = 0.012f
+private const val SHAKES_PER_PULSE = 3f
+private const val SHAKE_DEGREES = 3.5f
+private const val SHAKE_TRAVEL = 0.012f
 
 private const val GLOW_RADIUS = 1.75f
 private const val GLOW_REST_ALPHA_LIGHT = 0.16f
 private const val GLOW_REST_ALPHA_DARK = 0.26f
 private const val GLOW_LISTEN_ALPHA = 0.3f
+private const val GLOW_REVEAL_ALPHA = 0.3f
 private const val GLOW_LISTEN_GROWTH = 0.1f
 private const val GLOW_VOICE_GROWTH = 0.22f
 
@@ -601,14 +637,14 @@ private const val RING_REST = 0.6f
 private const val RING_BREATH_LAG = 0.16f
 private const val RING_VOICE_REACH = 0.28f
 private const val RING_ALPHA = 0.1f
-private const val RING_PULSE_MS = 2400
+private const val RING_PULSE_MS = 2100
 private const val RINGS_FADE_MS = 260
 
 /** Ripples while thinking. */
 private const val RIPPLE_COUNT = 2
 private const val RIPPLE_REACH = 0.34f
-private const val RIPPLE_ALPHA = 0.5f
-private const val RIPPLE_WIDTH = 0.02f
+private const val RIPPLE_ALPHA = 0.35f
+private const val RIPPLE_WIDTH = 0.012f
 
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
 private const val SHADOW_FLATNESS = 0.14f

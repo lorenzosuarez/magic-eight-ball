@@ -271,8 +271,8 @@ class EightBallScreenshotTest {
                     state = state,
                     now = NOW,
                     voiceLevel = { voiceLevel },
-                    // A stage whose animation never ends would never come to rest for its picture.
-                    reducedMotion = state.phase is BallPhase.Listening || state.phase is BallPhase.Thinking,
+                    // An animation that never ends would never come to rest for its picture.
+                    reducedMotion = true,
                     onAsk = {},
                     onHoldStart = {},
                     onHoldEnd = {},

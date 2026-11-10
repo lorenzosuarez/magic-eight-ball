@@ -2,17 +2,11 @@
 <resources>
     <string name="app_name" translatable="false">Magic 8 Ball</string>
 
-    <!-- What to do, above the ball: one title and one supporting line per stage -->
-    <string name="idle_title_voice">Hold the ball and ask</string>
-    <string name="idle_hint_voice">Or tap it, or shake your phone, for a quick answer</string>
-    <string name="idle_title_tap">Tap the ball to ask</string>
-    <string name="idle_hint_tap">Or shake your phone</string>
-    <string name="listening_title">Listening…</string>
-    <string name="listening_hint_hold">Let go when you\'re done</string>
-    <string name="listening_hint_hands_free">Tap the ball when you\'re done</string>
-    <string name="thinking_title">Thinking…</string>
-    <string name="thinking_hint">One moment</string>
-    <string name="answer_title">The ball says</string>
+    <!-- The one line under the ball -->
+    <string name="hint_voice">Hold to ask</string>
+    <string name="hint_tap">Tap to ask</string>
+    <string name="hint_listening">Listening…</string>
+    <string name="hint_listening_hands_free">Listening… tap when you\'re done</string>
     <string name="notice_microphone_denied">The microphone is off, so tap or shake to ask. You can allow it in settings.</string>
     <string name="notice_voice_unsupported">This device can\'t listen to questions. Tap or shake to ask.</string>
 
@@ -24,16 +18,13 @@
     <string name="action_cancel">Cancel</string>
     <string name="source_ai">AI</string>
     <string name="source_classic">Classic</string>
-    <string name="source_ai_answer">AI answer</string>
-    <string name="source_classic_answer">Classic answer</string>
     <string name="share_answer">The Magic 8 Ball says: “%1$s”</string>
     <string name="share_question_and_answer">I asked the Magic 8 Ball: “%1$s”\nIt said: “%2$s”</string>
 
     <!-- History -->
     <string name="history_title">Recents</string>
-    <string name="history_empty">Your questions and answers will show up here.</string>
-    <string name="history_footer">Saved only on this device (the latest %1$d).</string>
-    <string name="history_no_question">Quick question</string>
+    <string name="history_empty">Your answers will show up here, saved only on this device</string>
+    <string name="history_footer">Saved only on this device</string>
     <string name="history_entry_meta" translatable="false">%1$s · %2$s</string>
     <string name="history_more">More options</string>
     <string name="history_delete">Delete</string>
