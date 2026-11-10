@@ -3,7 +3,7 @@ package com.example.magiceightball.core.motion.di
 import com.example.magiceightball.core.domain.gateway.MotionGateway
 import com.example.magiceightball.core.motion.MotionGatewayImpl
 import com.example.magiceightball.core.motion.ShakeDetectionStrategy
-import com.example.magiceightball.core.motion.SimpleThresholdShakeStrategy
+import com.example.magiceightball.core.motion.PulseCountingShakeStrategy
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -20,5 +20,5 @@ abstract class MotionModule {
 
     @Binds
     @Singleton
-    abstract fun bindShakeStrategy(impl: SimpleThresholdShakeStrategy): ShakeDetectionStrategy
+    abstract fun bindShakeStrategy(impl: PulseCountingShakeStrategy): ShakeDetectionStrategy
 }

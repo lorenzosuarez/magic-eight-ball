@@ -13,10 +13,5 @@ object MotionConfigModule {
 
     @Provides
     @Singleton
-    fun provideShakeConfig(): ShakeConfig {
-        return ShakeConfig(
-            startThresholdGravity = 1.5f,
-            stopThresholdGravity = 1.3f
-        )
-    }
+    fun provideShakeConfig(): ShakeConfig = ShakeConfig()
 }
