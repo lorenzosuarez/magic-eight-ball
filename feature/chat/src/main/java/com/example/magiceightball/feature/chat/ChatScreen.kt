@@ -1,6 +1,10 @@
 package com.example.magiceightball.feature.chat
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.view.HapticFeedbackConstants
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
@@ -9,6 +13,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -16,17 +23,24 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -50,15 +64,27 @@ fun ChatScreen(
     // Nothing is drawn until the saved choices are known, so no default flashes by first.
     val state = viewModel.state.collectAsStateWithLifecycle().value ?: return
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
+    val context = LocalContext.current
+    val microphoneRequest = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+        viewModel::onMicrophonePermissionResult
+    )
 
     // Shakes only count while the prediction page is settled on screen and the app is resumed.
     val isPredictionPageSettled = pagerState.settledPage == PAGE_PREDICTION
     LifecycleResumeEffect(viewModel, isPredictionPageSettled) {
+        viewModel.onMicrophonePermissionChecked(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+        )
         viewModel.setShakeDetectionEnabled(isPredictionPageSettled)
         onPauseOrDispose { viewModel.setShakeDetectionEnabled(false) }
     }
 
-    ChatHaptics(viewModel.effects)
+    ChatEffects(
+        effects = viewModel.effects,
+        onRequestMicrophonePermission = { microphoneRequest.launch(Manifest.permission.RECORD_AUDIO) }
+    )
 
     CompositionLocalProvider(LocalAppLanguage provides state.settings.language) {
         VerticalPager(
@@ -66,7 +92,12 @@ fun ChatScreen(
             modifier = Modifier.fillMaxSize()
         ) { page ->
             when (page) {
-                PAGE_PREDICTION -> ChatScreenContent(state)
+                PAGE_PREDICTION -> ChatScreenContent(
+                    state = state,
+                    onHoldStart = viewModel::onHoldStart,
+                    onHoldEnd = viewModel::onHoldEnd,
+                    onHoldCancel = viewModel::onHoldCancel
+                )
                 PAGE_LANGUAGE -> LanguageSelectionScreen(
                     selectedLanguage = state.settings.language,
                     onLanguageSelected = viewModel::setLanguage
@@ -86,59 +117,115 @@ fun ChatScreen(
 }
 
 /**
- * Plays a haptic for each [ChatEffect], while the screen is at least started.
+ * Acts on each [ChatEffect] while the screen is at least started: a haptic for what the ball
+ * does, and the system's dialog when the microphone has to be asked for.
  */
 @Composable
-private fun ChatHaptics(effects: Flow<ChatEffect>) {
+private fun ChatEffects(effects: Flow<ChatEffect>, onRequestMicrophonePermission: () -> Unit) {
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnRequestMicrophonePermission by rememberUpdatedState(onRequestMicrophonePermission)
 
     LaunchedEffect(effects, lifecycleOwner, view) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             effects.collect { effect ->
-                view.performHapticFeedback(
-                    when (effect) {
-                        ChatEffect.ShakeDetected -> HapticFeedbackConstants.GESTURE_START
-                        ChatEffect.AnswerRevealed -> HapticFeedbackConstants.CONFIRM
+                val haptic = when (effect) {
+                    ChatEffect.RequestMicrophonePermission -> {
+                        currentOnRequestMicrophonePermission()
+                        null
                     }
-                )
+                    ChatEffect.ShakeDetected -> HapticFeedbackConstants.GESTURE_START
+                    ChatEffect.ListeningStarted -> HapticFeedbackConstants.LONG_PRESS
+                    ChatEffect.ListeningStopped -> HapticFeedbackConstants.GESTURE_END
+                    ChatEffect.AnswerRevealed -> HapticFeedbackConstants.CONFIRM
+                }
+                haptic?.let(view::performHapticFeedback)
             }
         }
     }
 }
 
 /**
- * The ball, which is the whole screen: its "8" (idle) or its window with the die (thinking /
- * answer) sliding over it. Only the foreground takes part in the transition.
+ * The ball, which is the whole screen: its "8" (at rest, and while it listens) or its window
+ * with the die (thinking / answer) sliding over it. Where the app may listen, holding the
+ * screen asks a question out loud for as long as the hold lasts.
  */
 @Composable
-fun ChatScreenContent(state: ChatState, modifier: Modifier = Modifier) {
+fun ChatScreenContent(
+    state: ChatState,
+    modifier: Modifier = Modifier,
+    onHoldStart: () -> Unit = {},
+    onHoldEnd: () -> Unit = {},
+    onHoldCancel: () -> Unit = {}
+) {
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(BallColors.Ball)
+            .holdToAsk(state.canAskByVoice, onHoldStart, onHoldEnd, onHoldCancel)
     ) {
         AnimatedContent(
             targetState = state.machineState,
             modifier = Modifier.fillMaxSize(),
             transitionSpec = {
-                if (targetState is ChatStateMachine.Idle) {
+                if (targetState.showsTheEight) {
                     ContentTransform(EnterFromStart, ExitToEnd, sizeTransform = null)
                 } else {
                     ContentTransform(EnterFromEnd, ExitToStart, sizeTransform = null)
                 }
             },
             contentAlignment = Alignment.Center,
-            // Thinking and answer share one slot: the die stays put and animates in place.
-            contentKey = { it is ChatStateMachine.Idle },
+            // Rest and listening share one slot, and so do thinking and answer: within a slot
+            // nothing slides, things change in place.
+            contentKey = { it.showsTheEight },
             label = "ChatScreenTransition"
         ) { machine ->
             when (machine) {
-                ChatStateMachine.Idle -> ChatScreenIdle(usesAiAnswers = state.usesAiAnswers)
+                ChatStateMachine.Idle, is ChatStateMachine.Listening -> ChatScreenIdle(
+                    usesAiAnswers = state.usesAiAnswers,
+                    canAskByVoice = state.canAskByVoice,
+                    listening = machine as? ChatStateMachine.Listening
+                )
                 // One call site for thinking and answer: two would be two different composables,
                 // and the die would be rebuilt (losing its motion and cross-fade) on the answer.
                 ChatStateMachine.Running, is ChatStateMachine.Completed ->
                     Prediction(answer = (machine as? ChatStateMachine.Completed)?.answer)
+            }
+        }
+    }
+}
+
+private val ChatStateMachine.showsTheEight: Boolean
+    get() = this is ChatStateMachine.Idle || this is ChatStateMachine.Listening
+
+/**
+ * Calls [onHoldStart] once a finger has stayed down for [HOLD_DELAY_MS], then [onHoldEnd] when
+ * it lifts or [onHoldCancel] when the gesture is taken away, as a swipe to another page does.
+ * Nothing is consumed, so the pager keeps its swipes.
+ */
+private fun Modifier.holdToAsk(
+    enabled: Boolean,
+    onHoldStart: () -> Unit,
+    onHoldEnd: () -> Unit,
+    onHoldCancel: () -> Unit
+): Modifier = composed {
+    val currentOnHoldStart by rememberUpdatedState(onHoldStart)
+    val currentOnHoldEnd by rememberUpdatedState(onHoldEnd)
+    val currentOnHoldCancel by rememberUpdatedState(onHoldCancel)
+
+    pointerInput(enabled) {
+        if (!enabled) return@pointerInput
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false)
+            val stillDown = try {
+                withTimeout(HOLD_DELAY_MS) { waitForUpOrCancellation() }
+                false
+            } catch (_: PointerEventTimeoutCancellationException) {
+                true
+            }
+            if (stillDown) {
+                currentOnHoldStart()
+                if (waitForUpOrCancellation() != null) currentOnHoldEnd() else currentOnHoldCancel()
             }
         }
     }
@@ -208,7 +295,7 @@ private fun PredictionWindow(
         layout(diameter, diameter) {
             die.place(
                 x = (diameter - dieWidth) / 2,
-                y = (diameter - dieHeight) / 2 + (diameter * DIE_DROP_FRACTION).roundToInt()
+                y = (diameter - dieHeight) / 2
             )
         }
     }
@@ -221,6 +308,9 @@ private const val PAGE_AI_ANSWERS = 3
 private const val PAGE_COUNT = 4
 
 private const val TRANSITION_MILLIS = 300
+
+/** A press shorter than this is not a hold: it leaves room for taps and swipes. */
+private const val HOLD_DELAY_MS = 250L
 private val EnterFromEnd =
     slideInHorizontally(tween(TRANSITION_MILLIS)) { it } + fadeIn(tween(TRANSITION_MILLIS))
 private val EnterFromStart =
@@ -239,7 +329,6 @@ private const val WINDOW_SCREEN_FRACTION = 0.83f
  */
 private const val DIE_WIDTH_FRACTION = 0.96f
 private const val DIE_HEIGHT_FRACTION = 0.86f
-private const val DIE_DROP_FRACTION = 0.07f
 
 private val WindowFallbackDiameter = 160.dp
 private val WindowRimWidth = 1.dp

@@ -15,7 +15,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,7 +22,8 @@ import kotlinx.coroutines.withContext
 /**
  * Motion of the die inside the ball, the same as on the phone.
  *
- * While [isThinking] the die hangs deep in the liquid, small, and sways from side to side.
+ * While [isThinking] the die hangs deep in the liquid, small, in the middle, and sways from
+ * side to side.
  * When the answer is in, it floats up until it fills the window; coming up tips it over, and
  * the liquid rocks it upright, each swing smaller than the one before.
  *
@@ -63,7 +63,9 @@ fun PredictionTriangleAnimator(
             val scale = lerp(SUBMERGED_SCALE, 1f, surfaced)
             scaleX = scale
             scaleY = scale
-            translationY = (1f - surfaced) * SUBMERGED_DEPTH.toPx()
+            // Deep, the die sits in the middle of its box; risen, a little lower, where the
+            // window leaves its wide part the most room.
+            translationY = surfaced * size.height * RISEN_DROP
             rotationZ = sway.value * MAX_SWAY_DEGREES
         },
         propagateMinConstraints = true,
@@ -74,7 +76,9 @@ fun PredictionTriangleAnimator(
 private const val SWAY_MILLIS = 1300
 private const val MAX_SWAY_DEGREES = 7f
 private const val SUBMERGED_SCALE = 0.5f
-private val SUBMERGED_DEPTH = 12.dp
+
+/** How far below the middle the risen die rests, as a share of its own height. */
+private const val RISEN_DROP = 0.08f
 
 /** The push to one side that coming up gives the die, in sways per second. */
 private const val RISE_TIP_SWAYS_PER_SECOND = -21f

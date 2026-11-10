@@ -3,6 +3,8 @@ package com.lorenzosuarez.magiceightball.phone
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.gateway.MotionGateway
+import com.example.magiceightball.core.domain.gateway.SpeechEvent
+import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.LlmError
@@ -16,8 +18,9 @@ import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
-import com.lorenzosuarez.magiceightball.phone.speech.SpeechEvent
-import com.lorenzosuarez.magiceightball.phone.speech.SpeechListener
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -39,9 +42,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EightBallViewModelTest {

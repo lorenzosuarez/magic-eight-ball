@@ -353,7 +353,6 @@ private class BallDrawing(
     private val innerRimRadius = liquidRadius - rimStroke.width - innerRimStroke.width / 2f
     private val glassRadius = liquidRadius - rimStroke.width - innerRimStroke.width
     private val liquidOutline = Path().apply { addOval(Rect(center, glassRadius)) }
-    private val dieDepth = liquidRadius * DIE_DEPTH
 
     // The die: a triangle pointing down, close enough to the window that its three corners are
     // out of sight. That leaves its face, where the answer is written, as wide as the window allows.
@@ -367,6 +366,13 @@ private class BallDrawing(
         close()
     }
     private val dieBottom = center.y + dieRadius
+
+    /**
+     * How far up the small, waiting die is drawn, so that what is seen of it sits in the middle
+     * of the window: a triangle pointing down is top-heavy, and turned about the centre of its
+     * circle it would look as if it had slipped down.
+     */
+    private val deepLift = -(dieBottom + dieTop - 2f * center.y) / 2f * DIE_DEEP_SIZE
 
     /** The die with its answer, and the die that has none yet. */
     private val dieBrush = Brush.verticalGradient(0f to Accent, 1f to AccentDeep, startY = dieTop, endY = dieBottom)
@@ -419,7 +425,7 @@ private class BallDrawing(
 
     /**
      * @param face 0 for the "8", 1 for the window; in between one gives way to the other.
-     * @param risen 0 for the die deep in the liquid, small and low; 1 for the die at the window,
+     * @param risen 0 for the die deep in the liquid, small, in the middle; 1 for the die at the window,
      * close enough to fill it.
      * @param tiltDegrees how far the die leans to one side; the answer leans with it.
      * @param colour 0 for the grey die that is still thinking, 1 for the die with its answer.
@@ -449,7 +455,7 @@ private class BallDrawing(
                 drawCircle(liquidBrush, liquidRadius, center, alpha = face)
                 clipPath(liquidOutline) {
                     withTransform({
-                        translate(top = dieDepth * (1f - risen))
+                        translate(top = deepLift * (1f - risen))
                         rotate(tiltDegrees, pivot = center)
                         scale(DIE_DEEP_SIZE + (1f - DIE_DEEP_SIZE) * risen, pivot = center)
                     }) {
@@ -574,9 +580,8 @@ private const val FACE_BACK_MS = 220
 private const val FACE_SHRINK = 0.3f
 private const val STAGE_FADE_MS = 260
 
-/** The die deep in the liquid, while the ball thinks: its size and how far down it hangs. */
+/** The die deep in the liquid, while the ball thinks: its size relative to the risen one. */
 private const val DIE_DEEP_SIZE = 0.46f
-private const val DIE_DEPTH = 0.14f
 private const val SINK_MS = 200
 
 /** How far the thinking die sways to each side, and how long one sway takes. */
