@@ -9,6 +9,12 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Firebase is optional: without app-wear/google-services.json the app builds and runs offline-only
+// (Remote Config is unavailable, so Gemini stays off unless a local GEMINI_API_KEY is provided).
+if (file("google-services.json").isFile) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+}
+
 // Release signing credentials live OUTSIDE the repository.
 // Default: ~/.android-keys/magic8ball-keystore.properties
 // Override: -Pmagic8ball.keystoreProperties=/path/file.properties or env MAGIC8BALL_KEYSTORE_PROPERTIES.
@@ -90,7 +96,6 @@ dependencies {
     implementation(libs.ui.graphics)
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
-    implementation(libs.compose.navigation)
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
 

@@ -11,20 +11,19 @@ import com.example.magiceightball.core.network.model.Content
 import com.example.magiceightball.core.network.model.GeminiRequest
 import com.example.magiceightball.core.network.model.GenerationConfig
 import com.example.magiceightball.core.network.model.Part
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
-import javax.inject.Named
 
 class GeminiRemoteDataSource @Inject constructor(
     private val apiClient: GeminiApiClient,
     private val config: GeminiConfig,
-    private val promptPolicy: PromptPolicy,
-    @Named("GeminiApiKey") private val apiKey: String
+    private val promptPolicy: PromptPolicy
 ) {
-    suspend fun fetchMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
+    suspend fun fetchMagic8BallMessage(request: Magic8BallRequest, apiKey: String): Magic8BallResult {
         return withContext(Dispatchers.IO) {
             val systemPromptText = promptPolicy.getSystemPrompt(
                 request.languageCode,
@@ -47,11 +46,12 @@ class GeminiRemoteDataSource @Inject constructor(
                 generationConfig = genConfig
             )
 
-            executeWithRetry(apiRequest, request.languageCode, request.personality)
+            executeWithRetry(apiKey, apiRequest, request.languageCode, request.personality)
         }
     }
 
     private suspend fun executeWithRetry(
+        apiKey: String,
         initialRequest: GeminiRequest,
         languageCode: String,
         personality: Magic8BallPersonality,
@@ -78,7 +78,7 @@ class GeminiRemoteDataSource @Inject constructor(
                         parts = listOf(Part(text = "$currentPrompt You MUST use 6 words or less."))
                     )
                     val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(retryRequest, languageCode, personality, attempt + 1)
+                    return executeWithRetry(apiKey, retryRequest, languageCode, personality, attempt + 1)
                 } else {
                     return Magic8BallResult.Failure(LlmError.ValidationFailed)
                 }
@@ -87,6 +87,8 @@ class GeminiRemoteDataSource @Inject constructor(
             return Magic8BallResult.Success(text)
 
 
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             return when (e) {
                 is IOException -> Magic8BallResult.Failure(LlmError.Network)

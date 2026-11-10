@@ -12,55 +12,53 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class NetworkModule {
-    companion object {
-        @Provides
-        @Singleton
-        fun provideJson(): Json = Json {
-            ignoreUnknownKeys = true
-            prettyPrint = true
-        }
+object NetworkModule {
+
+    private const val GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/"
+
+    @Provides
+    @Singleton
+    fun provideJson(): Json = Json { ignoreUnknownKeys = true }
 
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
-            .connectTimeout(2, java.util.concurrent.TimeUnit.SECONDS) 
-            .readTimeout(3, java.util.concurrent.TimeUnit.SECONDS)
-            .writeTimeout(2, java.util.concurrent.TimeUnit.SECONDS)
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(2, TimeUnit.SECONDS)
+            .readTimeout(3, TimeUnit.SECONDS)
+            .writeTimeout(2, TimeUnit.SECONDS)
+        if (BuildConfig.DEBUG) {
+            // BASIC logs method, URL and status only: no headers (API key) and no bodies.
+            builder.addInterceptor(
+                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
+            )
+        }
+        return builder.build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit =
+        Retrofit.Builder()
+            .baseUrl(GEMINI_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-    }
 
-        @Provides
-        @Singleton
-        fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit {
-            val contentType = "application/json".toMediaType()
-            return Retrofit.Builder()
-                .baseUrl("https://generativelanguage.googleapis.com/")
-                .client(okHttpClient)
-                .addConverterFactory(json.asConverterFactory(contentType))
-                .build()
-        }
+    @Provides
+    @Singleton
+    fun provideGeminiService(retrofit: Retrofit): GeminiService =
+        retrofit.create(GeminiService::class.java)
 
-        @Provides
-        @Singleton
-        fun provideGeminiService(retrofit: Retrofit): GeminiService {
-            return retrofit.create(GeminiService::class.java)
-        }
-
-        @Provides
-        @Singleton
-        @Named("GeminiApiKey")
-        fun provideApiKey(): String {
-            return BuildConfig.GEMINI_API_KEY
-        }
-    }
+    /** Optional key from local.properties, used only when Remote Config provides none (local development). */
+    @Provides
+    @Singleton
+    @Named("BuildGeminiApiKey")
+    fun provideBuildApiKey(): String = BuildConfig.GEMINI_API_KEY
 }
