@@ -1,5 +1,7 @@
 package com.example.magiceightball.core.data.di
 
+import com.example.magiceightball.core.data.config.GeminiSettingsSource
+import com.example.magiceightball.core.data.config.RemoteConfigGeminiSettingsSource
 import com.example.magiceightball.core.data.datasource.JsonLocalDataSource
 import com.example.magiceightball.core.data.datasource.LocalDataSource
 import com.example.magiceightball.core.data.gateway.GeminiApiClient
@@ -42,6 +44,10 @@ abstract class GatewayModule {
     @Binds
     @Singleton
     abstract fun bindGeminiApiClient(impl: RetrofitGeminiApiClient): GeminiApiClient
+
+    @Binds
+    @Singleton
+    abstract fun bindGeminiSettingsSource(impl: RemoteConfigGeminiSettingsSource): GeminiSettingsSource
 
     @Binds
     @Singleton

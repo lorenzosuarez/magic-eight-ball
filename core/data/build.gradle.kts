@@ -29,6 +29,10 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.kotlinx.serialization.json)
 
+    // Remote Config: Gemini kill switch and API key
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
+
     // DI
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
