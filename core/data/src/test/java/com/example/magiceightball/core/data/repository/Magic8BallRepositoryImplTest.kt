@@ -39,6 +39,25 @@ class Magic8BallRepositoryImplTest {
     }
 
     @Test
+    fun `a question travels with the request to gemini`() = runTest {
+        val request = Magic8BallRequest(userTrigger = "shake", question = "Will it rain?")
+
+        repository.generateMagic8BallMessage(request)
+
+        coVerify(exactly = 1) { remoteDataSource.fetchMagic8BallMessage(request, API_KEY, MODEL) }
+    }
+
+    @Test
+    fun `a question goes nowhere when the user turned ai answers off`() = runTest {
+        val result = repository.generateMagic8BallMessage(
+            Magic8BallRequest(useAi = false, question = "Will it rain?")
+        )
+
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), result)
+        coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) }
+    }
+
+    @Test
     fun `no request is sent to gemini when the user turned ai answers off`() = runTest {
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = false))
 

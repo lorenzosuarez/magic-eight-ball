@@ -7,6 +7,7 @@ import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SendMessageUseCaseTest {
@@ -32,6 +33,26 @@ class SendMessageUseCaseTest {
             ),
             gateway.requests.single()
         )
+    }
+
+    @Test
+    fun `no question is sent unless the caller passes one`() = runTest {
+        ask()
+
+        assertNull(gateway.requests.single().question)
+    }
+
+    @Test
+    fun `a question is carried to the gateway`() = runTest {
+        sendMessage(
+            trigger = "shake",
+            languageCode = "en",
+            personality = Magic8BallPersonality.SARCASTIC,
+            useAi = true,
+            question = "Will it rain?"
+        )
+
+        assertEquals("Will it rain?", gateway.requests.single().question)
     }
 
     @Test

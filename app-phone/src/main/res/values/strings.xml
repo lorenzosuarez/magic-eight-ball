@@ -1,26 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Magic 8 Ball</string>
+    <string name="app_name" translatable="false">Magic 8 Ball</string>
 
-    <!-- Question -->
-    <string name="question_label">Your question</string>
-    <string name="question_placeholder">Will it work out?</string>
-    <string name="question_supporting">Optional. Your question stays on this device.</string>
+    <!-- Hint under the ball -->
+    <string name="hint_voice">Hold and ask, or just shake</string>
+    <string name="hint_tap">Tap or shake to ask</string>
+    <string name="hint_listening">Listening…</string>
+    <string name="notice_microphone_denied">The microphone is off, so tap or shake to ask. You can allow it in settings.</string>
+    <string name="notice_voice_unsupported">This device can\'t listen to questions. Tap or shake to ask.</string>
 
     <!-- Ball -->
-    <string name="ball_content_description">Magic 8 ball</string>
-    <string name="ball_action_ask">Ask the ball</string>
+    <string name="ball_description">Magic 8 ball</string>
+    <string name="ball_answer_description">The ball says: %1$s</string>
+    <string name="ball_state_listening">Listening</string>
     <string name="ball_state_thinking">Thinking</string>
-    <string name="hint_idle">Tap the ball or shake your phone</string>
-    <string name="hint_thinking">The ball is thinking…</string>
+    <string name="action_ask">Ask</string>
+    <string name="action_ask_by_voice">Ask by voice</string>
+    <string name="action_finish_question">Finish the question</string>
     <string name="answer_fallback">Ask again later</string>
 
-    <!-- Personality -->
-    <string name="personality_title">Personality</string>
-    <string name="personality_sarcastic">Sarcastic</string>
-    <string name="personality_mystical">Mystical</string>
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_spanish" translatable="false">Español</string>
+    <string name="settings_style">Answer style</string>
+    <string name="style_sarcastic">Sarcastic</string>
+    <string name="style_mystical">Mystical</string>
+    <string name="settings_ai">AI answers</string>
+    <string name="settings_ai_on">Written by Gemini, just for you</string>
+    <string name="settings_ai_off">Classic answers from the app</string>
+    <string name="settings_ai_unavailable">Not available right now</string>
+    <string name="settings_voice">Voice questions</string>
+    <string name="settings_voice_on">Hold the screen and ask out loud</string>
+    <string name="settings_voice_off">Tap or shake only</string>
+    <string name="settings_voice_denied">Needs access to the microphone</string>
+    <string name="settings_voice_unsupported">This device has no speech recognition</string>
+    <string name="settings_voice_allow">Allow</string>
 
-    <!-- History -->
-    <string name="history_title">Recent answers</string>
-    <string name="history_no_question">No question asked</string>
+    <!-- Privacy note in settings: one per combination of what is in use -->
+    <string name="privacy_voice_and_ai">Your spoken question is turned into text by your device\'s speech service and sent to Google\'s Gemini for the answer. The app never stores it.</string>
+    <string name="privacy_voice_only">Your spoken question is turned into text by your device\'s speech service only to show it to you. It isn\'t sent to Gemini or stored.</string>
+    <string name="privacy_ai_only">Answers come from Google\'s Gemini. The app doesn\'t listen, and no question is sent.</string>
+    <string name="privacy_none">Answers come from the app itself. The app doesn\'t listen, and nothing you ask leaves this device.</string>
 </resources>

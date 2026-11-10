@@ -69,7 +69,7 @@ The project follows a strict **Clean Architecture** pattern, modularized to sepa
 ```text
 :app-wear           # Wear OS application: entry point & DI orchestration
 ├── :feature:chat   # Wear presentation layer (UI, ViewModel)
-:app-phone          # Phone/tablet application: single Compose (Material 3) screen & its ViewModel
+:app-phone          # Phone/tablet application: one Compose (Material 3) screen, its ViewModel & speech recognition
 ├── :core:domain    # Business logic (UseCases, Repository Interfaces, Policies)
 ├── :core:data      # Data implementation (Repositories, DataSources, API)
 ├── :core:network   # Network infrastructure (Retrofit, OkHttp, API Keys)
@@ -82,7 +82,19 @@ Both applications share `:core:domain`, `:core:data`, `:core:network`, `:core:mo
 
 ### Phone & tablet app
 
-`:app-phone` exists so the app can also be tested and installed on phones and tablets. One screen: an optional question field, the ball (tap it or shake the device), the animated answer, a personality switch and the last 5 answers (kept in memory only). The typed question never leaves the device: it is only shown on screen, and the request for an answer is the same fixed trigger the watch sends.
+`:app-phone` is the app for phones and tablets: one minimalist screen with the ball in the middle, one quiet hint line under it and a single settings button.
+
+*   **Ask out loud**: press and hold anywhere and say your question. While you hold, the ball glows with your voice and the words appear under it; let go and the ball spins, then settles on its window, where the die surfaces with the answer. The question stays as a small caption.
+*   **Or don't**: a short tap asks without a question, and so does shaking the phone (only while the app is on screen and the ball is at rest).
+*   **Settings** (one bottom sheet): language (English / Español, switched at once, Spanish by default on a Spanish-language device), answer style (Sarcastic / Mystical), AI answers and voice questions. With voice questions off the app is tap-and-shake only. All four are saved with the same DataStore file layout the watch uses.
+*   **Microphone**: `RECORD_AUDIO` is requested the first time you hold. If it is denied, or the device has no speech recognition service, the app behaves exactly as with voice questions off; it says so once, never blocks, and the settings sheet offers a way to grant it.
+*   **Speech recognition** uses Android's `SpeechRecognizer` behind a small interface (`speech/SpeechListener.kt`): the on-device recognizer where the device has one for the app's language (Android 12+), otherwise the device's default recognition service. It runs only while you hold.
+*   **Privacy**: when a question was recognised *and* AI answers are in use, the question text (one line, at most 200 characters) is sent to Gemini as the user message so the answer responds to it; the system instruction stays the app's own, tells the model to treat that text only as a question, and answers over 6 words are rejected. A tap or a shake sends the same fixed trigger the watch sends. With AI answers off, unavailable, slow or failing, the answer is a bundled one and nothing is sent. The question is never stored. See [the privacy policy](docs/PRIVACY_POLICY.md).
+*   **Quality**: animations are drawn in the draw/layer phase only (no recomposition per frame), honour the system "remove animations" setting, and come with haptics; edge-to-edge, light/dark with dynamic colour on Android 12+, portrait on phones and free rotation on tablets and foldables; TalkBack and switch users get "Ask" and "Ask by voice" actions and hear the answer announced.
+
+The watch app is unchanged: it has no microphone feature and only ever sends the fixed trigger.
+
+`./gradlew :app-phone:recordRoborazziDebug` renders the screen's states on the JVM (no device needed) into `app-phone/build/outputs/roborazzi/`.
 
 ### Builds & version codes
 
