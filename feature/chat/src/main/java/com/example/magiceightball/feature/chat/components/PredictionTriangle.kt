@@ -1,87 +1,55 @@
 package com.example.magiceightball.feature.chat.components
 
 import android.graphics.BlurMaskFilter
+import android.graphics.LinearGradient
+import android.graphics.Matrix
+import android.graphics.Shader
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.ui.text.style.Hyphens
-import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material3.MaterialTheme
-import androidx.wear.compose.material3.Text
+import androidx.compose.ui.util.lerp
+import kotlin.math.ceil
 
 object PredictionTriangleDefaults {
     val BackgroundColor = Color(0xFF1E50F3)
     val GlowColor = Color(0xFF4B79FF)
     val BorderColor = Color(0xFF102875).copy(alpha = 0.8f)
     val TextColor = Color.White
-
-    val PaddingHorizontal = 16.dp
-    
-    val TextSize = 10.sp
-    val LineHeight = 22.sp
-
-    const val MAX_LINES = 5
-    const val BLUR_RADIUS = 50f
+    val BorderWidth = 2.dp
 }
 
-class InvertedTriangleShape(private val cornerRadius: Float = 20f) : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density
-    ): Outline {
-        val path = Path().apply {
-            moveTo(cornerRadius, 0f)
-            lineTo(size.width - cornerRadius, 0f)
-            quadraticTo(size.width, 0f, size.width - (cornerRadius * 0.5f), cornerRadius)
-            
-            lineTo(size.width / 2f + (cornerRadius * 0.5f), size.height - cornerRadius)
-            quadraticTo(size.width / 2f, size.height, size.width / 2f - (cornerRadius * 0.5f), size.height - cornerRadius)
-            
-            lineTo((cornerRadius * 0.5f), cornerRadius)
-            quadraticTo(0f, 0f, cornerRadius, 0f)
-            
-            close()
-        }
-        return Outline.Generic(path)
-    }
-}
-
+/**
+ * The glowing triangular face of the die. Shows a shimmer placeholder while [isLoading] and
+ * cross-fades to [text] once the answer is in.
+ *
+ * Glow, fill and border are drawn in one pass from objects that are rebuilt only when the size
+ * or the colours change; the blurred glow in particular is rendered once into a bitmap.
+ */
 @Composable
 fun PredictionTriangle(
     text: String,
@@ -92,155 +60,135 @@ fun PredictionTriangle(
     borderColor: Color = PredictionTriangleDefaults.BorderColor,
     textColor: Color = PredictionTriangleDefaults.TextColor
 ) {
-    val triangleShape = InvertedTriangleShape(cornerRadius = 50f)
-
     Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.matchParentSize()) {
-            val outline = triangleShape.createOutline(size, layoutDirection, this)
-            val path = if (outline is Outline.Generic) outline.path else Path()
+        modifier = modifier.drawWithCache {
+            if (size.isEmpty()) return@drawWithCache onDrawBehind {}
 
-            drawIntoCanvas { canvas ->
-                val paint = Paint().asFrameworkPaint().apply {
-                    color = glowColor.toArgb()
-                    maskFilter = BlurMaskFilter(
-                        PredictionTriangleDefaults.BLUR_RADIUS,
-                        BlurMaskFilter.Blur.OUTER
-                    )
-                }
-                canvas.nativeCanvas.drawPath(path.asAndroidPath(), paint)
+            val triangle = InvertedTriangleGeometry(size)
+            val path = triangle.toPath()
+            val glowRadius = triangle.cornerRadius
+            val glow = renderGlow(path, size, glowRadius, glowColor)
+            val glowOffset = Offset(-glowRadius, -glowRadius)
+            val border = Stroke(width = PredictionTriangleDefaults.BorderWidth.toPx())
+
+            onDrawBehind {
+                drawImage(glow, topLeft = glowOffset)
+                drawPath(path, backgroundColor)
+                drawPath(path, borderColor, style = border)
             }
         }
-
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(triangleShape)
-                .background(backgroundColor)
-                .border(2.dp, borderColor, triangleShape)
-                .padding(
-                    start = PredictionTriangleDefaults.PaddingHorizontal,
-                    end = PredictionTriangleDefaults.PaddingHorizontal,
-                    top = 8.dp,
-                    bottom = 8.dp
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isLoading) {
-                val shimmerColors = listOf(
-                    Color.White.copy(alpha = 0.2f),
-                    Color.White.copy(alpha = 0.5f),
-                    Color.White.copy(alpha = 0.2f)
-                )
-                val transition = rememberInfiniteTransition(label = "shimmer")
-                val translateAnim = transition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 1000f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(durationMillis = 1200, easing = LinearEasing)
-                    ),
-                    label = "shimmerTranslate"
-                )
-                val brush = Brush.linearGradient(
-                    colors = shimmerColors,
-                    start = Offset.Zero,
-                    end = Offset(translateAnim.value, translateAnim.value)
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = 20.dp, horizontal = 2.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        Modifier
-                            .size(50.dp, 8.dp)
-                            .background(brush, RoundedCornerShape(4.dp))
-                    )
-                    Box(
-                        Modifier
-                            .size(70.dp, 8.dp)
-                            .background(brush, RoundedCornerShape(4.dp))
-                    )
-                    Box(
-                        Modifier
-                            .size(40.dp, 8.dp)
-                            .background(brush, RoundedCornerShape(4.dp))
-                    )
-                }
-
+    ) {
+        Crossfade(
+            targetState = isLoading,
+            modifier = Modifier.matchParentSize(),
+            animationSpec = tween(CONTENT_FADE_MILLIS),
+            label = "PredictionTriangleContent"
+        ) { loading ->
+            if (loading) {
+                ThinkingShimmer(Modifier.fillMaxSize())
             } else {
-                AutoSizingTextContainer(
-                    text = text.uppercase(),
-                    modifier = Modifier.fillMaxSize(),
-                    maxLines = PredictionTriangleDefaults.MAX_LINES
-                ) { optimalFontSize ->
-                    TriangleContentLayout(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                            text = text.uppercase(),
-                            color = textColor,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = optimalFontSize,
-                                lineHeight = optimalFontSize * 1.3f,
-                                hyphens = Hyphens.Auto,
-                                lineBreak = LineBreak.Paragraph
-                            ),
-                            maxLines = PredictionTriangleDefaults.MAX_LINES
+                TriangleFittedText(
+                    text = text,
+                    color = textColor,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+/** Renders the outer glow of [path] once, into a bitmap padded by [radius] on every side. */
+private fun renderGlow(path: Path, size: Size, radius: Float, color: Color): ImageBitmap {
+    val bitmap = ImageBitmap(
+        width = ceil(size.width + 2f * radius).toInt(),
+        height = ceil(size.height + 2f * radius).toInt()
+    )
+    val paint = Paint().apply {
+        this.color = color
+        asFrameworkPaint().maskFilter = BlurMaskFilter(radius, BlurMaskFilter.Blur.OUTER)
+    }
+    Canvas(bitmap).apply {
+        translate(radius, radius)
+        drawPath(path, paint)
+    }
+    return bitmap
+}
+
+/**
+ * Three placeholder bars with a highlight sweeping across them.
+ *
+ * The animated value is read only while drawing, and the sweep moves a shader that is created
+ * once, so a frame of the animation neither recomposes nor allocates.
+ */
+@Composable
+private fun ThinkingShimmer(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "ThinkingShimmer")
+    val sweep = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(SHIMMER_SWEEP_MILLIS, easing = LinearEasing)),
+        label = "ThinkingShimmerSweep"
+    )
+
+    Spacer(
+        modifier.drawWithCache {
+            val centerX = size.width / 2f
+            val barHeight = size.height * SHIMMER_BAR_HEIGHT_FRACTION
+            val barRadius = barHeight / 2f
+            val bandWidth = size.width * SHIMMER_BAND_WIDTH_FRACTION
+            val widestBar = size.width * ShimmerBarWidthFractions.max()
+            val sweepStart = centerX - widestBar / 2f - bandWidth
+            val sweepEnd = centerX + widestBar / 2f
+
+            val shader = LinearGradient(
+                0f, 0f, bandWidth, 0f, ShimmerColors, null, Shader.TileMode.CLAMP
+            )
+            val shaderMatrix = Matrix()
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+                .apply { this.shader = shader }
+
+            onDrawBehind {
+                shaderMatrix.setTranslate(lerp(sweepStart, sweepEnd, sweep.value), 0f)
+                shader.setLocalMatrix(shaderMatrix)
+                drawIntoCanvas { canvas ->
+                    val nativeCanvas = canvas.nativeCanvas
+                    for (bar in ShimmerBarWidthFractions.indices) {
+                        val halfWidth = size.width * ShimmerBarWidthFractions[bar] / 2f
+                        val top = size.height * ShimmerBarTopFractions[bar]
+                        nativeCanvas.drawRoundRect(
+                            centerX - halfWidth,
+                            top,
+                            centerX + halfWidth,
+                            top + barHeight,
+                            barRadius,
+                            barRadius,
+                            paint
                         )
                     }
                 }
             }
         }
-    }
+    )
 }
 
+private const val CONTENT_FADE_MILLIS = 250
+private const val SHIMMER_SWEEP_MILLIS = 1200
+private const val SHIMMER_BAR_HEIGHT_FRACTION = 0.067f
+private const val SHIMMER_BAND_WIDTH_FRACTION = 0.4f
 
+/** Bar widths and vertical positions, as fractions of the triangle, narrowing with its shape. */
+private val ShimmerBarWidthFractions = floatArrayOf(0.37f, 0.51f, 0.29f)
+private val ShimmerBarTopFractions = floatArrayOf(0.23f, 0.38f, 0.53f)
+
+private val ShimmerColors = intArrayOf(
+    Color.White.copy(alpha = 0.2f).toArgb(),
+    Color.White.copy(alpha = 0.5f).toArgb(),
+    Color.White.copy(alpha = 0.2f).toArgb()
+)
+
+@Preview(group = "Components")
 @Composable
-private fun TriangleContentLayout(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    androidx.compose.ui.layout.Layout(
-        content = content,
-        modifier = modifier
-    ) { measurables, constraints ->
-        val placeable = measurables.first().measure(constraints)
-        val containerWidth = constraints.maxWidth.toFloat()
-        val containerHeight = constraints.maxHeight.toFloat()
-        val contentWidth = placeable.width.toFloat()
-        val contentHeight = placeable.height.toFloat()
-
-        val idealCenterY = containerHeight * 0.42f
-
-        val minSafeTopY = containerHeight * 0.15f
-        
-        val safetyFactor = 1.25f
-        val maxSafeTopY = containerHeight * (1f - (contentWidth * safetyFactor / containerWidth)) - contentHeight
-
-        val safeMax = maxSafeTopY.coerceAtLeast(minSafeTopY)
-        val clampedY = idealCenterY.coerceIn(minSafeTopY, safeMax)
-        
-        val x = (constraints.maxWidth - placeable.width) / 2
-        val y = clampedY.toInt()
-        
-        layout(constraints.maxWidth, constraints.maxHeight) {
-            placeable.place(x, y)
-        }
-    }
-}
-
-@Preview(group = "Components", backgroundColor = 0xFFFFFFF)
-@Composable
-fun PredictionTrianglePreview() {
+private fun PredictionTrianglePreview() {
     Box(
         modifier = Modifier
             .size(200.dp)
@@ -248,8 +196,25 @@ fun PredictionTrianglePreview() {
         contentAlignment = Alignment.Center
     ) {
         PredictionTriangle(
-            text = "Signs\nPoint To\nYes",
-            modifier = Modifier.size(150.dp)
+            text = "Signs point to yes",
+            modifier = Modifier.size(width = 136.dp, height = 120.dp)
+        )
+    }
+}
+
+@Preview(group = "Components")
+@Composable
+private fun PredictionTriangleLoadingPreview() {
+    Box(
+        modifier = Modifier
+            .size(200.dp)
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        PredictionTriangle(
+            text = "",
+            modifier = Modifier.size(width = 136.dp, height = 120.dp),
+            isLoading = true
         )
     }
 }

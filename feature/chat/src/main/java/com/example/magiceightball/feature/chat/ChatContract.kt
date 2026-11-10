@@ -1,35 +1,39 @@
 package com.example.magiceightball.feature.chat
 
-/**
- * Represents the UI state of the chat screen.
- */
+import androidx.annotation.StringRes
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 
+/**
+ * UI state of the chat screen.
+ */
 data class ChatState(
     val machineState: ChatStateMachine = ChatStateMachine.Idle,
-    val titleRes: Int = R.string.title_main,
-    val shakeStatusRes: Int? = null,
+    @StringRes val titleRes: Int = R.string.title_main,
     val language: AppLanguage = AppLanguage.ENGLISH,
-    val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC,
-    val error: String? = null
+    val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC
 )
 
+/**
+ * Shake-to-answer cycle: [Idle] -> [Running] -> [Completed] -> [Idle].
+ */
 sealed interface ChatStateMachine {
-    object Idle : ChatStateMachine
-    object Running : ChatStateMachine
-    data class Completed(val answer: String) : ChatStateMachine
+    data object Idle : ChatStateMachine
+    data object Running : ChatStateMachine
+    data class Completed(val answer: AnswerText) : ChatStateMachine
 }
 
-sealed interface ChatIntent {
-    data class SendMessage(val text: String) : ChatIntent
+/**
+ * Text shown on the die: either an answer as delivered, or a localized string of the app.
+ */
+sealed interface AnswerText {
+    data class Plain(val value: String) : AnswerText
+    data class Resource(@StringRes val resId: Int) : AnswerText
 }
 
+/**
+ * One-shot events of the cycle. They are delivered once, to whoever is collecting at the time.
+ */
 sealed interface ChatEffect {
-    data class ShowToast(val message: String) : ChatEffect
+    data object ShakeDetected : ChatEffect
+    data object AnswerRevealed : ChatEffect
 }
-
-data class UiMessage(
-    val id: String,
-    val text: String,
-    val isUser: Boolean
-)

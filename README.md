@@ -36,7 +36,7 @@ Experience the complete journey from startup to prediction.
     *   **Haptic Feedback**: Subtle vibrations enhance the tactile feel of shaking the device or receiving an answer.
 
 *   **📐 Adaptive Typography**:
-    *   **Auto-Sizing Text**: A custom `AutoSizingTextContainer` uses binary search algorithms to fit predictions of any length perfectly within the inverted triangle geometry without truncation.
+    *   **Auto-Sizing Text**: `TriangleFittedText` uses a binary search over font sizes to fit predictions of any length perfectly within the inverted triangle geometry without truncation.
     *   **Dynamic Gravity**: Text naturally "floats" to the visual center but adapts its position based on phrase length and triangle width.
 
 *   **🌍 Multi-Language Support**:
