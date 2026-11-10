@@ -108,7 +108,7 @@ class GeminiRemoteDataSourceTest {
     @Test
     fun `a valid answer is returned`() = runTest {
         assertEquals(
-            Magic8BallResult.Success(RecordingGeminiApiClient.ANSWER),
+            Magic8BallResult.Success(RecordingGeminiApiClient.ANSWER, fromAi = true),
             fetch(Magic8BallRequest(question = "Will it rain?"))
         )
     }

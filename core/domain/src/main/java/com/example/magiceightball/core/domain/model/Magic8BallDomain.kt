@@ -1,7 +1,8 @@
 package com.example.magiceightball.core.domain.model
 
 sealed interface Magic8BallResult {
-    data class Success(val message: String) : Magic8BallResult
+    /** @property fromAi true when the AI service wrote [message]; false for a bundled answer. */
+    data class Success(val message: String, val fromAi: Boolean = false) : Magic8BallResult
     data class Failure(val error: LlmError) : Magic8BallResult
 }
 

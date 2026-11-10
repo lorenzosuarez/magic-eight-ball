@@ -94,7 +94,7 @@ class GeminiRemoteDataSource @Inject constructor(
                 }
             }
 
-            return Magic8BallResult.Success(text)
+            return Magic8BallResult.Success(text, fromAi = true)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
