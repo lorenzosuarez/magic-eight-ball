@@ -1089,8 +1089,9 @@ private val TEXT_MAX_WIDTH = 480.dp
 private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 104.dp
 private val FOOTER_HEIGHT = 48.dp
-private const val FOOTER_ALPHA = 0.42f
-private const val FOOTER_VERSION_ALPHA = 0.28f
+/** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
+private const val FOOTER_ALPHA = 0.68f
+private const val FOOTER_VERSION_ALPHA = 0.5f
 private const val CAPTION_MAX_LINES = 3
 
 /** How faint the note under an answer the AI wrote is. */
