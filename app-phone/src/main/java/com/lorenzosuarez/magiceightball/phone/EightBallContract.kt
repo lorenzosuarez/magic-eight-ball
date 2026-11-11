@@ -88,6 +88,9 @@ sealed interface EightBallEffect {
     data object AskStarted : EightBallEffect
     data object AnswerRevealed : EightBallEffect
 
+    /** The app has just explained why it cannot do what was asked of it. */
+    data object NoticeGiven : EightBallEffect
+
     /** The microphone permission has to be asked for before the app can listen. */
     data object RequestMicrophonePermission : EightBallEffect
 }

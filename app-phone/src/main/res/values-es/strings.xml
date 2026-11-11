@@ -70,4 +70,5 @@
     <string name="privacy_voice_only">El servicio de voz de tu dispositivo convierte tu pregunta en texto. No se envía a Gemini. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
     <string name="privacy_ai_only">Las respuestas vienen de Gemini, de Google. La app no escucha y no se envía ninguna pregunta. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
     <string name="privacy_none">Las respuestas vienen de la propia app. La app no escucha y ninguna pregunta ni respuesta sale de este dispositivo. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
+    <string name="footer_powered_by_ai">Impulsado por IA</string>
 </resources>

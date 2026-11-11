@@ -56,6 +56,9 @@ sealed interface ChatEffect {
     data object ListeningStopped : ChatEffect
     data object AnswerRevealed : ChatEffect
 
+    /** A hold ended without a question the watch could make out: nothing will be answered. */
+    data object NothingHeard : ChatEffect
+
     /** The microphone permission has to be asked for before the app can listen. */
     data object RequestMicrophonePermission : ChatEffect
 }

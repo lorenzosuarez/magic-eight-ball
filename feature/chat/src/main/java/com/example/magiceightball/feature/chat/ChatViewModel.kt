@@ -238,6 +238,8 @@ class ChatViewModel @Inject constructor(
                     machineState.value = ChatStateMachine.Listening(question, finished = true)
                     delay(HEARD_QUESTION_MS)
                     answer(settings, question)
+                } else {
+                    _effects.trySend(ChatEffect.NothingHeard)
                 }
             } finally {
                 machineState.value = ChatStateMachine.Idle
