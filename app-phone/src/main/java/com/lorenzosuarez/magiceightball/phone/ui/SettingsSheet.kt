@@ -444,7 +444,7 @@ private fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.PIRATE -> R.string.style_pirate
     Magic8BallPersonality.PHILOSOPHER -> R.string.style_philosopher
     Magic8BallPersonality.COACH -> R.string.style_coach
-    Magic8BallPersonality.TOXIC_EX -> R.string.style_toxic_ex
+    Magic8BallPersonality.LOVESTRUCK -> R.string.style_lovestruck
 }
 
 /** Cards and the buttons on them: the two corner sizes the whole app uses. */

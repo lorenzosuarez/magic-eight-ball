@@ -12,5 +12,5 @@ enum class Magic8BallPersonality {
     PIRATE,
     PHILOSOPHER,
     COACH,
-    TOXIC_EX
+    LOVESTRUCK
 }
