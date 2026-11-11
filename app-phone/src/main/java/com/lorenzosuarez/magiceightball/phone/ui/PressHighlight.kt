@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.withFrameNanos
@@ -17,7 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.DelegatableNode
+import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.res.painterResource
@@ -44,7 +47,7 @@ internal object PressHighlight : IndicationNodeFactory {
 }
 
 private class PressHighlightNode(private val interactionSource: InteractionSource) :
-    Modifier.Node(), DrawModifierNode {
+    Modifier.Node(), DrawModifierNode, CompositionLocalConsumerModifierNode {
 
     private var strength = 0f
 
@@ -76,7 +79,7 @@ private class PressHighlightNode(private val interactionSource: InteractionSourc
     }
 
     override fun ContentDrawScope.draw() {
-        if (strength > 0f) drawRect(Color.White, alpha = PRESSED_ALPHA * strength)
+        if (strength > 0f) drawRect(currentValueOf(LocalContentColor), alpha = PRESSED_ALPHA * strength)
         drawContent()
     }
 

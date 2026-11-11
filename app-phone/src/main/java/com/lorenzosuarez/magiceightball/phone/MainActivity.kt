@@ -31,8 +31,8 @@ class MainActivity : ComponentActivity() {
     // of width up, so tablets and foldables keep rotating freely, which is what the check asks for.
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
-        // The app is dark whatever the system's setting, so the bars' icons are always light.
-        val bars = SystemBarStyle.dark(Color.TRANSPARENT)
+        // The app follows the system's light or dark setting, and so do the bars' icons.
+        val bars = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
         super.onCreate(savedInstanceState)
 
