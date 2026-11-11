@@ -421,7 +421,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `the first hold asks for the microphone, and a refusal leaves the shake`() = runTest {
+    fun `a hold asks for the microphone, after a refusal too, and the shake always answers`() = runTest {
         aiAvailability.isAvailable.value = true
         val viewModel = createViewModel(detectionEnabled = true)
         val effects = mutableListOf<ChatEffect>()
@@ -434,7 +434,13 @@ class ChatViewModelTest {
 
         viewModel.onMicrophonePermissionResult(granted = false)
         runCurrent()
-        assertEquals(false, viewModel.state.value?.canAskByVoice)
+        assertEquals(true, viewModel.state.value?.canAskByVoice)
+
+        viewModel.onHoldStart()
+        runCurrent()
+        assertEquals(2, effects.count { it == ChatEffect.RequestMicrophonePermission })
+        assertEquals(0, speech.sessions.size)
+        viewModel.onMicrophonePermissionResult(granted = false)
 
         shake()
         assertEquals(ChatStateMachine.Running, viewModel.machineState)

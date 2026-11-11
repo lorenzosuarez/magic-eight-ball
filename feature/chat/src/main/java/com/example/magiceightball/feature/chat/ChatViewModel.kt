@@ -65,17 +65,15 @@ class ChatViewModel @Inject constructor(
         machineState,
         settings,
         aiAnswersAvailability.isAvailable,
-        speechAvailable,
-        microphone
-    ) { machine, saved, aiAvailable, speech, microphone ->
+        speechAvailable
+    ) { machine, saved, aiAvailable, speech ->
         saved?.let {
             ChatState(
                 machineState = machine,
                 settings = it,
                 aiAnswersAvailable = aiAvailable,
                 // A question is only worth hearing when the AI service is there to answer it.
-                canAskByVoice = it.aiAnswersEnabled && aiAvailable && speech &&
-                    microphone != MicrophoneAccess.Denied
+                canAskByVoice = it.aiAnswersEnabled && aiAvailable && speech
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -128,6 +126,8 @@ class ChatViewModel @Inject constructor(
 
     /** Reports what the system says about the microphone permission, outside of a request. */
     fun onMicrophonePermissionChecked(granted: Boolean) {
+        // A request whose answer never came must not leave every later hold waiting for it.
+        awaitingPermission = false
         microphone.value = when {
             granted -> MicrophoneAccess.Granted
             // Taken away in the system settings: it can be asked for again.
@@ -136,15 +136,18 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    /** Reports the user's answer to the permission request. Never blocks: no means shake. */
+    /**
+     * Reports the user's answer to the permission request. Never blocks: no means shake, and
+     * the next hold asks again.
+     */
     fun onMicrophonePermissionResult(granted: Boolean) {
         awaitingPermission = false
         microphone.value = if (granted) MicrophoneAccess.Granted else MicrophoneAccess.Denied
     }
 
     /**
-     * The finger has stayed on the screen: listen to the question, where the app may. The
-     * first hold asks for the microphone instead, and the next one listens.
+     * The finger has stayed on the screen: listen to the question, where the app may. Without
+     * the microphone a hold asks for it instead, after a refusal too, and the next one listens.
      */
     fun onHoldStart() {
         val state = state.value ?: return

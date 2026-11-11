@@ -8,6 +8,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -53,6 +54,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -130,15 +132,25 @@ fun EightBallScreen(
 
     // The permission asked for from the settings sheet differs in one way: when the system no
     // longer shows its dialog, the user is taken to the app's page in the system settings.
+    // The same goes for the "Allow" offered next to the explanation of a refusal.
     var askedFromSettings by remember { mutableStateOf(false) }
+    var askedAtMillis by remember { mutableStateOf(0L) }
     val permissionRequest = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         viewModel.onMicrophonePermissionResult(granted)
-        if (!granted && askedFromSettings && !context.mayShowMicrophoneDialog()) {
+        // A refusal that comes back at once is the system's, not the user's: nobody who has
+        // just said no in the dialog is sent to the settings.
+        val answeredBySystem = SystemClock.elapsedRealtime() - askedAtMillis < DIALOG_SKIPPED_MS
+        if (!granted && askedFromSettings && answeredBySystem && !context.mayShowMicrophoneDialog()) {
             context.openAppSettings()
         }
         askedFromSettings = false
+    }
+    val askForMicrophone = { fromSettings: Boolean ->
+        askedFromSettings = fromSettings
+        askedAtMillis = SystemClock.elapsedRealtime()
+        permissionRequest.launch(Manifest.permission.RECORD_AUDIO)
     }
 
     // The accelerometer and the microphone are only used while the screen is in front of the user.
@@ -153,7 +165,7 @@ fun EightBallScreen(
         viewModel.effects.collect { effect ->
             val feedback = when (effect) {
                 EightBallEffect.RequestMicrophonePermission -> {
-                    permissionRequest.launch(Manifest.permission.RECORD_AUDIO)
+                    askForMicrophone(false)
                     null
                 }
                 EightBallEffect.ListeningStarted -> HapticFeedbackConstantsCompat.LONG_PRESS
@@ -217,7 +229,8 @@ fun EightBallScreen(
                 onDeleteHistoryEntry = viewModel::deleteHistoryEntry,
                 onRestoreHistoryEntry = viewModel::restoreHistoryEntry,
                 onClearHistory = viewModel::clearHistory,
-                onOpenSettings = { settingsOpen = true }
+                onOpenSettings = { settingsOpen = true },
+                onAllowMicrophone = { askForMicrophone(true) }
             )
             if (settingsOpen) {
                 val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
@@ -227,10 +240,7 @@ fun EightBallScreen(
                     onPersonalitySelected = viewModel::setPersonality,
                     onAiAnswersChange = viewModel::setAiAnswersEnabled,
                     onVoiceQuestionsChange = viewModel::setVoiceQuestionsEnabled,
-                    onAllowMicrophone = {
-                        askedFromSettings = true
-                        permissionRequest.launch(Manifest.permission.RECORD_AUDIO)
-                    },
+                    onAllowMicrophone = { askForMicrophone(true) },
                     onShareApp = { context.shareText(shareAppText) },
                     onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                     onDismiss = { settingsOpen = false }
@@ -274,6 +284,7 @@ internal fun EightBallContent(
     onClearHistory: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onAllowMicrophone: () -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
 ) {
@@ -339,7 +350,8 @@ internal fun EightBallContent(
                     onHoldStart = onHoldStart,
                     onHoldEnd = onHoldEnd,
                     onHoldCancel = onHoldCancel,
-                    onToggleVoiceQuestion = onToggleVoiceQuestion
+                    onToggleVoiceQuestion = onToggleVoiceQuestion,
+                    onAllowMicrophone = onAllowMicrophone
                 )
             }
         }
@@ -427,7 +439,8 @@ private fun Stage(
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
     onHoldCancel: () -> Unit,
-    onToggleVoiceQuestion: () -> Unit
+    onToggleVoiceQuestion: () -> Unit,
+    onAllowMicrophone: () -> Unit
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
@@ -472,6 +485,7 @@ private fun Stage(
             Spacer(Modifier.height(BALL_GAP))
             Caption(
                 state = state,
+                onAllowMicrophone = onAllowMicrophone,
                 modifier = Modifier
                     .graphicsLayer { alpha = intro() }
                     .padding(horizontal = 32.dp)
@@ -647,7 +661,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
  * so with a large font the answer is written here as well.
  */
 @Composable
-private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
+private fun Caption(state: EightBallUiState, onAllowMicrophone: () -> Unit, modifier: Modifier = Modifier) {
     val notice = state.notice
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
 
@@ -660,14 +674,26 @@ private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
         label = "caption"
     ) { phase ->
         when (phase) {
-            BallPhase.Idle -> QuietText(
-                text = when (notice) {
-                    Notice.MicrophoneDenied -> stringResource(R.string.notice_microphone_denied)
-                    Notice.VoiceUnsupported -> stringResource(R.string.notice_voice_unsupported)
-                    null -> ""
-                },
-                modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
-            )
+            BallPhase.Idle -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                QuietText(
+                    text = when (notice) {
+                        Notice.MicrophoneDenied -> stringResource(R.string.notice_microphone_denied)
+                        Notice.VoiceUnsupported -> stringResource(R.string.notice_voice_unsupported)
+                        null -> ""
+                    },
+                    modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
+                )
+                // The way out of a refusal, right where it is explained.
+                if (notice == Notice.MicrophoneDenied) {
+                    TextButton(onClick = onAllowMicrophone, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.settings_voice_allow))
+                    }
+                }
+            }
             // Until the first words arrive, this is where they will be written.
             is BallPhase.Listening -> if (phase.transcript.isEmpty()) {
                 QuietText(stringResource(R.string.hint_speak))
@@ -783,6 +809,9 @@ private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?i
 private const val HOLD_DELAY_MS = 180L
 
 private const val CLOCK_TICK_MS = 30_000L
+
+/** No one reads the system's permission dialog and answers it in less than this. */
+private const val DIALOG_SKIPPED_MS = 1_000L
 
 /** The arrival from the launch screen, and the size that screen draws the ball at. */
 private const val INTRO_MS = 520

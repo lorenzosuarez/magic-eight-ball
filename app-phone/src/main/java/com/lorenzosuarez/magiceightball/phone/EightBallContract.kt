@@ -66,7 +66,7 @@ enum class VoiceStatus {
     /** The user turned voice questions off. */
     Off,
 
-    /** The user did not grant the microphone permission. */
+    /** The user did not grant the microphone permission. A hold asks for it again. */
     PermissionDenied,
 
     /** The device has no speech recognition service. */
@@ -75,7 +75,7 @@ enum class VoiceStatus {
     val isReady: Boolean get() = this == Ready
 }
 
-/** Explanations the screen gives once, without getting in the way. */
+/** Short explanations the screen gives without getting in the way. */
 enum class Notice {
     MicrophoneDenied,
     VoiceUnsupported
