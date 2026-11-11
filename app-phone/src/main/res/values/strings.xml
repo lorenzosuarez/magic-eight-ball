@@ -64,6 +64,9 @@
     <string name="settings_voice_denied">Needs access to the microphone</string>
     <string name="settings_voice_unsupported">This device has no speech recognition</string>
     <string name="settings_voice_allow">Allow</string>
+    <string name="settings_spoken">Spoken answers</string>
+    <string name="settings_spoken_on">The ball says its answer out loud</string>
+    <string name="settings_spoken_off">Answers are only shown</string>
     <string name="settings_share_app">Share the app</string>
     <string name="settings_share_app_hint">Tell someone about the Magic 8 Ball</string>
     <string name="share_app_text">Ask the Magic 8 Ball anything: %1$s</string>

@@ -59,6 +59,9 @@
     <string name="settings_voice_denied">Necesita acceso al micrófono</string>
     <string name="settings_voice_unsupported">Este dispositivo no tiene reconocimiento de voz</string>
     <string name="settings_voice_allow">Permitir</string>
+    <string name="settings_spoken">Respuestas habladas</string>
+    <string name="settings_spoken_on">La bola dice su respuesta en voz alta</string>
+    <string name="settings_spoken_off">Las respuestas solo se muestran</string>
     <string name="settings_share_app">Compartir la app</string>
     <string name="settings_share_app_hint">Cuéntale a alguien sobre la Bola Mágica 8</string>
     <string name="share_app_text">Pregúntale lo que quieras a la Bola Mágica 8: %1$s</string>

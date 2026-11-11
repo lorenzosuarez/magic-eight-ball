@@ -117,6 +117,7 @@ import com.lorenzosuarez.magiceightball.phone.Notice
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
 import com.lorenzosuarez.magiceightball.phone.R
 import kotlinx.coroutines.delay
+import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -230,6 +231,21 @@ fun EightBallScreen(
         // Nothing but the window's own background until the saved choices are known.
         val current = state ?: return@Box
         ProvideAppLanguage(current.settings.language) {
+            // Said once, as the die comes up with it; never again for the same answer.
+            val voice = rememberAnswerVoice(current.settings.spokenAnswersEnabled)
+            val answered = current.phase as? BallPhase.Answered
+            val answerToSay = answered?.answer?.text()
+            var saidAnswerId by rememberSaveable { mutableStateOf<Long?>(null) }
+            LaunchedEffect(voice, answered?.id) {
+                if (voice == null) return@LaunchedEffect
+                if (answerToSay == null || answered.id == saidAnswerId) {
+                    if (answerToSay == null) voice.hush()
+                    return@LaunchedEffect
+                }
+                saidAnswerId = answered.id
+                delay(SPOKEN_ANSWER_DELAY_MS)
+                voice.say(answerToSay, Locale.forLanguageTag(current.settings.language.code))
+            }
             EightBallContent(
                 state = current,
                 now = now,
@@ -289,6 +305,10 @@ fun EightBallScreen(
                         viewModel.setVoiceQuestionsEnabled(it)
                     },
                     onAllowMicrophone = { askForMicrophone(true) },
+                    onSpokenAnswersChange = {
+                        tick(it.toggleFeedback())
+                        viewModel.setSpokenAnswersEnabled(it)
+                    },
                     onShareApp = { context.shareText(shareAppText) },
                     onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                     onDismiss = { settingsOpen = false }
@@ -929,6 +949,9 @@ private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?i
 private const val HOLD_DELAY_MS = 180L
 
 private const val CLOCK_TICK_MS = 30_000L
+
+/** The answer is said as its text appears on the die, not before. */
+private const val SPOKEN_ANSWER_DELAY_MS = 450L
 
 private const val THINKING_TICKS = 5
 private const val THINKING_TICK_MS = 180L

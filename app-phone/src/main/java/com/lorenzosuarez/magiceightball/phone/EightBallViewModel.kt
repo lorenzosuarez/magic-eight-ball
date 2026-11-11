@@ -133,6 +133,10 @@ class EightBallViewModel @Inject constructor(
         viewModelScope.launch { userSettingsRepository.setVoiceQuestionsEnabled(enabled) }
     }
 
+    fun setSpokenAnswersEnabled(enabled: Boolean) {
+        viewModelScope.launch { userSettingsRepository.setSpokenAnswersEnabled(enabled) }
+    }
+
     /**
      * Tells whether the screen is the one the user is looking at. Shakes are detected only then,
      * and the microphone is released as soon as it is not; an answer on its way still arrives.

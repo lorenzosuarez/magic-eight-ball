@@ -988,6 +988,10 @@ class EightBallViewModelTest {
         override suspend fun setVoiceQuestionsEnabled(enabled: Boolean) {
             saved.update { it?.copy(voiceQuestionsEnabled = enabled) }
         }
+
+        override suspend fun setSpokenAnswersEnabled(enabled: Boolean) {
+            saved.update { it?.copy(spokenAnswersEnabled = enabled) }
+        }
     }
 
     /** Stands for the history file: newest first, as the real one keeps it. */

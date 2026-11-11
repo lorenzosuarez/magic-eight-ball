@@ -57,7 +57,8 @@ fun SettingsSheet(
     onAllowMicrophone: () -> Unit,
     onShareApp: () -> Unit,
     onDismiss: () -> Unit,
-    onShowAdPrivacyOptions: (() -> Unit)? = null
+    onShowAdPrivacyOptions: (() -> Unit)? = null,
+    onSpokenAnswersChange: (Boolean) -> Unit = {}
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -73,7 +74,8 @@ fun SettingsSheet(
                 onVoiceQuestionsChange = onVoiceQuestionsChange,
                 onAllowMicrophone = onAllowMicrophone,
                 onShareApp = onShareApp,
-                onShowAdPrivacyOptions = onShowAdPrivacyOptions
+                onShowAdPrivacyOptions = onShowAdPrivacyOptions,
+                onSpokenAnswersChange = onSpokenAnswersChange
             )
         }
     }
@@ -90,7 +92,8 @@ internal fun SettingsContent(
     onAllowMicrophone: () -> Unit,
     onShareApp: () -> Unit,
     modifier: Modifier = Modifier,
-    onShowAdPrivacyOptions: (() -> Unit)? = null
+    onShowAdPrivacyOptions: (() -> Unit)? = null,
+    onSpokenAnswersChange: (Boolean) -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -155,6 +158,15 @@ internal fun SettingsContent(
                 onCheckedChange = onVoiceQuestionsChange
             )
         }
+        SwitchRow(
+            title = stringResource(R.string.settings_spoken),
+            supporting = stringResource(
+                if (state.settings.spokenAnswersEnabled) R.string.settings_spoken_on else R.string.settings_spoken_off
+            ),
+            checked = state.settings.spokenAnswersEnabled,
+            enabled = true,
+            onCheckedChange = onSpokenAnswersChange
+        )
 
         ActionRow(
             title = stringResource(R.string.settings_share_app),

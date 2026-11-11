@@ -45,7 +45,9 @@ class DataStoreUserSettingsRepository(
                     ?: defaults.personality,
                 aiAnswersEnabled = preferences[AI_ANSWERS_ENABLED] ?: defaults.aiAnswersEnabled,
                 voiceQuestionsEnabled = preferences[VOICE_QUESTIONS_ENABLED]
-                    ?: defaults.voiceQuestionsEnabled
+                    ?: defaults.voiceQuestionsEnabled,
+                spokenAnswersEnabled = preferences[SPOKEN_ANSWERS_ENABLED]
+                    ?: defaults.spokenAnswersEnabled
             )
         }
         .distinctUntilChanged()
@@ -66,6 +68,10 @@ class DataStoreUserSettingsRepository(
         save { it[VOICE_QUESTIONS_ENABLED] = enabled }
     }
 
+    override suspend fun setSpokenAnswersEnabled(enabled: Boolean) {
+        save { it[SPOKEN_ANSWERS_ENABLED] = enabled }
+    }
+
     /** A choice that cannot be written is dropped: the app keeps showing the saved one. */
     private suspend fun save(change: (MutablePreferences) -> Unit) {
         try {
@@ -81,5 +87,6 @@ class DataStoreUserSettingsRepository(
         val PERSONALITY = stringPreferencesKey("personality")
         val AI_ANSWERS_ENABLED = booleanPreferencesKey("ai_answers_enabled")
         val VOICE_QUESTIONS_ENABLED = booleanPreferencesKey("voice_questions_enabled")
+        val SPOKEN_ANSWERS_ENABLED = booleanPreferencesKey("spoken_answers_enabled")
     }
 }
