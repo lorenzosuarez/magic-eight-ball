@@ -1,9 +1,11 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -53,18 +55,11 @@ internal fun HistoryContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+                .padding(start = 16.dp, top = 0.dp, end = 4.dp, bottom = 0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.history_title),
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            // The page's name is in the bar above, with the dots.
+            Spacer(Modifier.weight(1f))
             if (entries.isNotEmpty()) {
                 TextButton(onClick = { confirmClear = true }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.history_clear_all))
@@ -81,7 +76,7 @@ internal fun HistoryContent(
                     text = stringResource(
                         if (entries.isEmpty()) R.string.history_empty else R.string.history_footer
                     ),
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -125,16 +120,18 @@ private fun HistoryRow(
     onDelete: (HistoryEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    Column(modifier = modifier.fillMaxWidth()) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, top = 10.dp, end = 12.dp, bottom = 10.dp),
+            .padding(start = 16.dp, top = 12.dp, end = 4.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = entry.answer ?: stringResource(R.string.answer_fallback),
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
@@ -164,6 +161,12 @@ private fun HistoryRow(
             onClick = { onDelete(entry) },
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 16.dp),
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant
+    )
     }
 }
 

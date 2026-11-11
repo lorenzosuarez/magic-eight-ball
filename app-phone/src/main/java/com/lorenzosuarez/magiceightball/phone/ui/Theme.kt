@@ -19,8 +19,9 @@ import com.example.magiceightball.core.common.BrandPalette
  * cool greys over it and one accent.
  */
 private val DarkColors = darkColorScheme(
-    primary = Color(BrandPalette.ACCENT),
-    onPrimary = Color(0xFF06103A),
+    // Deeper than the die's own blue, so that white reads on it: buttons, switches, what is chosen.
+    primary = Color(0xFF5B74F0),
+    onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Color(0xFF24357F),
     onPrimaryContainer = Color(0xFFDDE3FF),
     secondary = Color(0xFFB7C2CE),
@@ -36,12 +37,12 @@ private val DarkColors = darkColorScheme(
     surfaceVariant = Color(BrandPalette.SURFACE_RAISED),
     onSurfaceVariant = Color(BrandPalette.ON_SURFACE_QUIET),
     surfaceContainerLowest = Color(0xFF01060C),
-    surfaceContainerLow = Color(0xFF0C1620),
+    surfaceContainerLow = Color(0xFF0D1218),
     surfaceContainer = Color(0xFF111C27),
-    surfaceContainerHigh = Color(BrandPalette.SURFACE_RAISED),
+    surfaceContainerHigh = Color(0xFF1B222B),
     surfaceContainerHighest = Color(0xFF24313E),
     outline = Color(0xFF5C6875),
-    outlineVariant = Color(0xFF24313E)
+    outlineVariant = Color(0xFF2C3540)
 )
 
 /** The light palette: the same cool greys and accent, turned over onto an off-white. */
@@ -63,12 +64,12 @@ private val LightColors = lightColorScheme(
     surfaceVariant = Color(0xFFE3E9F0),
     onSurfaceVariant = Color(0xFF55616E),
     surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFF4F6F9),
+    surfaceContainerLow = Color(0xFFF1F3F7),
     surfaceContainer = Color(0xFFEEF2F6),
-    surfaceContainerHigh = Color(0xFFE7ECF2),
+    surfaceContainerHigh = Color(0xFFFFFFFF),
     surfaceContainerHighest = Color(0xFFDFE6ED),
     outline = Color(0xFF7A8693),
-    outlineVariant = Color(0xFFC9D2DC)
+    outlineVariant = Color(0xFFE1E5EB)
 )
 
 /** How far down the screen stays plain before the colour starts to rise from the bottom. */

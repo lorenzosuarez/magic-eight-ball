@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -88,6 +89,27 @@ class EightBallScreenshotTest {
 
     @Test
     fun phone_answer_light() = capture("phone_3_answer_light", ANSWERED)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_party_spanish() = capture(
+        name = "phone_25_party_spanish",
+        state = EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH, partyNames = listOf("Ana", "Beto", "Caro")),
+            turn = 1
+        )
+    )
+
+    @Test
+    fun share_card() = captureRoboImage(filePath = path("phone_24_share_card")) {
+        ShareCard(
+            question = "Should I order pizza tonight?",
+            answer = "Yes. Screenshot this.",
+            layer = rememberGraphicsLayer(),
+            fromAi = true,
+            visible = true
+        )
+    }
 
     @Test
     @Config(qualifiers = "+night")
@@ -261,35 +283,15 @@ class EightBallScreenshotTest {
         }
     }
 
-    /** The screen with the real settings sheet open over it: both windows in one picture. */
-    @OptIn(ExperimentalRoborazziApi::class)
-    private fun captureWithSettings(name: String, state: EightBallUiState) {
-        val activity = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
-        activity.setContent {
-            Screen(state, voiceLevel = 0f, overlay = {
-                SettingsSheet(
-                    state = state,
-                    onLanguageSelected = {},
-                    onPersonalitySelected = {},
-                    onAiAnswersChange = {},
-                    onVoiceQuestionsChange = {},
-                    onAllowMicrophone = {},
-                    onShareApp = {},
-                    onDismiss = {}
-                )
-            })
-        }
-        // Lets the sheet finish sliding in.
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2))
-        captureScreenRoboImage(filePath = path(name))
-    }
+    /** The options page in front, as it is after a swipe to the left. */
+    private fun captureWithSettings(name: String, state: EightBallUiState) =
+        capture(name, state.copy(phase = BallPhase.Idle), initialPage = OPTIONS_PAGE)
 
     @Composable
     private fun Screen(
         state: EightBallUiState,
         voiceLevel: Float,
-        initialPage: Int = BALL_PAGE,
-        overlay: @Composable () -> Unit = {}
+        initialPage: Int = BALL_PAGE
     ) {
         MagicEightBallPhoneTheme {
             ProvideAppLanguage(state.settings.language) {
@@ -308,10 +310,19 @@ class EightBallScreenshotTest {
                     onDeleteHistoryEntry = {},
                     onRestoreHistoryEntry = {},
                     onClearHistory = {},
-                    onOpenSettings = {},
+                    options = {
+                        SettingsContent(
+                            state = state,
+                            onLanguageSelected = {},
+                            onPersonalitySelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {}
+                        )
+                    },
                     initialPage = initialPage
                 )
-                overlay()
             }
         }
     }

@@ -43,12 +43,17 @@
     <string name="answer_fallback">Pregunta más tarde</string>
 
     <!-- Settings -->
-    <string name="settings_title">Configuración</string>
+    <string name="settings_title">Opciones</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_style">Estilo de respuesta</string>
     <string name="style_sarcastic">Sarcástico</string>
     <string name="style_mystical">Místico</string>
     <string name="style_neutral">Neutro</string>
+    <string name="style_grandma">Abuela</string>
+    <string name="style_pirate">Pirata</string>
+    <string name="style_philosopher">Filósofo</string>
+    <string name="style_coach">Coach</string>
+    <string name="style_toxic_ex">Ex tóxico</string>
     <string name="settings_ai">Respuestas con IA</string>
     <string name="settings_ai_on">Escritas por Gemini, solo para ti</string>
     <string name="settings_ai_off">Respuestas clásicas de la app</string>
@@ -59,9 +64,28 @@
     <string name="settings_voice_denied">Necesita acceso al micrófono</string>
     <string name="settings_voice_unsupported">Este dispositivo no tiene reconocimiento de voz</string>
     <string name="settings_voice_allow">Permitir</string>
+    <string name="party_turn">%1$s, te toca</string>
+    <string name="party_who">¿Quién de ustedes…?</string>
+    <string name="widget_description">Bola Mágica 8. Toca para una respuesta</string>
+    <string name="settings_party">Modo fiesta</string>
+    <string name="settings_party_off">Agrega nombres para jugar por turnos</string>
+    <string name="party_dialog_hint">Nombres, separados por comas</string>
+    <string name="party_dialog_note">Con dos o más nombres la bola anuncia el turno de cada quien y puede elegir a uno de ustedes.</string>
+    <string name="action_save">Guardar</string>
+    <string name="settings_spoken">Respuestas habladas</string>
+    <string name="settings_spoken_on">La bola dice su respuesta en voz alta</string>
+    <string name="settings_spoken_off">Las respuestas solo se muestran</string>
     <string name="settings_share_app">Compartir la app</string>
     <string name="settings_share_app_hint">Cuéntale a alguien sobre la Bola Mágica 8</string>
     <string name="share_app_text">Pregúntale lo que quieras a la Bola Mágica 8: %1$s</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_read_aloud">Leer la respuesta en voz alta</string>
+    <string name="brand_tagline">Respuestas escritas por IA</string>
+    <string name="options_answers">Respuestas</string>
+    <string name="options_asking">Preguntar</string>
+    <string name="options_general">General</string>
+    <string name="share_answer_text">Mira lo que me dijo la Bola Mágica 8. Pregúntale lo tuyo: %1$s</string>
+    <string name="share_card_invite">Pregúntale lo tuyo</string>
     <string name="settings_ad_privacy">Privacidad de anuncios</string>
     <string name="settings_ad_privacy_hint">Revisa lo que permitiste para los anuncios</string>
 

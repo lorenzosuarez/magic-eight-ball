@@ -63,7 +63,8 @@ class EightBallViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val voiceInputs = combine(speechAvailable, microphone, ::Pair)
-    private val noticeAndHistory = combine(notice, history.entries, ::Pair)
+    private val turn = MutableStateFlow(0)
+    private val noticeAndHistory = combine(notice, history.entries, turn, ::Triple)
 
     /**
      * Null until the saved choices have been read, so the screen never shows a default that is
@@ -76,7 +77,7 @@ class EightBallViewModel @Inject constructor(
         aiAnswersAvailability.isAvailable,
         voiceInputs,
         noticeAndHistory
-    ) { phase, saved, aiAvailable, (speech, microphone), (notice, history) ->
+    ) { phase, saved, aiAvailable, (speech, microphone), (notice, history, turn) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
@@ -84,7 +85,8 @@ class EightBallViewModel @Inject constructor(
                 aiAnswersAvailable = aiAvailable,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
-                history = history
+                history = history,
+                turn = turn
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -133,6 +135,16 @@ class EightBallViewModel @Inject constructor(
         viewModelScope.launch { userSettingsRepository.setVoiceQuestionsEnabled(enabled) }
     }
 
+    fun setSpokenAnswersEnabled(enabled: Boolean) {
+        viewModelScope.launch { userSettingsRepository.setSpokenAnswersEnabled(enabled) }
+    }
+
+    /** Who is playing; an empty list ends the party. The turns start again from the first name. */
+    fun setPartyNames(names: List<String>) {
+        turn.value = 0
+        viewModelScope.launch { userSettingsRepository.setPartyNames(names) }
+    }
+
     /**
      * Tells whether the screen is the one the user is looking at. Shakes are detected only then,
      * and the microphone is released as soon as it is not; an answer on its way still arrives.
@@ -179,6 +191,27 @@ class EightBallViewModel @Inject constructor(
         }
     }
 
+    /**
+     * At a party, has the ball name one of the players, for "who of you...?". The name is drawn
+     * on the device: no service is asked, and [question] is only what the screen and the
+     * history show it under.
+     */
+    fun askWho(question: String) {
+        if (isBusy()) return
+        val names = settings.value?.partyNames?.takeIf { it.size >= UserSettings.MIN_PARTY } ?: return
+
+        cycleJob = viewModelScope.launch {
+            _effects.trySend(EightBallEffect.AskStarted)
+            clearNotice()
+            phase.value = BallPhase.Thinking(question)
+            delay(queryConfig.minThinkingMs)
+            val name = names.random()
+            phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = AnswerText.Plain(name))
+            viewModelScope.launch { history.add(question, name, clock.millis(), false) }
+            _effects.trySend(EightBallEffect.AnswerRevealed)
+        }
+    }
+
     /** The finger has stayed on the screen: listen to the question, when the app may. */
     fun onHoldStart() {
         holdIsQuestion = startListening(handsFree = false)
@@ -218,6 +251,8 @@ class EightBallViewModel @Inject constructor(
     /** Closes whatever is on screen, a question in progress included, and goes back to rest. */
     fun dismiss() {
         if (phase.value is BallPhase.Idle) return
+        // An answer that has been read is a turn taken.
+        if (phase.value is BallPhase.Answered) turn.value++
         val cycle = cycleJob?.also { it.cancel() }
         viewModelScope.launch {
             // An abandoned listening puts back what was there before; rest comes after that.

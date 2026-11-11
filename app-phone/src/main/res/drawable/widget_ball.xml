@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The ball for the home screen widget: black, lit from above, with a fine edge. A vector, so it stays round in a cell that is not square. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+    <path android:pathData="M36,36m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="28"
+                android:centerY="18"
+                android:gradientRadius="52"
+                android:type="radial">
+                <item android:color="#FF3A404A" android:offset="0" />
+                <item android:color="#FF14171C" android:offset="0.42" />
+                <item android:color="#FF040506" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M36,36m-34.6,0a34.6,34.6 0,1 1,69.2 0a34.6,34.6 0,1 1,-69.2 0"
+        android:strokeColor="#33FFFFFF"
+        android:strokeWidth="0.8" />
+</vector>

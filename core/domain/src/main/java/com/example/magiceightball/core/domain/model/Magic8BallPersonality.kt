@@ -5,5 +5,12 @@ enum class Magic8BallPersonality {
     MYSTICAL,
 
     /** Plain answers, as the original toy gives them: no jokes and no riddles. */
-    NEUTRAL
+    NEUTRAL,
+
+    /** Characters, each with a voice of its own. Added after the three above: keep the order. */
+    GRANDMA,
+    PIRATE,
+    PHILOSOPHER,
+    COACH,
+    TOXIC_EX
 }

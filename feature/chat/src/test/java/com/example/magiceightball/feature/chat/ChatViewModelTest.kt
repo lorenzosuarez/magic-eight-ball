@@ -557,6 +557,14 @@ class ChatViewModelTest {
         override suspend fun setVoiceQuestionsEnabled(enabled: Boolean) {
             saved.update { it?.copy(voiceQuestionsEnabled = enabled) }
         }
+
+        override suspend fun setSpokenAnswersEnabled(enabled: Boolean) {
+            saved.update { it?.copy(spokenAnswersEnabled = enabled) }
+        }
+
+        override suspend fun setPartyNames(names: List<String>) {
+            saved.update { it?.copy(partyNames = names) }
+        }
     }
 
     private class FakeAiAnswersAvailability : AiAnswersAvailability {
