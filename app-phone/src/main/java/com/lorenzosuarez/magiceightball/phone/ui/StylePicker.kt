@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -329,7 +328,13 @@ internal fun StylesContent(
     }
 }
 
-/** A style: its name, and something it would say. The chosen one is filled with the text's own colour. */
+/**
+ * A style: its name, and something it would say. The chosen one is filled with the text's own colour.
+ *
+ * A name over one line, both starting from the top: cards side by side then have their names on
+ * one line and their sayings on the next. The sayings are picked short enough to fit, see the
+ * `style_*_sample` strings; one that does not is cut rather than let it push the card taller.
+ */
 @Composable
 private fun StyleCard(
     style: Magic8BallPersonality,
@@ -349,9 +354,8 @@ private fun StyleCard(
                 }
             )
             .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
             text = stringResource(style.labelRes()),
@@ -365,7 +369,7 @@ private fun StyleCard(
             text = stringResource(style.sampleRes()),
             style = MaterialTheme.typography.bodySmall,
             color = ink.copy(alpha = SAMPLE_ALPHA),
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -424,6 +428,6 @@ private val SHEET_CORNER = 28.dp
 private const val HANDLE_ALPHA = 0.3f
 
 /** Two cards and the start of a third across a phone: what tells that a line goes on. */
-private val STYLE_CARD_WIDTH = 148.dp
+private val STYLE_CARD_WIDTH = 152.dp
 private val STYLE_CARD_GAP = 8.dp
 private const val MAX_CARD_GROWTH = 1.6f
