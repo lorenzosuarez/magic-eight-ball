@@ -71,6 +71,7 @@
     <string name="settings_party_off">Agrega nombres para jugar por turnos</string>
     <string name="party_dialog_hint">Nombres, separados por comas</string>
     <string name="party_dialog_note">Con dos o más nombres la bola anuncia el turno de cada quien y puede elegir a uno de ustedes.</string>
+    <string name="party_turn_off">Desactivar</string>
     <string name="action_save">Guardar</string>
     <string name="settings_spoken">Respuestas habladas</string>
     <string name="settings_spoken_on">La bola dice su respuesta en voz alta</string>

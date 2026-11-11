@@ -322,7 +322,7 @@ private fun SwitchRow(
     }
 }
 
-/** Who is playing: names typed in one field, since that is how a group is dictated. Saving none ends the party. */
+/** Who is playing: names typed in one field, since that is how a group is dictated. Saving none ends the party, and so does turning it off. */
 @Composable
 private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onDismiss: () -> Unit) {
     var typed by rememberSaveable { mutableStateOf(names.joinToString(", ")) }
@@ -351,7 +351,12 @@ private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onD
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            // While a party is on, the way out of it is here, in one touch: touching outside still cancels.
+            if (names.isEmpty()) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            } else {
+                TextButton(onClick = { onSave(emptyList()) }) { Text(stringResource(R.string.party_turn_off)) }
+            }
         }
     )
 }
