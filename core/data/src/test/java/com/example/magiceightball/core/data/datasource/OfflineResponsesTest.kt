@@ -75,8 +75,8 @@ class OfflineResponsesTest {
     fun `bundled answers fit the watch face`() {
         val asset = File("src/main/assets/magic_8_ball_responses.json")
         val bundled = json.decodeFromString<Magic8BallDataDto>(asset.readText())
-        // Caps come from the triangle text area: (max characters, max words).
-        val caps = mapOf("en" to (28 to 6), "es" to (23 to 6))
+        // (max characters, max words): what the die's text fitting keeps comfortably readable.
+        val caps = mapOf("en" to (28 to 6), "es" to (28 to 6))
         val all = mutableListOf<String>()
         for ((language, cap) in caps) {
             for (personality in Magic8BallPersonality.entries) {

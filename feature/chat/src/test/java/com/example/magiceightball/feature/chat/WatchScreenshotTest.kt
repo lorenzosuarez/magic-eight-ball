@@ -117,6 +117,14 @@ class WatchScreenshotTest {
     }
 
     @Test
+    fun longest_bundled_answer_spanish() =
+        capture("watch_12_longest_bundled_spanish", AppLanguage.SPANISH, ANSWER_SETTLE_MS) {
+            ChatScreenContent(
+                ChatState(machineState = ChatStateMachine.Completed(AnswerText.Plain("Técnicamente sí. Qué pena.")))
+            )
+        }
+
+    @Test
     fun longest_ai_answer() = capture("watch_11_longest_ai_answer", settleMs = ANSWER_SETTLE_MS) {
         ChatScreenContent(
             ChatState(
