@@ -461,6 +461,7 @@ class EightBallViewModel @Inject constructor(
     }
 
     private fun giveNotice(what: Notice) {
+        _effects.trySend(EightBallEffect.NoticeGiven)
         noticeJob?.cancel()
         noticeJob = viewModelScope.launch {
             notice.value = what

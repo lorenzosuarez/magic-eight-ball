@@ -221,6 +221,7 @@ private fun ChatEffects(effects: Flow<ChatEffect>, onRequestMicrophonePermission
                     ChatEffect.ListeningStarted -> HapticFeedbackConstants.LONG_PRESS
                     ChatEffect.ListeningStopped -> HapticFeedbackConstants.GESTURE_END
                     ChatEffect.AnswerRevealed -> HapticFeedbackConstants.CONFIRM
+                    ChatEffect.NothingHeard -> HapticFeedbackConstants.REJECT
                 }
                 haptic?.let(view::performHapticFeedback)
             }

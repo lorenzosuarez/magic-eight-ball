@@ -97,6 +97,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
@@ -109,6 +110,7 @@ import com.lorenzosuarez.magiceightball.phone.EightBallEffect
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.EightBallViewModel
 import com.lorenzosuarez.magiceightball.phone.Notice
+import com.lorenzosuarez.magiceightball.phone.BuildConfig
 import com.lorenzosuarez.magiceightball.phone.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -172,8 +174,23 @@ fun EightBallScreen(
                 EightBallEffect.ListeningStopped -> HapticFeedbackConstantsCompat.GESTURE_END
                 EightBallEffect.AskStarted -> HapticFeedbackConstantsCompat.CONTEXT_CLICK
                 EightBallEffect.AnswerRevealed -> HapticFeedbackConstantsCompat.CONFIRM
+                EightBallEffect.NoticeGiven -> HapticFeedbackConstantsCompat.REJECT
             }
             feedback?.let { ViewCompat.performHapticFeedback(view, it) }
+        }
+    }
+    val tick = { feedback: Int -> ViewCompat.performHapticFeedback(view, feedback); Unit }
+
+    // While the ball thinks, the die is felt coming up through the liquid: a few of the
+    // faintest ticks, further and further apart, and then nothing until the answer lands.
+    val thinking = state?.phase is BallPhase.Thinking
+    LaunchedEffect(thinking, view) {
+        if (!thinking) return@LaunchedEffect
+        var pause = THINKING_TICK_MS
+        repeat(THINKING_TICKS) {
+            delay(pause)
+            tick(HapticFeedbackConstantsCompat.TEXT_HANDLE_MOVE)
+            pause += THINKING_TICK_SLOWDOWN_MS
         }
     }
 
@@ -223,12 +240,22 @@ fun EightBallScreen(
                     // Closing an answer, as opposed to cancelling a question, is told apart:
                     // it is the one moment the app may use for something of its own.
                     val closesAnAnswer = current.phase is BallPhase.Answered
+                    tick(HapticFeedbackConstantsCompat.GESTURE_END)
                     viewModel.dismiss()
                     if (closesAnAnswer) onAnswerDismissed()
                 },
-                onDeleteHistoryEntry = viewModel::deleteHistoryEntry,
-                onRestoreHistoryEntry = viewModel::restoreHistoryEntry,
-                onClearHistory = viewModel::clearHistory,
+                onDeleteHistoryEntry = {
+                    tick(HapticFeedbackConstantsCompat.CLOCK_TICK)
+                    viewModel.deleteHistoryEntry(it)
+                },
+                onRestoreHistoryEntry = {
+                    tick(HapticFeedbackConstantsCompat.CLOCK_TICK)
+                    viewModel.restoreHistoryEntry(it)
+                },
+                onClearHistory = {
+                    tick(HapticFeedbackConstantsCompat.CLOCK_TICK)
+                    viewModel.clearHistory()
+                },
                 onOpenSettings = { settingsOpen = true },
                 onAllowMicrophone = { askForMicrophone(true) }
             )
@@ -236,10 +263,22 @@ fun EightBallScreen(
                 val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
                 SettingsSheet(
                     state = current,
-                    onLanguageSelected = viewModel::setLanguage,
-                    onPersonalitySelected = viewModel::setPersonality,
-                    onAiAnswersChange = viewModel::setAiAnswersEnabled,
-                    onVoiceQuestionsChange = viewModel::setVoiceQuestionsEnabled,
+                    onLanguageSelected = {
+                        tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                        viewModel.setLanguage(it)
+                    },
+                    onPersonalitySelected = {
+                        tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                        viewModel.setPersonality(it)
+                    },
+                    onAiAnswersChange = {
+                        tick(it.toggleFeedback())
+                        viewModel.setAiAnswersEnabled(it)
+                    },
+                    onVoiceQuestionsChange = {
+                        tick(it.toggleFeedback())
+                        viewModel.setVoiceQuestionsEnabled(it)
+                    },
                     onAllowMicrophone = { askForMicrophone(true) },
                     onShareApp = { context.shareText(shareAppText) },
                     onShowAdPrivacyOptions = onShowAdPrivacyOptions,
@@ -445,7 +484,8 @@ private fun Stage(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
             minOf(maxWidth * BALL_WIDTH_FRACTION, BALL_MAX_SIZE),
-            maxHeight - TITLE_HEIGHT - CAPTION_HEIGHT - BALL_GAP * 2
+            // The column is centred, so the footer's room is taken from both ends.
+            maxHeight - TITLE_HEIGHT - CAPTION_HEIGHT - BALL_GAP * 2 - FOOTER_HEIGHT * 2
         ).coerceAtLeast(BALL_MIN_SIZE)
 
         Column(
@@ -494,6 +534,48 @@ private fun Stage(
                     .heightIn(min = CAPTION_HEIGHT)
             )
         }
+
+        // At rest only, and never under an explanation: the quietest thing on the screen.
+        AnimatedVisibility(
+            visible = state.phase is BallPhase.Idle && state.notice == null,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 8.dp)
+                .graphicsLayer { alpha = intro() },
+            enter = fadeIn(tween(durationMillis = 400)),
+            exit = fadeOut(tween(durationMillis = 120))
+        ) {
+            Footer(poweredByAi = state.usesAiAnswers)
+        }
+    }
+}
+
+/**
+ * What the app runs on and which version it is, one under the other.
+ *
+ * @param poweredByAi false while the answers are the bundled ones: the line is then left out
+ * rather than said of answers no AI wrote.
+ */
+@Composable
+private fun Footer(poweredByAi: Boolean, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.height(FOOTER_HEIGHT),
+        verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (poweredByAi) {
+            Text(
+                text = stringResource(R.string.footer_powered_by_ai).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                letterSpacing = 1.6.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = FOOTER_ALPHA)
+            )
+        }
+        Text(
+            text = stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = FOOTER_VERSION_ALPHA)
+        )
     }
 }
 
@@ -778,6 +860,9 @@ private fun Context.shareText(text: String) {
     }
 }
 
+private fun Boolean.toggleFeedback(): Int =
+    if (this) HapticFeedbackConstantsCompat.TOGGLE_ON else HapticFeedbackConstantsCompat.TOGGLE_OFF
+
 private fun Context.hasMicrophonePermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
         PackageManager.PERMISSION_GRANTED
@@ -810,6 +895,10 @@ private const val HOLD_DELAY_MS = 180L
 
 private const val CLOCK_TICK_MS = 30_000L
 
+private const val THINKING_TICKS = 5
+private const val THINKING_TICK_MS = 180L
+private const val THINKING_TICK_SLOWDOWN_MS = 70L
+
 /** No one reads the system's permission dialog and answers it in less than this. */
 private const val DIALOG_SKIPPED_MS = 1_000L
 
@@ -832,6 +921,9 @@ private val TOP_BAR_HEIGHT = 56.dp
 private val TEXT_MAX_WIDTH = 480.dp
 private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 104.dp
+private val FOOTER_HEIGHT = 48.dp
+private const val FOOTER_ALPHA = 0.42f
+private const val FOOTER_VERSION_ALPHA = 0.28f
 private const val CAPTION_MAX_LINES = 3
 
 /** How faint the note under an answer the AI wrote is. */
