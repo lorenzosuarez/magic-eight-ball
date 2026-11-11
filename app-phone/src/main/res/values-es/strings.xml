@@ -66,6 +66,7 @@
     <string name="settings_voice_allow">Permitir</string>
     <string name="party_turn">%1$s, te toca</string>
     <string name="party_who">¿Quién de ustedes…?</string>
+    <string name="widget_description">Bola Mágica 8. Toca para una respuesta</string>
     <string name="settings_party">Modo fiesta</string>
     <string name="settings_party_off">Agrega nombres para jugar por turnos</string>
     <string name="party_dialog_hint">Nombres, separados por comas</string>

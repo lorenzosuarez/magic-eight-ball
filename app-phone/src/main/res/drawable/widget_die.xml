@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The window with the die in it, for the widget's answer. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+    <path
+        android:fillColor="#FF080D14"
+        android:pathData="M36,36m-31,0a31,31 0,1 1,62 0a31,31 0,1 1,-62 0"
+        android:strokeColor="#FF74808C"
+        android:strokeWidth="0.8" />
+    <path
+        android:pathData="M10.5,23 L61.5,23 L36,64 Z"
+        android:strokeColor="#FF6379EC"
+        android:strokeLineJoin="round"
+        android:strokeWidth="3">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="36"
+                android:startY="23"
+                android:endX="36"
+                android:endY="64"
+                android:type="linear">
+                <item android:color="#FF7C96FF" android:offset="0" />
+                <item android:color="#FF4558D6" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

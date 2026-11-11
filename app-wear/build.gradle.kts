@@ -60,6 +60,12 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
 
+    // The tile: the ball one swipe away from the watch face.
+    implementation(libs.wear.tiles)
+    implementation(libs.wear.protolayout)
+    implementation(libs.concurrent.futures)
+    implementation(libs.kotlinx.coroutines.android)
+
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 

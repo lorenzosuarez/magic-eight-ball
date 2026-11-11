@@ -71,6 +71,7 @@
     <string name="settings_voice_allow">Allow</string>
     <string name="party_turn">%1$s, your turn</string>
     <string name="party_who">Who of you…?</string>
+    <string name="widget_description">Magic 8 Ball. Touch for an answer</string>
     <string name="settings_party">Party mode</string>
     <string name="settings_party_off">Add names to take turns</string>
     <string name="party_dialog_hint">Names, separated by commas</string>
