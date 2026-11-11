@@ -2,69 +2,71 @@ package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import com.lorenzosuarez.magiceightball.phone.BuildConfig
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.example.magiceightball.core.domain.model.UserSettings
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
+import com.example.magiceightball.core.domain.model.UserSettings
+import com.lorenzosuarez.magiceightball.phone.BuildConfig
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.VoiceStatus
 
 /**
- * The options, as the page to the right of the ball: every choice takes effect at once. Grouped
- * by what they are about, each row on a card of its own. It scrolls when the font is large or
- * the window is short.
+ * The options, as the page to the right of the ball: every choice takes effect at once.
+ *
+ * Laid out the way a settings screen is expected to be: what the app is and the one thing to
+ * do with it first, then one card per subject with a title over it, its rows separated by
+ * hairlines and each led by an icon. It scrolls when the font is large or the window is short.
  */
 @Composable
 internal fun SettingsContent(
@@ -95,23 +97,22 @@ internal fun SettingsContent(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 32.dp)
     ) {
-        Brand(poweredByAi = state.usesAiAnswers)
+        Hero(poweredByAi = state.usesAiAnswers, onShareApp = onShareApp)
 
-        SectionTitle(stringResource(R.string.options_answers))
-        OptionCard {
-            ChipChoice(
+        Section(stringResource(R.string.options_answers)) {
+            ChoiceRow(
+                icon = R.drawable.ic_palette,
                 title = stringResource(R.string.settings_style),
                 options = Magic8BallPersonality.entries,
                 selected = state.settings.personality,
                 label = { it.labelRes() },
                 onSelected = onPersonalitySelected
             )
-        }
-        OptionCard {
+            RowDivider()
             SwitchRow(
+                icon = R.drawable.ic_sparkle,
                 title = stringResource(R.string.settings_ai),
                 supporting = stringResource(
                     when {
@@ -124,9 +125,9 @@ internal fun SettingsContent(
                 enabled = state.aiAnswersAvailable,
                 onCheckedChange = onAiAnswersChange
             )
-        }
-        OptionCard {
+            RowDivider()
             SwitchRow(
+                icon = R.drawable.ic_volume,
                 title = stringResource(R.string.settings_spoken),
                 supporting = stringResource(
                     if (state.settings.spokenAnswersEnabled) R.string.settings_spoken_on else R.string.settings_spoken_off
@@ -137,12 +138,12 @@ internal fun SettingsContent(
             )
         }
 
-        SectionTitle(stringResource(R.string.options_asking))
-        OptionCard {
+        Section(stringResource(R.string.options_asking)) {
             if (state.voice == VoiceStatus.PermissionDenied) {
                 MicrophoneRow(onAllowMicrophone)
             } else {
                 SwitchRow(
+                    icon = R.drawable.ic_mic,
                     title = stringResource(R.string.settings_voice),
                     supporting = stringResource(
                         when (state.voice) {
@@ -156,44 +157,34 @@ internal fun SettingsContent(
                     onCheckedChange = onVoiceQuestionsChange
                 )
             }
-        }
-        OptionCard {
+            RowDivider()
             ActionRow(
+                icon = R.drawable.ic_group,
                 title = stringResource(R.string.settings_party),
                 supporting = if (state.settings.isParty) {
                     state.settings.partyNames.joinToString(", ")
                 } else {
                     stringResource(R.string.settings_party_off)
                 },
-                icon = R.drawable.ic_group,
                 onClick = { editingParty = true }
             )
         }
 
-        SectionTitle(stringResource(R.string.options_general))
-        OptionCard {
-            Choice(
+        Section(stringResource(R.string.options_general)) {
+            ChoiceRow(
+                icon = R.drawable.ic_language,
                 title = stringResource(R.string.settings_language),
                 options = AppLanguage.entries,
                 selected = state.settings.language,
                 label = { it.labelRes() },
                 onSelected = onLanguageSelected
             )
-        }
-        OptionCard {
-            ActionRow(
-                title = stringResource(R.string.settings_share_app),
-                supporting = stringResource(R.string.settings_share_app_hint),
-                icon = R.drawable.ic_share,
-                onClick = onShareApp
-            )
-        }
-        if (onShowAdPrivacyOptions != null) {
-            OptionCard {
+            if (onShowAdPrivacyOptions != null) {
+                RowDivider()
                 ActionRow(
+                    icon = R.drawable.ic_settings,
                     title = stringResource(R.string.settings_ad_privacy),
                     supporting = stringResource(R.string.settings_ad_privacy_hint),
-                    icon = R.drawable.ic_settings,
                     onClick = onShowAdPrivacyOptions
                 )
             }
@@ -201,130 +192,175 @@ internal fun SettingsContent(
 
         Text(
             text = stringResource(state.privacyNoteRes()),
-            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp),
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
+            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }
 
-/** What the app is, said plainly at the top of its options: the name, that an AI answers, the version. */
+/**
+ * What the app is, on the first card: the ball, the name, that an AI answers, and the one
+ * thing worth asking of someone who likes it, which is to pass it on.
+ */
 @Composable
-private fun Brand(poweredByAi: Boolean) {
+private fun Hero(poweredByAi: Boolean, onShareApp: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Box(modifier = Modifier.size(72.dp)) {
+            Image(painterResource(R.drawable.widget_ball), contentDescription = null, modifier = Modifier.size(72.dp))
+            Image(painterResource(R.drawable.widget_eight), contentDescription = null, modifier = Modifier.size(72.dp))
+        }
         Text(
             text = stringResource(R.string.brand_name),
+            modifier = Modifier.padding(top = 16.dp),
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = listOfNotNull(
-                // Left out while the answers are the bundled ones, rather than said of answers no AI wrote.
-                stringResource(R.string.brand_tagline).takeIf { poweredByAi },
-                stringResource(R.string.footer_version, BuildConfig.VERSION_NAME)
-            ).joinToString(" · "),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            // Left out while the answers are the bundled ones, rather than said of answers no AI wrote.
+            text = stringResource(if (poweredByAi) R.string.brand_tagline else R.string.settings_share_app_hint),
+            modifier = Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
+        Button(
+            onClick = onShareApp,
+            modifier = Modifier
+                .padding(top = 20.dp)
+                .fillMaxWidth()
+                .heightIn(min = 48.dp),
+            shape = ButtonShape
+        ) {
+            Icon(painterResource(R.drawable.ic_share), contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.settings_share_app), fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
+/** A subject: its name, and under it one card that holds everything about it. */
 @Composable
-private fun SectionTitle(text: String) {
+private fun Section(title: String, rows: @Composable () -> Unit) {
     Text(
-        text = text,
+        text = title,
         modifier = Modifier
-            .padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+            .padding(start = 4.dp, top = 28.dp, bottom = 12.dp)
             .semantics { heading() },
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurface
     )
-}
-
-/** One option on a card of its own: a touch of the text's colour over the backdrop, so it suits both themes. */
-@Composable
-private fun OptionCard(content: @Composable () -> Unit) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = CARD_ALPHA))
+            .clip(CardShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
-        content()
+        rows()
     }
 }
 
-
-/** A titled choice of one among a few, as a row of connected buttons. [label] gives a string resource. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The hairline between two rows of a card, starting where their text does. */
 @Composable
-private fun <T> Choice(
-    title: String,
-    options: List<T>,
-    selected: T,
-    label: (T) -> Int,
-    onSelected: (T) -> Unit
-) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+private fun RowDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = ROW_TEXT_START),
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant
+    )
+}
+
+/** What a row is about, at a glance: its symbol on a small tile of the accent colour. */
+@Composable
+private fun RowIcon(@DrawableRes icon: Int, enabled: Boolean = true) {
+    Box(
+        modifier = Modifier
+            .size(ROW_ICON_SIZE)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 1f else DISABLED_ALPHA)),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = Color.White
         )
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            options.forEachIndexed { index, option ->
-                SegmentedButton(
-                    selected = option == selected,
-                    onClick = { onSelected(option) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                    modifier = Modifier.heightIn(min = 48.dp)
-                ) {
-                    Text(stringResource(label(option)))
-                }
-            }
-        }
     }
 }
 
-/** One of many: chips that wrap onto as many lines as they need, where a row of segments would not fit. */
+/**
+ * One of several, as a row: what is being chosen, and under it the choices as tiles that wrap
+ * onto as many lines as they need. The chosen one is filled with the accent colour.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun <T> ChipChoice(
+private fun <T> ChoiceRow(
+    @DrawableRes icon: Int,
     title: String,
     options: List<T>,
     selected: T,
     label: (T) -> Int,
     onSelected: (T) -> Unit
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RowIcon(icon)
+            Spacer(Modifier.width(ROW_ICON_GAP))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
         FlowRow(
-            modifier = Modifier.fillMaxWidth().selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .padding(top = 12.dp)
+                .fillMaxWidth()
+                .selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             options.forEach { option ->
-                FilterChip(
-                    selected = option == selected,
-                    onClick = { onSelected(option) },
-                    label = { Text(stringResource(label(option))) },
-                    modifier = Modifier.heightIn(min = 48.dp)
-                )
+                val chosen = option == selected
+                Box(
+                    modifier = Modifier
+                        .clip(ButtonShape)
+                        .background(
+                            if (chosen) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
+                            }
+                        )
+                        .selectable(selected = chosen, role = Role.RadioButton, onClick = { onSelected(option) })
+                        .heightIn(min = 44.dp)
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(label(option)),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Medium,
+                        color = if (chosen) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
@@ -333,6 +369,7 @@ private fun <T> ChipChoice(
 /** A setting that is on or off. The whole row is the switch, for touch and for TalkBack. */
 @Composable
 private fun SwitchRow(
+    @DrawableRes icon: Int,
     title: String,
     supporting: String,
     checked: Boolean,
@@ -349,12 +386,22 @@ private fun SwitchRow(
                 onValueChange = onCheckedChange
             )
             .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        RowIcon(icon, enabled)
+        Spacer(Modifier.width(ROW_ICON_GAP))
         SettingText(title, supporting, enabled, Modifier.weight(1f))
         Spacer(Modifier.width(16.dp))
-        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            enabled = enabled,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = MaterialTheme.colorScheme.primary
+            )
+        )
     }
 }
 
@@ -394,22 +441,18 @@ private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onD
 
 /** Something to do rather than to set: the whole row is the button. */
 @Composable
-private fun ActionRow(title: String, supporting: String, @DrawableRes icon: Int, onClick: () -> Unit) {
+private fun ActionRow(@DrawableRes icon: Int, title: String, supporting: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        RowIcon(icon)
+        Spacer(Modifier.width(ROW_ICON_GAP))
         SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f))
-        Spacer(Modifier.width(16.dp))
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -420,9 +463,11 @@ private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        RowIcon(R.drawable.ic_mic)
+        Spacer(Modifier.width(ROW_ICON_GAP))
         SettingText(
             title = stringResource(R.string.settings_voice),
             supporting = stringResource(R.string.settings_voice_denied),
@@ -430,7 +475,11 @@ private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(16.dp))
-        FilledTonalButton(onClick = onAllowMicrophone, modifier = Modifier.heightIn(min = 48.dp)) {
+        FilledTonalButton(
+            onClick = onAllowMicrophone,
+            modifier = Modifier.heightIn(min = 48.dp),
+            shape = ButtonShape
+        ) {
             Text(stringResource(R.string.settings_voice_allow))
         }
     }
@@ -453,7 +502,7 @@ private fun SettingText(title: String, supporting: String, enabled: Boolean, mod
     }
 }
 
-/** The privacy note that is true for what is in use right now. */
+/** What is said about the user's data depends on what the app is doing with it right now. */
 @StringRes
 private fun EightBallUiState.privacyNoteRes(): Int = when {
     voice.isReady && usesAiAnswers -> R.string.privacy_voice_and_ai
@@ -480,6 +529,18 @@ private fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.TOXIC_EX -> R.string.style_toxic_ex
 }
 
+/** Cards and the buttons on them: the two corner sizes the whole app uses. */
+internal val CardShape = RoundedCornerShape(16.dp)
+internal val ButtonShape = RoundedCornerShape(10.dp)
+
+private val ROW_ICON_SIZE = 32.dp
+private val ROW_ICON_GAP = 16.dp
+
+/** Where a row's text starts, and so where the hairline under it does. */
+private val ROW_TEXT_START = 16.dp + ROW_ICON_SIZE + ROW_ICON_GAP
+
 /** Material's emphasis for disabled content. */
 private const val DISABLED_ALPHA = 0.38f
-private const val CARD_ALPHA = 0.06f
+
+/** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
+private const val TILE_ALPHA = 0.08f

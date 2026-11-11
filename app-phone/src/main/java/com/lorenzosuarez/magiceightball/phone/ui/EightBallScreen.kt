@@ -56,6 +56,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -418,12 +420,24 @@ internal fun EightBallContent(
         }
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(top = TOP_BAR_HEIGHT),
+            modifier = Modifier.fillMaxSize(),
             userScrollEnabled = atRest
         ) { page ->
+            // The ball floats on the backdrop; its neighbours are plain pages, edge to edge,
+            // so that what is listed on them is read against one flat colour.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (page == BALL_PAGE) {
+                            Modifier
+                        } else {
+                            Modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        }
+                    )
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(top = TOP_BAR_HEIGHT)
+            ) {
             if (page == OPTIONS_PAGE) {
                 options()
             } else if (page == HISTORY_PAGE) {
@@ -449,6 +463,7 @@ internal fun EightBallContent(
                     onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
                     onAskWho = onAskWho
                 )
+            }
             }
         }
 
@@ -516,7 +531,7 @@ internal fun EightBallContent(
                             text = stringResource(title),
                             modifier = Modifier.semantics { heading() },
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -543,12 +558,13 @@ private fun LabeledBarButton(icon: Int, label: String, onClick: () -> Unit, modi
         Icon(
             painter = painterResource(icon),
             contentDescription = null,
+            modifier = Modifier.size(28.dp),
             tint = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1
         )
@@ -563,11 +579,11 @@ private fun BarButton(icon: Int, description: String, onClick: () -> Unit, modif
 /** One dot per page, the one in front brighter. Decoration: the pages announce themselves. */
 @Composable
 private fun PageDots(current: Int, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         repeat(PAGE_COUNT) { page ->
             Box(
                 Modifier
-                    .size(7.dp)
+                    .size(6.dp)
                     .background(
                         color = MaterialTheme.colorScheme.onSurface.copy(
                             alpha = if (page == current) 1f else DOT_OFF_ALPHA
@@ -904,8 +920,14 @@ private fun Caption(
                 }
                 // At a party, the other thing the ball can be asked: to pick one of the players.
                 if (notice == null && state.settings.isParty) {
-                    TextButton(onClick = { onAskWho(whoQuestion) }, modifier = Modifier.heightIn(min = 48.dp)) {
-                        Text(whoQuestion)
+                    FilledTonalButton(
+                        onClick = { onAskWho(whoQuestion) },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                        shape = ButtonShape
+                    ) {
+                        Icon(painterResource(R.drawable.ic_group), contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(whoQuestion, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -944,14 +966,18 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
-                TextButton(onClick = onShareAnswer, modifier = Modifier.heightIn(min = 48.dp)) {
+                Button(
+                    onClick = onShareAnswer,
+                    modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 200.dp),
+                    shape = ButtonShape
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_share),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_share))
+                    Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
                 }
             }
         }
