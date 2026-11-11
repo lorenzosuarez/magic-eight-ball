@@ -317,9 +317,31 @@ private class BallDrawing(
     answer: String?,
     textMeasurer: TextMeasurer
 ) {
-    private val discBrush = Brush.verticalGradient(
-        0f to DiscTop,
-        1f to DiscBottom,
+    /** The ball as a sphere: black, lit from above and a little to the left. */
+    private val bodyBrush = Brush.radialGradient(
+        0f to BodyLit,
+        BODY_MID_STOP to BodyMid,
+        1f to BodyEdge,
+        center = Offset(center.x - radius * LIGHT_LEFT, center.y - radius * LIGHT_UP),
+        radius = radius * LIGHT_REACH
+    )
+    private val ballOutline = Path().apply { addOval(Rect(center, radius)) }
+
+    /** The light's reflection: one soft, wide patch near the top. */
+    private val glossCenter = Offset(center.x, center.y - radius * GLOSS_UP)
+    private val glossRadius = radius * GLOSS_RADIUS
+    private val glossBrush = Brush.radialGradient(
+        0f to Color.White.copy(alpha = GLOSS_ALPHA),
+        1f to Color.Transparent,
+        center = glossCenter,
+        radius = glossRadius
+    )
+
+    /** A fine line of light along the edge, so a black ball still has an outline on a dark screen. */
+    private val edgeStroke = Stroke(width = radius * EDGE_WIDTH)
+    private val edgeBrush = Brush.verticalGradient(
+        0f to Color.White.copy(alpha = EDGE_TOP_ALPHA),
+        1f to Color.White.copy(alpha = EDGE_BOTTOM_ALPHA),
         startY = center.y - radius,
         endY = center.y + radius
     )
@@ -329,7 +351,7 @@ private class BallDrawing(
     private val eight: TextLayoutResult = textMeasurer.measure(
         text = "8",
         style = TextStyle(
-            color = DiscBottom,
+            color = BodyMid,
             fontSize = with(density) { (eightRadius * 1.5f).toSp() },
             fontWeight = FontWeight.Black,
             platformStyle = PlatformTextStyle(includeFontPadding = false)
@@ -460,7 +482,7 @@ private class BallDrawing(
     val answerFit: AnswerFit? = answerLayout?.let { AnswerFit(it.fits, it.fontSizePx / dieRadius) }
 
     /**
-     * @param face 0 for the "8", 1 for the window; in between one gives way to the other.
+     * @param face 0 for the "8", 1 for the window; in between the ball turns from one to the other.
      * @param risen 0 for the die deep in the liquid, small, in the middle; 1 for the die at the window,
      * close enough to fill it.
      * @param tiltDegrees how far the die leans to one side; the answer leans with it.
@@ -478,14 +500,21 @@ private class BallDrawing(
         shimmerAlpha: Float,
         textAlpha: Float
     ) {
-        drawCircle(discBrush, radius, center)
-
-        if (face < 1f) {
-            scale(1f - FACE_SHRINK * face, pivot = center) {
-                drawCircle(Color.White, eightRadius, center, alpha = 1f - face)
-                drawText(eight, topLeft = eightTopLeft, alpha = 1f - face)
+        drawCircle(bodyBrush, radius, center)
+        clipPath(ballOutline) {
+            scale(GLOSS_STRETCH, 1f, pivot = glossCenter) { drawCircle(glossBrush, glossRadius, glossCenter) }
+            // The ball turns its window to the front: the "8" rolls up towards the top edge,
+            // seen more and more from the side, and is gone by the time it gets there.
+            val eightAlpha = (1f - face).coerceIn(0f, 1f)
+            if (eightAlpha > 0f) withTransform({
+                translate(top = -radius * EIGHT_ROLL * face)
+                scale(1f - EIGHT_NARROWING * face, 1f - EIGHT_FLATTENING * face, pivot = center)
+            }) {
+                drawCircle(Color.White, eightRadius, center, alpha = eightAlpha)
+                drawText(eight, topLeft = eightTopLeft, alpha = eightAlpha)
             }
         }
+        drawCircle(edgeBrush, radius - edgeStroke.width / 2f, center, style = edgeStroke)
         if (face > 0f) {
             scale(1f - FACE_SHRINK * (1f - face), pivot = center) {
                 drawCircle(recessBrush, recessRadius, center, alpha = face)
@@ -746,8 +775,31 @@ private val DIE_TEXT_WIDTHS = floatArrayOf(1f, 0.85f, 0.7f, 0.55f)
 private const val SIN_60 = 0.8660254f
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
 
-private val DiscTop = Color(BrandPalette.BALL_TOP)
-private val DiscBottom = Color(BrandPalette.BALL_BOTTOM)
+/** The ball's black: where the light falls, over most of it, and at its edge. */
+private val BodyLit = Color(0xFF3A404A)
+private val BodyMid = Color(0xFF14171C)
+private val BodyEdge = Color(0xFF040506)
+private const val BODY_MID_STOP = 0.42f
+
+/** Where the light falls, relative to the ball's radius, and how far it reaches. */
+private const val LIGHT_LEFT = 0.22f
+private const val LIGHT_UP = 0.5f
+private const val LIGHT_REACH = 1.45f
+
+/** The reflection near the top: how high, how large, how much wider than tall, how bright. */
+private const val GLOSS_UP = 0.6f
+private const val GLOSS_RADIUS = 0.34f
+private const val GLOSS_STRETCH = 1.9f
+private const val GLOSS_ALPHA = 0.13f
+
+private const val EDGE_WIDTH = 0.01f
+private const val EDGE_TOP_ALPHA = 0.3f
+private const val EDGE_BOTTOM_ALPHA = 0.06f
+
+/** The "8" as the window comes to the front: how far up it rolls and how much it flattens on the way out. */
+private const val EIGHT_ROLL = 0.86f
+private const val EIGHT_NARROWING = 0.18f
+private const val EIGHT_FLATTENING = 0.7f
 private val WindowCenter = Color(BrandPalette.WINDOW_CENTER)
 private val WindowEdge = Color(BrandPalette.WINDOW_EDGE)
 private val WindowRim = Color(BrandPalette.WINDOW_RIM)
