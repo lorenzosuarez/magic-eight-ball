@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -225,8 +224,9 @@ internal fun StylesSheet(
 }
 
 /**
- * What [StylesSheet] shows: a header that stays put, with the way out and the title, and under
- * it the styles by group, scrolling on their own so nothing ever passes behind the close button.
+ * What [StylesSheet] shows: the way out, which stays put, and under it the title and the styles.
+ * Each group is a line of its own that scrolls sideways, its cards all one width, so the one cut
+ * off at the edge says there are more; the page itself only scrolls up and down.
  *
  * @param full whether the sheet takes the whole screen: the header then clears the status bar.
  */
@@ -242,8 +242,9 @@ internal fun StylesContent(
     val headerTop by animateDpAsState(if (full) statusBar else 0.dp, label = "sheet header")
     val handleAlpha by animateFloatAsState(if (full) 0f else 1f, label = "sheet handle")
     val scroll = rememberScrollState()
-    // Two to a line, or one when the text is too large for two to say anything.
-    val columns = if (LocalDensity.current.fontScale > LARGE_FONT_SCALE) 1 else 2
+    val density = LocalDensity.current
+    // Wider with larger text, up to where two cards no longer fit side by side.
+    val cardWidth = STYLE_CARD_WIDTH * density.fontScale.coerceIn(1f, MAX_CARD_GROWTH)
     Column(modifier = modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -254,21 +255,12 @@ internal fun StylesContent(
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = HANDLE_ALPHA))
         )
-        Box(modifier = Modifier.fillMaxWidth().height(56.dp)) {
-            AppIconButton(
-                icon = R.drawable.ic_close,
-                description = stringResource(R.string.action_close),
-                onClick = onClose,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp)
-            )
-            Text(
-                text = stringResource(R.string.styles_title),
-                modifier = Modifier.align(Alignment.Center).semantics { heading() },
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
+        AppIconButton(
+            icon = R.drawable.ic_close,
+            description = stringResource(R.string.action_close),
+            onClick = onClose,
+            modifier = Modifier.padding(start = 4.dp)
+        )
         // Only once something has scrolled under the header is there an edge worth drawing.
         HorizontalDivider(
             thickness = 1.dp,
@@ -280,12 +272,20 @@ internal fun StylesContent(
                 .fillMaxWidth()
                 .verticalScroll(scroll)
                 .navigationBarsPadding()
-                .padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 32.dp)
+                .padding(bottom = 32.dp)
                 .selectableGroup()
         ) {
             Text(
+                text = stringResource(R.string.styles_title),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).semantics { heading() },
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Text(
                 text = stringResource(R.string.styles_subtitle),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, end = 16.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -293,27 +293,31 @@ internal fun StylesContent(
             StyleGroups.forEach { group ->
                 Text(
                     text = stringResource(group.title),
-                    modifier = Modifier.padding(top = 28.dp, bottom = 12.dp).semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 12.dp)
+                        .semantics { heading() },
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    group.styles.chunked(columns).forEach { line ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            line.forEach { style ->
-                                StyleCard(
-                                    style = style,
-                                    chosen = style == selected,
-                                    onClick = { onSelected(style) },
-                                    modifier = Modifier.weight(1f).fillMaxHeight()
-                                )
-                            }
-                            repeat(columns - line.size) { Spacer(Modifier.weight(1f)) }
-                        }
+                // The line opens on the chosen style when it holds it, with the one before in sight.
+                val lead = (group.styles.indexOf(selected) - 1).coerceAtLeast(0)
+                val start = with(density) { ((cardWidth + STYLE_CARD_GAP) * lead).roundToPx() }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState(start))
+                        .padding(horizontal = 16.dp)
+                        .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
+                ) {
+                    group.styles.forEach { style ->
+                        StyleCard(
+                            style = style,
+                            chosen = style == selected,
+                            onClick = { onSelected(style) },
+                            modifier = Modifier.width(cardWidth).fillMaxHeight()
+                        )
                     }
                 }
             }
@@ -412,4 +416,8 @@ private const val SAMPLE_ALPHA = 0.66f
 /** Material's corner for a sheet that is not yet the whole screen. */
 private val SHEET_CORNER = 28.dp
 private const val HANDLE_ALPHA = 0.3f
-private const val LARGE_FONT_SCALE = 1.3f
+
+/** Two cards and the start of a third across a phone: what tells that a line goes on. */
+private val STYLE_CARD_WIDTH = 148.dp
+private val STYLE_CARD_GAP = 8.dp
+private const val MAX_CARD_GROWTH = 1.6f
