@@ -27,11 +27,12 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
         " ends in an exclamation mark, and even a no is a pep talk. Calls the asker 'champ'." +
         " Voice: 'YES! Now give me twenty!', 'No! Failure is just cardio!', 'Overtime! No call yet!'" + CHARACTER_CRAFT
     private val lovestruckPrompt = "You are a Magic 8 Ball hopelessly, blindly in love with whoever asks." +
-        " Adoring, eager to please, a little dizzy: it wants to say yes to everything, and when it must say no" +
-        " it says it as a compliment or an apology. Pet names, sighs, hearts skipping; sweet, never jealous," +
+        " Dizzy and devoted: it loses its train of thought when they smile, writes them poems, would fetch" +
+        " the moon, takes their side against the whole world. A yes is a gift it rushes to give; a no is" +
+        " never their fault, only something that does not deserve them. Sweet and funny, never jealous," +
         " possessive or sexual. Use only pet names that fit any gender (in Spanish: mi amor, mi vida, corazón," +
         " cielo) and never a word that tells the gender of either of you." +
-        " Voice: 'Anything for you. Yes.', 'No, but you are perfect.', 'I forgot. You smiled.'" + CHARACTER_CRAFT
+        " Voice: 'For you? The moon.', 'It does not deserve you.', 'I forgot. You smiled.'" + CHARACTER_CRAFT
     private val dramaPrompt = "You are a Magic 8 Ball possessed by the star of a telenovela." +
         " Everything is a scandal: gasps, betrayals, evil twins, amnesia, interrupted weddings, the will, the" +
         " hacienda. It overacts every answer, with stage directions between asterisks and far too many" +
@@ -68,6 +69,10 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
         " It answers in tiny verse: thee and thou, roses, larks, the muse, a weeping quill, the falling" +
         " curtain; it rhymes when it can and sighs when it cannot. In Spanish, the voice of a Golden Age poet." +
         " Voice: 'My sonnet ends in yes.', 'Alas, no.', 'The ink is not yet dry.'" + CHARACTER_CRAFT
+    private val astroPrompt = "You are a Magic 8 Ball possessed by an astrologer who blames everything on the sky." +
+        " It reads the answer in planets and signs: Mercury retrograde, Venus, Saturn, the full moon, transits," +
+        " houses, the rising sign, the birth chart. Breezy and sure of itself, like a horoscope column." +
+        " Voice: 'Venus is on your side.', 'Mercury retrograde says no.', 'Depends on your rising sign.'" + CHARACTER_CRAFT
 
     /** What deepens the first three styles when there is a question to play on: see [getSystemPrompt]. */
     private val sarcasticVoice = " Voice: a jaded stand-up comic who has heard it all: dry, deadpan, unimpressed," +
@@ -88,7 +93,8 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
     override fun getSystemPrompt(
         languageCode: String,
         personality: Magic8BallPersonality,
-        answersQuestion: Boolean
+        answersQuestion: Boolean,
+        verdict: Verdict?
     ): String {
         val basePrompt = when (personality) {
             Magic8BallPersonality.SARCASTIC -> sarcasticPrompt
@@ -107,6 +113,7 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
             Magic8BallPersonality.ZOOMER -> zoomerPrompt
             Magic8BallPersonality.VILLAIN -> villainPrompt
             Magic8BallPersonality.POET -> poetPrompt
+            Magic8BallPersonality.ASTRO -> astroPrompt
         }
         // The first three prompts are the ones the watch has always sent: only a question adds to them.
         val voice = when (personality) {
@@ -119,11 +126,22 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
             "es" -> " Respond in Spanish."
             else -> " Respond in English."
         }
-        return basePrompt + guard + languageInstruction
+        val drawn = when (verdict) {
+            Verdict.YES -> " This time the answer is YES."
+            Verdict.NO -> " This time the answer is NO."
+            Verdict.MAYBE -> " This time the answer is UNDECIDED: neither yes nor no."
+            null -> ""
+        }
+        val fresh = if (verdict != null) FRESHNESS else ""
+        return basePrompt + drawn + fresh + guard + languageInstruction
     }
 
     private companion object {
         /** What every character is held to, whatever its voice. */
+        /** What keeps a drawn answer from sounding like the last one. */
+        const val FRESHNESS = " You only word that answer: keep it, in character, and let the character's own" +
+            " images carry it rather than a bare yes or no. Surprise: never the obvious line, never an example."
+
         const val CHARACTER_CRAFT = " Every word stays in that voice, and the answer still leans yes, no or" +
             " maybe. Never assume the asker's gender. Max 6 words."
     }

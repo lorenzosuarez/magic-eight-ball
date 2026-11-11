@@ -26,7 +26,8 @@ data class PersonalityResponsesDto(
     val cat: List<String> = emptyList(),
     val zoomer: List<String> = emptyList(),
     val villain: List<String> = emptyList(),
-    val poet: List<String> = emptyList()
+    val poet: List<String> = emptyList(),
+    val astro: List<String> = emptyList()
 ) {
     /** Only what can be shown on the ball: see [Magic8BallDataDto.usable]. */
     fun usable(): PersonalityResponsesDto = PersonalityResponsesDto(
@@ -45,7 +46,8 @@ data class PersonalityResponsesDto(
         cat = cat.usableAnswers(),
         zoomer = zoomer.usableAnswers(),
         villain = villain.usableAnswers(),
-        poet = poet.usableAnswers()
+        poet = poet.usableAnswers(),
+        astro = astro.usableAnswers()
     )
 
     /** These lists, with every one that [other] fills taking the place of this one's. */
@@ -65,7 +67,8 @@ data class PersonalityResponsesDto(
         cat = other.cat.ifEmpty { cat },
         zoomer = other.zoomer.ifEmpty { zoomer },
         villain = other.villain.ifEmpty { villain },
-        poet = other.poet.ifEmpty { poet }
+        poet = other.poet.ifEmpty { poet },
+        astro = other.astro.ifEmpty { astro }
     )
 
     private fun List<String>.usableAnswers(): List<String> = map { it.trim() }
@@ -92,6 +95,7 @@ data class PersonalityResponsesDto(
         Magic8BallPersonality.ZOOMER -> zoomer
         Magic8BallPersonality.VILLAIN -> villain
         Magic8BallPersonality.POET -> poet
+        Magic8BallPersonality.ASTRO -> astro
     }
 }
 

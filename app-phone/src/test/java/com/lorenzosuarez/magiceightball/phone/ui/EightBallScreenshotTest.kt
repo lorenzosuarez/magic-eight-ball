@@ -285,6 +285,7 @@ class EightBallScreenshotTest {
         Magic8BallPersonality.entries.forEach { style ->
             val row = stylesInRow(style)
             assertTrue(style in row)
+            assertTrue(Magic8BallPersonality.NEUTRAL in row)
             assertEquals(row.size, row.distinct().size)
         }
     }
