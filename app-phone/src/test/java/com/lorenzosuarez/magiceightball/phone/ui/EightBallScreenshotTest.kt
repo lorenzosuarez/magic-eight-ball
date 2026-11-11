@@ -106,6 +106,7 @@ class EightBallScreenshotTest {
             question = "Should I order pizza tonight?",
             answer = "Yes. Screenshot this.",
             layer = rememberGraphicsLayer(),
+            fromAi = true,
             visible = true
         )
     }
@@ -282,35 +283,15 @@ class EightBallScreenshotTest {
         }
     }
 
-    /** The screen with the real settings sheet open over it: both windows in one picture. */
-    @OptIn(ExperimentalRoborazziApi::class)
-    private fun captureWithSettings(name: String, state: EightBallUiState) {
-        val activity = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
-        activity.setContent {
-            Screen(state, voiceLevel = 0f, overlay = {
-                SettingsSheet(
-                    state = state,
-                    onLanguageSelected = {},
-                    onPersonalitySelected = {},
-                    onAiAnswersChange = {},
-                    onVoiceQuestionsChange = {},
-                    onAllowMicrophone = {},
-                    onShareApp = {},
-                    onDismiss = {}
-                )
-            })
-        }
-        // Lets the sheet finish sliding in.
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2))
-        captureScreenRoboImage(filePath = path(name))
-    }
+    /** The options page in front, as it is after a swipe to the left. */
+    private fun captureWithSettings(name: String, state: EightBallUiState) =
+        capture(name, state.copy(phase = BallPhase.Idle), initialPage = OPTIONS_PAGE)
 
     @Composable
     private fun Screen(
         state: EightBallUiState,
         voiceLevel: Float,
-        initialPage: Int = BALL_PAGE,
-        overlay: @Composable () -> Unit = {}
+        initialPage: Int = BALL_PAGE
     ) {
         MagicEightBallPhoneTheme {
             ProvideAppLanguage(state.settings.language) {
@@ -329,10 +310,19 @@ class EightBallScreenshotTest {
                     onDeleteHistoryEntry = {},
                     onRestoreHistoryEntry = {},
                     onClearHistory = {},
-                    onOpenSettings = {},
+                    options = {
+                        SettingsContent(
+                            state = state,
+                            onLanguageSelected = {},
+                            onPersonalitySelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {}
+                        )
+                    },
                     initialPage = initialPage
                 )
-                overlay()
             }
         }
     }

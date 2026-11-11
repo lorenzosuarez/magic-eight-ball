@@ -3,6 +3,11 @@ package com.lorenzosuarez.magiceightball.phone.ui
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.lorenzosuarez.magiceightball.phone.BuildConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -57,47 +62,10 @@ import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.VoiceStatus
 
 /**
- * The settings, in a modal bottom sheet that follows the back gesture. Every choice takes
- * effect, and is saved, as soon as it is made.
+ * The options, as the page to the right of the ball: every choice takes effect at once. Grouped
+ * by what they are about, each row on a card of its own. It scrolls when the font is large or
+ * the window is short.
  */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SettingsSheet(
-    state: EightBallUiState,
-    onLanguageSelected: (AppLanguage) -> Unit,
-    onPersonalitySelected: (Magic8BallPersonality) -> Unit,
-    onAiAnswersChange: (Boolean) -> Unit,
-    onVoiceQuestionsChange: (Boolean) -> Unit,
-    onAllowMicrophone: () -> Unit,
-    onShareApp: () -> Unit,
-    onDismiss: () -> Unit,
-    onShowAdPrivacyOptions: (() -> Unit)? = null,
-    onSpokenAnswersChange: (Boolean) -> Unit = {},
-    onPartyNamesChange: (List<String>) -> Unit = {}
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ) {
-        // The sheet is a window of its own, which starts again from the device's language.
-        ProvideAppLanguage(state.settings.language) {
-            SettingsContent(
-                state = state,
-                onLanguageSelected = onLanguageSelected,
-                onPersonalitySelected = onPersonalitySelected,
-                onAiAnswersChange = onAiAnswersChange,
-                onVoiceQuestionsChange = onVoiceQuestionsChange,
-                onAllowMicrophone = onAllowMicrophone,
-                onShareApp = onShareApp,
-                onShowAdPrivacyOptions = onShowAdPrivacyOptions,
-                onSpokenAnswersChange = onSpokenAnswersChange,
-                onPartyNamesChange = onPartyNamesChange
-            )
-        }
-    }
-}
-
-/** What the sheet holds. It scrolls when the font is large or the window is short. */
 @Composable
 internal fun SettingsContent(
     state: EightBallUiState,
@@ -127,109 +95,171 @@ internal fun SettingsContent(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 24.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .semantics { heading() },
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(Modifier.height(20.dp))
+        Brand(poweredByAi = state.usesAiAnswers)
 
-        Choice(
-            title = stringResource(R.string.settings_language),
-            options = AppLanguage.entries,
-            selected = state.settings.language,
-            label = { it.labelRes() },
-            onSelected = onLanguageSelected
-        )
-        Spacer(Modifier.height(20.dp))
-        ChipChoice(
-            title = stringResource(R.string.settings_style),
-            options = Magic8BallPersonality.entries,
-            selected = state.settings.personality,
-            label = { it.labelRes() },
-            onSelected = onPersonalitySelected
-        )
-        Spacer(Modifier.height(12.dp))
-
-        SwitchRow(
-            title = stringResource(R.string.settings_ai),
-            supporting = stringResource(
-                when {
-                    !state.aiAnswersAvailable -> R.string.settings_ai_unavailable
-                    state.settings.aiAnswersEnabled -> R.string.settings_ai_on
-                    else -> R.string.settings_ai_off
-                }
-            ),
-            checked = state.usesAiAnswers,
-            enabled = state.aiAnswersAvailable,
-            onCheckedChange = onAiAnswersChange
-        )
-        if (state.voice == VoiceStatus.PermissionDenied) {
-            MicrophoneRow(onAllowMicrophone)
-        } else {
-            SwitchRow(
-                title = stringResource(R.string.settings_voice),
-                supporting = stringResource(
-                    when (state.voice) {
-                        VoiceStatus.Unsupported -> R.string.settings_voice_unsupported
-                        VoiceStatus.Ready -> R.string.settings_voice_on
-                        else -> R.string.settings_voice_off
-                    }
-                ),
-                checked = state.voice.isReady,
-                enabled = state.voice != VoiceStatus.Unsupported,
-                onCheckedChange = onVoiceQuestionsChange
+        SectionTitle(stringResource(R.string.options_answers))
+        OptionCard {
+            ChipChoice(
+                title = stringResource(R.string.settings_style),
+                options = Magic8BallPersonality.entries,
+                selected = state.settings.personality,
+                label = { it.labelRes() },
+                onSelected = onPersonalitySelected
             )
         }
-        SwitchRow(
-            title = stringResource(R.string.settings_spoken),
-            supporting = stringResource(
-                if (state.settings.spokenAnswersEnabled) R.string.settings_spoken_on else R.string.settings_spoken_off
-            ),
-            checked = state.settings.spokenAnswersEnabled,
-            enabled = true,
-            onCheckedChange = onSpokenAnswersChange
-        )
-
-        ActionRow(
-            title = stringResource(R.string.settings_party),
-            supporting = if (state.settings.isParty) {
-                state.settings.partyNames.joinToString(", ")
-            } else {
-                stringResource(R.string.settings_party_off)
-            },
-            icon = R.drawable.ic_group,
-            onClick = { editingParty = true }
-        )
-        ActionRow(
-            title = stringResource(R.string.settings_share_app),
-            supporting = stringResource(R.string.settings_share_app_hint),
-            icon = R.drawable.ic_share,
-            onClick = onShareApp
-        )
-
-        if (onShowAdPrivacyOptions != null) {
-            ActionRow(
-                title = stringResource(R.string.settings_ad_privacy),
-                supporting = stringResource(R.string.settings_ad_privacy_hint),
-                icon = R.drawable.ic_settings,
-                onClick = onShowAdPrivacyOptions
+        OptionCard {
+            SwitchRow(
+                title = stringResource(R.string.settings_ai),
+                supporting = stringResource(
+                    when {
+                        !state.aiAnswersAvailable -> R.string.settings_ai_unavailable
+                        state.settings.aiAnswersEnabled -> R.string.settings_ai_on
+                        else -> R.string.settings_ai_off
+                    }
+                ),
+                checked = state.usesAiAnswers,
+                enabled = state.aiAnswersAvailable,
+                onCheckedChange = onAiAnswersChange
             )
+        }
+        OptionCard {
+            SwitchRow(
+                title = stringResource(R.string.settings_spoken),
+                supporting = stringResource(
+                    if (state.settings.spokenAnswersEnabled) R.string.settings_spoken_on else R.string.settings_spoken_off
+                ),
+                checked = state.settings.spokenAnswersEnabled,
+                enabled = true,
+                onCheckedChange = onSpokenAnswersChange
+            )
+        }
+
+        SectionTitle(stringResource(R.string.options_asking))
+        OptionCard {
+            if (state.voice == VoiceStatus.PermissionDenied) {
+                MicrophoneRow(onAllowMicrophone)
+            } else {
+                SwitchRow(
+                    title = stringResource(R.string.settings_voice),
+                    supporting = stringResource(
+                        when (state.voice) {
+                            VoiceStatus.Unsupported -> R.string.settings_voice_unsupported
+                            VoiceStatus.Ready -> R.string.settings_voice_on
+                            else -> R.string.settings_voice_off
+                        }
+                    ),
+                    checked = state.voice.isReady,
+                    enabled = state.voice != VoiceStatus.Unsupported,
+                    onCheckedChange = onVoiceQuestionsChange
+                )
+            }
+        }
+        OptionCard {
+            ActionRow(
+                title = stringResource(R.string.settings_party),
+                supporting = if (state.settings.isParty) {
+                    state.settings.partyNames.joinToString(", ")
+                } else {
+                    stringResource(R.string.settings_party_off)
+                },
+                icon = R.drawable.ic_group,
+                onClick = { editingParty = true }
+            )
+        }
+
+        SectionTitle(stringResource(R.string.options_general))
+        OptionCard {
+            Choice(
+                title = stringResource(R.string.settings_language),
+                options = AppLanguage.entries,
+                selected = state.settings.language,
+                label = { it.labelRes() },
+                onSelected = onLanguageSelected
+            )
+        }
+        OptionCard {
+            ActionRow(
+                title = stringResource(R.string.settings_share_app),
+                supporting = stringResource(R.string.settings_share_app_hint),
+                icon = R.drawable.ic_share,
+                onClick = onShareApp
+            )
+        }
+        if (onShowAdPrivacyOptions != null) {
+            OptionCard {
+                ActionRow(
+                    title = stringResource(R.string.settings_ad_privacy),
+                    supporting = stringResource(R.string.settings_ad_privacy_hint),
+                    icon = R.drawable.ic_settings,
+                    onClick = onShowAdPrivacyOptions
+                )
+            }
         }
 
         Text(
             text = stringResource(state.privacyNoteRes()),
-            modifier = Modifier.padding(start = 24.dp, top = 12.dp, end = 24.dp),
+            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
+
+/** What the app is, said plainly at the top of its options: the name, that an AI answers, the version. */
+@Composable
+private fun Brand(poweredByAi: Boolean) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(R.string.brand_name),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = listOfNotNull(
+                // Left out while the answers are the bundled ones, rather than said of answers no AI wrote.
+                stringResource(R.string.brand_tagline).takeIf { poweredByAi },
+                stringResource(R.string.footer_version, BuildConfig.VERSION_NAME)
+            ).joinToString(" · "),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+            .semantics { heading() },
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+}
+
+/** One option on a card of its own: a touch of the text's colour over the backdrop, so it suits both themes. */
+@Composable
+private fun OptionCard(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = CARD_ALPHA))
+    ) {
+        content()
+    }
+}
+
 
 /** A titled choice of one among a few, as a row of connected buttons. [label] gives a string resource. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -242,7 +272,7 @@ private fun <T> Choice(
     onSelected: (T) -> Unit
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 24.dp),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
@@ -276,7 +306,7 @@ private fun <T> ChipChoice(
     onSelected: (T) -> Unit
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 24.dp),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
@@ -319,7 +349,7 @@ private fun SwitchRow(
                 onValueChange = onCheckedChange
             )
             .heightIn(min = 72.dp)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SettingText(title, supporting, enabled, Modifier.weight(1f))
@@ -370,7 +400,7 @@ private fun ActionRow(title: String, supporting: String, @DrawableRes icon: Int,
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 72.dp)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f))
@@ -390,7 +420,7 @@ private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SettingText(
@@ -452,3 +482,4 @@ private fun Magic8BallPersonality.labelRes(): Int = when (this) {
 
 /** Material's emphasis for disabled content. */
 private const val DISABLED_ALPHA = 0.38f
+private const val CARD_ALPHA = 0.06f

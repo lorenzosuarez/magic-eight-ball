@@ -24,6 +24,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.runtime.key
@@ -215,8 +219,6 @@ fun EightBallScreen(
         }
     }
 
-    var settingsOpen by rememberSaveable { mutableStateOf(false) }
-
     // The app arrives rather than appears: from the launch screen, which shows the ball on the
     // window's plain colour, the ball grows to its size while everything else fades in.
     val intro = remember { Animatable(0f) }
@@ -232,20 +234,23 @@ fun EightBallScreen(
         val current = state ?: return@Box
         ProvideAppLanguage(current.settings.language) {
             // Said once, as the die comes up with it; never again for the same answer.
-            val voice = rememberAnswerVoice(current.settings.spokenAnswersEnabled)
+            val voice = rememberAnswerVoice()
             val answered = current.phase as? BallPhase.Answered
             val answerToSay = answered?.answer?.text()
+            val answerLocale = Locale.forLanguageTag(current.settings.language.code)
+            val speaksAnswers = current.settings.spokenAnswersEnabled
             var saidAnswerId by rememberSaveable { mutableStateOf<Long?>(null) }
-            LaunchedEffect(voice, answered?.id) {
-                if (voice == null) return@LaunchedEffect
-                if (answerToSay == null || answered.id == saidAnswerId) {
-                    if (answerToSay == null) voice.hush()
+            LaunchedEffect(voice, answered?.id, speaksAnswers) {
+                if (answerToSay == null) {
+                    voice.hush()
                     return@LaunchedEffect
                 }
+                if (!speaksAnswers || answered.id == saidAnswerId) return@LaunchedEffect
                 saidAnswerId = answered.id
                 delay(SPOKEN_ANSWER_DELAY_MS)
-                voice.say(answerToSay, Locale.forLanguageTag(current.settings.language.code))
+                voice.say(answerToSay, answerLocale)
             }
+            val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
             EightBallContent(
                 state = current,
                 now = now,
@@ -277,7 +282,39 @@ fun EightBallScreen(
                     tick(HapticFeedbackConstantsCompat.CLOCK_TICK)
                     viewModel.clearHistory()
                 },
-                onOpenSettings = { settingsOpen = true },
+                onSpeakAnswer = {
+                    tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
+                    answerToSay?.let { voice.say(it, answerLocale) }
+                },
+                options = {
+                    SettingsContent(
+                        state = current,
+                        onLanguageSelected = {
+                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                            viewModel.setLanguage(it)
+                        },
+                        onPersonalitySelected = {
+                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                            viewModel.setPersonality(it)
+                        },
+                        onAiAnswersChange = {
+                            tick(it.toggleFeedback())
+                            viewModel.setAiAnswersEnabled(it)
+                        },
+                        onVoiceQuestionsChange = {
+                            tick(it.toggleFeedback())
+                            viewModel.setVoiceQuestionsEnabled(it)
+                        },
+                        onAllowMicrophone = { askForMicrophone(true) },
+                        onSpokenAnswersChange = {
+                            tick(it.toggleFeedback())
+                            viewModel.setSpokenAnswersEnabled(it)
+                        },
+                        onPartyNamesChange = viewModel::setPartyNames,
+                        onShareApp = { context.shareText(shareAppText) },
+                        onShowAdPrivacyOptions = onShowAdPrivacyOptions,
+                    )
+                },
                 onAllowMicrophone = { askForMicrophone(true) },
                 onAskWho = viewModel::askWho,
                 onShareAnswer = { picture ->
@@ -285,37 +322,6 @@ fun EightBallScreen(
                     context.shareAnswer(picture, shareAnswerText)
                 }
             )
-            if (settingsOpen) {
-                val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
-                SettingsSheet(
-                    state = current,
-                    onLanguageSelected = {
-                        tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
-                        viewModel.setLanguage(it)
-                    },
-                    onPersonalitySelected = {
-                        tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
-                        viewModel.setPersonality(it)
-                    },
-                    onAiAnswersChange = {
-                        tick(it.toggleFeedback())
-                        viewModel.setAiAnswersEnabled(it)
-                    },
-                    onVoiceQuestionsChange = {
-                        tick(it.toggleFeedback())
-                        viewModel.setVoiceQuestionsEnabled(it)
-                    },
-                    onAllowMicrophone = { askForMicrophone(true) },
-                    onSpokenAnswersChange = {
-                        tick(it.toggleFeedback())
-                        viewModel.setSpokenAnswersEnabled(it)
-                    },
-                    onPartyNamesChange = viewModel::setPartyNames,
-                    onShareApp = { context.shareText(shareAppText) },
-                    onShowAdPrivacyOptions = onShowAdPrivacyOptions,
-                    onDismiss = { settingsOpen = false }
-                )
-            }
         }
     }
 }
@@ -352,11 +358,12 @@ internal fun EightBallContent(
     onDeleteHistoryEntry: (Long) -> Unit,
     onRestoreHistoryEntry: (HistoryEntry) -> Unit,
     onClearHistory: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
     onAskWho: (String) -> Unit = {},
+    onSpeakAnswer: () -> Unit = {},
+    options: @Composable () -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
 ) {
@@ -401,7 +408,12 @@ internal fun EightBallContent(
         // Never seen here: the picture an answer is shared as, ready for when it is asked for.
         (state.phase as? BallPhase.Answered)?.let { answered ->
             key(answered.id) {
-                ShareCard(question = answered.question, answer = answered.answer.text(), layer = shareLayer)
+                ShareCard(
+                    question = answered.question,
+                    answer = answered.answer.text(),
+                    layer = shareLayer,
+                    fromAi = (answered.answer as? AnswerText.Plain)?.fromAi == true
+                )
             }
         }
         HorizontalPager(
@@ -412,7 +424,9 @@ internal fun EightBallContent(
                 .padding(top = TOP_BAR_HEIGHT),
             userScrollEnabled = atRest
         ) { page ->
-            if (page == HISTORY_PAGE) {
+            if (page == OPTIONS_PAGE) {
+                options()
+            } else if (page == HISTORY_PAGE) {
                 HistoryContent(
                     entries = state.history,
                     now = now,
@@ -454,32 +468,90 @@ internal fun EightBallContent(
                 .height(TOP_BAR_HEIGHT)
                 .padding(horizontal = 8.dp)
         ) {
-            when {
-                !atRest -> BarButton(
+            if (!atRest) {
+                BarButton(
                     icon = R.drawable.ic_close,
                     description = stringResource(if (busy) R.string.action_cancel else R.string.action_close),
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.CenterStart)
                 )
-                onBallPage -> BarButton(
-                    icon = R.drawable.ic_history,
-                    description = stringResource(R.string.history_title),
-                    onClick = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
-                    modifier = Modifier.align(Alignment.CenterStart)
-                )
-            }
-            if (atRest) {
-                PageDots(current = pagerState.currentPage, modifier = Modifier.align(Alignment.Center))
-            }
-            if (!busy) {
-                BarButton(
-                    icon = R.drawable.ic_settings,
-                    description = stringResource(R.string.settings_title),
-                    onClick = onOpenSettings,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
+                // With an answer on the die, the one thing left to do with it from up here: hear it.
+                if (state.phase is BallPhase.Answered) {
+                    BarButton(
+                        icon = R.drawable.ic_volume,
+                        description = stringResource(R.string.action_read_aloud),
+                        onClick = onSpeakAnswer,
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    )
+                }
+            } else {
+                // From the ball, each neighbour is named at the side it lies on.
+                if (onBallPage) {
+                    LabeledBarButton(
+                        icon = R.drawable.ic_history,
+                        label = stringResource(R.string.history_title),
+                        onClick = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    )
+                    LabeledBarButton(
+                        icon = R.drawable.ic_settings,
+                        label = stringResource(R.string.settings_title),
+                        onClick = { scope.launch { pagerState.animateScrollToPage(OPTIONS_PAGE) } },
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    )
+                }
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // A neighbour's own name stands over the dots, where the ball has none.
+                    val title = when (pagerState.currentPage) {
+                        HISTORY_PAGE -> R.string.history_title
+                        OPTIONS_PAGE -> R.string.settings_title
+                        else -> null
+                    }
+                    if (title != null) {
+                        Text(
+                            text = stringResource(title),
+                            modifier = Modifier.semantics { heading() },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    PageDots(current = pagerState.currentPage)
+                }
             }
         }
+    }
+}
+
+/** A way to a neighbouring page: its icon with its name under it, so nobody has to guess what the icon means. */
+@Composable
+private fun LabeledBarButton(icon: Int, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .heightIn(min = 48.dp)
+            .widthIn(min = 64.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
+        )
     }
 }
 
@@ -981,7 +1053,8 @@ private val LAUNCH_BALL_SIZE = 192.dp
 
 internal const val HISTORY_PAGE = 0
 internal const val BALL_PAGE = 1
-private const val PAGE_COUNT = 2
+internal const val OPTIONS_PAGE = 2
+private const val PAGE_COUNT = 3
 private const val DOT_OFF_ALPHA = 0.35f
 
 private const val BALL_WIDTH_FRACTION = 0.58f
@@ -990,7 +1063,7 @@ private val BALL_MIN_SIZE = 96.dp
 
 /** Wide enough for the ball to grow into when it shows an answer. */
 private val BALL_GAP = 56.dp
-private val TOP_BAR_HEIGHT = 56.dp
+private val TOP_BAR_HEIGHT = 72.dp
 private val TEXT_MAX_WIDTH = 480.dp
 private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 104.dp
@@ -1032,7 +1105,6 @@ private fun EightBallContentPreview() {
             onDeleteHistoryEntry = {},
             onRestoreHistoryEntry = {},
             onClearHistory = {},
-            onOpenSettings = {}
         )
     }
 }

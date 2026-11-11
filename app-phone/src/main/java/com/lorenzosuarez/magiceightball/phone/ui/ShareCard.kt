@@ -48,6 +48,7 @@ import java.io.File
  * It is laid out but drawn only into [layer], never on the screen: [GraphicsLayer.toImageBitmap]
  * then gives the picture.
  *
+ * @param fromAi whether the AI service wrote this answer: only then does the picture say so.
  * @param visible true to draw it on the screen as well, for previews and screenshot tests.
  */
 @Composable
@@ -56,6 +57,7 @@ internal fun ShareCard(
     answer: String,
     layer: GraphicsLayer,
     modifier: Modifier = Modifier,
+    fromAi: Boolean = false,
     visible: Boolean = false
 ) {
     CompositionLocalProvider(LocalDensity provides Density(SHARE_DENSITY, fontScale = 1f)) {
@@ -69,9 +71,16 @@ internal fun ShareCard(
                         if (visible) drawLayer(layer)
                     }
                     .background(Backdrop)
-                    .padding(horizontal = 32.dp, vertical = 56.dp),
+                    .padding(horizontal = 32.dp, vertical = 48.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Text(
+                    text = stringResource(R.string.brand_name).uppercase(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 3.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
                 Box(modifier = Modifier.fillMaxWidth().height(SHARE_QUESTION_HEIGHT), contentAlignment = Alignment.Center) {
                     if (question.isNotBlank()) {
                         Text(
@@ -99,12 +108,14 @@ internal fun ShareCard(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    if (fromAi) {
+                        Text(
+                            text = stringResource(R.string.brand_tagline),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.share_card_invite).uppercase(),
                         style = MaterialTheme.typography.labelSmall,

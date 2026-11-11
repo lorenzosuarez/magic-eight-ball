@@ -43,7 +43,7 @@
     <string name="answer_fallback">Pregunta más tarde</string>
 
     <!-- Settings -->
-    <string name="settings_title">Configuración</string>
+    <string name="settings_title">Opciones</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_style">Estilo de respuesta</string>
     <string name="style_sarcastic">Sarcástico</string>
@@ -79,6 +79,11 @@
     <string name="settings_share_app_hint">Cuéntale a alguien sobre la Bola Mágica 8</string>
     <string name="share_app_text">Pregúntale lo que quieras a la Bola Mágica 8: %1$s</string>
     <string name="action_share">Compartir</string>
+    <string name="action_read_aloud">Leer la respuesta en voz alta</string>
+    <string name="brand_tagline">Respuestas escritas por IA</string>
+    <string name="options_answers">Respuestas</string>
+    <string name="options_asking">Preguntar</string>
+    <string name="options_general">General</string>
     <string name="share_answer_text">Mira lo que me dijo la Bola Mágica 8. Pregúntale lo tuyo: %1$s</string>
     <string name="share_card_invite">Pregúntale lo tuyo</string>
     <string name="settings_ad_privacy">Privacidad de anuncios</string>

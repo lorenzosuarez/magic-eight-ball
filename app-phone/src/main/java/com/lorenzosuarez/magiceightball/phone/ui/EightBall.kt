@@ -400,6 +400,16 @@ private class BallDrawing(
         radius = recessRadius
     )
 
+    /** The answer's colour, spilling out of the window onto the ball. */
+    private val glowRadius = liquidRadius * GLOW_REACH
+    private val glowBrush = Brush.radialGradient(
+        0f to Accent.copy(alpha = GLOW_ALPHA),
+        1f / GLOW_REACH to Accent.copy(alpha = GLOW_ALPHA),
+        1f to Color.Transparent,
+        center = center,
+        radius = glowRadius
+    )
+
     /** The liquid over the die: clear in the middle, darker towards the glass's edge. */
     private val depthBrush = Brush.radialGradient(
         0f to Color.Transparent,
@@ -517,6 +527,7 @@ private class BallDrawing(
         drawCircle(edgeBrush, radius - edgeStroke.width / 2f, center, style = edgeStroke)
         if (face > 0f) {
             scale(1f - FACE_SHRINK * (1f - face), pivot = center) {
+                if (colour > 0f) drawCircle(glowBrush, glowRadius, center, alpha = face * colour)
                 drawCircle(recessBrush, recessRadius, center, alpha = face)
                 drawCircle(liquidBrush, liquidRadius, center, alpha = face)
                 clipPath(liquidOutline) {
@@ -746,7 +757,11 @@ private val AnswerInk = Color(0xFFDDE6FF).copy(alpha = 0.86f)
 
 /** Radii of the two faces, relative to the ball's. */
 private const val EIGHT_RADIUS = 0.46f
-private const val WINDOW_RADIUS = 0.70f
+private const val WINDOW_RADIUS = 0.52f
+
+/** The answer's light on the ball around the window: how far it reaches, in window radii, and how strong it starts. */
+private const val GLOW_REACH = 1.75f
+private const val GLOW_ALPHA = 0.5f
 
 /**
  * The die's circumradius relative to the window's. Well above 1: the risen die comes close

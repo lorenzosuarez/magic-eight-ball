@@ -9,20 +9,23 @@ import androidx.compose.ui.platform.LocalContext
 import java.util.Locale
 
 /**
- * Reads answers out loud with the device's own voice. The speech service takes a moment to
- * start, so an answer asked for before then is said as soon as it has.
+ * Reads answers out loud with the device's own voice. The speech service is only started the
+ * first time something is to be said, and takes a moment to: what was asked for meanwhile is
+ * said as soon as it has.
  */
 internal class AnswerVoice(context: Context) {
+    private val context = context.applicationContext
+    private var speech: TextToSpeech? = null
     private var ready = false
     private var waiting: Pair<String, Locale>? = null
-    private val speech = TextToSpeech(context.applicationContext) { status ->
-        ready = status == TextToSpeech.SUCCESS
-        waiting?.let { (text, locale) -> say(text, locale) }
-        waiting = null
-    }
 
     /** Says [text] in [locale]'s voice, in place of whatever was being said. */
     fun say(text: String, locale: Locale) {
+        val speech = speech ?: TextToSpeech(context) { status ->
+            ready = status == TextToSpeech.SUCCESS
+            waiting?.let { (text, locale) -> if (ready) say(text, locale) }
+            waiting = null
+        }.also { this.speech = it }
         if (!ready) {
             waiting = text to locale
             return
@@ -34,12 +37,14 @@ internal class AnswerVoice(context: Context) {
 
     fun hush() {
         waiting = null
-        speech.stop()
+        speech?.stop()
     }
 
     fun release() {
-        speech.stop()
-        speech.shutdown()
+        speech?.stop()
+        speech?.shutdown()
+        speech = null
+        ready = false
     }
 
     private companion object {
@@ -47,11 +52,11 @@ internal class AnswerVoice(context: Context) {
     }
 }
 
-/** The voice while [enabled], released when it no longer is: nobody else pays for the speech service. */
+/** The voice, for as long as the screen is there. It costs nothing until it first speaks. */
 @Composable
-internal fun rememberAnswerVoice(enabled: Boolean): AnswerVoice? {
+internal fun rememberAnswerVoice(): AnswerVoice {
     val context = LocalContext.current
-    val voice = remember(enabled, context) { if (enabled) AnswerVoice(context) else null }
-    DisposableEffect(voice) { onDispose { voice?.release() } }
+    val voice = remember(context) { AnswerVoice(context) }
+    DisposableEffect(voice) { onDispose { voice.release() } }
     return voice
 }
