@@ -6,6 +6,7 @@ import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.policy.PromptPolicy
+import com.example.magiceightball.core.domain.policy.Verdict
 import com.example.magiceightball.core.network.model.Content
 import com.example.magiceightball.core.network.model.GeminiRequest
 import com.example.magiceightball.core.network.model.GenerationConfig
@@ -22,6 +23,9 @@ class GeminiRemoteDataSource @Inject constructor(
     private val config: GeminiConfig,
     private val promptPolicy: PromptPolicy
 ) {
+    /** How the answer to a question is drawn: only a test has reason to replace it. */
+    internal var drawVerdict: () -> Verdict = { Verdict.draw() }
+
     /**
      * Asks Gemini for an answer.
      *
@@ -39,7 +43,10 @@ class GeminiRemoteDataSource @Inject constructor(
             val systemPromptText = promptPolicy.getSystemPrompt(
                 languageCode = request.languageCode,
                 personality = request.personality,
-                answersQuestion = question != null
+                answersQuestion = question != null,
+                // Drawn here, as a shake would: the service words the answer, it does not choose it.
+                // Without a question the instruction stays the fixed one it has always been.
+                verdict = if (question != null) drawVerdict() else null
             )
 
             val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))

@@ -62,13 +62,14 @@ import com.lorenzosuarez.magiceightball.phone.R
 /** The styles that belong together, under the name of what they share. */
 internal class StyleGroup(@StringRes val title: Int, val styles: List<Magic8BallPersonality>)
 
-/** Every style, once, in the order the sheet of styles shows them: four to a group, so no line is left half empty. */
+/** Every style, once, in the order the sheet of styles shows them: a group to a line. */
 internal val StyleGroups = listOf(
     StyleGroup(
         R.string.styles_group_classics,
         listOf(
             Magic8BallPersonality.SARCASTIC,
             Magic8BallPersonality.MYSTICAL,
+            Magic8BallPersonality.ASTRO,
             Magic8BallPersonality.NEUTRAL,
             Magic8BallPersonality.PHILOSOPHER
         )
@@ -385,6 +386,7 @@ internal fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.ZOOMER -> R.string.style_zoomer
     Magic8BallPersonality.VILLAIN -> R.string.style_villain
     Magic8BallPersonality.POET -> R.string.style_poet
+    Magic8BallPersonality.ASTRO -> R.string.style_astro
 }
 
 /** Something the style would say, to tell it from the others at a glance. */
@@ -406,6 +408,7 @@ private fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.ZOOMER -> R.string.style_zoomer_sample
     Magic8BallPersonality.VILLAIN -> R.string.style_villain_sample
     Magic8BallPersonality.POET -> R.string.style_poet_sample
+    Magic8BallPersonality.ASTRO -> R.string.style_astro_sample
 }
 
 private val STYLE_CARD_MIN_WIDTH = 132.dp

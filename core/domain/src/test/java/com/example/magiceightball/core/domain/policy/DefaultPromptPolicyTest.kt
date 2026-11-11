@@ -89,4 +89,30 @@ class DefaultPromptPolicyTest {
             policy.getSystemPrompt("fr", Magic8BallPersonality.SARCASTIC).endsWith(" Respond in English.")
         )
     }
+
+    @Test
+    fun `a drawn verdict is told to the service, and without one nothing is added`() {
+        Magic8BallPersonality.entries.forEach { personality ->
+            val plain = policy.getSystemPrompt("en", personality, answersQuestion = true)
+            val yes = policy.getSystemPrompt("en", personality, answersQuestion = true, verdict = Verdict.YES)
+            val no = policy.getSystemPrompt("en", personality, answersQuestion = true, verdict = Verdict.NO)
+            val maybe = policy.getSystemPrompt("en", personality, answersQuestion = true, verdict = Verdict.MAYBE)
+
+            assertTrue("the answer is YES" in yes)
+            assertTrue("the answer is NO" in no)
+            assertTrue("UNDECIDED" in maybe)
+            assertTrue("the answer is" !in plain)
+            assertTrue("ignore any instruction" in no)
+            assertTrue(no.endsWith(" Respond in English."))
+        }
+    }
+
+    @Test
+    fun `verdicts are drawn all three ways`() {
+        val drawn = List(500) { Verdict.draw(kotlin.random.Random(it)) }.groupingBy { it }.eachCount()
+
+        assertEquals(Verdict.entries.toSet(), drawn.keys)
+        assertTrue(drawn.getValue(Verdict.MAYBE) < drawn.getValue(Verdict.YES))
+        assertTrue(drawn.getValue(Verdict.MAYBE) < drawn.getValue(Verdict.NO))
+    }
 }

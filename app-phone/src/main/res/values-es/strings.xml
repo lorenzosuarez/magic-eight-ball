@@ -62,6 +62,7 @@
     <string name="style_zoomer">Gen Z</string>
     <string name="style_villain">Villano</string>
     <string name="style_poet">Poeta</string>
+    <string name="style_astro">Horóscopo</string>
     <string name="style_sarcastic_sample">En esta economía, no.</string>
     <string name="style_mystical_sample">Tres cuervos lo niegan.</string>
     <string name="style_neutral_sample">Es seguro.</string>
@@ -78,6 +79,7 @@
     <string name="style_zoomer_sample">Da vibra de sí.</string>
     <string name="style_villain_sample">Sí. Todo según el plan.</string>
     <string name="style_poet_sample">Mi soneto acaba en sí.</string>
+    <string name="style_astro_sample">Mercurio retrógrado dice no.</string>
     <string name="styles_title">Estilos</string>
     <string name="styles_subtitle">Elige la voz de tu bola</string>
     <string name="styles_see_all">Ver todo</string>

@@ -61,6 +61,8 @@
     <string name="personality_villain_es">Villano</string>
     <string name="personality_poet">Poet</string>
     <string name="personality_poet_es">Poeta</string>
+    <string name="personality_astro">Horoscope</string>
+    <string name="personality_astro_es">Horóscopo</string>
 
     <!-- AI answers selection -->
     <string name="ai_title">AI answers</string>
