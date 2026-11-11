@@ -15,6 +15,27 @@ data class PersonalityResponsesDto(
     val mystical: List<String> = emptyList(),
     val neutral: List<String> = emptyList()
 ) {
+    /** Only what can be shown on the ball: see [Magic8BallDataDto.usable]. */
+    fun usable(): PersonalityResponsesDto = PersonalityResponsesDto(
+        sarcastic = sarcastic.usableAnswers(),
+        mystical = mystical.usableAnswers(),
+        neutral = neutral.usableAnswers()
+    )
+
+    /** These lists, with every one that [other] fills taking the place of this one's. */
+    fun replacedBy(other: PersonalityResponsesDto): PersonalityResponsesDto = PersonalityResponsesDto(
+        sarcastic = other.sarcastic.ifEmpty { sarcastic },
+        mystical = other.mystical.ifEmpty { mystical },
+        neutral = other.neutral.ifEmpty { neutral }
+    )
+
+    private fun List<String>.usableAnswers(): List<String> = map { it.trim() }
+        .filter { answer ->
+            answer.isNotEmpty() && answer.length <= Magic8BallDataDto.MAX_ANSWER_LENGTH &&
+                answer.split(WHITESPACE).size <= Magic8BallDataDto.MAX_ANSWER_WORDS
+        }
+        .distinct()
+
     fun forPersonality(personality: Magic8BallPersonality): List<String> = when (personality) {
         Magic8BallPersonality.SARCASTIC -> sarcastic
         Magic8BallPersonality.MYSTICAL -> mystical
@@ -51,12 +72,29 @@ data class Magic8BallDataDto(
             .orEmpty()
     }
 
+    /**
+     * Only the answers that can be shown on the ball: trimmed, not empty, not repeated, and
+     * within [MAX_ANSWER_WORDS] words and [MAX_ANSWER_LENGTH] characters. Answers that come
+     * from outside the app go through this, so a slip in the console never reaches the die.
+     */
+    fun usable(): Magic8BallDataDto = Magic8BallDataDto(en = en.usable(), es = es.usable())
+
+    /** These answers, with every list that [other] fills taking the place of this one's. */
+    fun replacedBy(other: Magic8BallDataDto): Magic8BallDataDto =
+        Magic8BallDataDto(en = en.replacedBy(other.en), es = es.replacedBy(other.es))
+
     /** Accepts plain codes and locale tags ("es", "ES", "es-MX", "es_419"). */
     private fun forLanguage(languageCode: String): PersonalityResponsesDto =
         if (isSpanish(languageCode)) es else en
 
     companion object {
+        /** As many words as the AI service is allowed, and what still reads well on the die. */
+        const val MAX_ANSWER_WORDS = 6
+        const val MAX_ANSWER_LENGTH = 40
+
         fun isSpanish(languageCode: String): Boolean =
             languageCode.trim().lowercase().substringBefore('-').substringBefore('_') == "es"
     }
 }
+
+private val WHITESPACE = Regex("\\s+")
