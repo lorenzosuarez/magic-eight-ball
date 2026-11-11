@@ -134,7 +134,13 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
             }
             val motif = it.motif?.let { motif -> " Build it around this, in your own way: $motif." }.orEmpty()
             val angle = it.angle?.let { angle -> " $angle" }.orEmpty()
-            answer + motif + angle + FRESHNESS + if (it.withRemark) REMARK else ""
+            // The character's catchwords come in English in these instructions: they are to be translated too.
+            val wholly = if (languageCode == "es") {
+                " Every word must be Spanish, the character's own words for yes and no included."
+            } else {
+                ""
+            }
+            answer + motif + angle + FRESHNESS + (if (it.withRemark) REMARK else "") + wholly
         }.orEmpty()
         return basePrompt + drawn + guard + languageInstruction
     }
@@ -142,15 +148,16 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
     private companion object {
         /** What every character is held to, whatever its voice. */
         /** What keeps a drawn answer from sounding like the last one. */
-        const val FRESHNESS = " You only word that answer: keep it, in character, and let the character's own" +
-            " images carry it rather than a bare yes or no. Surprise: never the obvious line, never an example."
+        const val FRESHNESS = " You only word that answer, in character. Whoever reads it must know at a glance" +
+            " whether it is a yes, a no or undecided: say so in the character's own word for it, then dress it" +
+            " in the character's images. Surprise: never the obvious line, never an example."
 
         /**
          * The second line: where the character has room. The answer itself stays short, since it is
          * what shows on the ball; every other limit in the instruction is about that first line.
          */
-        const val REMARK = " Write exactly two lines and nothing else. Line 1 is the answer as it shows on the ball:" +
-            " every word limit above applies to line 1 only. Line 2 is what the character adds right after," +
+        const val REMARK = " Write exactly two lines and nothing else. Line 1 is the answer as it shows on the ball," +
+            " two to five words that make the yes, no or maybe plain: every word limit above applies to line 1 only. Line 2 is what the character adds right after," +
             " one sentence of at most 14 words: the punchline, a reaction or a detail, never an explanation" +
             " and never line 1 said again. No labels, no quotation marks, no emoji."
 

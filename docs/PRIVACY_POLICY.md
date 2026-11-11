@@ -1,6 +1,6 @@
 # Privacy Policy for Magic AI Ball (Wear OS and Android phones and tablets)
 
-**Effective date:** November 11, 2026
+**Effective date:** November 12, 2026
 
 This policy explains how the Magic AI Ball app (package `com.lorenzosuarez.magiceightball`), developed by Lorenzo Suarez, handles information. It covers both versions of the app: the one for Wear OS watches and the one for Android phones and tablets. Where they differ, this policy says so.
 
@@ -17,7 +17,7 @@ This policy explains how the Magic AI Ball app (package `com.lorenzosuarez.magic
 **Firebase Remote Config.** When the app starts, and at most about once an hour while you use it, it asks Google's Firebase Remote Config service for its current settings, such as whether AI answers are switched on. This request includes a random installation identifier created by Firebase for this copy of the app, and basic app and device information (for example app version, language, country and operating system version). It does not include your name, account or location. Google handles this under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy).
 
 **Gemini API.** AI answers are used only when both you and the developer have them switched on: you choose with "AI answers" in the app's options (on by default), and the developer can switch them on or off for everyone. When the developer has them switched off, that page shows them as not available. While AI answers are off, by your choice or the developer's, the app shows answers from a list built into the app and sends nothing to the Gemini API. While they are on, asking the ball sends a request over an encrypted HTTPS connection to Google's Gemini API (`generativelanguage.googleapis.com`). That request contains only:
-- a fixed instruction written by the developer, which reflects the answer style and answer language (English or Spanish) you chose in the app and, when you asked a question, whether this answer is to be a yes, a no or undecided, which the app draws at random;
+- an instruction written by the developer, which reflects the answer style and answer language (English or Spanish) you chose in the app, together with what the app draws at random for each answer so that no two are alike: whether it is to be a yes, a no or undecided, and a theme and a turn of phrase taken from lists built into the app. Nothing in it comes from you;
 - when you shake, or tap on a phone or tablet: the fixed word "shake";
 - when you asked out loud and your question was recognised: the text of that question (at most 200 characters) instead of the fixed word, so that the answer responds to it;
 - technical generation settings and the developer's API key.
@@ -69,7 +69,7 @@ In the options you can type the names of the people playing, from two to eight. 
 ## Sharing an answer (phones and tablets only)
 Under an answer, "Share" makes a picture of it and hands it to the app you pick from your device's share menu. Nothing is shared unless you choose it, each time.
 
-- **What is in the picture.** The app's name, your question if you asked one out loud, the answer, and a line saying it was written by AI when it was.
+- **What is in the picture.** The app's name, your question if you asked one out loud, the answer with the line the character added under it, and a line saying it was written by AI when it was.
 - **What goes with it.** A short text with the app's Google Play link.
 - **Where it goes.** Only to the app you pick, which handles it under its own terms. The developer receives nothing, and the app does not learn which app you picked.
 - **What is kept.** The picture is saved as one file in the app's temporary storage so that the other app can read it, and is replaced by the next one you share. It is removed when you clear the app's cache or data or uninstall the app, and your device may remove it on its own.
