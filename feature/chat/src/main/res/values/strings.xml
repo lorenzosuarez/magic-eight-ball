@@ -33,8 +33,8 @@
     <string name="personality_sarcastic_es">Sarcástico</string>
     <string name="personality_mystical">Mystical</string>
     <string name="personality_mystical_es">Místico</string>
-    <string name="personality_neutral">Neutral</string>
-    <string name="personality_neutral_es">Neutro</string>
+    <string name="personality_neutral">Classic</string>
+    <string name="personality_neutral_es">Clásico</string>
     <string name="personality_grandma">Grandma</string>
     <string name="personality_grandma_es">Abuela</string>
     <string name="personality_pirate">Pirate</string>

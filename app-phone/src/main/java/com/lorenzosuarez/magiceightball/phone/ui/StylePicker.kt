@@ -103,13 +103,16 @@ internal val StyleGroups = listOf(
     )
 )
 
-/** The few styles the options show without asking: one from each group, the liveliest first. */
+/**
+ * The few styles the options show without asking. The plain one is always among them, second
+ * and never dropped: whoever tires of a character should not have to look for the way back.
+ */
 private val FeaturedStyles = listOf(
     Magic8BallPersonality.SARCASTIC,
+    Magic8BallPersonality.NEUTRAL,
     Magic8BallPersonality.LOVESTRUCK,
     Magic8BallPersonality.CAT,
-    Magic8BallPersonality.DRAMA,
-    Magic8BallPersonality.ROBOT
+    Magic8BallPersonality.DRAMA
 )
 
 /** The featured styles, led by [selected] when it is not one of them, so the choice is always in sight. */

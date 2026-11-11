@@ -53,7 +53,7 @@
     <string name="settings_style">Answer style</string>
     <string name="style_sarcastic">Sarcastic</string>
     <string name="style_mystical">Mystical</string>
-    <string name="style_neutral">Neutral</string>
+    <string name="style_neutral">Classic</string>
     <string name="style_grandma">Grandma</string>
     <string name="style_pirate">Pirate</string>
     <string name="style_philosopher">Philosopher</string>
