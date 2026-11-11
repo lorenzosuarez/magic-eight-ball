@@ -91,6 +91,16 @@ class EightBallScreenshotTest {
     fun phone_answer_light() = capture("phone_3_answer_light", ANSWERED)
 
     @Test
+    @Config(qualifiers = "+night")
+    fun phone_party_spanish() = capture(
+        name = "phone_25_party_spanish",
+        state = EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH, partyNames = listOf("Ana", "Beto", "Caro")),
+            turn = 1
+        )
+    )
+
+    @Test
     fun share_card() = captureRoboImage(filePath = path("phone_24_share_card")) {
         ShareCard(
             question = "Should I order pizza tonight?",

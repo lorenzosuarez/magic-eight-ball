@@ -19,4 +19,6 @@ interface UserSettingsRepository {
     suspend fun setVoiceQuestionsEnabled(enabled: Boolean)
 
     suspend fun setSpokenAnswersEnabled(enabled: Boolean)
+
+    suspend fun setPartyNames(names: List<String>)
 }

@@ -18,6 +18,16 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.magiceightball.core.domain.model.UserSettings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -62,7 +72,8 @@ fun SettingsSheet(
     onShareApp: () -> Unit,
     onDismiss: () -> Unit,
     onShowAdPrivacyOptions: (() -> Unit)? = null,
-    onSpokenAnswersChange: (Boolean) -> Unit = {}
+    onSpokenAnswersChange: (Boolean) -> Unit = {},
+    onPartyNamesChange: (List<String>) -> Unit = {}
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -79,7 +90,8 @@ fun SettingsSheet(
                 onAllowMicrophone = onAllowMicrophone,
                 onShareApp = onShareApp,
                 onShowAdPrivacyOptions = onShowAdPrivacyOptions,
-                onSpokenAnswersChange = onSpokenAnswersChange
+                onSpokenAnswersChange = onSpokenAnswersChange,
+                onPartyNamesChange = onPartyNamesChange
             )
         }
     }
@@ -97,8 +109,20 @@ internal fun SettingsContent(
     onShareApp: () -> Unit,
     modifier: Modifier = Modifier,
     onShowAdPrivacyOptions: (() -> Unit)? = null,
-    onSpokenAnswersChange: (Boolean) -> Unit = {}
+    onSpokenAnswersChange: (Boolean) -> Unit = {},
+    onPartyNamesChange: (List<String>) -> Unit = {}
 ) {
+    var editingParty by rememberSaveable { mutableStateOf(false) }
+    if (editingParty) {
+        PartyDialog(
+            names = state.settings.partyNames,
+            onSave = {
+                onPartyNamesChange(it)
+                editingParty = false
+            },
+            onDismiss = { editingParty = false }
+        )
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -172,6 +196,16 @@ internal fun SettingsContent(
             onCheckedChange = onSpokenAnswersChange
         )
 
+        ActionRow(
+            title = stringResource(R.string.settings_party),
+            supporting = if (state.settings.isParty) {
+                state.settings.partyNames.joinToString(", ")
+            } else {
+                stringResource(R.string.settings_party_off)
+            },
+            icon = R.drawable.ic_group,
+            onClick = { editingParty = true }
+        )
         ActionRow(
             title = stringResource(R.string.settings_share_app),
             supporting = stringResource(R.string.settings_share_app_hint),
@@ -292,6 +326,40 @@ private fun SwitchRow(
         Spacer(Modifier.width(16.dp))
         Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
+}
+
+/** Who is playing: names typed in one field, since that is how a group is dictated. Saving none ends the party. */
+@Composable
+private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onDismiss: () -> Unit) {
+    var typed by rememberSaveable { mutableStateOf(names.joinToString(", ")) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_party)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = typed,
+                    onValueChange = { typed = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.party_dialog_hint)) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
+                )
+                Text(
+                    text = stringResource(R.string.party_dialog_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(UserSettings.parsePartyNames(typed)) }) {
+                Text(stringResource(R.string.action_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        }
+    )
 }
 
 /** Something to do rather than to set: the whole row is the button. */

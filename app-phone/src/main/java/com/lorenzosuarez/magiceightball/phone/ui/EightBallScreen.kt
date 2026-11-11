@@ -279,6 +279,7 @@ fun EightBallScreen(
                 },
                 onOpenSettings = { settingsOpen = true },
                 onAllowMicrophone = { askForMicrophone(true) },
+                onAskWho = viewModel::askWho,
                 onShareAnswer = { picture ->
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
                     context.shareAnswer(picture, shareAnswerText)
@@ -309,6 +310,7 @@ fun EightBallScreen(
                         tick(it.toggleFeedback())
                         viewModel.setSpokenAnswersEnabled(it)
                     },
+                    onPartyNamesChange = viewModel::setPartyNames,
                     onShareApp = { context.shareText(shareAppText) },
                     onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                     onDismiss = { settingsOpen = false }
@@ -354,6 +356,7 @@ internal fun EightBallContent(
     modifier: Modifier = Modifier,
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
+    onAskWho: (String) -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
 ) {
@@ -429,7 +432,8 @@ internal fun EightBallContent(
                     onHoldCancel = onHoldCancel,
                     onToggleVoiceQuestion = onToggleVoiceQuestion,
                     onAllowMicrophone = onAllowMicrophone,
-                    onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } }
+                    onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
+                    onAskWho = onAskWho
                 )
             }
         }
@@ -519,7 +523,8 @@ private fun Stage(
     onHoldCancel: () -> Unit,
     onToggleVoiceQuestion: () -> Unit,
     onAllowMicrophone: () -> Unit,
-    onShareAnswer: () -> Unit
+    onShareAnswer: () -> Unit,
+    onAskWho: (String) -> Unit
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
@@ -567,6 +572,7 @@ private fun Stage(
                 state = state,
                 onAllowMicrophone = onAllowMicrophone,
                 onShareAnswer = onShareAnswer,
+                onAskWho = onAskWho,
                 modifier = Modifier
                     .graphicsLayer { alpha = intro() }
                     .padding(horizontal = 32.dp)
@@ -744,6 +750,7 @@ private fun Ball(
 @Composable
 private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
     val voiceReady = state.voice.isReady
+    val turnName = state.turnName
     AnimatedContent(
         targetState = state.phase,
         modifier = modifier,
@@ -756,13 +763,13 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
             when (phase) {
                 is BallPhase.Answered -> QuietText(phase.question.quoted(), maxLines = 2)
                 else -> Text(
-                    text = stringResource(
-                        when (phase) {
-                            is BallPhase.Listening -> R.string.hint_listening
-                            is BallPhase.Thinking -> R.string.hint_thinking
-                            else -> if (voiceReady) R.string.hint_hold else R.string.hint_tap
-                        }
-                    ),
+                    text = when {
+                        phase is BallPhase.Listening -> stringResource(R.string.hint_listening)
+                        phase is BallPhase.Thinking -> stringResource(R.string.hint_thinking)
+                        // At a party the line says whose turn it is; how to ask, they know by now.
+                        turnName != null -> stringResource(R.string.party_turn, turnName)
+                        else -> stringResource(if (voiceReady) R.string.hint_hold else R.string.hint_tap)
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -788,9 +795,11 @@ private fun Caption(
     state: EightBallUiState,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
+    onAskWho: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val notice = state.notice
+    val whoQuestion = stringResource(R.string.party_who)
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
 
     AnimatedContent(
@@ -819,6 +828,12 @@ private fun Caption(
                 if (notice == Notice.MicrophoneDenied) {
                     TextButton(onClick = onAllowMicrophone, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(stringResource(R.string.settings_voice_allow))
+                    }
+                }
+                // At a party, the other thing the ball can be asked: to pick one of the players.
+                if (notice == null && state.settings.isParty) {
+                    TextButton(onClick = { onAskWho(whoQuestion) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(whoQuestion)
                     }
                 }
             }

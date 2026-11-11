@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -126,6 +127,37 @@ class EightBallViewModelTest {
         )
         assertEquals(expected, userSettings.saved.value)
         assertEquals(expected, viewModel.state.value?.settings)
+    }
+
+    @Test
+    fun `at a party the ball names one of the players and the turn passes on`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.setPartyNames(listOf("Ana", "Beto", "Caro"))
+        runCurrent()
+        assertEquals("Ana", viewModel.state.value?.turnName)
+
+        viewModel.askWho("Who of you?")
+        advanceUntilIdle()
+        val answered = viewModel.state.value?.phase as BallPhase.Answered
+        assertEquals("Who of you?", answered.question)
+        assertTrue((answered.answer as AnswerText.Plain).value in listOf("Ana", "Beto", "Caro"))
+        assertEquals(0, llmGateway.requests.size)
+
+        viewModel.dismiss()
+        advanceUntilIdle()
+        assertEquals("Beto", viewModel.state.value?.turnName)
+    }
+
+    @Test
+    fun `alone there are no turns and nobody to name`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.setPartyNames(listOf("Ana"))
+        runCurrent()
+        assertNull(viewModel.state.value?.turnName)
+
+        viewModel.askWho("Who of you?")
+        advanceUntilIdle()
+        assertEquals(BallPhase.Idle, viewModel.state.value?.phase)
     }
 
     @Test
@@ -991,6 +1023,10 @@ class EightBallViewModelTest {
 
         override suspend fun setSpokenAnswersEnabled(enabled: Boolean) {
             saved.update { it?.copy(spokenAnswersEnabled = enabled) }
+        }
+
+        override suspend fun setPartyNames(names: List<String>) {
+            saved.update { it?.copy(partyNames = names) }
         }
     }
 
