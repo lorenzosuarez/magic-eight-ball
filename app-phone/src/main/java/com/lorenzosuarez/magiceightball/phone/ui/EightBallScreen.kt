@@ -680,32 +680,28 @@ private fun Stage(
             enter = fadeIn(tween(durationMillis = 400)),
             exit = fadeOut(tween(durationMillis = 120))
         ) {
-            Footer(poweredByAi = state.usesAiAnswers)
+            Footer()
         }
     }
 }
 
 /**
- * What the app runs on and which version it is, one under the other.
- *
- * @param poweredByAi false while the answers are the bundled ones: the line is then left out
- * rather than said of answers no AI wrote.
+ * What the app is built on and which version it is, one under the other. The first line is
+ * always there and always in English, as a name is: it says what the app is made with, whether
+ * or not the answer on screen came from it.
  */
 @Composable
-private fun Footer(poweredByAi: Boolean, modifier: Modifier = Modifier) {
+private fun Footer(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.height(FOOTER_HEIGHT),
         verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (poweredByAi) {
-            Text(
-                text = stringResource(R.string.footer_powered_by_ai).uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                letterSpacing = 1.6.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = FOOTER_ALPHA)
-            )
-        }
+        Text(
+            text = stringResource(R.string.footer_powered_by),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = FOOTER_ALPHA)
+        )
         Text(
             text = stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.labelSmall,

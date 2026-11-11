@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">Magic 8 Ball</string>
+    <string name="app_name" translatable="false">Magic AI Ball</string>
 
     <!-- The one line under the ball -->
     <string name="hint_hold">Hold or shake to ask</string>
@@ -37,7 +37,7 @@
     <string name="time_days_ago">%1$d d ago</string>
 
     <!-- Ball -->
-    <string name="ball_description">Magic 8 ball</string>
+    <string name="ball_description">Magic AI Ball</string>
     <string name="ball_answer_description">The ball says: %1$s</string>
     <string name="ball_state_listening">Listening</string>
     <string name="ball_state_thinking">Thinking</string>
@@ -105,7 +105,7 @@
     <string name="settings_voice_allow">Allow</string>
     <string name="party_turn">%1$s, your turn</string>
     <string name="party_who">Who of you…?</string>
-    <string name="widget_description">Magic 8 Ball. Touch for an answer</string>
+    <string name="widget_description">Magic AI Ball. Touch for an answer</string>
     <string name="settings_party">Party mode</string>
     <string name="settings_party_off">Add names to take turns</string>
     <string name="party_dialog_hint">Names, separated by commas</string>
@@ -116,8 +116,8 @@
     <string name="settings_spoken_on">The ball says its answer out loud</string>
     <string name="settings_spoken_off">Answers are only shown</string>
     <string name="settings_share_app">Share the app</string>
-    <string name="settings_share_app_hint">Tell someone about the Magic 8 Ball</string>
-    <string name="share_app_text">Ask the Magic 8 Ball anything: %1$s</string>
+    <string name="settings_share_app_hint">Tell someone about Magic AI Ball</string>
+    <string name="share_app_text">Ask Magic AI Ball anything: %1$s</string>
     <string name="action_share">Share</string>
     <string name="action_read_aloud">Read the answer aloud</string>
     <string name="brand_name" translatable="false">Magic AI Ball</string>
@@ -125,7 +125,7 @@
     <string name="options_answers">Answers</string>
     <string name="options_asking">Asking</string>
     <string name="options_general">General</string>
-    <string name="share_answer_text">Look what the Magic 8 Ball told me. Ask it yours: %1$s</string>
+    <string name="share_answer_text">Look what Magic AI Ball told me. Ask it yours: %1$s</string>
     <string name="share_card_invite">Ask it yours</string>
     <string name="settings_ad_privacy">Ad privacy choices</string>
     <string name="settings_ad_privacy_hint">Review what you allowed for ads</string>
@@ -135,6 +135,6 @@
     <string name="privacy_voice_only">Your spoken question is turned into text by your device\'s speech service. It isn\'t sent to Gemini. Your questions and answers are saved in Recents, on this device only.</string>
     <string name="privacy_ai_only">Answers come from Google\'s Gemini. The app doesn\'t listen, and no question is sent. Answers are saved in Recents, on this device only.</string>
     <string name="privacy_none">Answers come from the app itself. The app doesn\'t listen, and no question or answer leaves this device. Answers are saved in Recents, on this device only.</string>
-    <string name="footer_powered_by_ai">Powered by AI</string>
+    <string name="footer_powered_by" translatable="false">Powered by Gemini</string>
     <string name="footer_version" translatable="false">v%1$s</string>
 </resources>

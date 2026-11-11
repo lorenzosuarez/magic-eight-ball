@@ -34,7 +34,7 @@
     <string name="time_days_ago">hace %1$d d</string>
 
     <!-- Ball -->
-    <string name="ball_description">Bola Mágica 8</string>
+    <string name="ball_description">Magic AI Ball</string>
     <string name="ball_answer_description">La bola dice: %1$s</string>
     <string name="ball_state_listening">Escuchando</string>
     <string name="ball_state_thinking">Pensando</string>
@@ -100,7 +100,7 @@
     <string name="settings_voice_allow">Permitir</string>
     <string name="party_turn">%1$s, te toca</string>
     <string name="party_who">¿Quién de ustedes…?</string>
-    <string name="widget_description">Bola Mágica 8. Toca para una respuesta</string>
+    <string name="widget_description">Magic AI Ball. Toca para una respuesta</string>
     <string name="settings_party">Modo fiesta</string>
     <string name="settings_party_off">Agrega nombres para jugar por turnos</string>
     <string name="party_dialog_hint">Nombres, separados por comas</string>
@@ -111,15 +111,15 @@
     <string name="settings_spoken_on">La bola dice su respuesta en voz alta</string>
     <string name="settings_spoken_off">Las respuestas solo se muestran</string>
     <string name="settings_share_app">Compartir la app</string>
-    <string name="settings_share_app_hint">Cuéntale a alguien sobre la Bola Mágica 8</string>
-    <string name="share_app_text">Pregúntale lo que quieras a la Bola Mágica 8: %1$s</string>
+    <string name="settings_share_app_hint">Cuéntale a alguien sobre Magic AI Ball</string>
+    <string name="share_app_text">Pregúntale lo que quieras a Magic AI Ball: %1$s</string>
     <string name="action_share">Compartir</string>
     <string name="action_read_aloud">Leer la respuesta en voz alta</string>
     <string name="brand_tagline">Respuestas escritas por IA</string>
     <string name="options_answers">Respuestas</string>
     <string name="options_asking">Preguntar</string>
     <string name="options_general">General</string>
-    <string name="share_answer_text">Mira lo que me dijo la Bola Mágica 8. Pregúntale lo tuyo: %1$s</string>
+    <string name="share_answer_text">Mira lo que me dijo Magic AI Ball. Pregúntale lo tuyo: %1$s</string>
     <string name="share_card_invite">Pregúntale lo tuyo</string>
     <string name="settings_ad_privacy">Privacidad de anuncios</string>
     <string name="settings_ad_privacy_hint">Revisa lo que permitiste para los anuncios</string>
@@ -129,5 +129,4 @@
     <string name="privacy_voice_only">El servicio de voz de tu dispositivo convierte tu pregunta en texto. No se envía a Gemini. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
     <string name="privacy_ai_only">Las respuestas vienen de Gemini, de Google. La app no escucha y no se envía ninguna pregunta. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
     <string name="privacy_none">Las respuestas vienen de la propia app. La app no escucha y ninguna pregunta ni respuesta sale de este dispositivo. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
-    <string name="footer_powered_by_ai">Impulsado por IA</string>
 </resources>

@@ -1,8 +1,8 @@
-# Privacy Policy for Magic 8 Ball (Wear OS and Android phones and tablets)
+# Privacy Policy for Magic AI Ball (Wear OS and Android phones and tablets)
 
 **Effective date:** November 10, 2026
 
-This policy explains how the Magic 8 Ball app (package `com.lorenzosuarez.magiceightball`), developed by Lorenzo Suarez, handles information. It covers both versions of the app: the one for Wear OS watches and the one for Android phones and tablets. Where they differ, this policy says so.
+This policy explains how the Magic AI Ball app (package `com.lorenzosuarez.magiceightball`), developed by Lorenzo Suarez, handles information. It covers both versions of the app: the one for Wear OS watches and the one for Android phones and tablets. Where they differ, this policy says so.
 
 ## Summary
 - No account or sign-in and no analytics. If the app crashes, a technical crash report is sent to the developer, as described under "Crash reports". The watch app shows no ads. The phone and tablet app may show an occasional ad, as described under "Ads"; you are asked for consent first where the law requires it.
