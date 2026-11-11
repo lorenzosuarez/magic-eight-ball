@@ -52,6 +52,10 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -425,7 +429,7 @@ internal fun EightBallContent(
         ) { page ->
             // The ball floats on the backdrop; its neighbours are plain pages, edge to edge,
             // so that what is listed on them is read against one flat colour.
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(
@@ -436,34 +440,67 @@ internal fun EightBallContent(
                         }
                     )
                     .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(top = TOP_BAR_HEIGHT)
             ) {
-            if (page == OPTIONS_PAGE) {
-                options()
-            } else if (page == HISTORY_PAGE) {
-                HistoryContent(
-                    entries = state.history,
-                    now = now,
-                    onDelete = deleteWithUndo,
-                    onClearAll = onClearHistory,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Stage(
-                    state = state,
-                    intro = intro,
-                    voiceLevel = voiceLevel,
-                    still = still,
-                    onAsk = onAsk,
-                    onHoldStart = onHoldStart,
-                    onHoldEnd = onHoldEnd,
-                    onHoldCancel = onHoldCancel,
-                    onToggleVoiceQuestion = onToggleVoiceQuestion,
-                    onAllowMicrophone = onAllowMicrophone,
-                    onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
-                    onAskWho = onAskWho
-                )
-            }
+                // What stands at the top of a page belongs to it and travels with it: a name is
+                // already on its way in while the page is, rather than appearing once it has arrived.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(TOP_BAR_HEIGHT)
+                        .padding(horizontal = 8.dp)
+                ) {
+                    when (page) {
+                        BALL_PAGE -> BallBar(
+                            state = state,
+                            busy = busy,
+                            onDismiss = onDismiss,
+                            onSpeakAnswer = onSpeakAnswer,
+                            onOpenHistory = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
+                            onOpenOptions = { scope.launch { pagerState.animateScrollToPage(OPTIONS_PAGE) } },
+                            modifier = Modifier.fillMaxSize().graphicsLayer { alpha = intro() }
+                        )
+                        else -> Text(
+                            text = stringResource(
+                                if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
+                            ),
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = PAGE_TITLE_TOP)
+                                .semantics { heading() },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    if (page == OPTIONS_PAGE) {
+                        options()
+                    } else if (page == HISTORY_PAGE) {
+                        HistoryContent(
+                            entries = state.history,
+                            now = now,
+                            onDelete = deleteWithUndo,
+                            onClearAll = onClearHistory,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Stage(
+                            state = state,
+                            intro = intro,
+                            voiceLevel = voiceLevel,
+                            still = still,
+                            onAsk = onAsk,
+                            onHoldStart = onHoldStart,
+                            onHoldEnd = onHoldEnd,
+                            onHoldCancel = onHoldCancel,
+                            onToggleVoiceQuestion = onToggleVoiceQuestion,
+                            onAllowMicrophone = onAllowMicrophone,
+                            onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
+                            onAskWho = onAskWho
+                        )
+                    }
+                }
             }
         }
 
@@ -474,69 +511,68 @@ internal fun EightBallContent(
                 .windowInsetsPadding(WindowInsets.safeDrawing)
         )
 
-        // Over both pages: where the user is, and the ways out of here.
-        Box(
-            modifier = Modifier
-                .graphicsLayer { alpha = intro() }
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .fillMaxWidth()
-                .height(TOP_BAR_HEIGHT)
-                .padding(horizontal = 8.dp)
-        ) {
-            if (!atRest) {
-                BarButton(
-                    icon = R.drawable.ic_close,
-                    description = stringResource(if (busy) R.string.action_cancel else R.string.action_close),
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.CenterStart)
+        // Over every page, and the one thing up here that stays put while they slide under it:
+        // where the user is. It gives way to a question, which has nowhere else to go.
+        if (atRest) {
+            Box(
+                modifier = Modifier
+                    .graphicsLayer { alpha = intro() }
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .fillMaxWidth()
+                    .height(TOP_BAR_HEIGHT)
+            ) {
+                PageDots(
+                    position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = PAGE_DOTS_TOP)
                 )
-                // With an answer on the die, the one thing left to do with it from up here: hear it.
-                if (state.phase is BallPhase.Answered) {
-                    BarButton(
-                        icon = R.drawable.ic_volume,
-                        description = stringResource(R.string.action_read_aloud),
-                        onClick = onSpeakAnswer,
-                        modifier = Modifier.align(Alignment.CenterEnd)
-                    )
-                }
-            } else {
-                // From the ball, each neighbour is named at the side it lies on.
-                if (onBallPage) {
-                    LabeledBarButton(
-                        icon = R.drawable.ic_history,
-                        label = stringResource(R.string.history_title),
-                        onClick = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    )
-                    LabeledBarButton(
-                        icon = R.drawable.ic_settings,
-                        label = stringResource(R.string.settings_title),
-                        onClick = { scope.launch { pagerState.animateScrollToPage(OPTIONS_PAGE) } },
-                        modifier = Modifier.align(Alignment.CenterEnd)
-                    )
-                }
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // A neighbour's own name stands over the dots, where the ball has none.
-                    val title = when (pagerState.currentPage) {
-                        HISTORY_PAGE -> R.string.history_title
-                        OPTIONS_PAGE -> R.string.settings_title
-                        else -> null
-                    }
-                    if (title != null) {
-                        Text(
-                            text = stringResource(title),
-                            modifier = Modifier.semantics { heading() },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    PageDots(current = pagerState.currentPage)
-                }
+            }
+        }
+    }
+}
+
+/**
+ * The top of the ball's page. At rest, each neighbour named at the side it lies on; with a
+ * question or an answer, the way out of it and, for an answer, the way to hear it.
+ */
+@Composable
+private fun BallBar(
+    state: EightBallUiState,
+    busy: Boolean,
+    onDismiss: () -> Unit,
+    onSpeakAnswer: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onOpenOptions: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        if (state.phase is BallPhase.Idle) {
+            LabeledBarButton(
+                icon = R.drawable.ic_history,
+                label = stringResource(R.string.history_title),
+                onClick = onOpenHistory,
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+            LabeledBarButton(
+                icon = R.drawable.ic_settings,
+                label = stringResource(R.string.settings_title),
+                onClick = onOpenOptions,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            )
+        } else {
+            BarButton(
+                icon = R.drawable.ic_close,
+                description = stringResource(if (busy) R.string.action_cancel else R.string.action_close),
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+            // With an answer on the die, the one thing left to do with it from up here: hear it.
+            if (state.phase is BallPhase.Answered) {
+                BarButton(
+                    icon = R.drawable.ic_volume,
+                    description = stringResource(R.string.action_read_aloud),
+                    onClick = onSpeakAnswer,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                )
             }
         }
     }
@@ -576,22 +612,36 @@ private fun BarButton(icon: Int, description: String, onClick: () -> Unit, modif
     AppIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
 }
 
-/** One dot per page, the one in front brighter. Decoration: the pages announce themselves. */
+/**
+ * One dot per page and, over them, a brighter one for the page in front. It never jumps: as a
+ * page is dragged the bright dot stretches towards the next one and then lets go of the one it
+ * left, so the eye follows it across. Decoration: the pages announce themselves.
+ *
+ * @param position the page in front, with the fraction of the way to the next: read while
+ * drawing, so a drag moves the dot without composing anything again.
+ */
 @Composable
-private fun PageDots(current: Int, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun PageDots(position: () -> Float, modifier: Modifier = Modifier) {
+    val color = MaterialTheme.colorScheme.onSurface
+    val step = PAGE_DOT_SIZE + PAGE_DOT_GAP
+    Canvas(modifier = modifier.size(width = step * (PAGE_COUNT - 1) + PAGE_DOT_SIZE, height = PAGE_DOT_SIZE)) {
+        val dot = PAGE_DOT_SIZE.toPx()
+        val stride = step.toPx()
         repeat(PAGE_COUNT) { page ->
-            Box(
-                Modifier
-                    .size(6.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = if (page == current) 1f else DOT_OFF_ALPHA
-                        ),
-                        shape = CircleShape
-                    )
-            )
+            drawCircle(color, radius = dot / 2, center = Offset(page * stride + dot / 2, dot / 2), alpha = DOT_OFF_ALPHA)
         }
+        val at = position().coerceIn(0f, PAGE_COUNT - 1f)
+        val from = at.toInt().coerceAtMost(PAGE_COUNT - 2)
+        val way = at - from
+        // The first half of the way the leading edge runs ahead; the second half the trailing edge catches up.
+        val start = (from + ((way - 0.5f) * 2).coerceAtLeast(0f)) * stride
+        val end = (from + (way * 2).coerceAtMost(1f)) * stride + dot
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(start, 0f),
+            size = Size(end - start, dot),
+            cornerRadius = CornerRadius(dot / 2)
+        )
     }
 }
 
@@ -1085,6 +1135,12 @@ private val BALL_MIN_SIZE = 96.dp
 /** Wide enough for the ball to grow into when it shows an answer. */
 private val BALL_GAP = 56.dp
 private val TOP_BAR_HEIGHT = 72.dp
+
+/** Where a page's name and the dots stand in the bar: one over the other, with the bar's middle between them. */
+private val PAGE_TITLE_TOP = 15.dp
+private val PAGE_DOTS_TOP = 51.dp
+private val PAGE_DOT_SIZE = 6.dp
+private val PAGE_DOT_GAP = 8.dp
 private val TEXT_MAX_WIDTH = 480.dp
 private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 104.dp
