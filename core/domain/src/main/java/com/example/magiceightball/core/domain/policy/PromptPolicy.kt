@@ -8,13 +8,13 @@ interface PromptPolicy {
      *
      * @param answersQuestion true when the user's own question is sent along. The instruction
      * then also tells the service to treat that text as a question only, never as instructions.
-     * @param verdict what the answer is this time, when the app has drawn it: the service then
-     * only finds the words for it.
+     * @param brief what the app has drawn for this answer: what it is, and what to build it
+     * around. The service then only finds the words. Null leaves the instruction as it is.
      */
     fun getSystemPrompt(
         languageCode: String,
         personality: Magic8BallPersonality,
         answersQuestion: Boolean = false,
-        verdict: Verdict? = null
+        brief: AnswerBrief? = null
     ): String
 }

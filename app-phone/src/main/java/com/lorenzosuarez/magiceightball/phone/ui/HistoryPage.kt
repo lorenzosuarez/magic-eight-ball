@@ -136,14 +136,25 @@ private fun HistoryRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // What the ball said and, when the character added something, that on a line of its own.
+            val said = entry.answer ?: stringResource(R.string.answer_fallback)
             Text(
-                text = entry.answer ?: stringResource(R.string.answer_fallback),
+                text = said.substringBefore('\n'),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
+            said.substringAfter('\n', "").takeIf { it.isNotBlank() }?.let { remark ->
+                Text(
+                    text = remark,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             if (entry.question.isNotEmpty()) {
                 Text(
                     text = entry.question,

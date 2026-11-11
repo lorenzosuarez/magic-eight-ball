@@ -59,8 +59,11 @@ sealed interface BallPhase {
  * could be obtained.
  */
 sealed interface AnswerText {
-    /** @property fromAi true when the AI service wrote it, false for a bundled answer. */
-    data class Plain(val value: String, val fromAi: Boolean = false) : AnswerText
+    /**
+     * @property fromAi true when the AI service wrote it, false for a bundled answer.
+     * @property remark what the character adds under the ball, when it added anything.
+     */
+    data class Plain(val value: String, val fromAi: Boolean = false, val remark: String? = null) : AnswerText
     data object Fallback : AnswerText
 }
 

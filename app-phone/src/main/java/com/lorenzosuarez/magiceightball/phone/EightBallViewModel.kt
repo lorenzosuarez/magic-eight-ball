@@ -427,7 +427,9 @@ class EightBallViewModel @Inject constructor(
         // Outside this question's own job: closing the answer at once must not lose its entry.
         viewModelScope.launch {
             val plain = answer as? AnswerText.Plain
-            history.add(question, plain?.value, clock.millis(), plain?.fromAi == true)
+            // The remark is kept with its answer, on a line of its own.
+            val kept = plain?.let { listOfNotNull(it.value, it.remark).joinToString("\n") }
+            history.add(question, kept, clock.millis(), plain?.fromAi == true)
         }
         _effects.trySend(EightBallEffect.AnswerRevealed)
     }
@@ -449,7 +451,9 @@ class EightBallViewModel @Inject constructor(
                     languageCode = settings.language.code,
                     personality = settings.personality,
                     useAi = settings.aiAnswersEnabled,
-                    question = question.takeIf { it.isNotBlank() }
+                    question = question.takeIf { it.isNotBlank() },
+                    // Under the ball there is room for a second line.
+                    wantsRemark = true
                 )
             }
         } catch (e: CancellationException) {
@@ -459,7 +463,9 @@ class EightBallViewModel @Inject constructor(
         }
         return when (result) {
             is Magic8BallResult.Success ->
-                result.message.takeIf { it.isNotBlank() }?.let { AnswerText.Plain(it, result.fromAi) }
+                result.message.takeIf { it.isNotBlank() }?.let {
+                    AnswerText.Plain(it, result.fromAi, result.remark?.takeIf { remark -> remark.isNotBlank() })
+                }
             is Magic8BallResult.Failure, null -> null
         } ?: AnswerText.Fallback
     }
