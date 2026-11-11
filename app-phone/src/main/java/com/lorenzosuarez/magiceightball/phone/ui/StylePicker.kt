@@ -19,8 +19,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -44,6 +47,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -129,10 +136,21 @@ internal fun StyleRow(
     onSeeAll: () -> Unit
 ) {
     val scroll = rememberScrollState()
-    // A style chosen from the sheet leads the row: bring the row back to where it starts.
-    LaunchedEffect(selected) {
-        if (stylesInRow(selected).first() == selected) scroll.animateScrollTo(0)
+    // Where each card starts and how wide it is, within the row.
+    val spans = remember { mutableStateMapOf<Magic8BallPersonality, IntRange>() }
+    var shown by remember { mutableStateOf(false) }
+    // The chosen style is brought to the middle of the row, with its neighbours on either side:
+    // at once when the row first shows, so it is simply there, and gliding after every choice,
+    // so a card touched at the edge comes fully into view.
+    val span = spans[selected]
+    LaunchedEffect(selected, span, scroll.viewportSize) {
+        if (span == null || scroll.viewportSize == 0) return@LaunchedEffect
+        val middle = (span.first + span.last) / 2 - scroll.viewportSize / 2
+        val target = middle.coerceIn(0, scroll.maxValue)
+        if (shown) scroll.animateScrollTo(target) else scroll.scrollTo(target)
+        shown = true
     }
+    val edge = with(LocalDensity.current) { ROW_EDGE.roundToPx() }
     Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Text(
             text = stringResource(R.string.settings_style),
@@ -144,7 +162,7 @@ internal fun StyleRow(
             modifier = Modifier
                 .padding(top = 12.dp)
                 .horizontalScroll(scroll)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = ROW_EDGE)
                 .height(IntrinsicSize.Min)
                 .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -156,7 +174,13 @@ internal fun StyleRow(
                     chosen = style == selected,
                     onClick = { onSelected(style) },
                     // As wide as what it says: in a row that scrolls, nothing has to be cut short.
-                    modifier = Modifier.widthIn(min = STYLE_CARD_MIN_WIDTH).fillMaxHeight()
+                    modifier = Modifier
+                        .widthIn(min = STYLE_CARD_MIN_WIDTH)
+                        .fillMaxHeight()
+                        .onPlaced { placed ->
+                            val start = placed.positionInParent().x.roundToInt() + edge
+                            spans[style] = start..start + placed.size.width
+                        }
                 )
             }
             Box(
@@ -419,6 +443,7 @@ private fun Magic8BallPersonality.sampleRes(): Int = when (this) {
 }
 
 private val STYLE_CARD_MIN_WIDTH = 132.dp
+private val ROW_EDGE = 16.dp
 
 /** How much quieter than its name a style's line is. */
 private const val SAMPLE_ALPHA = 0.66f
