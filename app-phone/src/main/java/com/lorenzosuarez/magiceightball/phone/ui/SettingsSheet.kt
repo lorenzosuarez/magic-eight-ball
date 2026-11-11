@@ -88,6 +88,17 @@ internal fun SettingsContent(
             onDismiss = { editingParty = false }
         )
     }
+    var browsingStyles by rememberSaveable { mutableStateOf(false) }
+    if (browsingStyles) {
+        StylesDialog(
+            selected = state.settings.personality,
+            onSelected = {
+                onPersonalitySelected(it)
+                browsingStyles = false
+            },
+            onClose = { browsingStyles = false }
+        )
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -95,12 +106,10 @@ internal fun SettingsContent(
             .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
     ) {
         Section(stringResource(R.string.options_answers)) {
-            ChoiceRow(
-                title = stringResource(R.string.settings_style),
-                options = Magic8BallPersonality.entries,
+            StyleRow(
                 selected = state.settings.personality,
-                label = { it.labelRes() },
-                onSelected = onPersonalitySelected
+                onSelected = onPersonalitySelected,
+                onSeeAll = { browsingStyles = true }
             )
             RowDivider()
             SwitchRow(
@@ -435,18 +444,6 @@ private fun AppLanguage.labelRes(): Int = when (this) {
     AppLanguage.SPANISH -> R.string.language_spanish
 }
 
-@StringRes
-private fun Magic8BallPersonality.labelRes(): Int = when (this) {
-    Magic8BallPersonality.SARCASTIC -> R.string.style_sarcastic
-    Magic8BallPersonality.MYSTICAL -> R.string.style_mystical
-    Magic8BallPersonality.NEUTRAL -> R.string.style_neutral
-    Magic8BallPersonality.GRANDMA -> R.string.style_grandma
-    Magic8BallPersonality.PIRATE -> R.string.style_pirate
-    Magic8BallPersonality.PHILOSOPHER -> R.string.style_philosopher
-    Magic8BallPersonality.COACH -> R.string.style_coach
-    Magic8BallPersonality.LOVESTRUCK -> R.string.style_lovestruck
-}
-
 /** Cards and the buttons on them: the two corner sizes the whole app uses. */
 internal val CardShape = RoundedCornerShape(16.dp)
 internal val ButtonShape = RoundedCornerShape(10.dp)
@@ -458,4 +455,4 @@ private val ROW_TEXT_START = 16.dp
 private const val DISABLED_ALPHA = 0.38f
 
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
-private const val TILE_ALPHA = 0.08f
+internal const val TILE_ALPHA = 0.08f

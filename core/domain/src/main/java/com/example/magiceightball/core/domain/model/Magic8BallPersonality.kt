@@ -12,5 +12,13 @@ enum class Magic8BallPersonality {
     PIRATE,
     PHILOSOPHER,
     COACH,
-    LOVESTRUCK
+    LOVESTRUCK,
+    DRAMA,
+    ROBOT,
+    DETECTIVE,
+    CONSPIRACY,
+    CAT,
+    ZOOMER,
+    VILLAIN,
+    POET
 }

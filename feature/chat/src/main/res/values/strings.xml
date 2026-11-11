@@ -45,6 +45,22 @@
     <string name="personality_coach_es">Coach</string>
     <string name="personality_lovestruck">Lovestruck</string>
     <string name="personality_lovestruck_es">Amor ciego</string>
+    <string name="personality_drama">Soap opera</string>
+    <string name="personality_drama_es">Telenovela</string>
+    <string name="personality_robot">Robot</string>
+    <string name="personality_robot_es">Robot</string>
+    <string name="personality_detective">Detective</string>
+    <string name="personality_detective_es">Detective</string>
+    <string name="personality_conspiracy">Conspiracy</string>
+    <string name="personality_conspiracy_es">Conspiración</string>
+    <string name="personality_cat">Cat</string>
+    <string name="personality_cat_es">Gato</string>
+    <string name="personality_zoomer">Gen Z</string>
+    <string name="personality_zoomer_es">Gen Z</string>
+    <string name="personality_villain">Villain</string>
+    <string name="personality_villain_es">Villano</string>
+    <string name="personality_poet">Poet</string>
+    <string name="personality_poet_es">Poeta</string>
 
     <!-- AI answers selection -->
     <string name="ai_title">AI answers</string>
