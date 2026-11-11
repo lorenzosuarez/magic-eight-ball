@@ -273,6 +273,13 @@ class EightBallScreenshotTest {
     @Config(qualifiers = TABLET_LANDSCAPE)
     fun tablet_landscape_idle_dark() = capture("tablet_2_ask_landscape_dark", EightBallUiState())
 
+    /** A style from the far end of the row: the row opens with it in the middle, whole. */
+    @Test
+    fun phone_settings_chosen_style_in_view() = captureWithSettings(
+        "phone_23_settings_chosen_style_in_view",
+        EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH, personality = Magic8BallPersonality.CAT))
+    )
+
     @Test
     fun phone_styles_spanish_dark() = captureStyles("phone_18_styles_spanish_dark", AppLanguage.SPANISH, dark = true)
 

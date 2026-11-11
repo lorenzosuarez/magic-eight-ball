@@ -5,8 +5,8 @@
 -->
 <resources>
     <!-- Ball -->
-    <string name="title_main">Magic 8 Ball</string>
-    <string name="title_main_es">Bola Mágica 8</string>
+    <string name="title_main">Magic AI Ball</string>
+    <string name="title_main_es">Magic AI Ball</string>
     <string name="shake_hint">Shake for answers</string>
     <string name="shake_hint_es">Agita para respuestas</string>
     <string name="shake_hint_ai">Shake for AI answers</string>
