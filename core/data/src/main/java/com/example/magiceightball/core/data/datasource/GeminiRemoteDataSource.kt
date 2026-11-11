@@ -6,7 +6,7 @@ import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.policy.PromptPolicy
-import com.example.magiceightball.core.domain.policy.Verdict
+import com.example.magiceightball.core.domain.policy.AnswerBrief
 import com.example.magiceightball.core.network.model.Content
 import com.example.magiceightball.core.network.model.GeminiRequest
 import com.example.magiceightball.core.network.model.GenerationConfig
@@ -23,13 +23,16 @@ class GeminiRemoteDataSource @Inject constructor(
     private val config: GeminiConfig,
     private val promptPolicy: PromptPolicy
 ) {
-    /** How the answer to a question is drawn: only a test has reason to replace it. */
-    internal var drawVerdict: () -> Verdict = { Verdict.draw() }
+    /** How each answer is drawn before it is asked for: only a test has reason to replace it. */
+    internal var drawBrief: (Magic8BallRequest) -> AnswerBrief = { request ->
+        AnswerBrief.draw(request.personality, withRemark = request.wantsRemark)
+    }
 
     /**
      * Asks Gemini for an answer.
      *
-     * The system instruction is always the app's own. The user content is the user's question
+     * The system instruction is always the app's own, with what the app drew for this answer:
+     * nothing of the user's. The user content is the user's question
      * when the request carries one (capped by [Magic8BallRequest.questionForAi]), and the fixed
      * trigger otherwise. Nothing else about the user is sent.
      */
@@ -45,8 +48,8 @@ class GeminiRemoteDataSource @Inject constructor(
                 personality = request.personality,
                 answersQuestion = question != null,
                 // Drawn here, as a shake would: the service words the answer, it does not choose it.
-                // Without a question the instruction stays the fixed one it has always been.
-                verdict = if (question != null) drawVerdict() else null
+                // It is also all that tells one request from the next when nothing was asked.
+                brief = drawBrief(request)
             )
 
             val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
@@ -84,15 +87,19 @@ class GeminiRemoteDataSource @Inject constructor(
                 return Magic8BallResult.Failure(LlmError.SafetyBlocked)
             }
 
-            val text =
+            val written =
                 response.candidates?.firstOrNull()?.content?.parts
                     ?.firstNotNullOfOrNull { part -> part.text?.trim()?.takeIf { it.isNotEmpty() } }
                     ?: return Magic8BallResult.Failure(LlmError.Serialization)
+            // The first line is the answer; what follows it, when there is anything, is the remark.
+            val lines = written.lines().map { it.tidied() }.filter { it.isNotEmpty() }
+            val text = lines.firstOrNull() ?: return Magic8BallResult.Failure(LlmError.Serialization)
+            val remark = lines.drop(1).joinToString(" ").takeIf { it.isUsableRemark(text) }
 
             if (!validateWordCount(text)) {
                 if (attempt <= config.maxRetries) {
                     val stricterInstruction = Content(
-                        parts = listOf(Part(text = "$systemPromptText You MUST use 6 words or less."))
+                        parts = listOf(Part(text = "$systemPromptText Line 1 MUST use 6 words or less."))
                     )
                     val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
                     return executeWithRetry(apiKey, modelId, retryRequest, systemPromptText, attempt + 1)
@@ -101,7 +108,7 @@ class GeminiRemoteDataSource @Inject constructor(
                 }
             }
 
-            return Magic8BallResult.Success(text, fromAi = true)
+            return Magic8BallResult.Success(text, fromAi = true, remark = remark)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -124,8 +131,28 @@ class GeminiRemoteDataSource @Inject constructor(
         }
     }
 
+    /** A line as it was meant, without what a model sometimes wraps it in: a label, quotes, a bullet. */
+    private fun String.tidied(): String = trim()
+        .replace(LINE_LABEL, "")
+        .trim()
+        .trim('"', '\'', '«', '»', '“', '”', '*', '-', '–', '•')
+        .trim()
+
+    /** A remark worth showing: something of its own, of a length the screen can hold. */
+    private fun String.isUsableRemark(answer: String): Boolean =
+        isNotBlank() && length <= MAX_REMARK_LENGTH && !equals(answer, ignoreCase = true) &&
+            split(WHITESPACE).count { it.isNotBlank() } <= MAX_REMARK_WORDS
+
     private fun validateWordCount(text: String): Boolean {
         val wordCount = text.split("\\s+".toRegex()).count { it.isNotBlank() }
         return wordCount <= 6
+    }
+
+    private companion object {
+        /** A little over what is asked for: a remark one word long is not thrown away. */
+        const val MAX_REMARK_WORDS = 18
+        const val MAX_REMARK_LENGTH = 120
+        val WHITESPACE = Regex("\\s+")
+        val LINE_LABEL = Regex("^(line|línea|linea)\\s*[12]\\s*[:.)-]\\s*", RegexOption.IGNORE_CASE)
     }
 }

@@ -49,6 +49,7 @@ import java.io.File
  * then gives the picture.
  *
  * @param fromAi whether the AI service wrote this answer: only then does the picture say so.
+ * @param remark what the character added under its answer, shown under the ball here too.
  * @param visible true to draw it on the screen as well, for previews and screenshot tests.
  */
 @Composable
@@ -58,7 +59,8 @@ internal fun ShareCard(
     layer: GraphicsLayer,
     modifier: Modifier = Modifier,
     fromAi: Boolean = false,
-    visible: Boolean = false
+    visible: Boolean = false,
+    remark: String? = null
 ) {
     CompositionLocalProvider(LocalDensity provides Density(SHARE_DENSITY, fontScale = 1f)) {
         MagicEightBallPhoneTheme(dark = true) {
@@ -102,6 +104,17 @@ internal fun ShareCard(
                         still = true,
                         // The ball grows while it shows an answer: this leaves it room to.
                         modifier = Modifier.size(SHARE_BALL_SIZE)
+                    )
+                }
+                if (remark != null) {
+                    Text(
+                        text = remark,
+                        modifier = Modifier.padding(bottom = 28.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Column(

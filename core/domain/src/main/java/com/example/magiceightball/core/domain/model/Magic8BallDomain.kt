@@ -1,8 +1,15 @@
 package com.example.magiceightball.core.domain.model
 
 sealed interface Magic8BallResult {
-    /** @property fromAi true when the AI service wrote [message]; false for a bundled answer. */
-    data class Success(val message: String, val fromAi: Boolean = false) : Magic8BallResult
+    /**
+     * @property fromAi true when the AI service wrote [message]; false for a bundled answer.
+     * @property remark what the character adds under its answer, when one was asked for and written.
+     */
+    data class Success(
+        val message: String,
+        val fromAi: Boolean = false,
+        val remark: String? = null
+    ) : Magic8BallResult
     data class Failure(val error: LlmError) : Magic8BallResult
 }
 
@@ -21,14 +28,17 @@ sealed interface LlmError {
 /**
  * @property useAi the user's choice: when false the answer must not come from the AI service.
  * @property question what the user asked, in their own words, when the app heard a question.
- * Null wherever the app takes no question (the watch), and then only [userTrigger] is sent.
+ * Null wherever the app takes no question, and then only [userTrigger] is sent.
+ * @property wantsRemark whether a second line may come with the answer: only where there is
+ * room to show one.
  */
 data class Magic8BallRequest(
     val userTrigger: String? = null,
     val languageCode: String = "en",
     val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC,
     val useAi: Boolean = true,
-    val question: String? = null
+    val question: String? = null,
+    val wantsRemark: Boolean = false
 ) {
     /**
      * The only form in which [question] may leave the device: one line, without control

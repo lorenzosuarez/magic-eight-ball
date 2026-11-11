@@ -94,9 +94,9 @@ class DefaultPromptPolicyTest {
     fun `a drawn verdict is told to the service, and without one nothing is added`() {
         Magic8BallPersonality.entries.forEach { personality ->
             val plain = policy.getSystemPrompt("en", personality, answersQuestion = true)
-            val yes = policy.getSystemPrompt("en", personality, answersQuestion = true, verdict = Verdict.YES)
-            val no = policy.getSystemPrompt("en", personality, answersQuestion = true, verdict = Verdict.NO)
-            val maybe = policy.getSystemPrompt("en", personality, answersQuestion = true, verdict = Verdict.MAYBE)
+            val yes = policy.getSystemPrompt("en", personality, answersQuestion = true, brief = AnswerBrief(Verdict.YES))
+            val no = policy.getSystemPrompt("en", personality, answersQuestion = true, brief = AnswerBrief(Verdict.NO))
+            val maybe = policy.getSystemPrompt("en", personality, answersQuestion = true, brief = AnswerBrief(Verdict.MAYBE))
 
             assertTrue("the answer is YES" in yes)
             assertTrue("the answer is NO" in no)
@@ -114,5 +114,38 @@ class DefaultPromptPolicyTest {
         assertEquals(Verdict.entries.toSet(), drawn.keys)
         assertTrue(drawn.getValue(Verdict.MAYBE) < drawn.getValue(Verdict.YES))
         assertTrue(drawn.getValue(Verdict.MAYBE) < drawn.getValue(Verdict.NO))
+    }
+
+    @Test
+    fun `a brief names what to build the answer around, and asks for a remark only when wanted`() {
+        val plain = policy.getSystemPrompt("en", Magic8BallPersonality.PIRATE, brief = AnswerBrief(Verdict.YES))
+        val full = policy.getSystemPrompt(
+            "en",
+            Magic8BallPersonality.PIRATE,
+            brief = AnswerBrief(Verdict.YES, motif = "the parrot", angle = "Be oddly specific.", withRemark = true)
+        )
+
+        assertTrue("the parrot" !in plain && "two lines" !in plain)
+        assertTrue("Build it around this, in your own way: the parrot." in full)
+        assertTrue("Be oddly specific." in full)
+        assertTrue("exactly two lines" in full)
+        assertTrue(full.endsWith(" Respond in English."))
+    }
+
+    @Test
+    fun `every character has things of its own to bring up, and the plain style has none`() {
+        Magic8BallPersonality.entries.forEach { personality ->
+            val motifs = AnswerBrief.motifsOf(personality)
+            if (personality == Magic8BallPersonality.NEUTRAL) {
+                assertTrue(motifs.isEmpty())
+            } else {
+                assertTrue("$personality has ${motifs.size}", motifs.size >= 10)
+                assertEquals(motifs.size, motifs.distinct().size)
+            }
+        }
+        val drawn = List(200) { AnswerBrief.draw(Magic8BallPersonality.PIRATE, withRemark = true, kotlin.random.Random(it)) }
+        assertTrue(drawn.map { it.motif }.distinct().size >= 8)
+        assertTrue(drawn.map { it.angle }.distinct().size >= 6)
+        assertTrue(drawn.all { it.withRemark })
     }
 }

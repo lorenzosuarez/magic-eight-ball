@@ -242,7 +242,8 @@ fun EightBallScreen(
             // Said once, as the die comes up with it; never again for the same answer.
             val voice = rememberAnswerVoice()
             val answered = current.phase as? BallPhase.Answered
-            val answerToSay = answered?.answer?.text()
+            // The answer and, after a breath, what the character adds to it.
+            val answerToSay = answered?.answer?.let { listOfNotNull(it.text(), it.remark()).joinToString(". ") }
             val answerLocale = Locale.forLanguageTag(current.settings.language.code)
             val speaksAnswers = current.settings.spokenAnswersEnabled
             var saidAnswerId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -418,7 +419,8 @@ internal fun EightBallContent(
                     question = answered.question,
                     answer = answered.answer.text(),
                     layer = shareLayer,
-                    fromAi = (answered.answer as? AnswerText.Plain)?.fromAi == true
+                    fromAi = (answered.answer as? AnswerText.Plain)?.fromAi == true,
+                    remark = answered.answer.remark()
                 )
             }
         }
@@ -1001,6 +1003,18 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
+                // What the character adds once the ball has spoken: the line with room to be funny.
+                phase.answer.remark()?.let { remark ->
+                    Text(
+                        text = remark,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = CAPTION_MAX_LINES,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 // Said quietly, and only when it is true: who wrote this answer.
                 if ((phase.answer as? AnswerText.Plain)?.fromAi == true) {
                     Text(
@@ -1044,6 +1058,8 @@ private fun QuietText(text: String, modifier: Modifier = Modifier, maxLines: Int
 
 @Composable
 private fun String.quoted(): String = if (isEmpty()) "" else stringResource(R.string.question_quoted, this)
+
+private fun AnswerText.remark(): String? = (this as? AnswerText.Plain)?.remark
 
 @Composable
 private fun AnswerText.text(): String = when (this) {
@@ -1143,7 +1159,7 @@ private val PAGE_DOT_SIZE = 6.dp
 private val PAGE_DOT_GAP = 8.dp
 private val TEXT_MAX_WIDTH = 480.dp
 private val TITLE_HEIGHT = 64.dp
-private val CAPTION_HEIGHT = 104.dp
+private val CAPTION_HEIGHT = 136.dp
 private val FOOTER_HEIGHT = 48.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val FOOTER_ALPHA = 0.68f

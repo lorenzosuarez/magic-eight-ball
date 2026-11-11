@@ -201,7 +201,8 @@ class EightBallViewModelTest {
                 languageCode = "es",
                 personality = Magic8BallPersonality.MYSTICAL,
                 useAi = false,
-                question = null
+                question = null,
+                wantsRemark = true
             ),
             llmGateway.requests.single()
         )
