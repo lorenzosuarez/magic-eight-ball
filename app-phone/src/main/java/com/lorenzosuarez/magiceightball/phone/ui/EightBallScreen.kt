@@ -56,7 +56,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
@@ -925,8 +924,6 @@ private fun Caption(
                         modifier = Modifier.heightIn(min = 48.dp),
                         shape = ButtonShape
                     ) {
-                        Icon(painterResource(R.drawable.ic_group), contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
                         Text(whoQuestion, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -966,9 +963,9 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
-                Button(
+                FilledTonalButton(
                     onClick = onShareAnswer,
-                    modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 200.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
                     shape = ButtonShape
                 ) {
                     Icon(

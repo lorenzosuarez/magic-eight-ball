@@ -760,8 +760,8 @@ private const val EIGHT_RADIUS = 0.46f
 private const val WINDOW_RADIUS = 0.52f
 
 /** The answer's light on the ball around the window: how far it reaches, in window radii, and how strong it starts. */
-private const val GLOW_REACH = 1.75f
-private const val GLOW_ALPHA = 0.5f
+private const val GLOW_REACH = 1.4f
+private const val GLOW_ALPHA = 0.14f
 
 /**
  * The die's circumradius relative to the window's. Well above 1: the risen die comes close

@@ -2,7 +2,6 @@ package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -28,7 +26,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -44,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -64,9 +60,8 @@ import com.lorenzosuarez.magiceightball.phone.VoiceStatus
 /**
  * The options, as the page to the right of the ball: every choice takes effect at once.
  *
- * Laid out the way a settings screen is expected to be: what the app is and the one thing to
- * do with it first, then one card per subject with a title over it, its rows separated by
- * hairlines and each led by an icon. It scrolls when the font is large or the window is short.
+ * Text and switches, nothing else: one card per subject under a quiet label, its rows separated
+ * by hairlines. It scrolls when the font is large or the window is short.
  */
 @Composable
 internal fun SettingsContent(
@@ -97,13 +92,10 @@ internal fun SettingsContent(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 32.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
     ) {
-        Hero(poweredByAi = state.usesAiAnswers, onShareApp = onShareApp)
-
         Section(stringResource(R.string.options_answers)) {
             ChoiceRow(
-                icon = R.drawable.ic_palette,
                 title = stringResource(R.string.settings_style),
                 options = Magic8BallPersonality.entries,
                 selected = state.settings.personality,
@@ -112,7 +104,6 @@ internal fun SettingsContent(
             )
             RowDivider()
             SwitchRow(
-                icon = R.drawable.ic_sparkle,
                 title = stringResource(R.string.settings_ai),
                 supporting = stringResource(
                     when {
@@ -127,7 +118,6 @@ internal fun SettingsContent(
             )
             RowDivider()
             SwitchRow(
-                icon = R.drawable.ic_volume,
                 title = stringResource(R.string.settings_spoken),
                 supporting = stringResource(
                     if (state.settings.spokenAnswersEnabled) R.string.settings_spoken_on else R.string.settings_spoken_off
@@ -143,7 +133,6 @@ internal fun SettingsContent(
                 MicrophoneRow(onAllowMicrophone)
             } else {
                 SwitchRow(
-                    icon = R.drawable.ic_mic,
                     title = stringResource(R.string.settings_voice),
                     supporting = stringResource(
                         when (state.voice) {
@@ -159,7 +148,6 @@ internal fun SettingsContent(
             }
             RowDivider()
             ActionRow(
-                icon = R.drawable.ic_group,
                 title = stringResource(R.string.settings_party),
                 supporting = if (state.settings.isParty) {
                     state.settings.partyNames.joinToString(", ")
@@ -172,17 +160,21 @@ internal fun SettingsContent(
 
         Section(stringResource(R.string.options_general)) {
             ChoiceRow(
-                icon = R.drawable.ic_language,
                 title = stringResource(R.string.settings_language),
                 options = AppLanguage.entries,
                 selected = state.settings.language,
                 label = { it.labelRes() },
                 onSelected = onLanguageSelected
             )
+            RowDivider()
+            ActionRow(
+                title = stringResource(R.string.settings_share_app),
+                supporting = stringResource(R.string.settings_share_app_hint),
+                onClick = onShareApp
+            )
             if (onShowAdPrivacyOptions != null) {
                 RowDivider()
                 ActionRow(
-                    icon = R.drawable.ic_settings,
                     title = stringResource(R.string.settings_ad_privacy),
                     supporting = stringResource(R.string.settings_ad_privacy_hint),
                     onClick = onShowAdPrivacyOptions
@@ -197,60 +189,13 @@ internal fun SettingsContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
+            text = stringResource(R.string.brand_name) + " · " +
+                stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
             modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-/**
- * What the app is, on the first card: the ball, the name, that an AI answers, and the one
- * thing worth asking of someone who likes it, which is to pass it on.
- */
-@Composable
-private fun Hero(poweredByAi: Boolean, onShareApp: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(CardShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(modifier = Modifier.size(72.dp)) {
-            Image(painterResource(R.drawable.widget_ball), contentDescription = null, modifier = Modifier.size(72.dp))
-            Image(painterResource(R.drawable.widget_eight), contentDescription = null, modifier = Modifier.size(72.dp))
-        }
-        Text(
-            text = stringResource(R.string.brand_name),
-            modifier = Modifier.padding(top = 16.dp),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            // Left out while the answers are the bundled ones, rather than said of answers no AI wrote.
-            text = stringResource(if (poweredByAi) R.string.brand_tagline else R.string.settings_share_app_hint),
-            modifier = Modifier.padding(top = 4.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Button(
-            onClick = onShareApp,
-            modifier = Modifier
-                .padding(top = 20.dp)
-                .fillMaxWidth()
-                .heightIn(min = 48.dp),
-            shape = ButtonShape
-        ) {
-            Icon(painterResource(R.drawable.ic_share), contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.settings_share_app), fontWeight = FontWeight.SemiBold)
-        }
     }
 }
 
@@ -260,11 +205,10 @@ private fun Section(title: String, rows: @Composable () -> Unit) {
     Text(
         text = title,
         modifier = Modifier
-            .padding(start = 4.dp, top = 28.dp, bottom = 12.dp)
+            .padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
             .semantics { heading() },
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurface
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Column(
         modifier = Modifier
@@ -286,33 +230,13 @@ private fun RowDivider() {
     )
 }
 
-/** What a row is about, at a glance: its symbol on a small tile of the accent colour. */
-@Composable
-private fun RowIcon(@DrawableRes icon: Int, enabled: Boolean = true) {
-    Box(
-        modifier = Modifier
-            .size(ROW_ICON_SIZE)
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 1f else DISABLED_ALPHA)),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = Color.White
-        )
-    }
-}
-
 /**
  * One of several, as a row: what is being chosen, and under it the choices as tiles that wrap
- * onto as many lines as they need. The chosen one is filled with the accent colour.
+ * onto as many lines as they need. The chosen one is filled with the text's own colour.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun <T> ChoiceRow(
-    @DrawableRes icon: Int,
     title: String,
     options: List<T>,
     selected: T,
@@ -320,15 +244,11 @@ private fun <T> ChoiceRow(
     onSelected: (T) -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RowIcon(icon)
-            Spacer(Modifier.width(ROW_ICON_GAP))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         FlowRow(
             modifier = Modifier
                 .padding(top = 12.dp)
@@ -344,7 +264,7 @@ private fun <T> ChoiceRow(
                         .clip(ButtonShape)
                         .background(
                             if (chosen) {
-                                MaterialTheme.colorScheme.primary
+                                MaterialTheme.colorScheme.onSurface
                             } else {
                                 MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
                             }
@@ -358,7 +278,7 @@ private fun <T> ChoiceRow(
                         text = stringResource(label(option)),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Medium,
-                        color = if (chosen) Color.White else MaterialTheme.colorScheme.onSurface
+                        color = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -369,7 +289,6 @@ private fun <T> ChoiceRow(
 /** A setting that is on or off. The whole row is the switch, for touch and for TalkBack. */
 @Composable
 private fun SwitchRow(
-    @DrawableRes icon: Int,
     title: String,
     supporting: String,
     checked: Boolean,
@@ -389,8 +308,6 @@ private fun SwitchRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RowIcon(icon, enabled)
-        Spacer(Modifier.width(ROW_ICON_GAP))
         SettingText(title, supporting, enabled, Modifier.weight(1f))
         Spacer(Modifier.width(16.dp))
         Switch(
@@ -441,7 +358,7 @@ private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onD
 
 /** Something to do rather than to set: the whole row is the button. */
 @Composable
-private fun ActionRow(@DrawableRes icon: Int, title: String, supporting: String, onClick: () -> Unit) {
+private fun ActionRow(title: String, supporting: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -450,8 +367,6 @@ private fun ActionRow(@DrawableRes icon: Int, title: String, supporting: String,
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RowIcon(icon)
-        Spacer(Modifier.width(ROW_ICON_GAP))
         SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f))
     }
 }
@@ -466,8 +381,6 @@ private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RowIcon(R.drawable.ic_mic)
-        Spacer(Modifier.width(ROW_ICON_GAP))
         SettingText(
             title = stringResource(R.string.settings_voice),
             supporting = stringResource(R.string.settings_voice_denied),
@@ -533,11 +446,8 @@ private fun Magic8BallPersonality.labelRes(): Int = when (this) {
 internal val CardShape = RoundedCornerShape(16.dp)
 internal val ButtonShape = RoundedCornerShape(10.dp)
 
-private val ROW_ICON_SIZE = 32.dp
-private val ROW_ICON_GAP = 16.dp
-
 /** Where a row's text starts, and so where the hairline under it does. */
-private val ROW_TEXT_START = 16.dp + ROW_ICON_SIZE + ROW_ICON_GAP
+private val ROW_TEXT_START = 16.dp
 
 /** Material's emphasis for disabled content. */
 private const val DISABLED_ALPHA = 0.38f

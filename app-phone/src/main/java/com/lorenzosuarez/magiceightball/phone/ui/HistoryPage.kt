@@ -1,16 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -137,8 +127,6 @@ private fun HistoryRow(
             .padding(start = 16.dp, top = 12.dp, end = 4.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        DieTile(fromAi = entry.fromAi)
-        Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = entry.answer ?: stringResource(R.string.answer_fallback),
@@ -175,37 +163,12 @@ private fun HistoryRow(
         )
     }
     HorizontalDivider(
-        modifier = Modifier.padding(start = 16.dp + TILE_SIZE + 16.dp),
+        modifier = Modifier.padding(start = 16.dp),
         thickness = 1.dp,
         color = MaterialTheme.colorScheme.outlineVariant
     )
     }
 }
-
-/** What leads each answer in the list: the die it was read on, in the accent colour when an AI wrote it. */
-@Composable
-private fun DieTile(fromAi: Boolean) {
-    val die = if (fromAi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Box(
-        modifier = Modifier
-            .size(TILE_SIZE)
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .drawBehind {
-                val half = size.minDimension * 0.27f
-                val path = Path().apply {
-                    moveTo(center.x - half, center.y - half * 0.75f)
-                    lineTo(center.x + half, center.y - half * 0.75f)
-                    lineTo(center.x, center.y + half)
-                    close()
-                }
-                drawPath(path, die)
-                drawPath(path, die, style = Stroke(width = half * 0.3f, join = StrokeJoin.Round))
-            }
-    )
-}
-
-private val TILE_SIZE = 52.dp
 
 /** "Just now", "5 min ago", "2 h ago", "3 d ago", then the date, in the app's language. */
 @Composable
