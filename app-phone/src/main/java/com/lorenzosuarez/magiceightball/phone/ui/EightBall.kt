@@ -11,6 +11,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
@@ -213,13 +214,14 @@ fun EightBall(
     // Held still, the ball does not move with the voice either; its rings still say it listens.
     val voiceMotion: () -> Float = if (still) NoVoiceMotion else voiceLevel
     val textMeasurer = rememberTextMeasurer()
+    val ringColor = MaterialTheme.colorScheme.onSurface
 
     Spacer(
         modifier = modifier
             .aspectRatio(1f)
             // Behind the ball and outside its layer: the rings do not shrink and swell with it.
             .drawWithCache {
-                val rings = BallRings(size.center, size.minDimension / 2f)
+                val rings = BallRings(size.center, size.minDimension / 2f, ringColor)
                 onDrawBehind {
                     with(rings) {
                         draw(
@@ -274,13 +276,17 @@ private class LastAnswer {
 }
 
 /** What surrounds the ball: a faint halo at rest and rings while listening. */
-private class BallRings(private val center: Offset, private val radius: Float) {
+private class BallRings(
+    private val center: Offset,
+    private val radius: Float,
+    private val color: Color
+) {
 
     fun DrawScope.draw(resting: Float, listening: Float, level: Float, pulse: Float) {
         // At rest: one halo that follows the heartbeat.
         if (resting > 0f) {
             drawCircle(
-                color = RingColor,
+                color = color,
                 radius = radius * (1f + HALO_REACH * (HALO_REST + (1f - HALO_REST) * beat(pulse))),
                 center = center,
                 alpha = resting * HALO_ALPHA
@@ -293,7 +299,7 @@ private class BallRings(private val center: Offset, private val radius: Float) {
                 val reach = RING_STEP * ring * (RING_REST + (1f - RING_REST) * breath) +
                     RING_VOICE_REACH * level * ring / RING_COUNT
                 drawCircle(
-                    color = RingColor,
+                    color = color,
                     radius = radius * (1f + reach * listening),
                     center = center,
                     alpha = listening * RING_ALPHA
@@ -740,7 +746,6 @@ private val DIE_TEXT_WIDTHS = floatArrayOf(1f, 0.85f, 0.7f, 0.55f)
 private const val SIN_60 = 0.8660254f
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
 
-private val RingColor = Color.White
 private val DiscTop = Color(BrandPalette.BALL_TOP)
 private val DiscBottom = Color(BrandPalette.BALL_BOTTOM)
 private val WindowCenter = Color(BrandPalette.WINDOW_CENTER)

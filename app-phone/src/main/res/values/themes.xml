@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Only the window behind the first Compose frame; the app's colours come from the Compose theme, which is dark whatever the system's setting. -->
+    <!-- Only the window behind the first Compose frame; the app's colours come from the Compose theme, which follows the system's light or dark setting like this colour does. -->
     <style name="Theme.MagicEightBall" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>

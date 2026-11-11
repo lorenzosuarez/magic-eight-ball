@@ -357,11 +357,12 @@ internal fun EightBallContent(
     // Back closes a question in progress or an answer, like the close button.
     BackHandler(enabled = !atRest, onBack = onDismiss)
 
+    val backdrop = Backdrop
     Box(
         modifier = modifier
             .fillMaxSize()
             // Over the window's plain colour, which the launch screen leaves behind.
-            .drawBehind { drawRect(Backdrop, alpha = intro()) }
+            .drawBehind { drawRect(backdrop, alpha = intro()) }
     ) {
         HorizontalPager(
             state = pagerState,
