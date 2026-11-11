@@ -90,12 +90,9 @@ internal fun SettingsContent(
     }
     var browsingStyles by rememberSaveable { mutableStateOf(false) }
     if (browsingStyles) {
-        StylesDialog(
+        StylesSheet(
             selected = state.settings.personality,
-            onSelected = {
-                onPersonalitySelected(it)
-                browsingStyles = false
-            },
+            onSelected = onPersonalitySelected,
             onClose = { browsingStyles = false }
         )
     }

@@ -1,6 +1,26 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -16,7 +36,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +45,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,19 +57,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.lorenzosuarez.magiceightball.phone.R
 
 /** The styles that belong together, under the name of what they share. */
 internal class StyleGroup(@StringRes val title: Int, val styles: List<Magic8BallPersonality>)
 
-/** Every style, once, in the order the page of styles shows them. */
+/** Every style, once, in the order the sheet of styles shows them: four to a group, so no line is left half empty. */
 internal val StyleGroups = listOf(
     StyleGroup(
         R.string.styles_group_classics,
-        listOf(Magic8BallPersonality.SARCASTIC, Magic8BallPersonality.MYSTICAL, Magic8BallPersonality.NEUTRAL)
+        listOf(
+            Magic8BallPersonality.SARCASTIC,
+            Magic8BallPersonality.MYSTICAL,
+            Magic8BallPersonality.NEUTRAL,
+            Magic8BallPersonality.PHILOSOPHER
+        )
     ),
     StyleGroup(
         R.string.styles_group_heart,
@@ -62,15 +85,21 @@ internal val StyleGroups = listOf(
     ),
     StyleGroup(
         R.string.styles_group_movies,
-        listOf(Magic8BallPersonality.PIRATE, Magic8BallPersonality.DETECTIVE, Magic8BallPersonality.VILLAIN)
-    ),
-    StyleGroup(
-        R.string.styles_group_minds,
-        listOf(Magic8BallPersonality.PHILOSOPHER, Magic8BallPersonality.ROBOT, Magic8BallPersonality.CONSPIRACY)
+        listOf(
+            Magic8BallPersonality.PIRATE,
+            Magic8BallPersonality.DETECTIVE,
+            Magic8BallPersonality.VILLAIN,
+            Magic8BallPersonality.ROBOT
+        )
     ),
     StyleGroup(
         R.string.styles_group_attitude,
-        listOf(Magic8BallPersonality.COACH, Magic8BallPersonality.ZOOMER, Magic8BallPersonality.CAT)
+        listOf(
+            Magic8BallPersonality.COACH,
+            Magic8BallPersonality.ZOOMER,
+            Magic8BallPersonality.CAT,
+            Magic8BallPersonality.CONSPIRACY
+        )
     )
 )
 
@@ -97,6 +126,11 @@ internal fun StyleRow(
     onSelected: (Magic8BallPersonality) -> Unit,
     onSeeAll: () -> Unit
 ) {
+    val scroll = rememberScrollState()
+    // A style chosen from the sheet leads the row: bring the row back to where it starts.
+    LaunchedEffect(selected) {
+        if (stylesInRow(selected).first() == selected) scroll.animateScrollTo(0)
+    }
     Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Text(
             text = stringResource(R.string.settings_style),
@@ -107,7 +141,7 @@ internal fun StyleRow(
         Row(
             modifier = Modifier
                 .padding(top = 12.dp)
-                .horizontalScroll(rememberScrollState())
+                .horizontalScroll(scroll)
                 .padding(horizontal = 16.dp)
                 .height(IntrinsicSize.Min)
                 .selectableGroup(),
@@ -149,50 +183,109 @@ internal fun StyleRow(
     }
 }
 
-/** Every style, over the whole screen. Choosing one closes it: there is nothing else to do here. */
+/**
+ * Every style, in a sheet that comes up from the bottom over half the screen and, pulled or
+ * scrolled up, becomes the whole screen: its corners square off and its handle goes, since there
+ * is nowhere further to pull it. Pulling it down, the close button, the back gesture and a touch
+ * outside all put it away; so does choosing a style, once the choice has been seen to take.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun StylesDialog(
+internal fun StylesSheet(
     selected: Magic8BallPersonality,
     onSelected: (Magic8BallPersonality) -> Unit,
     onClose: () -> Unit
 ) {
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        StylesContent(selected = selected, onSelected = onSelected, onClose = onClose)
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    val full = sheetState.targetValue == SheetValue.Expanded
+    val corner by animateDpAsState(if (full) 0.dp else SHEET_CORNER, label = "sheet corner")
+    val putAway: () -> Unit = { scope.launch { sheetState.hide() }.invokeOnCompletion { onClose() } }
+    ModalBottomSheet(
+        onDismissRequest = onClose,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = corner, topEnd = corner),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 0.dp,
+        // The sheet draws its own handle and keeps clear of the system bars itself: see [StylesContent].
+        dragHandle = null,
+        contentWindowInsets = { WindowInsets(0) }
+    ) {
+        StylesContent(
+            selected = selected,
+            onSelected = {
+                onSelected(it)
+                putAway()
+            },
+            onClose = putAway,
+            full = full
+        )
     }
 }
 
-/** What [StylesDialog] shows: the styles by group, two to a line. */
+/**
+ * What [StylesSheet] shows: a header that stays put, with the way out and the title, and under
+ * it the styles by group, scrolling on their own so nothing ever passes behind the close button.
+ *
+ * @param full whether the sheet takes the whole screen: the header then clears the status bar.
+ */
 @Composable
 internal fun StylesContent(
     selected: Magic8BallPersonality,
     onSelected: (Magic8BallPersonality) -> Unit,
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    full: Boolean = false
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .systemBarsPadding()
-    ) {
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val headerTop by animateDpAsState(if (full) statusBar else 0.dp, label = "sheet header")
+    val handleAlpha by animateFloatAsState(if (full) 0f else 1f, label = "sheet handle")
+    val scroll = rememberScrollState()
+    // Two to a line, or one when the text is too large for two to say anything.
+    val columns = if (LocalDensity.current.fontScale > LARGE_FONT_SCALE) 1 else 2
+    Column(modifier = modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(top = headerTop + 8.dp)
+                .align(Alignment.CenterHorizontally)
+                .size(width = 36.dp, height = 4.dp)
+                .alpha(handleAlpha)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = HANDLE_ALPHA))
+        )
+        Box(modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            AppIconButton(
+                icon = R.drawable.ic_close,
+                description = stringResource(R.string.action_close),
+                onClick = onClose,
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp)
+            )
+            Text(
+                text = stringResource(R.string.styles_title),
+                modifier = Modifier.align(Alignment.Center).semantics { heading() },
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        // Only once something has scrolled under the header is there an edge worth drawing.
+        HorizontalDivider(
+            thickness = 1.dp,
+            color = if (scroll.value > 0) MaterialTheme.colorScheme.outlineVariant else Color.Transparent
+        )
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, top = 64.dp, end = 16.dp, bottom = 32.dp)
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(scroll)
+                .navigationBarsPadding()
+                .padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 32.dp)
                 .selectableGroup()
         ) {
             Text(
-                text = stringResource(R.string.styles_title),
-                modifier = Modifier.fillMaxWidth().semantics { heading() },
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            Text(
                 text = stringResource(R.string.styles_subtitle),
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -201,17 +294,17 @@ internal fun StylesContent(
                 Text(
                     text = stringResource(group.title),
                     modifier = Modifier.padding(top = 28.dp, bottom = 12.dp).semantics { heading() },
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    group.styles.chunked(2).forEach { pair ->
+                    group.styles.chunked(columns).forEach { line ->
                         Row(
                             modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            pair.forEach { style ->
+                            line.forEach { style ->
                                 StyleCard(
                                     style = style,
                                     chosen = style == selected,
@@ -219,18 +312,12 @@ internal fun StylesContent(
                                     modifier = Modifier.weight(1f).fillMaxHeight()
                                 )
                             }
-                            if (pair.size == 1) Spacer(Modifier.weight(1f))
+                            repeat(columns - line.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
             }
         }
-        AppIconButton(
-            icon = R.drawable.ic_close,
-            description = stringResource(R.string.action_close),
-            onClick = onClose,
-            modifier = Modifier.padding(4.dp)
-        )
     }
 }
 
@@ -321,3 +408,8 @@ private val STYLE_CARD_MIN_WIDTH = 132.dp
 
 /** How much quieter than its name a style's line is. */
 private const val SAMPLE_ALPHA = 0.66f
+
+/** Material's corner for a sheet that is not yet the whole screen. */
+private val SHEET_CORNER = 28.dp
+private const val HANDLE_ALPHA = 0.3f
+private const val LARGE_FONT_SCALE = 1.3f

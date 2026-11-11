@@ -289,12 +289,14 @@ class EightBallScreenshotTest {
         }
     }
 
-    /** The page of styles on its own: a dialog's window is not rendered on the JVM. */
+    /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */
     private fun captureStyles(name: String, language: AppLanguage, dark: Boolean) {
         captureRoboImage(filePath = path(name)) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
-                    StylesContent(selected = Magic8BallPersonality.LOVESTRUCK, onSelected = {}, onClose = {})
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        StylesContent(selected = Magic8BallPersonality.LOVESTRUCK, onSelected = {}, onClose = {})
+                    }
                 }
             }
         }
