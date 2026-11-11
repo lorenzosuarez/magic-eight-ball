@@ -21,7 +21,8 @@
 
     <!-- History -->
     <string name="history_title">Recents</string>
-    <string name="history_empty">Your answers will show up here, saved only on this device</string>
+    <string name="history_empty_title">No answers yet</string>
+    <string name="history_empty">Ask the ball and your answers will show up here, saved only on this device</string>
     <string name="history_footer">Saved only on this device</string>
     <string name="history_entry_meta" translatable="false">%1$s · %2$s</string>
     <string name="history_delete">Delete</string>

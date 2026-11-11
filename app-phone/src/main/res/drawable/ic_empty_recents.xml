@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The ball, drawn in line and with nothing in its window yet: what an empty list of answers shows. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path
+        android:pathData="M48,44m-34,0a34,34 0,1 1,68 0a34,34 0,1 1,-68 0"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.5" />
+    <path
+        android:pathData="M48,44m-13,0a13,13 0,1 1,26 0a13,13 0,1 1,-26 0"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.5" />
+    <path
+        android:pathData="M24.5,36a25,25 0,0 1,12.5 -14.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.5" />
+    <path
+        android:pathData="M32,89h32"
+        android:strokeAlpha="0.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.5" />
+</vector>

@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -67,19 +73,21 @@ internal fun HistoryContent(
             }
         }
 
-        LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-            items(entries, key = { it.id }) { entry ->
-                HistoryRow(entry, now, onDelete, Modifier.animateItem())
-            }
-            item {
-                Text(
-                    text = stringResource(
-                        if (entries.isEmpty()) R.string.history_empty else R.string.history_footer
-                    ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        if (entries.isEmpty()) {
+            EmptyHistory(Modifier.weight(1f))
+        } else {
+            LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                items(entries, key = { it.id }) { entry ->
+                    HistoryRow(entry, now, onDelete, Modifier.animateItem())
+                }
+                item {
+                    Text(
+                        text = stringResource(R.string.history_footer),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -191,3 +199,47 @@ private const val MINUTES_PER_DAY = 60 * 24
 
 /** Older than this, an entry shows its date. */
 private const val DAYS_SHOWN_AS_AGO = 7
+
+/**
+ * Nothing asked yet: the ball in line, with its window empty, and under it what will be here.
+ * It sits a little above the middle, where the eye rests, and scrolls if the text is too large.
+ */
+@Composable
+private fun EmptyHistory(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.weight(EMPTY_ABOVE))
+        Icon(
+            painter = painterResource(R.drawable.ic_empty_recents),
+            // The words under it say everything it does.
+            contentDescription = null,
+            modifier = Modifier.size(96.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = EMPTY_ART_ALPHA)
+        )
+        Text(
+            text = stringResource(R.string.history_empty_title),
+            modifier = Modifier.padding(top = 24.dp),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = stringResource(R.string.history_empty),
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.weight(EMPTY_BELOW))
+    }
+}
+
+private const val EMPTY_ABOVE = 2f
+private const val EMPTY_BELOW = 3f
+private const val EMPTY_ART_ALPHA = 0.6f
