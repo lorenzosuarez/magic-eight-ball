@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -88,6 +89,16 @@ class EightBallScreenshotTest {
 
     @Test
     fun phone_answer_light() = capture("phone_3_answer_light", ANSWERED)
+
+    @Test
+    fun share_card() = captureRoboImage(filePath = path("phone_24_share_card")) {
+        ShareCard(
+            question = "Should I order pizza tonight?",
+            answer = "Yes. Screenshot this.",
+            layer = rememberGraphicsLayer(),
+            visible = true
+        )
+    }
 
     @Test
     @Config(qualifiers = "+night")

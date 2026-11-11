@@ -24,6 +24,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.runtime.key
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -220,6 +224,7 @@ fun EightBallScreen(
         if (ready) intro.animateTo(1f, tween(INTRO_MS))
     }
     val playStoreUrl = PLAY_STORE_URL + context.packageName
+    val shareAnswerText = stringResource(R.string.share_answer_text, playStoreUrl)
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Nothing but the window's own background until the saved choices are known.
@@ -257,7 +262,11 @@ fun EightBallScreen(
                     viewModel.clearHistory()
                 },
                 onOpenSettings = { settingsOpen = true },
-                onAllowMicrophone = { askForMicrophone(true) }
+                onAllowMicrophone = { askForMicrophone(true) },
+                onShareAnswer = { picture ->
+                    tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
+                    context.shareAnswer(picture, shareAnswerText)
+                }
             )
             if (settingsOpen) {
                 val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
@@ -324,6 +333,7 @@ internal fun EightBallContent(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onAllowMicrophone: () -> Unit = {},
+    onShareAnswer: (ImageBitmap) -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
 ) {
@@ -332,6 +342,7 @@ internal fun EightBallContent(
     val pagerState = rememberPagerState(initialPage = initialPage) { PAGE_COUNT }
     val onBallPage = pagerState.currentPage == BALL_PAGE
     val scope = rememberCoroutineScope()
+    val shareLayer = rememberGraphicsLayer()
 
     // Deleting needs no confirmation because it can be taken back for a moment.
     val snackbars = remember { SnackbarHostState() }
@@ -364,6 +375,12 @@ internal fun EightBallContent(
             // Over the window's plain colour, which the launch screen leaves behind.
             .drawBehind { drawRect(backdrop, alpha = intro()) }
     ) {
+        // Never seen here: the picture an answer is shared as, ready for when it is asked for.
+        (state.phase as? BallPhase.Answered)?.let { answered ->
+            key(answered.id) {
+                ShareCard(question = answered.question, answer = answered.answer.text(), layer = shareLayer)
+            }
+        }
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
@@ -391,7 +408,8 @@ internal fun EightBallContent(
                     onHoldEnd = onHoldEnd,
                     onHoldCancel = onHoldCancel,
                     onToggleVoiceQuestion = onToggleVoiceQuestion,
-                    onAllowMicrophone = onAllowMicrophone
+                    onAllowMicrophone = onAllowMicrophone,
+                    onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } }
                 )
             }
         }
@@ -480,7 +498,8 @@ private fun Stage(
     onHoldEnd: () -> Unit,
     onHoldCancel: () -> Unit,
     onToggleVoiceQuestion: () -> Unit,
-    onAllowMicrophone: () -> Unit
+    onAllowMicrophone: () -> Unit,
+    onShareAnswer: () -> Unit
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
@@ -527,6 +546,7 @@ private fun Stage(
             Caption(
                 state = state,
                 onAllowMicrophone = onAllowMicrophone,
+                onShareAnswer = onShareAnswer,
                 modifier = Modifier
                     .graphicsLayer { alpha = intro() }
                     .padding(horizontal = 32.dp)
@@ -744,7 +764,12 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
  * so with a large font the answer is written here as well.
  */
 @Composable
-private fun Caption(state: EightBallUiState, onAllowMicrophone: () -> Unit, modifier: Modifier = Modifier) {
+private fun Caption(
+    state: EightBallUiState,
+    onAllowMicrophone: () -> Unit,
+    onShareAnswer: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val notice = state.notice
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
 
@@ -811,6 +836,15 @@ private fun Caption(state: EightBallUiState, onAllowMicrophone: () -> Unit, modi
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = AI_NOTE_ALPHA),
                         textAlign = TextAlign.Center
                     )
+                }
+                TextButton(onClick = onShareAnswer, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_share),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.action_share))
                 }
             }
         }

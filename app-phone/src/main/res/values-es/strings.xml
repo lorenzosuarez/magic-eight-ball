@@ -62,6 +62,9 @@
     <string name="settings_share_app">Compartir la app</string>
     <string name="settings_share_app_hint">Cuéntale a alguien sobre la Bola Mágica 8</string>
     <string name="share_app_text">Pregúntale lo que quieras a la Bola Mágica 8: %1$s</string>
+    <string name="action_share">Compartir</string>
+    <string name="share_answer_text">Mira lo que me dijo la Bola Mágica 8. Pregúntale lo tuyo: %1$s</string>
+    <string name="share_card_invite">Pregúntale lo tuyo</string>
     <string name="settings_ad_privacy">Privacidad de anuncios</string>
     <string name="settings_ad_privacy_hint">Revisa lo que permitiste para los anuncios</string>
 

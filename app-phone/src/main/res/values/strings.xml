@@ -67,6 +67,9 @@
     <string name="settings_share_app">Share the app</string>
     <string name="settings_share_app_hint">Tell someone about the Magic 8 Ball</string>
     <string name="share_app_text">Ask the Magic 8 Ball anything: %1$s</string>
+    <string name="action_share">Share</string>
+    <string name="share_answer_text">Look what the Magic 8 Ball told me. Ask it yours: %1$s</string>
+    <string name="share_card_invite">Ask it yours</string>
     <string name="settings_ad_privacy">Ad privacy choices</string>
     <string name="settings_ad_privacy_hint">Review what you allowed for ads</string>
 
