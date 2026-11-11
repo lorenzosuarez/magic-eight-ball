@@ -5,6 +5,8 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,11 +14,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -119,7 +123,7 @@ internal fun SettingsContent(
             onSelected = onLanguageSelected
         )
         Spacer(Modifier.height(20.dp))
-        Choice(
+        ChipChoice(
             title = stringResource(R.string.settings_style),
             options = Magic8BallPersonality.entries,
             selected = state.settings.personality,
@@ -222,6 +226,41 @@ private fun <T> Choice(
                 ) {
                     Text(stringResource(label(option)))
                 }
+            }
+        }
+    }
+}
+
+/** One of many: chips that wrap onto as many lines as they need, where a row of segments would not fit. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun <T> ChipChoice(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: (T) -> Int,
+    onSelected: (T) -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.forEach { option ->
+                FilterChip(
+                    selected = option == selected,
+                    onClick = { onSelected(option) },
+                    label = { Text(stringResource(label(option))) },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
             }
         }
     }
@@ -336,6 +375,11 @@ private fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.SARCASTIC -> R.string.style_sarcastic
     Magic8BallPersonality.MYSTICAL -> R.string.style_mystical
     Magic8BallPersonality.NEUTRAL -> R.string.style_neutral
+    Magic8BallPersonality.GRANDMA -> R.string.style_grandma
+    Magic8BallPersonality.PIRATE -> R.string.style_pirate
+    Magic8BallPersonality.PHILOSOPHER -> R.string.style_philosopher
+    Magic8BallPersonality.COACH -> R.string.style_coach
+    Magic8BallPersonality.TOXIC_EX -> R.string.style_toxic_ex
 }
 
 /** Material's emphasis for disabled content. */

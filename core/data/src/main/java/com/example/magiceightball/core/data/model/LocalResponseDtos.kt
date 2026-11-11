@@ -13,20 +13,35 @@ import kotlinx.serialization.Serializable
 data class PersonalityResponsesDto(
     val sarcastic: List<String> = emptyList(),
     val mystical: List<String> = emptyList(),
-    val neutral: List<String> = emptyList()
+    val neutral: List<String> = emptyList(),
+    val grandma: List<String> = emptyList(),
+    val pirate: List<String> = emptyList(),
+    val philosopher: List<String> = emptyList(),
+    val coach: List<String> = emptyList(),
+    val toxicEx: List<String> = emptyList()
 ) {
     /** Only what can be shown on the ball: see [Magic8BallDataDto.usable]. */
     fun usable(): PersonalityResponsesDto = PersonalityResponsesDto(
         sarcastic = sarcastic.usableAnswers(),
         mystical = mystical.usableAnswers(),
-        neutral = neutral.usableAnswers()
+        neutral = neutral.usableAnswers(),
+        grandma = grandma.usableAnswers(),
+        pirate = pirate.usableAnswers(),
+        philosopher = philosopher.usableAnswers(),
+        coach = coach.usableAnswers(),
+        toxicEx = toxicEx.usableAnswers()
     )
 
     /** These lists, with every one that [other] fills taking the place of this one's. */
     fun replacedBy(other: PersonalityResponsesDto): PersonalityResponsesDto = PersonalityResponsesDto(
         sarcastic = other.sarcastic.ifEmpty { sarcastic },
         mystical = other.mystical.ifEmpty { mystical },
-        neutral = other.neutral.ifEmpty { neutral }
+        neutral = other.neutral.ifEmpty { neutral },
+        grandma = other.grandma.ifEmpty { grandma },
+        pirate = other.pirate.ifEmpty { pirate },
+        philosopher = other.philosopher.ifEmpty { philosopher },
+        coach = other.coach.ifEmpty { coach },
+        toxicEx = other.toxicEx.ifEmpty { toxicEx }
     )
 
     private fun List<String>.usableAnswers(): List<String> = map { it.trim() }
@@ -40,6 +55,11 @@ data class PersonalityResponsesDto(
         Magic8BallPersonality.SARCASTIC -> sarcastic
         Magic8BallPersonality.MYSTICAL -> mystical
         Magic8BallPersonality.NEUTRAL -> neutral
+        Magic8BallPersonality.GRANDMA -> grandma
+        Magic8BallPersonality.PIRATE -> pirate
+        Magic8BallPersonality.PHILOSOPHER -> philosopher
+        Magic8BallPersonality.COACH -> coach
+        Magic8BallPersonality.TOXIC_EX -> toxicEx
     }
 }
 

@@ -54,6 +54,11 @@
     <string name="style_sarcastic">Sarcastic</string>
     <string name="style_mystical">Mystical</string>
     <string name="style_neutral">Neutral</string>
+    <string name="style_grandma">Grandma</string>
+    <string name="style_pirate">Pirate</string>
+    <string name="style_philosopher">Philosopher</string>
+    <string name="style_coach">Coach</string>
+    <string name="style_toxic_ex">Toxic ex</string>
     <string name="settings_ai">AI answers</string>
     <string name="settings_ai_on">Written by Gemini, just for you</string>
     <string name="settings_ai_off">Classic answers from the app</string>

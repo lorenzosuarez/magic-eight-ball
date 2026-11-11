@@ -35,6 +35,16 @@
     <string name="personality_mystical_es">Místico</string>
     <string name="personality_neutral">Neutral</string>
     <string name="personality_neutral_es">Neutro</string>
+    <string name="personality_grandma">Grandma</string>
+    <string name="personality_grandma_es">Abuela</string>
+    <string name="personality_pirate">Pirate</string>
+    <string name="personality_pirate_es">Pirata</string>
+    <string name="personality_philosopher">Philosopher</string>
+    <string name="personality_philosopher_es">Filósofo</string>
+    <string name="personality_coach">Coach</string>
+    <string name="personality_coach_es">Coach</string>
+    <string name="personality_toxic_ex">Toxic ex</string>
+    <string name="personality_toxic_ex_es">Ex tóxico</string>
 
     <!-- AI answers selection -->
     <string name="ai_title">AI answers</string>

@@ -49,6 +49,11 @@
     <string name="style_sarcastic">Sarcástico</string>
     <string name="style_mystical">Místico</string>
     <string name="style_neutral">Neutro</string>
+    <string name="style_grandma">Abuela</string>
+    <string name="style_pirate">Pirata</string>
+    <string name="style_philosopher">Filósofo</string>
+    <string name="style_coach">Coach</string>
+    <string name="style_toxic_ex">Ex tóxico</string>
     <string name="settings_ai">Respuestas con IA</string>
     <string name="settings_ai_on">Escritas por Gemini, solo para ti</string>
     <string name="settings_ai_off">Respuestas clásicas de la app</string>
