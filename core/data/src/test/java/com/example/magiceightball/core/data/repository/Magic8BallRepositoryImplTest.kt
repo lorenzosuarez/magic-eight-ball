@@ -36,7 +36,24 @@ class Magic8BallRepositoryImplTest {
     private val geminiSettings = FakeGeminiSettingsSource()
     private val quota = DeviceAiAnswerQuota(MemoryStore(), today = { today })
     private var today = "2026-11-10"
-    private val repository = Magic8BallRepositoryImpl(remoteDataSource, localDataSource, geminiSettings, quota)
+    private var now = 0L
+    private val repository =
+        Magic8BallRepositoryImpl(remoteDataSource, localDataSource, geminiSettings, quota) { now }
+
+    @Test
+    fun `once the key's allowance is used up gemini is left alone for a while`() = runTest {
+        val request = Magic8BallRequest(useAi = true)
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
+            Magic8BallResult.Failure(LlmError.RateLimited)
+
+        repeat(3) { assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request)) }
+        coVerify(exactly = 1) { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) }
+
+        now += 5 * 60_000L
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
+            Magic8BallResult.Success(REMOTE_ANSWER)
+        assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request))
+    }
 
     @Test
     fun `past the day's allowance answers are bundled, until the next day`() = runTest {

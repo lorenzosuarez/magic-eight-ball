@@ -44,6 +44,21 @@ class OfflineResponsesTest {
     }
 
     @Test
+    fun `remote answers replace the lists they fill and nothing else`() {
+        val remote = json.decodeFromString<Magic8BallDataDto>(
+            """{"es":{"sarcastic":["  nuevo  ","nuevo","","una dos tres cuatro cinco seis siete","${"x".repeat(41)}"]},"en":{"mystical":[" "]}}"""
+        ).usable()
+        val merged = data.replacedBy(remote)
+
+        // Trimmed, without repeats, and without what would not fit on the die.
+        assertEquals(listOf("nuevo"), merged.messagesFor("es", SARCASTIC))
+        // A list with nothing usable in it leaves the bundled one in place.
+        assertEquals(listOf("en-m"), merged.messagesFor("en", MYSTICAL))
+        assertEquals(listOf("es-m"), merged.messagesFor("es", MYSTICAL))
+        assertEquals(listOf("en-s"), merged.messagesFor("en", SARCASTIC))
+    }
+
+    @Test
     fun `pick never repeats the previous answer when there is an alternative`() {
         repeat(200) {
             assertNotEquals("a", JsonLocalDataSource.pickAvoidingRepeat(listOf("a", "b", "c"), listOf("a")))

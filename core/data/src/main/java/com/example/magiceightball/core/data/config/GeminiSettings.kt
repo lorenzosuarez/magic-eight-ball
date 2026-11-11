@@ -26,6 +26,17 @@ data class GeminiSettings(
 }
 
 /**
+ * The answers the developer keeps in Firebase to replace the bundled ones without a release.
+ */
+interface RemoteAnswers {
+    /**
+     * The latest answers file known on this device, in the format of the bundled one; blank
+     * when there is none. Never waits for the network: it is what the last fetch left on disk.
+     */
+    fun json(): String
+}
+
+/**
  * Source of the [GeminiSettings]. Its [isAvailable] follows [GeminiSettings.isUsable] and is
  * brought up to date by [refresh].
  */

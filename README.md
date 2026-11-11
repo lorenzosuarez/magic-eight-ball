@@ -130,6 +130,10 @@ The app builds and runs with no setup at all: without Firebase it answers from t
         | `gemini_enabled` | Boolean | Turns Gemini answers on or off for everyone. Off when missing. Each user can still switch AI answers off in the app. |
         | `gemini_api_key` | String | The Gemini API key from [Google AI Studio](https://aistudio.google.com/). |
         | `gemini_model` | String | Optional Gemini model ID. Defaults to `gemini-3.5-flash-lite`; change it here when Google retires a model. |
+        | `gemini_daily_limit` | Number | Optional. AI answers one device may ask for per day; 40 when absent. |
+        | `gemini_use_paid_key` | Boolean | Optional, off by default. When true and `gemini_paid_api_key` is set, requests use that key instead of `gemini_api_key`. |
+        | `gemini_paid_api_key` | String | Optional. The key of a billed project, used only while `gemini_use_paid_key` is true. |
+        | `answers_json` | JSON | Optional. Answers in the format of `magic_8_ball_responses.json`; every list it fills replaces the bundled one. Kept on the device, so it works offline. Entries over 6 words or 40 characters are ignored. |
 
     The app checks Remote Config at launch and at most once an hour, so a change can take up to an hour to reach a watch. Values in Remote Config can be read by anyone with the app, so restrict the key to the Generative Language API and set a quota.
 

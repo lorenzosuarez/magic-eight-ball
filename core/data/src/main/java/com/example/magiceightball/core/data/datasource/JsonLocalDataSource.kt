@@ -2,6 +2,7 @@ package com.example.magiceightball.core.data.datasource
 
 import android.content.Context
 import android.util.Log
+import com.example.magiceightball.core.data.config.RemoteAnswers
 import com.example.magiceightball.core.data.model.Magic8BallDataDto
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -18,8 +19,10 @@ import javax.inject.Singleton
 interface LocalDataSource {
     /**
      * Returns a random offline answer written for [personality] in
-     * [languageCode]. Never fails: when the bundled answers cannot be read it
-     * returns a built-in answer in the requested language.
+     * [languageCode]: one of the answers the developer keeps in Firebase when
+     * this device has them, otherwise one of the bundled ones. Never fails:
+     * when no answers can be read it returns a built-in answer in the
+     * requested language.
      */
     suspend fun getRandomMessage(
         languageCode: String,
@@ -30,13 +33,16 @@ interface LocalDataSource {
 @Singleton
 class JsonLocalDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val json: Json
+    private val json: Json,
+    private val remoteAnswers: RemoteAnswers
 ) : LocalDataSource {
 
     private val mutex = Mutex()
 
-    // Both guarded by [mutex].
+    // All guarded by [mutex].
+    private var bundledData: Magic8BallDataDto? = null
     private var cachedData: Magic8BallDataDto? = null
+    private var cachedRemoteText: String? = null
     private val recentMessages = ArrayDeque<String>()
 
     override suspend fun getRandomMessage(
@@ -51,24 +57,43 @@ class JsonLocalDataSource @Inject constructor(
         message
     }
 
-    /** Reads and parses the asset once, off the main thread. A failed read is retried next time. */
-    private suspend fun loadData(): Magic8BallDataDto? {
-        cachedData?.let { return it }
-        return withContext(Dispatchers.IO) {
-            try {
-                val text = context.assets.open(ASSET_NAME).bufferedReader().use { it.readText() }
-                json.decodeFromString<Magic8BallDataDto>(text)
-            } catch (e: IOException) {
-                Log.w(TAG, "Could not read $ASSET_NAME", e)
-                null
-            } catch (e: SerializationException) {
-                Log.w(TAG, "Could not parse $ASSET_NAME", e)
-                null
-            } catch (e: IllegalArgumentException) {
-                Log.w(TAG, "Unexpected content in $ASSET_NAME", e)
-                null
-            }
-        }?.also { cachedData = it }
+    /**
+     * The answers in use: the bundled ones, with every list the remote file fills taking the
+     * place of the bundled list. Read off the main thread, and worked out again only when the
+     * remote file has changed. A failed read of the asset is retried next time.
+     */
+    private suspend fun loadData(): Magic8BallDataDto? = withContext(Dispatchers.IO) {
+        val remoteText = remoteAnswers.json()
+        cachedData?.takeIf { remoteText == cachedRemoteText }?.let { return@withContext it }
+
+        val bundled = bundledData ?: parse(ASSET_NAME) {
+            context.assets.open(ASSET_NAME).bufferedReader().use { it.readText() }
+        }?.also { bundledData = it }
+        val remote = remoteText.takeIf { it.isNotBlank() }?.let { text -> parse("remote answers") { text } }
+
+        val data = when {
+            bundled == null -> remote?.usable()
+            remote == null -> bundled
+            else -> bundled.replacedBy(remote.usable())
+        }
+        if (data != null) {
+            cachedData = data
+            cachedRemoteText = remoteText
+        }
+        data
+    }
+
+    private fun parse(what: String, read: () -> String): Magic8BallDataDto? = try {
+        json.decodeFromString<Magic8BallDataDto>(read())
+    } catch (e: IOException) {
+        Log.w(TAG, "Could not read $what", e)
+        null
+    } catch (e: SerializationException) {
+        Log.w(TAG, "Could not parse $what", e)
+        null
+    } catch (e: IllegalArgumentException) {
+        Log.w(TAG, "Unexpected content in $what", e)
+        null
     }
 
     internal companion object {
