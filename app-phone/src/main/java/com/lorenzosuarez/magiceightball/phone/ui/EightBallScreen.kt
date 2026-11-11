@@ -57,6 +57,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -963,10 +964,11 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
-                FilledTonalButton(
+                TextButton(
                     onClick = onShareAnswer,
                     modifier = Modifier.heightIn(min = 48.dp),
-                    shape = ButtonShape
+                    shape = ButtonShape,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_share),
