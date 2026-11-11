@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import android.app.Application
 import android.os.Looper
 import androidx.activity.ComponentActivity
@@ -270,6 +272,35 @@ class EightBallScreenshotTest {
     @Test
     @Config(qualifiers = TABLET_LANDSCAPE)
     fun tablet_landscape_idle_dark() = capture("tablet_2_ask_landscape_dark", EightBallUiState())
+
+    @Test
+    fun phone_styles_spanish_dark() = captureStyles("phone_18_styles_spanish_dark", AppLanguage.SPANISH, dark = true)
+
+    @Test
+    fun phone_styles_english_light() = captureStyles("phone_19_styles_english_light", AppLanguage.ENGLISH, dark = false)
+
+    @Test
+    fun every_style_is_in_one_group_and_the_row_shows_the_chosen_one() {
+        assertEquals(Magic8BallPersonality.entries.sortedBy { it.name }, StyleGroups.flatMap { it.styles }.sortedBy { it.name })
+        Magic8BallPersonality.entries.forEach { style ->
+            val row = stylesInRow(style)
+            assertTrue(style in row)
+            assertEquals(row.size, row.distinct().size)
+        }
+    }
+
+    /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */
+    private fun captureStyles(name: String, language: AppLanguage, dark: Boolean) {
+        captureRoboImage(filePath = path(name)) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                ProvideAppLanguage(language) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        StylesContent(selected = Magic8BallPersonality.LOVESTRUCK, onSelected = {}, onClose = {})
+                    }
+                }
+            }
+        }
+    }
 
     private fun capture(
         name: String,

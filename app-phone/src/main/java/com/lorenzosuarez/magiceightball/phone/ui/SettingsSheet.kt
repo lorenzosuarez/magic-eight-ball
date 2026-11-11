@@ -88,6 +88,14 @@ internal fun SettingsContent(
             onDismiss = { editingParty = false }
         )
     }
+    var browsingStyles by rememberSaveable { mutableStateOf(false) }
+    if (browsingStyles) {
+        StylesSheet(
+            selected = state.settings.personality,
+            onSelected = onPersonalitySelected,
+            onClose = { browsingStyles = false }
+        )
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -95,12 +103,10 @@ internal fun SettingsContent(
             .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
     ) {
         Section(stringResource(R.string.options_answers)) {
-            ChoiceRow(
-                title = stringResource(R.string.settings_style),
-                options = Magic8BallPersonality.entries,
+            StyleRow(
                 selected = state.settings.personality,
-                label = { it.labelRes() },
-                onSelected = onPersonalitySelected
+                onSelected = onPersonalitySelected,
+                onSeeAll = { browsingStyles = true }
             )
             RowDivider()
             SwitchRow(
@@ -322,7 +328,7 @@ private fun SwitchRow(
     }
 }
 
-/** Who is playing: names typed in one field, since that is how a group is dictated. Saving none ends the party. */
+/** Who is playing: names typed in one field, since that is how a group is dictated. Saving none ends the party, and so does turning it off. */
 @Composable
 private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onDismiss: () -> Unit) {
     var typed by rememberSaveable { mutableStateOf(names.joinToString(", ")) }
@@ -351,7 +357,12 @@ private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onD
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            // While a party is on, the way out of it is here, in one touch: touching outside still cancels.
+            if (names.isEmpty()) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            } else {
+                TextButton(onClick = { onSave(emptyList()) }) { Text(stringResource(R.string.party_turn_off)) }
+            }
         }
     )
 }
@@ -430,18 +441,6 @@ private fun AppLanguage.labelRes(): Int = when (this) {
     AppLanguage.SPANISH -> R.string.language_spanish
 }
 
-@StringRes
-private fun Magic8BallPersonality.labelRes(): Int = when (this) {
-    Magic8BallPersonality.SARCASTIC -> R.string.style_sarcastic
-    Magic8BallPersonality.MYSTICAL -> R.string.style_mystical
-    Magic8BallPersonality.NEUTRAL -> R.string.style_neutral
-    Magic8BallPersonality.GRANDMA -> R.string.style_grandma
-    Magic8BallPersonality.PIRATE -> R.string.style_pirate
-    Magic8BallPersonality.PHILOSOPHER -> R.string.style_philosopher
-    Magic8BallPersonality.COACH -> R.string.style_coach
-    Magic8BallPersonality.TOXIC_EX -> R.string.style_toxic_ex
-}
-
 /** Cards and the buttons on them: the two corner sizes the whole app uses. */
 internal val CardShape = RoundedCornerShape(16.dp)
 internal val ButtonShape = RoundedCornerShape(10.dp)
@@ -453,4 +452,4 @@ private val ROW_TEXT_START = 16.dp
 private const val DISABLED_ALPHA = 0.38f
 
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
-private const val TILE_ALPHA = 0.08f
+internal const val TILE_ALPHA = 0.08f

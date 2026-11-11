@@ -56,8 +56,24 @@ internal object Strings {
         LocalizedString(R.string.personality_philosopher, R.string.personality_philosopher_es)
     val PersonalityCoach =
         LocalizedString(R.string.personality_coach, R.string.personality_coach_es)
-    val PersonalityToxicEx =
-        LocalizedString(R.string.personality_toxic_ex, R.string.personality_toxic_ex_es)
+    val PersonalityLovestruck =
+        LocalizedString(R.string.personality_lovestruck, R.string.personality_lovestruck_es)
+    val PersonalityDrama =
+        LocalizedString(R.string.personality_drama, R.string.personality_drama_es)
+    val PersonalityRobot =
+        LocalizedString(R.string.personality_robot, R.string.personality_robot_es)
+    val PersonalityDetective =
+        LocalizedString(R.string.personality_detective, R.string.personality_detective_es)
+    val PersonalityConspiracy =
+        LocalizedString(R.string.personality_conspiracy, R.string.personality_conspiracy_es)
+    val PersonalityCat =
+        LocalizedString(R.string.personality_cat, R.string.personality_cat_es)
+    val PersonalityZoomer =
+        LocalizedString(R.string.personality_zoomer, R.string.personality_zoomer_es)
+    val PersonalityVillain =
+        LocalizedString(R.string.personality_villain, R.string.personality_villain_es)
+    val PersonalityPoet =
+        LocalizedString(R.string.personality_poet, R.string.personality_poet_es)
 
     val AiTitle = LocalizedString(R.string.ai_title, R.string.ai_title_es)
     val AiOn = LocalizedString(R.string.ai_on, R.string.ai_on_es)

@@ -18,7 +18,15 @@ data class PersonalityResponsesDto(
     val pirate: List<String> = emptyList(),
     val philosopher: List<String> = emptyList(),
     val coach: List<String> = emptyList(),
-    val toxicEx: List<String> = emptyList()
+    val lovestruck: List<String> = emptyList(),
+    val drama: List<String> = emptyList(),
+    val robot: List<String> = emptyList(),
+    val detective: List<String> = emptyList(),
+    val conspiracy: List<String> = emptyList(),
+    val cat: List<String> = emptyList(),
+    val zoomer: List<String> = emptyList(),
+    val villain: List<String> = emptyList(),
+    val poet: List<String> = emptyList()
 ) {
     /** Only what can be shown on the ball: see [Magic8BallDataDto.usable]. */
     fun usable(): PersonalityResponsesDto = PersonalityResponsesDto(
@@ -29,7 +37,15 @@ data class PersonalityResponsesDto(
         pirate = pirate.usableAnswers(),
         philosopher = philosopher.usableAnswers(),
         coach = coach.usableAnswers(),
-        toxicEx = toxicEx.usableAnswers()
+        lovestruck = lovestruck.usableAnswers(),
+        drama = drama.usableAnswers(),
+        robot = robot.usableAnswers(),
+        detective = detective.usableAnswers(),
+        conspiracy = conspiracy.usableAnswers(),
+        cat = cat.usableAnswers(),
+        zoomer = zoomer.usableAnswers(),
+        villain = villain.usableAnswers(),
+        poet = poet.usableAnswers()
     )
 
     /** These lists, with every one that [other] fills taking the place of this one's. */
@@ -41,7 +57,15 @@ data class PersonalityResponsesDto(
         pirate = other.pirate.ifEmpty { pirate },
         philosopher = other.philosopher.ifEmpty { philosopher },
         coach = other.coach.ifEmpty { coach },
-        toxicEx = other.toxicEx.ifEmpty { toxicEx }
+        lovestruck = other.lovestruck.ifEmpty { lovestruck },
+        drama = other.drama.ifEmpty { drama },
+        robot = other.robot.ifEmpty { robot },
+        detective = other.detective.ifEmpty { detective },
+        conspiracy = other.conspiracy.ifEmpty { conspiracy },
+        cat = other.cat.ifEmpty { cat },
+        zoomer = other.zoomer.ifEmpty { zoomer },
+        villain = other.villain.ifEmpty { villain },
+        poet = other.poet.ifEmpty { poet }
     )
 
     private fun List<String>.usableAnswers(): List<String> = map { it.trim() }
@@ -59,7 +83,15 @@ data class PersonalityResponsesDto(
         Magic8BallPersonality.PIRATE -> pirate
         Magic8BallPersonality.PHILOSOPHER -> philosopher
         Magic8BallPersonality.COACH -> coach
-        Magic8BallPersonality.TOXIC_EX -> toxicEx
+        Magic8BallPersonality.LOVESTRUCK -> lovestruck
+        Magic8BallPersonality.DRAMA -> drama
+        Magic8BallPersonality.ROBOT -> robot
+        Magic8BallPersonality.DETECTIVE -> detective
+        Magic8BallPersonality.CONSPIRACY -> conspiracy
+        Magic8BallPersonality.CAT -> cat
+        Magic8BallPersonality.ZOOMER -> zoomer
+        Magic8BallPersonality.VILLAIN -> villain
+        Magic8BallPersonality.POET -> poet
     }
 }
 
