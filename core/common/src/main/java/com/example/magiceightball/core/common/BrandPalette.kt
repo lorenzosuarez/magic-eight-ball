@@ -49,4 +49,11 @@ object BrandPalette {
     const val ACCENT = 0xFF7C96FF
     const val ACCENT_DEEP = 0xFF4558D6
     const val ON_ACCENT = 0xFFFFFFFF
+
+    /**
+     * The die that carries an answer, top to bottom: deep enough for white words to read on
+     * all of it (4.6 to 1 at its lightest).
+     */
+    const val DIE_TOP = 0xFF5068E8
+    const val DIE_BOTTOM = 0xFF3A4BC4
 }

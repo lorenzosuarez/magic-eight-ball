@@ -34,12 +34,12 @@ internal object BallColors {
     val BezelTop = Color(0xFF05070B)
     val BezelBottom = Color(0xFF2B323D)
 
-    /** The answer as seen through the liquid: not quite white, not quite solid. */
-    val AnswerInk = Color(0xFFDDE6FF).copy(alpha = 0.86f)
+    /** The answer: white, on a die deep enough for it to be read at a glance. */
+    val AnswerInk = Color.White
 
     /** The die while the ball thinks, and the die with its answer. */
     val DieThinking = Brush.verticalGradient(
         listOf(Color(BrandPalette.DIE_THINKING_TOP), Color(BrandPalette.DIE_THINKING_BOTTOM))
     )
-    val DieAnswered = Brush.verticalGradient(listOf(Accent, Color(BrandPalette.ACCENT_DEEP)))
+    val DieAnswered = Brush.verticalGradient(listOf(Color(BrandPalette.DIE_TOP), Color(BrandPalette.DIE_BOTTOM)))
 }

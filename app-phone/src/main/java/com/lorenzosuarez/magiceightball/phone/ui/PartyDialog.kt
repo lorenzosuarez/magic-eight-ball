@@ -108,21 +108,28 @@ internal class PartyDraft(names: List<String>, typed: String = "") {
 @Composable
 internal fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onDismiss: () -> Unit) {
     val draft = rememberSaveable(saver = PartyDraft.Saver) { PartyDraft(names) }
+    // The dialog is a window of its own, which starts again from the device's language: every
+    // text in it is read in the app's.
+    val language = rememberAppLanguage()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_party)) },
+        title = { InAppLanguage(language) { Text(stringResource(R.string.settings_party)) } },
         // Open on the keyboard: there is nothing to do here but type a name.
-        text = { PartyFields(draft, focusOnOpen = true) },
+        text = { InAppLanguage(language) { PartyFields(draft, focusOnOpen = true) } },
         confirmButton = {
-            TextButton(onClick = { onSave(draft.toSave()) }, enabled = draft.canSave) {
-                Text(stringResource(R.string.action_save))
+            InAppLanguage(language) {
+                TextButton(onClick = { onSave(draft.toSave()) }, enabled = draft.canSave) {
+                    Text(stringResource(R.string.action_save))
+                }
             }
         },
         dismissButton = {
-            if (names.isEmpty()) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-            } else {
-                TextButton(onClick = { onSave(emptyList()) }) { Text(stringResource(R.string.party_turn_off)) }
+            InAppLanguage(language) {
+                if (names.isEmpty()) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+                } else {
+                    TextButton(onClick = { onSave(emptyList()) }) { Text(stringResource(R.string.party_turn_off)) }
+                }
             }
         }
     )

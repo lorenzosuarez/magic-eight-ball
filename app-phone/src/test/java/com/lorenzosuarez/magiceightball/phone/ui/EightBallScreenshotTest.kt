@@ -145,6 +145,19 @@ class EightBallScreenshotTest {
         }
     }
 
+    /** One long word is made smaller, never cut in two. */
+    @Test
+    fun share_card_long_word() = captureRoboImage(filePath = path("phone_38_share_card_long_word")) {
+        ShareCard(
+            question = "",
+            answer = "Necessariamente. Inquestionavelmente.",
+            layer = rememberGraphicsLayer(),
+            visible = true,
+            styleLabel = "Fil\u00f3sofo",
+            personality = Magic8BallPersonality.PHILOSOPHER
+        )
+    }
+
     /** The barest: a tap, a bundled answer. */
     @Test
     fun share_card_bare() = captureRoboImage(filePath = path("phone_36_share_card_bare")) {
