@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.UsageEvent
+import com.example.magiceightball.core.domain.gateway.UsageTracker
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.gateway.MotionGateway
@@ -62,9 +64,38 @@ class EightBallViewModelTest {
     private val aiAvailability = FakeAiAnswersAvailability()
     private val speech = FakeSpeechListener()
     private val history = FakeAnswerHistoryRepository()
+    private val tracked = mutableListOf<UsageEvent>()
+    private val usage = object : UsageTracker {
+        override fun track(event: UsageEvent) {
+            tracked += event
+        }
+    }
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
 
     // Start-up and settings
+
+    @Test
+    fun `what is done is counted, and never what was asked or answered`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.ask()
+        advanceUntilIdle()
+        viewModel.onAnswerShared()
+        viewModel.setPersonality(Magic8BallPersonality.CAT)
+        viewModel.setSpokenAnswersEnabled(true)
+        viewModel.setPartyNames(listOf("Ana", "Beto"))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("ask", "share_answer", "choose_style", "change_setting", "set_party"),
+            tracked.map { it.name }
+        )
+        assertEquals("tap", tracked.first().params["how"])
+        assertEquals(mapOf("players" to "2"), tracked.last().params)
+        // Nothing the user wrote or the ball said: every value is one of a few fixed words.
+        assertTrue(tracked.flatMap { it.params.values }.none { "Ana" in it || "Beto" in it || " " in it })
+    }
 
     @Test
     fun `initial state is idle with the saved choices`() = runTest {
@@ -988,7 +1019,8 @@ class EightBallViewModelTest {
             speechListener = speech,
             history = history,
             clock = clock,
-            queryConfig = queryConfig
+            queryConfig = queryConfig,
+            usage = usage
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

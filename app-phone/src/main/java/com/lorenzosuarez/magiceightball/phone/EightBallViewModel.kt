@@ -2,6 +2,8 @@ package com.lorenzosuarez.magiceightball.phone
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.magiceightball.core.domain.gateway.UsageEvent
+import com.example.magiceightball.core.domain.gateway.UsageTracker
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.SpeechEvent
 import com.example.magiceightball.core.domain.gateway.SpeechListener
@@ -50,7 +52,8 @@ class EightBallViewModel @Inject constructor(
     private val speechListener: SpeechListener,
     private val history: AnswerHistoryRepository,
     private val clock: Clock,
-    private val queryConfig: QueryConfig
+    private val queryConfig: QueryConfig,
+    private val usage: UsageTracker
 ) : ViewModel() {
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
@@ -128,23 +131,28 @@ class EightBallViewModel @Inject constructor(
     }
 
     fun setPersonality(personality: Magic8BallPersonality) {
+        if (personality != settings.value?.personality) usage.track(UsageEvent.StyleChosen(personality))
         viewModelScope.launch { userSettingsRepository.setPersonality(personality) }
     }
 
     fun setAiAnswersEnabled(enabled: Boolean) {
+        usage.track(UsageEvent.SettingChanged(UsageEvent.SettingChanged.Setting.AI_ANSWERS, enabled))
         viewModelScope.launch { userSettingsRepository.setAiAnswersEnabled(enabled) }
     }
 
     fun setVoiceQuestionsEnabled(enabled: Boolean) {
+        usage.track(UsageEvent.SettingChanged(UsageEvent.SettingChanged.Setting.VOICE_QUESTIONS, enabled))
         viewModelScope.launch { userSettingsRepository.setVoiceQuestionsEnabled(enabled) }
     }
 
     fun setSpokenAnswersEnabled(enabled: Boolean) {
+        usage.track(UsageEvent.SettingChanged(UsageEvent.SettingChanged.Setting.SPOKEN_ANSWERS, enabled))
         viewModelScope.launch { userSettingsRepository.setSpokenAnswersEnabled(enabled) }
     }
 
     /** Who is playing; an empty list ends the party. The turns start again from the first name. */
     fun setPartyNames(names: List<String>) {
+        usage.track(UsageEvent.PartySet(players = names.size))
         turn.value = 0
         viewModelScope.launch { userSettingsRepository.setPartyNames(names) }
     }
@@ -184,16 +192,29 @@ class EightBallViewModel @Inject constructor(
         if (!granted) giveNotice(Notice.MicrophoneDenied)
     }
 
-    /** A tap or a shake: asks the ball without a question. Ignored while one is in progress. */
-    fun ask() {
+    /** A tap: asks the ball without a question. Ignored while one is in progress. */
+    fun ask() = ask(UsageEvent.Asked.How.TAP)
+
+    /** A tap or a shake, which ask alike and are only told apart to be counted. */
+    private fun ask(how: UsageEvent.Asked.How) {
         if (isBusy()) return
         val settings = settings.value ?: return
 
         cycleJob = viewModelScope.launch {
             _effects.trySend(EightBallEffect.AskStarted)
-            answer(settings) { "" }
+            answer(settings, how) { "" }
         }
     }
+
+    /** The answer on screen has been handed to another app. */
+    fun onAnswerShared() {
+        val answer = (phase.value as? BallPhase.Answered)?.answer as? AnswerText.Plain
+        val style = settings.value?.personality ?: return
+        usage.track(UsageEvent.AnswerShared(style, fromAi = answer?.fromAi == true))
+    }
+
+    /** The app's link has been handed to another app. */
+    fun onAppShared() = usage.track(UsageEvent.AppShared)
 
     /**
      * At a party, has the ball name one of the players, for "who of you...?". The name is drawn
@@ -211,6 +232,9 @@ class EightBallViewModel @Inject constructor(
             delay(queryConfig.minThinkingMs)
             val name = names.random()
             phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = AnswerText.Plain(name))
+            settings.value?.let {
+                usage.track(UsageEvent.Asked(UsageEvent.Asked.How.WHO, it.personality, fromAi = false, withRemark = false))
+            }
             viewModelScope.launch { history.add(question, name, clock.millis(), false) }
             _effects.trySend(EightBallEffect.AnswerRevealed)
         }
@@ -345,7 +369,7 @@ class EightBallViewModel @Inject constructor(
             }
 
             _effects.trySend(EightBallEffect.ListeningStopped)
-            answer(settings) {
+            answer(settings, UsageEvent.Asked.How.VOICE) {
                 // The last words can take a moment to be recognized after the release.
                 withTimeoutOrNull(FINAL_TRANSCRIPT_TIMEOUT_MS) { heard.await() }
                     ?: transcript.value.also { heard.cancel() }
@@ -417,7 +441,11 @@ class EightBallViewModel @Inject constructor(
      * Shows the ball thinking, gets the answer to [awaitQuestion] and reveals it. The thinking
      * lasts at least [QueryConfig.minThinkingMs], so its animation never flashes by.
      */
-    private suspend fun answer(settings: UserSettings, awaitQuestion: suspend () -> String) = coroutineScope {
+    private suspend fun answer(
+        settings: UserSettings,
+        how: UsageEvent.Asked.How,
+        awaitQuestion: suspend () -> String
+    ) = coroutineScope {
         clearNotice()
         val minimumThinking = launch { delay(queryConfig.minThinkingMs) }
         phase.value = BallPhase.Thinking((phase.value as? BallPhase.Listening)?.transcript.orEmpty())
@@ -435,6 +463,12 @@ class EightBallViewModel @Inject constructor(
             // The remark is kept with its answer, on a line of its own.
             val kept = plain?.let { listOfNotNull(it.value, it.remark).joinToString("\n") }
             history.add(question, kept, clock.millis(), plain?.fromAi == true)
+        }
+        // That the ball answered, and how it was asked: never what was asked or answered.
+        (answer as? AnswerText.Plain).let {
+            usage.track(
+                UsageEvent.Asked(how, settings.personality, fromAi = it?.fromAi == true, withRemark = it?.remark != null)
+            )
         }
         _effects.trySend(EightBallEffect.AnswerRevealed)
     }
@@ -496,7 +530,7 @@ class EightBallViewModel @Inject constructor(
                     if (armIn != null) {
                         delay(armIn)
                         observeShakeUseCase().collect { event ->
-                            if (event == ShakeEvent.Started) ask()
+                            if (event == ShakeEvent.Started) ask(UsageEvent.Asked.How.SHAKE)
                         }
                     }
                 }

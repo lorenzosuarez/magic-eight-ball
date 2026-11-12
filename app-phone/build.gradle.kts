@@ -101,6 +101,9 @@ dependencies {
     implementation(libs.firebase.config)
     // Crash reports, so a failure in the field can be found and fixed.
     implementation(libs.firebase.crashlytics)
+    // How the app is used, in numbers and only with the user's consent: see FirebaseUsageTracker.
+    implementation(libs.firebase.analytics)
+    implementation(libs.androidx.preference)
 
     implementation(project(":core:common"))
     implementation(project(":core:domain"))

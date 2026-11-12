@@ -233,7 +233,8 @@ fun EightBallScreen(
     DesignedMotionEffect(ready) {
         if (ready) intro.animateTo(1f, tween(INTRO_MS))
     }
-    val playStoreUrl = PLAY_STORE_URL + context.packageName
+    // The link says it was shared from the app, so that installs that come of it can be counted.
+    val playStoreUrl = PLAY_STORE_URL + context.packageName + SHARE_REFERRER
     val shareAnswerText = stringResource(R.string.share_answer_text, playStoreUrl)
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -319,7 +320,10 @@ fun EightBallScreen(
                             viewModel.setSpokenAnswersEnabled(it)
                         },
                         onPartyNamesChange = viewModel::setPartyNames,
-                        onShareApp = { context.shareText(shareAppText) },
+                        onShareApp = {
+                            context.shareText(shareAppText)
+                            viewModel.onAppShared()
+                        },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                     )
                 },
@@ -328,6 +332,7 @@ fun EightBallScreen(
                 onShareAnswer = { picture ->
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
                     context.shareAnswer(picture, shareAnswerText)
+                    viewModel.onAnswerShared()
                 }
             )
         }
@@ -1127,6 +1132,9 @@ private val StageEnter = fadeIn(tween(durationMillis = 220, delayMillis = 60)) +
 
 /** Where the app lives in the store; the app's own id completes it. */
 private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id="
+
+/** What Google Play passes on to the app's install figures: that this install came from a share. */
+private const val SHARE_REFERRER = "&referrer=utm_source%3Dshare%26utm_medium%3Dapp"
 
 /** A press shorter than this is a tap; from here on it is a hold, and the app listens. */
 private const val HOLD_DELAY_MS = 180L
