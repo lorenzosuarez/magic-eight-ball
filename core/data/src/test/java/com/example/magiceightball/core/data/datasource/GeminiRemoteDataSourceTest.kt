@@ -141,6 +141,16 @@ class GeminiRemoteDataSourceTest {
     }
 
     @Test
+    fun `what a character does, written between asterisks, is kept whole`() = runTest {
+        apiClient.answer = "Yes, fine.\n*purrs* Now open the can."
+
+        assertEquals(
+            Magic8BallResult.Success("Yes, fine.", fromAi = true, remark = "*purrs* Now open the can."),
+            fetch(Magic8BallRequest(wantsRemark = true))
+        )
+    }
+
+    @Test
     fun `a remark nobody asked for is not asked of the service`() = runTest {
         fetch(Magic8BallRequest(question = "Will I win?"))
 

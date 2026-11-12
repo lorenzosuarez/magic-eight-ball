@@ -135,7 +135,8 @@ class GeminiRemoteDataSource @Inject constructor(
     private fun String.tidied(): String = trim()
         .replace(LINE_LABEL, "")
         .trim()
-        .trim('"', '\'', '«', '»', '“', '”', '*', '-', '–', '•')
+        // Not asterisks: a character may open with something it does, written between them.
+        .trim('"', '\'', '«', '»', '“', '”', '–', '•')
         .trim()
 
     /** A remark worth showing: something of its own, of a length the screen can hold. */
