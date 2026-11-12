@@ -104,7 +104,7 @@
     <string name="settings_ai_on">Written by Gemini, just for you</string>
     <string name="settings_ai_off">Classic answers from the app</string>
     <string name="settings_ai_unavailable">Not available right now</string>
-    <string name="settings_ai_classic">The Classic style uses its own twenty answers</string>
+    <string name="settings_ai_classic">The Classic style uses its own answers</string>
     <string name="settings_ai_spent">Today\'s are used up. They are back tomorrow</string>
     <string name="settings_ai_more">More AI answers today</string>
     <string name="settings_ai_more_hint">Watch a short ad to keep going</string>

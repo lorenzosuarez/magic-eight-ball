@@ -98,7 +98,7 @@
     <string name="settings_ai_on">Escritas pelo Gemini, só para você</string>
     <string name="settings_ai_off">Respostas clássicas do app</string>
     <string name="settings_ai_unavailable">Indisponível por enquanto</string>
-    <string name="settings_ai_classic">O estilo Clássico usa suas vinte respostas</string>
+    <string name="settings_ai_classic">O estilo Clássico usa suas próprias respostas</string>
     <string name="settings_ai_spent">Você já usou as de hoje. Voltam amanhã</string>
     <string name="settings_ai_more">Mais respostas com IA hoje</string>
     <string name="settings_ai_more_hint">Veja um anúncio curto para continuar</string>

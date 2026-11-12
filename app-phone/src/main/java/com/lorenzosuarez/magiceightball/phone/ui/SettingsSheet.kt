@@ -129,7 +129,9 @@ internal fun SettingsContent(
                 ),
                 checked = state.usesAiAnswers && !classic,
                 enabled = state.aiAnswersAvailable && !classic,
-                onCheckedChange = onAiAnswersChange
+                onCheckedChange = onAiAnswersChange,
+                // The one thing on this page that is not as the user set it: today's are used up.
+                alert = state.usesAiAnswers && !classic && state.aiAllowanceSpent
             )
             // The day's AI answers are used up and there is an ad to watch for more: the user's choice.
             if (state.usesAiAnswers && !classic && state.aiAllowanceSpent && onGetMoreAiAnswers != null) {
@@ -330,7 +332,8 @@ private fun SwitchRow(
     supporting: String,
     checked: Boolean,
     enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    alert: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -345,7 +348,7 @@ private fun SwitchRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SettingText(title, supporting, enabled, Modifier.weight(1f))
+        SettingText(title, supporting, enabled, Modifier.weight(1f), alert)
         Spacer(Modifier.width(16.dp))
         Switch(
             checked = checked,
@@ -402,8 +405,16 @@ private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
 }
 
 @Composable
-private fun SettingText(title: String, supporting: String, enabled: Boolean, modifier: Modifier = Modifier) {
+private fun SettingText(
+    title: String,
+    supporting: String,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    alert: Boolean = false
+) {
     val alpha = if (enabled) 1f else DISABLED_ALPHA
+    // What explains the setting is quiet; what says something is wrong is not.
+    val quiet = if (alert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = title,
@@ -413,7 +424,7 @@ private fun SettingText(title: String, supporting: String, enabled: Boolean, mod
         Text(
             text = supporting,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
+            color = quiet.copy(alpha = alpha)
         )
     }
 }

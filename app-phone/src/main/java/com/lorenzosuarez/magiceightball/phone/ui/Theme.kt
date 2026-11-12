@@ -22,6 +22,8 @@ private val DarkColors = darkColorScheme(
     // Deeper than the die's own blue, so that white reads on it: buttons, switches, what is chosen.
     primary = Color(0xFF5B74F0),
     onPrimary = Color(0xFFFFFFFF),
+    // The one warm colour, kept for what is wrong or used up: a red that still reads on the dark.
+    error = Color(0xFFFF8A80),
     primaryContainer = Color(0xFF24357F),
     onPrimaryContainer = Color(0xFFDDE3FF),
     secondary = Color(0xFFB7C2CE),
@@ -49,6 +51,7 @@ private val DarkColors = darkColorScheme(
 private val LightColors = lightColorScheme(
     primary = Color(BrandPalette.ACCENT_DEEP),
     onPrimary = Color(BrandPalette.ON_ACCENT),
+    error = Color(0xFFB3261E),
     primaryContainer = Color(0xFFDDE3FF),
     onPrimaryContainer = Color(0xFF0B1A5C),
     secondary = Color(0xFF52606E),
