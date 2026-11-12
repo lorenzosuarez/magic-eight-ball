@@ -23,7 +23,7 @@ class GeminiRemoteDataSourceTest {
 
     private val apiClient = RecordingGeminiApiClient()
     private val promptPolicy = DefaultPromptPolicy()
-    private val brief = AnswerBrief(Verdict.NO, motif = "the parrot", angle = "Be oddly specific.")
+    private val brief = AnswerBrief(Verdict.NO, motif = "the parrot")
     private val dataSource = GeminiRemoteDataSource(apiClient, GeminiConfig(), promptPolicy).apply {
         // What the app draws for an answer is drawn at random: here it is always the same.
         drawBrief = { request -> brief.copy(withRemark = request.wantsRemark) }
@@ -137,7 +137,7 @@ class GeminiRemoteDataSourceTest {
             Magic8BallResult.Success("Nay, matey.", fromAi = true, remark = "The parrot bet against you, and he never loses."),
             result
         )
-        assertTrue("exactly two lines" in apiClient.requests.single().systemText)
+        assertTrue("comeback to what they asked" in apiClient.requests.single().systemText)
     }
 
     @Test
@@ -154,7 +154,7 @@ class GeminiRemoteDataSourceTest {
     fun `a remark nobody asked for is not asked of the service`() = runTest {
         fetch(Magic8BallRequest(question = "Will I win?"))
 
-        assertTrue("two lines" !in apiClient.requests.single().systemText)
+        assertTrue("comeback" !in apiClient.requests.single().systemText)
     }
 
     @Test

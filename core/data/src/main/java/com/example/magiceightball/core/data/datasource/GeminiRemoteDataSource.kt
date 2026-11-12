@@ -25,7 +25,11 @@ class GeminiRemoteDataSource @Inject constructor(
 ) {
     /** How each answer is drawn before it is asked for: only a test has reason to replace it. */
     internal var drawBrief: (Magic8BallRequest) -> AnswerBrief = { request ->
-        AnswerBrief.draw(request.personality, withRemark = request.wantsRemark)
+        AnswerBrief.draw(
+            personality = request.personality,
+            hasQuestion = request.questionForAi != null,
+            withRemark = request.wantsRemark
+        )
     }
 
     /**

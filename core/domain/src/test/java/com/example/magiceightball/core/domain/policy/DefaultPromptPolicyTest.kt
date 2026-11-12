@@ -117,19 +117,25 @@ class DefaultPromptPolicyTest {
     }
 
     @Test
-    fun `a brief names what to build the answer around, and asks for a remark only when wanted`() {
+    fun `a brief names what to build the answer around, and asks for a comeback only when wanted`() {
         val plain = policy.getSystemPrompt("en", Magic8BallPersonality.PIRATE, brief = AnswerBrief(Verdict.YES))
-        val full = policy.getSystemPrompt(
+        val motif = policy.getSystemPrompt(
             "en",
             Magic8BallPersonality.PIRATE,
-            brief = AnswerBrief(Verdict.YES, motif = "the parrot", angle = "Be oddly specific.", withRemark = true)
+            brief = AnswerBrief(Verdict.YES, motif = "the parrot")
+        )
+        val remark = policy.getSystemPrompt(
+            "en",
+            Magic8BallPersonality.PIRATE,
+            answersQuestion = true,
+            brief = AnswerBrief(Verdict.YES, withRemark = true)
         )
 
-        assertTrue("the parrot" !in plain && "two lines" !in plain)
-        assertTrue("Build it around this, in your own way: the parrot." in full)
-        assertTrue("Be oddly specific." in full)
-        assertTrue("exactly two lines" in full)
-        assertTrue(full.endsWith(" Respond in English."))
+        assertTrue("the parrot" !in plain && "comeback" !in plain)
+        assertTrue("only if it comes naturally: the parrot." in motif)
+        assertTrue("comeback to what they asked" in remark)
+        assertTrue("write line 1 alone" in remark)
+        assertTrue(remark.endsWith(" Respond in English."))
     }
 
     @Test
@@ -143,10 +149,21 @@ class DefaultPromptPolicyTest {
                 assertEquals(motifs.size, motifs.distinct().size)
             }
         }
-        val drawn = List(200) { AnswerBrief.draw(Magic8BallPersonality.PIRATE, withRemark = true, kotlin.random.Random(it)) }
-        assertTrue(drawn.map { it.motif }.distinct().size >= 8)
-        assertTrue(drawn.map { it.angle }.distinct().size >= 6)
-        assertTrue(drawn.all { it.withRemark })
+    }
+
+    @Test
+    fun `without a question there is a motif and no remark, and with one the question is all there is`() {
+        val unasked = List(200) {
+            AnswerBrief.draw(Magic8BallPersonality.PIRATE, hasQuestion = false, withRemark = true, kotlin.random.Random(it))
+        }
+        assertTrue(unasked.map { it.motif }.distinct().size >= 8)
+        assertTrue(unasked.none { it.withRemark })
+
+        val asked = List(50) {
+            AnswerBrief.draw(Magic8BallPersonality.PIRATE, hasQuestion = true, withRemark = true, kotlin.random.Random(it))
+        }
+        assertTrue(asked.all { it.motif == null && it.withRemark })
+        assertTrue(asked.none { AnswerBrief.draw(Magic8BallPersonality.PIRATE, hasQuestion = true, withRemark = false).withRemark })
     }
 
     @Test
