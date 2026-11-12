@@ -22,6 +22,7 @@ class Magic8BallRepositoryImplTest {
     private class MemoryStore : DeviceAiAnswerQuota.Store {
         override var day: String? = null
         override var used: Int = 0
+        override var bonus: Int = 0
     }
 
     private val remoteDataSource = mockk<GeminiRemoteDataSource> {
@@ -39,6 +40,32 @@ class Magic8BallRepositoryImplTest {
     private var now = 0L
     private val repository =
         Magic8BallRepositoryImpl(remoteDataSource, localDataSource, geminiSettings, quota) { now }
+
+    @Test
+    fun `answers added to the day's allowance are used after it, and do not carry over`() = runTest {
+        geminiSettings.settings = geminiSettings.settings.copy(dailyLimit = 1)
+        val request = Magic8BallRequest(useAi = true)
+        assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request))
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
+            repository.generateMagic8BallMessage(request)
+        )
+
+        quota.grant(2)
+        repeat(2) { assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request)) }
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
+            repository.generateMagic8BallMessage(request)
+        )
+
+        // The next day there is the daily limit again, and nothing of what was added.
+        today = "2026-11-11"
+        assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request))
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
+            repository.generateMagic8BallMessage(request)
+        )
+    }
 
     @Test
     fun `once the key's allowance is used up gemini is left alone for a while`() = runTest {

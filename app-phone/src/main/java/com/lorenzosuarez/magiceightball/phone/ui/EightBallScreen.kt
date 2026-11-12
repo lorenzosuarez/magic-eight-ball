@@ -138,12 +138,15 @@ import kotlinx.coroutines.launch
  *
  * @param onAnswerDismissed called when the user closes an answer they have read.
  * @param onShowAdPrivacyOptions opens the ad privacy choices; null where none have to be offered.
+ * @param onGetMoreAiAnswers shows the ad the user may watch for more AI answers today; null
+ * while there is none to watch.
  */
 @Composable
 fun EightBallScreen(
     viewModel: EightBallViewModel,
     onAnswerDismissed: () -> Unit = {},
-    onShowAdPrivacyOptions: (() -> Unit)? = null
+    onShowAdPrivacyOptions: (() -> Unit)? = null,
+    onGetMoreAiAnswers: (() -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -325,6 +328,7 @@ fun EightBallScreen(
                             viewModel.onAppShared()
                         },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
+                        onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
                 },
                 onAllowMicrophone = { askForMicrophone(true) },

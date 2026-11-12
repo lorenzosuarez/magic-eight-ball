@@ -104,6 +104,8 @@
     <string name="settings_ai_unavailable">Not available right now</string>
     <string name="settings_ai_classic">The Classic style uses its own twenty answers</string>
     <string name="settings_ai_spent">Today\'s are used up. They are back tomorrow</string>
+    <string name="settings_ai_more">More AI answers today</string>
+    <string name="settings_ai_more_hint">Watch a short ad to keep going</string>
     <string name="settings_voice">Voice questions</string>
     <string name="settings_voice_on">Hold the ball and ask out loud</string>
     <string name="settings_voice_off">Tap or shake only</string>

@@ -28,6 +28,12 @@ val admobAppId: String = localProperties.getProperty("ADMOB_APP_ID", "ca-app-pub
 val admobInterstitialId: String =
     localProperties.getProperty("ADMOB_INTERSTITIAL_ID", "ca-app-pub-3940256099942544/1033173712").trim()
 
+// The ad a user may choose to watch for more AI answers (ADMOB_REWARDED_ID in local.properties).
+// Without it the build uses Google's public test identifier, and a release build then offers no
+// such ad at all: see AdMobAdsController.
+val admobRewardedId: String =
+    localProperties.getProperty("ADMOB_REWARDED_ID", "ca-app-pub-3940256099942544/5224354917").trim()
+
 // Same upload key as :app-wear; see the script for where the credentials are read from.
 apply(from = rootProject.file("gradle/release-signing.gradle"))
 
@@ -46,6 +52,7 @@ android {
 
         manifestPlaceholders["admobAppId"] = admobAppId
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"$admobInterstitialId\"")
+        buildConfigField("String", "ADMOB_REWARDED_ID", "\"$admobRewardedId\"")
     }
 
     buildTypes {

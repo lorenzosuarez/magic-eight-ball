@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.gateway.UsageEvent
 import com.example.magiceightball.core.domain.gateway.UsageTracker
@@ -21,7 +22,6 @@ import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.Clock
 import javax.inject.Inject
@@ -57,7 +57,8 @@ class EightBallViewModel @Inject constructor(
     private val clock: Clock,
     private val queryConfig: QueryConfig,
     private val usage: UsageTracker,
-    private val streaks: StreakRepository
+    private val streaks: StreakRepository,
+    private val aiAllowance: AiAllowance
 ) : ViewModel() {
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
@@ -198,7 +199,7 @@ class EightBallViewModel @Inject constructor(
     }
 
     /** Today on the device's own calendar, in days since 1970: what a streak is counted in. */
-    private fun today(): Long = LocalDate.ofInstant(clock.instant(), ZoneId.systemDefault()).toEpochDay()
+    private fun today(): Long = clock.instant().atZone(ZoneId.systemDefault()).toLocalDate().toEpochDay()
 
     /** A tap: asks the ball without a question. Ignored while one is in progress. */
     fun ask() = ask(UsageEvent.Asked.How.TAP)
@@ -219,6 +220,13 @@ class EightBallViewModel @Inject constructor(
         val answer = (phase.value as? BallPhase.Answered)?.answer as? AnswerText.Plain
         val style = settings.value?.personality ?: return
         usage.track(UsageEvent.AnswerShared(style, fromAi = answer?.fromAi == true))
+    }
+
+    /** The user watched an ad through: [answers] more from the AI service today. */
+    fun onAiAnswersEarned(answers: Int) {
+        aiAllowance.grant(answers)
+        aiAllowanceSpent.value = false
+        usage.track(UsageEvent.AiAnswersEarned)
     }
 
     /** The app's link has been handed to another app. */

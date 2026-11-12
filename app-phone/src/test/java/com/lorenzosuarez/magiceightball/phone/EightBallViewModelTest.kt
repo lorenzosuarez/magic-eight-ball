@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.model.Streak
 import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.gateway.UsageEvent
@@ -72,6 +73,12 @@ class EightBallViewModelTest {
             streak.value = streak.value.after(epochDay)
         }
     }
+    private var granted = 0
+    private val aiAllowance = object : AiAllowance {
+        override fun grant(answers: Int) {
+            granted += answers
+        }
+    }
     private val tracked = mutableListOf<UsageEvent>()
     private val usage = object : UsageTracker {
         override fun track(event: UsageEvent) {
@@ -81,6 +88,19 @@ class EightBallViewModelTest {
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
 
     // Start-up and settings
+
+    @Test
+    fun `an ad watched through adds to the day's AI answers and is counted`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onAiAnswersEarned(5)
+        advanceUntilIdle()
+
+        assertEquals(5, granted)
+        assertEquals(false, viewModel.state.value?.aiAllowanceSpent)
+        assertEquals(listOf("earn_ai_answers"), tracked.map { it.name })
+    }
 
     @Test
     fun `an answer counts towards the run of days, and the run is shown from the state`() = runTest {
@@ -1043,7 +1063,8 @@ class EightBallViewModelTest {
             clock = clock,
             queryConfig = queryConfig,
             usage = usage,
-            streaks = streaks
+            streaks = streaks,
+            aiAllowance = aiAllowance
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.example.magiceightball.core.data.config.AiAnswerQuota
+import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.data.config.DeviceAiAnswerQuota
 import com.example.magiceightball.core.data.config.GeminiSettingsSource
 import com.example.magiceightball.core.data.config.RemoteAnswers
@@ -103,6 +104,10 @@ abstract class GatewayModule {
     @Binds
     @Singleton
     abstract fun bindAiAnswerQuota(impl: DeviceAiAnswerQuota): AiAnswerQuota
+
+    @Binds
+    @Singleton
+    abstract fun bindAiAllowance(impl: DeviceAiAnswerQuota): AiAllowance
 
     @Binds
     @Singleton

@@ -76,6 +76,11 @@ sealed interface UsageEvent {
         }
     }
 
+    /** The user watched an ad through for more answers from the AI service. */
+    data object AiAnswersEarned : UsageEvent {
+        override val name get() = "earn_ai_answers"
+    }
+
     /** A party was set up or ended: how many are playing, never who. */
     data class PartySet(val players: Int) : UsageEvent {
         override val name get() = "set_party"

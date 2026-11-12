@@ -74,6 +74,7 @@ internal fun SettingsContent(
     onShareApp: () -> Unit,
     modifier: Modifier = Modifier,
     onShowAdPrivacyOptions: (() -> Unit)? = null,
+    onGetMoreAiAnswers: (() -> Unit)? = null,
     onSpokenAnswersChange: (Boolean) -> Unit = {},
     onPartyNamesChange: (List<String>) -> Unit = {}
 ) {
@@ -126,6 +127,15 @@ internal fun SettingsContent(
                 enabled = state.aiAnswersAvailable && !classic,
                 onCheckedChange = onAiAnswersChange
             )
+            // The day's AI answers are used up and there is an ad to watch for more: the user's choice.
+            if (state.usesAiAnswers && !classic && state.aiAllowanceSpent && onGetMoreAiAnswers != null) {
+                RowDivider()
+                ActionRow(
+                    title = stringResource(R.string.settings_ai_more),
+                    supporting = stringResource(R.string.settings_ai_more_hint),
+                    onClick = onGetMoreAiAnswers
+                )
+            }
             RowDivider()
             SwitchRow(
                 title = stringResource(R.string.settings_spoken),
