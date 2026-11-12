@@ -18,6 +18,9 @@ interface AiAnswerQuota {
 
     /** Adds [answers] to today's allowance, on top of whatever the daily limit is. */
     fun grant(answers: Int)
+
+    /** Puts back the answer last taken, when the service was asked and gave nothing for it. */
+    fun giveBack()
 }
 
 /**
@@ -54,6 +57,12 @@ class DeviceAiAnswerQuota(
         startDay(today())
         // Kept within reason whatever asks for it: the count is a guard on the bill.
         store.bonus = (store.bonus + answers).coerceAtMost(MAX_BONUS)
+    }
+
+    @Synchronized
+    override fun giveBack() {
+        startDay(today())
+        if (store.used > 0) store.used -= 1
     }
 
     /** A new day starts from nothing: neither what was used nor what was added carries over. */

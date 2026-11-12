@@ -375,6 +375,16 @@ fun EightBallScreen(
                             context.shareText(shareAppText)
                             viewModel.onAppShared()
                         },
+                        onOpenPrivacyPolicy = {
+                            try {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            } catch (_: ActivityNotFoundException) {
+                                // No browser on the device: there is nothing to open it with.
+                            }
+                        },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
@@ -1239,6 +1249,9 @@ private val StageEnter = fadeIn(tween(durationMillis = 220, delayMillis = 60)) +
 private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id="
 
 /** What Google Play passes on to the app's install figures: that this install came from a share. */
+/** The policy as published, the same address the store listing gives. */
+private const val PRIVACY_POLICY_URL =
+    "https://github.com/lorenzosuarez/magic-eight-ball/blob/master/docs/PRIVACY_POLICY.md"
 private const val SHARE_REFERRER = "&referrer=utm_source%3Dshare%26utm_medium%3Dapp"
 
 /** A press shorter than this is a tap; from here on it is a hold, and the app listens. */
@@ -1264,7 +1277,7 @@ internal const val HISTORY_PAGE = 0
 internal const val BALL_PAGE = 1
 internal const val OPTIONS_PAGE = 2
 private const val PAGE_COUNT = 3
-private const val DOT_OFF_ALPHA = 0.35f
+private const val DOT_OFF_ALPHA = 0.48f
 
 private const val BALL_WIDTH_FRACTION = 0.58f
 private val BALL_MAX_SIZE = 320.dp
@@ -1288,11 +1301,11 @@ private val CAPTION_HEIGHT = 136.dp
 private val FOOTER_HEIGHT = 48.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val FOOTER_ALPHA = 0.68f
-private const val FOOTER_VERSION_ALPHA = 0.5f
+private const val FOOTER_VERSION_ALPHA = 0.68f
 private const val CAPTION_MAX_LINES = 3
 
 /** How faint the note under an answer the AI wrote is. */
-private const val AI_NOTE_ALPHA = 0.7f
+private const val AI_NOTE_ALPHA = 1f
 
 /** From this font scale up, the answer is also written under the ball. */
 private const val LARGE_FONT_SCALE = 1.3f

@@ -167,6 +167,28 @@ class Magic8BallRepositoryImplTest {
     }
 
     @Test
+    fun `an answer that never came does not use up the day, and one that was turned down does`() = runTest {
+        geminiSettings.settings = geminiSettings.settings.copy(dailyLimit = 1)
+        val request = Magic8BallRequest(useAi = true)
+
+        // No network, three times over: the day's one answer is still there.
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
+            Magic8BallResult.Failure(LlmError.Network)
+        repeat(3) {
+            assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request))
+        }
+
+        // The service answered and the app could not use it: that one counts.
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
+            Magic8BallResult.Failure(LlmError.ValidationFailed)
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request))
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
+            repository.generateMagic8BallMessage(request)
+        )
+    }
+
+    @Test
     fun `a failed gemini request ends in a bundled answer`() = runTest {
         coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
             Magic8BallResult.Failure(LlmError.Network)

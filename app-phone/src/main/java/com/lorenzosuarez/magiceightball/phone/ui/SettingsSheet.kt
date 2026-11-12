@@ -79,7 +79,8 @@ internal fun SettingsContent(
     onPartyNamesChange: (List<String>) -> Unit = {},
     onDailyVerdictChange: (Boolean) -> Unit = {},
     notificationsAllowed: Boolean = true,
-    onAllowNotifications: () -> Unit = {}
+    onAllowNotifications: () -> Unit = {},
+    onOpenPrivacyPolicy: () -> Unit = {}
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -236,6 +237,12 @@ internal fun SettingsContent(
                     onClick = onShowAdPrivacyOptions
                 )
             }
+            RowDivider()
+            ActionRow(
+                title = stringResource(R.string.settings_privacy_policy),
+                supporting = stringResource(R.string.settings_privacy_policy_hint),
+                onClick = onOpenPrivacyPolicy
+            )
         }
 
         Text(

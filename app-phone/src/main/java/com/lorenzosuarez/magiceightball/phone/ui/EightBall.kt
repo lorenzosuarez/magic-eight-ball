@@ -749,7 +749,7 @@ private const val RECESS_REACH = 0.14f
 private const val RECESS_ALPHA = 0.38f
 
 /** Where the liquid starts to darken, as a share of the glass's radius, and how dark it gets. */
-private const val DEPTH_CLEAR = 0.55f
+private const val DEPTH_CLEAR = 0.75f
 private const val DEPTH_ALPHA = 0.6f
 
 /** The answer: white, on a die deep enough for it to be read at a glance. */

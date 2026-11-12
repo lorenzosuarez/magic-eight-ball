@@ -133,6 +133,8 @@
     <string name="options_asking">Perguntas</string>
     <string name="options_general">Geral</string>
     <string name="share_answer_text">Olha o que o Magic AI Ball me disse. Faça a sua pergunta: %1$s</string>
+    <string name="settings_privacy_policy">Política de privacidade</string>
+    <string name="settings_privacy_policy_hint">O que o app faz com seus dados</string>
     <string name="settings_ad_privacy">Privacidade de anúncios</string>
     <string name="settings_ad_privacy_hint">Revise o que você permitiu para os anúncios</string>
     <string name="notifications_channel">Novidades e lembretes</string>

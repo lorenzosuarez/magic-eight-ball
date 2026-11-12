@@ -61,6 +61,10 @@ class Magic8BallRepositoryImpl(
                     remoteDataSource.fetchMagic8BallMessage(request, settings.apiKey, settings.modelId)
                 }
                 if (remote is Magic8BallResult.Success) return remote
+                // An answer that never came is not one of the day's: with no network, or a
+                // service that is slow or down, the user would use up the day without seeing one.
+                // What the service did answer, and the app turned down, stays counted.
+                if (!remote.wasAnswered()) aiAnswerQuota.giveBack()
                 if (remote == Magic8BallResult.Failure(LlmError.RateLimited)) {
                     restingUntilMillis = nowMillis() + RATE_LIMIT_REST_MS
                 }
@@ -70,6 +74,12 @@ class Magic8BallRepositoryImpl(
             localDataSource.getRandomMessage(request.languageCode, request.personality),
             aiAllowanceSpent = allowanceSpent
         )
+    }
+
+    /** Whether the service wrote something, even if it could not be used. Null is a wait that ran out. */
+    private fun Magic8BallResult?.wasAnswered(): Boolean = when ((this as? Magic8BallResult.Failure)?.error) {
+        LlmError.ValidationFailed, LlmError.Serialization, LlmError.SafetyBlocked -> true
+        else -> false
     }
 
     private companion object {
