@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The launcher icon at the size a watch's launch screen shows it: without a size of its own it would fill the icon's whole box. -->
+<!-- The "8" on its disc as large as a watch's launch screen shows an icon whole. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:width="48dp"
-        android:height="48dp"
-        android:drawable="@mipmap/ic_launcher"
+        android:width="60dp"
+        android:height="60dp"
+        android:drawable="@drawable/splash_eight"
         android:gravity="center" />
 </layer-list>

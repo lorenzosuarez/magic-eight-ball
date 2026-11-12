@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -76,6 +75,7 @@ import androidx.wear.compose.material3.VerticalPageIndicator
 import com.example.magiceightball.core.designsystem.theme.MagicEightBallTheme
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.feature.chat.components.BallColors
+import com.example.magiceightball.feature.chat.components.ballSurface
 import com.example.magiceightball.feature.chat.components.DesignedMotion
 import com.example.magiceightball.feature.chat.components.GlassOverDie
 import com.example.magiceightball.feature.chat.components.PredictionTriangle
@@ -261,7 +261,7 @@ fun ChatScreenContent(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BallColors.Background)
+            .ballSurface()
             .pressToAsk(state.canAskByVoice, onTap, onHoldStart, onHoldEnd, onHoldCancel)
     ) {
         AnimatedContent(
