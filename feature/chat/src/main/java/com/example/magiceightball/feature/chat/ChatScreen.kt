@@ -1,13 +1,7 @@
 package com.example.magiceightball.feature.chat
 
 import android.Manifest
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.SystemClock
-import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,12 +17,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -53,8 +50,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -67,8 +70,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.wear.compose.foundation.pager.VerticalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.VerticalPageIndicator
 import com.example.magiceightball.core.designsystem.theme.MagicEightBallTheme
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.feature.chat.components.BallColors
 import com.example.magiceightball.feature.chat.components.DesignedMotion
 import com.example.magiceightball.feature.chat.components.GlassOverDie
@@ -82,35 +88,33 @@ import kotlinx.coroutines.withContext
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+/**
+ * @param isAmbient whether the watch has dimmed to its always-on screen: nobody is looking,
+ * and what stays lit has to cost next to nothing.
+ */
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = hiltViewModel()
+    viewModel: ChatViewModel = hiltViewModel(),
+    isAmbient: Boolean = false
 ) {
     // Nothing is drawn until the saved choices are known, so no default flashes by first.
     val state = viewModel.state.collectAsStateWithLifecycle().value ?: return
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val context = LocalContext.current
-    // Once the system no longer shows its dialog, a hold opens the app's page in the system
-    // settings instead: on a watch there is no shorter way to the permission.
-    var microphoneAskedAtMillis by remember { mutableStateOf(0L) }
     val microphoneRequest = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        viewModel.onMicrophonePermissionResult(granted)
-        // A refusal that comes back at once is the system's, not the user's.
-        val answeredBySystem =
-            SystemClock.elapsedRealtime() - microphoneAskedAtMillis < DIALOG_SKIPPED_MILLIS
-        if (!granted && answeredBySystem) context.openAppSettings()
-    }
+        ActivityResultContracts.RequestPermission(),
+        viewModel::onMicrophonePermissionResult
+    )
 
-    // Shakes only count while the prediction page is settled on screen and the app is resumed.
-    val isPredictionPageSettled = pagerState.settledPage == PAGE_PREDICTION
-    LifecycleResumeEffect(viewModel, isPredictionPageSettled) {
+    // Shakes only count while the prediction page is settled on screen, the app is resumed and
+    // the watch is not dimmed: an arm that swings at its owner's side asks nothing.
+    val isPredictionPageShown = pagerState.settledPage == PAGE_PREDICTION && !isAmbient
+    LifecycleResumeEffect(viewModel, isPredictionPageShown) {
         viewModel.onMicrophonePermissionChecked(
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                 PackageManager.PERMISSION_GRANTED
         )
-        viewModel.setShakeDetectionEnabled(isPredictionPageSettled)
+        viewModel.setShakeDetectionEnabled(isPredictionPageShown)
         onPauseOrDispose { viewModel.setShakeDetectionEnabled(false) }
     }
 
@@ -142,10 +146,7 @@ fun ChatScreen(
 
     ChatEffects(
         effects = viewModel.effects,
-        onRequestMicrophonePermission = {
-            microphoneAskedAtMillis = SystemClock.elapsedRealtime()
-            microphoneRequest.launch(Manifest.permission.RECORD_AUDIO)
-        }
+        onRequestMicrophonePermission = { microphoneRequest.launch(Manifest.permission.RECORD_AUDIO) }
     )
 
     CompositionLocalProvider(LocalAppLanguage provides state.settings.language) {
@@ -162,9 +163,11 @@ fun ChatScreen(
                     PAGE_PREDICTION -> ChatScreenContent(
                         state = state,
                         voiceLevel = { voiceLevel.value },
+                        onTap = viewModel::onTap,
                         onHoldStart = viewModel::onHoldStart,
                         onHoldEnd = viewModel::onHoldEnd,
-                        onHoldCancel = viewModel::onHoldCancel
+                        onHoldCancel = viewModel::onHoldCancel,
+                        onReportAnswer = viewModel::reportAnswer
                     )
                     PAGE_LANGUAGE -> LanguageSelectionScreen(
                         selectedLanguage = state.settings.language,
@@ -177,7 +180,9 @@ fun ChatScreen(
                     PAGE_AI_ANSWERS -> AiAnswersSelectionScreen(
                         isEnabled = state.settings.aiAnswersEnabled,
                         isAvailable = state.aiAnswersAvailable,
-                        onEnabledChange = viewModel::setAiAnswersEnabled
+                        onEnabledChange = viewModel::setAiAnswersEnabled,
+                        isClassicStyle = state.settings.personality == Magic8BallPersonality.NEUTRAL,
+                        isSpentForToday = state.aiAllowanceSpent
                     )
                 }
             }
@@ -195,6 +200,9 @@ fun ChatScreen(
                     unselectedColor = BallColors.OnSurface.copy(alpha = PAGE_DOT_OFF_ALPHA)
                 )
             }
+            // Drawn over the pages rather than in their place, so that what they were showing
+            // is still there when the watch is looked at again.
+            if (isAmbient) AmbientBall()
         }
     }
 }
@@ -231,8 +239,8 @@ private fun ChatEffects(effects: Flow<ChatEffect>, onRequestMicrophonePermission
 
 /**
  * The ball, which is the whole screen: its "8" (at rest, and while it listens) or its window
- * with the die (thinking / answer) sliding over it. Where the app may listen, holding the
- * screen asks a question out loud for as long as the hold lasts.
+ * with the die (thinking / answer) sliding over it. A tap asks, as a shake does; where the app
+ * may listen, holding the screen asks a question out loud for as long as the hold lasts.
  *
  * @param voiceLevel how loud the voice is while listening, from 0 to 1; read while drawing only.
  */
@@ -241,15 +249,17 @@ fun ChatScreenContent(
     state: ChatState,
     modifier: Modifier = Modifier,
     voiceLevel: () -> Float = { 0f },
+    onTap: () -> Unit = {},
     onHoldStart: () -> Unit = {},
     onHoldEnd: () -> Unit = {},
-    onHoldCancel: () -> Unit = {}
+    onHoldCancel: () -> Unit = {},
+    onReportAnswer: () -> Unit = {}
 ) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BallColors.Ball)
-            .holdToAsk(state.canAskByVoice, onHoldStart, onHoldEnd, onHoldCancel)
+            .background(BallColors.Background)
+            .pressToAsk(state.canAskByVoice, onTap, onHoldStart, onHoldEnd, onHoldCancel)
     ) {
         AnimatedContent(
             targetState = state.machineState,
@@ -276,8 +286,14 @@ fun ChatScreenContent(
                 )
                 // One call site for thinking and answer: two would be two different composables,
                 // and the die would be rebuilt (losing its motion and cross-fade) on the answer.
-                ChatStateMachine.Running, is ChatStateMachine.Completed ->
-                    Prediction(answer = (machine as? ChatStateMachine.Completed)?.answer)
+                ChatStateMachine.Running, is ChatStateMachine.Completed -> {
+                    val completed = machine as? ChatStateMachine.Completed
+                    Prediction(
+                        answer = completed?.answer,
+                        reported = completed?.reported == true,
+                        onReportAnswer = onReportAnswer
+                    )
+                }
             }
         }
     }
@@ -299,37 +315,52 @@ private val ChatStateMachine.showsTheEight: Boolean
     get() = this is ChatStateMachine.Idle || this is ChatStateMachine.Listening
 
 /**
- * Calls [onHoldStart] once a finger has stayed down for [HOLD_DELAY_MS], then [onHoldEnd] when
- * it lifts or [onHoldCancel] when the gesture is taken away, as a swipe to another page does.
- * Nothing is consumed, so the pager keeps its swipes.
+ * Calls [onTap] for a press that ends with the finger lifting. Where the app may listen
+ * ([canAskByVoice]), a press the system would call a long one is a hold instead: [onHoldStart],
+ * then [onHoldEnd] when it lifts or [onHoldCancel] when the gesture is taken away, as a swipe
+ * to another page does. Where it may not, a press is a tap however long it lasts. Nothing is
+ * consumed, so the pager keeps its swipes.
  */
-private fun Modifier.holdToAsk(
-    enabled: Boolean,
+private fun Modifier.pressToAsk(
+    canAskByVoice: Boolean,
+    onTap: () -> Unit,
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
     onHoldCancel: () -> Unit
 ): Modifier = composed {
+    val currentOnTap by rememberUpdatedState(onTap)
     val currentOnHoldStart by rememberUpdatedState(onHoldStart)
     val currentOnHoldEnd by rememberUpdatedState(onHoldEnd)
     val currentOnHoldCancel by rememberUpdatedState(onHoldCancel)
 
+    val ask = localizedString(Strings.Ask)
     val askByVoice = localizedString(Strings.AskByVoice)
 
     // For those who cannot hold: a long click starts listening, and the question ends by itself
     // when they stop talking.
     semantics {
-        if (enabled) {
+        onClick(label = ask) {
+            currentOnTap()
+            true
+        }
+        if (canAskByVoice) {
             onLongClick(label = askByVoice) {
                 currentOnHoldStart()
                 true
             }
         }
-    }.pointerInput(enabled) {
-        if (!enabled) return@pointerInput
+    }.pointerInput(canAskByVoice) {
         awaitEachGesture {
-            awaitFirstDown(requireUnconsumed = false)
+            // A press on something of its own, the report under an answer, is not the ball's.
+            awaitFirstDown()
             val stillDown = try {
-                withTimeout(HOLD_DELAY_MS) { waitForUpOrCancellation() }
+                val lift = if (canAskByVoice) {
+                    withTimeout(viewConfiguration.longPressTimeoutMillis) { waitForUpOrCancellation() }
+                } else {
+                    waitForUpOrCancellation()
+                }
+                // No lift is a gesture taken away, by the pager's swipe for instance: not a tap.
+                if (lift != null) currentOnTap()
                 false
             } catch (_: PointerEventTimeoutCancellationException) {
                 true
@@ -350,27 +381,18 @@ private fun Modifier.holdToAsk(
 }
 
 /**
- * The die in its window. A null [answer] means the ball is still thinking.
+ * The die in its window. A null [answer] means the ball is still thinking. Under an answer the
+ * AI service wrote, which nobody read before it was shown, there is a way to report it.
  */
 @Composable
-private fun Prediction(answer: AnswerText?) {
+private fun Prediction(answer: AnswerText?, reported: Boolean, onReportAnswer: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            // The window sits in the ball: a soft shadow on the ball around it.
-            .drawWithCache {
-                val windowRadius = size.minDimension / 2f * WINDOW_SCREEN_FRACTION
-                val reach = windowRadius * (1f + RECESS_REACH)
-                val recess = Brush.radialGradient(
-                    0f to Color.Black.copy(alpha = RECESS_ALPHA),
-                    1f / (1f + RECESS_REACH) to Color.Black.copy(alpha = RECESS_ALPHA),
-                    1f to Color.Transparent,
-                    radius = reach
-                )
-                onDrawBehind { drawCircle(recess, radius = reach) }
-            },
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        if (answer is AnswerText.Plain && answer.fromAi) {
+            ReportAnswer(reported, onReportAnswer, Modifier.align(Alignment.BottomCenter))
+        }
         PredictionWindow(Modifier.fillMaxSize(WINDOW_SCREEN_FRACTION)) {
             PredictionTriangleAnimator(isThinking = answer == null) {
                 PredictionTriangle(
@@ -384,6 +406,36 @@ private fun Prediction(answer: AnswerText?) {
                 )
             }
         }
+    }
+}
+
+/**
+ * At the foot of the screen, the way to say that the answer on it should not have been given:
+ * one quiet word, with a finger's room around it. Once used, it only says so.
+ */
+@Composable
+private fun ReportAnswer(reported: Boolean, onReport: () -> Unit, modifier: Modifier = Modifier) {
+    val label = localizedString(Strings.ReportLabel)
+    Box(
+        modifier = modifier
+            .sizeIn(minWidth = ReportTouchSize, minHeight = ReportTouchSize)
+            // It keeps its taps once used: a second one on the same spot must not reach the
+            // ball, which would take it for a new question and put the answer away. The word
+            // changing is what answers a tap: a ripple here would wash over the window's rim.
+            .clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onReport)
+            .semantics {
+                if (reported) liveRegion = LiveRegionMode.Polite else contentDescription = label
+            },
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Text(
+            text = localizedString(if (reported) Strings.Reported else Strings.Report),
+            modifier = Modifier.padding(bottom = ReportBottomPadding),
+            color = BallColors.OnSurfaceQuiet,
+            // Underlined while it is something to tap; plain once it is something said.
+            textDecoration = if (reported) null else TextDecoration.Underline,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 
@@ -456,13 +508,7 @@ private const val PAGE_DOTS_LINGER_MILLIS = 1_800L
 private const val PAGE_DOTS_FADE_MILLIS = 250
 private const val INTRO_MILLIS = 420
 
-/** No one reads the system's permission dialog and answers it in less than this. */
-private const val DIALOG_SKIPPED_MILLIS = 1_000L
-
 private const val TRANSITION_MILLIS = 300
-
-/** A press shorter than this is not a hold: it leaves room for taps and swipes. */
-private const val HOLD_DELAY_MS = 250L
 private val EnterFromEnd =
     slideInHorizontally(tween(TRANSITION_MILLIS)) { it } + fadeIn(tween(TRANSITION_MILLIS))
 private val EnterFromStart =
@@ -474,10 +520,6 @@ private val ExitToStart =
 
 /** Share of the screen taken by the window (142dp on a 192dp screen): the rest is the ball. */
 private const val WINDOW_SCREEN_FRACTION = 0.74f
-
-/** The shadow around the window, as a share of its radius, and how dark it starts. */
-private const val RECESS_REACH = 0.14f
-private const val RECESS_ALPHA = 0.38f
 
 /** Where the liquid starts to darken, as a share of the glass's radius, and how dark it gets. */
 private const val DEPTH_CLEAR = 0.55f
@@ -505,6 +547,13 @@ private val GlassOverRisenDie = GlassOverDie(
 private val WindowFallbackDiameter = 142.dp
 private val WindowRimWidth = 1.dp
 private val WindowInnerRimWidth = 4.dp
+
+/**
+ * What a finger needs on a wrist, and how far the word stands from the foot of the screen: on
+ * a round one, any lower and its ends would be cut off.
+ */
+private val ReportTouchSize = 48.dp
+private val ReportBottomPadding = 9.dp
 
 @Preview(name = "ChatScreen - Wear Round Completed", showBackground = true, widthDp = 192, heightDp = 192)
 @Composable
@@ -540,16 +589,5 @@ private fun ChatScreenPreview(machineState: ChatStateMachine, screenSizeDp: Int 
             state = ChatState(machineState = machineState),
             modifier = Modifier.size(screenSizeDp.dp)
         )
-    }
-}
-
-/** The app's page in the system settings, where a refused permission can still be granted. */
-private fun Context.openAppSettings() {
-    val settings = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    try {
-        startActivity(settings)
-    } catch (_: ActivityNotFoundException) {
-        // A watch without that page: the shake still answers.
     }
 }

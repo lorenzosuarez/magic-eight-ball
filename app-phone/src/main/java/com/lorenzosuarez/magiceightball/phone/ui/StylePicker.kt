@@ -242,6 +242,8 @@ internal fun StylesSheet(
     val full = sheetState.targetValue == SheetValue.Expanded
     val corner by animateDpAsState(if (full) 0.dp else SHEET_CORNER, label = "sheet corner")
     val putAway: () -> Unit = { scope.launch { sheetState.hide() }.invokeOnCompletion { onClose() } }
+    // The sheet is a window of its own: the app's language is carried into it.
+    val language = rememberAppLanguage()
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
@@ -253,16 +255,18 @@ internal fun StylesSheet(
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0) }
     ) {
-        StylesContent(
-            selected = selected,
-            onSelected = {
-                onSelected(it)
-                putAway()
-            },
-            onClose = putAway,
-            full = full,
-            hidden = hidden
-        )
+        InAppLanguage(language) {
+            StylesContent(
+                selected = selected,
+                onSelected = {
+                    onSelected(it)
+                    putAway()
+                },
+                onClose = putAway,
+                full = full,
+                hidden = hidden
+            )
+        }
     }
 }
 

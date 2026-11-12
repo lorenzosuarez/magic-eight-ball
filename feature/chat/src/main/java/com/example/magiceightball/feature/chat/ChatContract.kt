@@ -1,5 +1,6 @@
 package com.example.magiceightball.feature.chat
 
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.UserSettings
 
 /**
@@ -7,23 +8,37 @@ import com.example.magiceightball.core.domain.model.UserSettings
  *
  * @property aiAnswersAvailable whether AI answers can be offered at all; when false the user's
  * choice in [settings] has no effect and answers are the bundled ones.
- * @property canAskByVoice whether holding the screen listens to a question. Only when the AI
- * service is the one answering, since nothing else can answer a question, and the watch can
- * listen. Without the microphone permission a hold asks for it, after a refusal too.
+ * @property aiAllowanceSpent whether the last answer was a bundled one only because the day's
+ * answers from the AI service are used up.
+ * @property canListen whether the watch can hear a question: it has a recognizer, and the
+ * microphone has not been refused.
  */
 data class ChatState(
     val machineState: ChatStateMachine = ChatStateMachine.Idle,
     val settings: UserSettings = UserSettings(),
     val aiAnswersAvailable: Boolean = false,
-    val canAskByVoice: Boolean = false
+    val aiAllowanceSpent: Boolean = false,
+    val canListen: Boolean = false
 ) {
-    /** Whether a shake asks the AI service for the answer. */
-    val usesAiAnswers: Boolean get() = settings.aiAnswersEnabled && aiAnswersAvailable
+    /**
+     * Whether the AI service is the one that answers next. Everything the screen says or offers
+     * about it goes by this alone: the classic style has its own answers, and so has a day
+     * whose answers from the service are used up.
+     */
+    val usesAiAnswers: Boolean
+        get() = settings.aiAnswersEnabled && aiAnswersAvailable &&
+            settings.personality != Magic8BallPersonality.NEUTRAL && !aiAllowanceSpent
+
+    /**
+     * Whether holding the screen listens to a question. Only when the AI service is the one
+     * answering, since nothing else can answer a question, and the watch can listen.
+     */
+    val canAskByVoice: Boolean get() = usesAiAnswers && canListen
 }
 
 /**
- * The cycle of one answer: [Idle] -> [Running] -> [Completed] -> [Idle] for a shake, with
- * [Listening] before [Running] for a question asked out loud.
+ * The cycle of one answer: [Idle] -> [Running] -> [Completed] -> [Idle] for a shake or a tap,
+ * with [Listening] before [Running] for a question asked out loud.
  */
 sealed interface ChatStateMachine {
     data object Idle : ChatStateMachine
@@ -35,7 +50,9 @@ sealed interface ChatStateMachine {
      */
     data class Listening(val transcript: String = "", val finished: Boolean = false) : ChatStateMachine
     data object Running : ChatStateMachine
-    data class Completed(val answer: AnswerText) : ChatStateMachine
+
+    /** @property reported true once the user has said this answer should not have been given. */
+    data class Completed(val answer: AnswerText, val reported: Boolean = false) : ChatStateMachine
 }
 
 /**
@@ -43,7 +60,8 @@ sealed interface ChatStateMachine {
  * could be obtained.
  */
 sealed interface AnswerText {
-    data class Plain(val value: String) : AnswerText
+    /** @property fromAi true when the AI service wrote it; false for a bundled answer. */
+    data class Plain(val value: String, val fromAi: Boolean = false) : AnswerText
     data object Fallback : AnswerText
 }
 
@@ -51,6 +69,7 @@ sealed interface AnswerText {
  * One-shot events of the cycle. They are delivered once, to whoever is collecting at the time.
  */
 sealed interface ChatEffect {
+    /** A shake, or the tap that stands for one, has asked. */
     data object ShakeDetected : ChatEffect
     data object ListeningStarted : ChatEffect
     data object ListeningStopped : ChatEffect

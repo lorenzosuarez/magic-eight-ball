@@ -59,6 +59,8 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
+    // Tells the app when the watch dims to its always-on screen.
+    implementation(libs.wear)
 
     // The tile: the ball one swipe away from the watch face.
     implementation(libs.wear.tiles)
@@ -80,4 +82,6 @@ dependencies {
     implementation(project(":core:motion"))
     implementation(project(":core:designsystem"))
     implementation(project(":feature:chat"))
+
+    testImplementation(libs.junit)
 }

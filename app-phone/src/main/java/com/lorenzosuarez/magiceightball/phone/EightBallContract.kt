@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.UserSettings
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
@@ -56,11 +57,17 @@ sealed interface BallPhase {
     /** @property question the question being answered; empty when the ball was just asked. */
     data class Thinking(val question: String = "") : BallPhase
 
-    /** @property id grows with every answer, so two identical answers are still told apart. */
+    /**
+     * @property id grows with every answer, so two identical answers are still told apart.
+     * @property style the style that gave the answer, which signs it; null when none did.
+     * @property reported whether the user has reported this answer: it is reported once.
+     */
     data class Answered(
         val id: Long,
         val question: String,
-        val answer: AnswerText
+        val answer: AnswerText,
+        val style: Magic8BallPersonality? = null,
+        val reported: Boolean = false
     ) : BallPhase
 }
 

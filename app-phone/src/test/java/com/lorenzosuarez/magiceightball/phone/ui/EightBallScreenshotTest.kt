@@ -145,6 +145,19 @@ class EightBallScreenshotTest {
         }
     }
 
+    /** One long word is made smaller, never cut in two. */
+    @Test
+    fun share_card_long_word() = captureRoboImage(filePath = path("phone_38_share_card_long_word")) {
+        ShareCard(
+            question = "",
+            answer = "Necessariamente. Inquestionavelmente.",
+            layer = rememberGraphicsLayer(),
+            visible = true,
+            styleLabel = "Fil\u00f3sofo",
+            personality = Magic8BallPersonality.PHILOSOPHER
+        )
+    }
+
     /** The barest: a tap, a bundled answer. */
     @Test
     fun share_card_bare() = captureRoboImage(filePath = path("phone_36_share_card_bare")) {
@@ -368,10 +381,33 @@ class EightBallScreenshotTest {
                     "No, mapa roto.",
                     fromAi = true,
                     remark = "Diecinueve islas hundidas guarden ese secreto maldito."
-                )
+                ),
+                style = Magic8BallPersonality.PIRATE
             )
         )
     )
+
+    /** On, and the system is not letting the app notify: said as a warning, with the way to allow it. */
+    @Test
+    fun phone_settings_daily_verdict_blocked_spanish() =
+        captureRoboImage(filePath = path("phone_39_settings_daily_verdict_blocked_spanish")) {
+            MagicEightBallPhoneTheme(dark = false) {
+                ProvideAppLanguage(AppLanguage.SPANISH) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        SettingsContent(
+                            state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH)),
+                            onLanguageSelected = {},
+                            onPersonalitySelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {},
+                            notificationsAllowed = false
+                        )
+                    }
+                }
+            }
+        }
 
     @Test
     fun phone_history_with_remark_spanish() = capture(

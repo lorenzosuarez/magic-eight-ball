@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.model.Streak
 import com.example.magiceightball.core.domain.repository.StreakRepository
@@ -93,6 +94,72 @@ class EightBallViewModelTest {
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
 
     // Start-up and settings
+
+    @Test
+    fun `an answer from the history is put back in the ball as it was given, and not kept twice`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        val kept = HistoryEntry(
+            id = 7,
+            question = "Will it rain?",
+            answer = "Nay, matey.\nThe parrot bet against you.",
+            askedAtMillis = 1L,
+            fromAi = true,
+            style = Magic8BallPersonality.PIRATE
+        )
+
+        viewModel.showAgain(kept)
+        advanceUntilIdle()
+
+        val shown = viewModel.state.value?.phase as BallPhase.Answered
+        assertEquals("Will it rain?", shown.question)
+        assertEquals(AnswerText.Plain("Nay, matey.", fromAi = true, remark = "The parrot bet against you."), shown.answer)
+        assertEquals(Magic8BallPersonality.PIRATE, shown.style)
+        assertEquals(emptyList<HistoryEntry>(), history.entries.value)
+        assertEquals(0, llmGateway.requests.size)
+        assertEquals(emptyList<String>(), tracked.map { it.name })
+
+        // One the ball could not answer is shown as the app's own answer, signed by nobody.
+        viewModel.dismiss()
+        viewModel.showAgain(kept.copy(answer = null, style = null))
+        val unanswered = viewModel.state.value?.phase as BallPhase.Answered
+        assertEquals(AnswerText.Fallback, unanswered.answer)
+        assertEquals(null, unanswered.style)
+    }
+
+    @Test
+    fun `an answer the AI wrote can be reported once, as it was written and without the question`() = runTest {
+        val sent = mutableListOf<String>()
+        val viewModel = createViewModel(
+            reports = object : AnswerReports {
+                override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) {
+                    sent += "$languageCode/$style: $answer | $remark"
+                }
+            }
+        )
+        advanceUntilIdle()
+        val kept = HistoryEntry(
+            id = 7,
+            question = "Will my secret come out?",
+            answer = "Nay, matey.\nThe parrot talks.",
+            askedAtMillis = 1L,
+            fromAi = true,
+            style = Magic8BallPersonality.PIRATE
+        )
+
+        viewModel.showAgain(kept)
+        viewModel.reportAnswer()
+        viewModel.reportAnswer()
+
+        assertEquals(listOf("en/PIRATE: Nay, matey. | The parrot talks."), sent)
+        assertTrue((viewModel.state.value?.phase as BallPhase.Answered).reported)
+
+        // The app's own answers were read before they were shipped: there is nothing to report.
+        viewModel.dismiss()
+        viewModel.showAgain(kept.copy(fromAi = false))
+        viewModel.reportAnswer()
+        assertEquals(1, sent.size)
+    }
 
     @Test
     fun `the day's verdict opens on the ball, is kept, and gives way to a question in progress`() = runTest {
@@ -337,7 +404,12 @@ class EightBallViewModelTest {
         advanceTimeBy(1)
         runCurrent()
         assertEquals(
-            BallPhase.Answered(id = 0, question = "", answer = AnswerText.Plain(FakeLlmGateway.ANSWER)),
+            BallPhase.Answered(
+                id = 0,
+                question = "",
+                answer = AnswerText.Plain(FakeLlmGateway.ANSWER),
+                style = Magic8BallPersonality.SARCASTIC
+            ),
             viewModel.phase
         )
     }
@@ -479,7 +551,8 @@ class EightBallViewModelTest {
             BallPhase.Answered(
                 id = 0,
                 question = "Will it rain tomorrow?",
-                answer = AnswerText.Plain(FakeLlmGateway.ANSWER)
+                answer = AnswerText.Plain(FakeLlmGateway.ANSWER),
+                style = Magic8BallPersonality.SARCASTIC
             ),
             viewModel.phase
         )
@@ -1092,7 +1165,8 @@ class EightBallViewModelTest {
 
     private fun createViewModel(
         resumed: Boolean = false,
-        microphoneGranted: Boolean = false
+        microphoneGranted: Boolean = false,
+        reports: AnswerReports = AnswerReports.None
     ): EightBallViewModel {
         val viewModel = EightBallViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
@@ -1106,7 +1180,8 @@ class EightBallViewModelTest {
             usage = usage,
             streaks = streaks,
             aiAllowance = aiAllowance,
-            appConfig = appConfig
+            appConfig = appConfig,
+            reports = reports
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)
@@ -1159,8 +1234,14 @@ class EightBallViewModelTest {
     private class FakeAnswerHistoryRepository : AnswerHistoryRepository {
         override val entries = MutableStateFlow<List<HistoryEntry>>(emptyList())
 
-        override suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean) {
-            entries.update { listOf(HistoryEntry(it.size + 1L, question, answer, askedAtMillis, fromAi)) + it }
+        override suspend fun add(
+            question: String,
+            answer: String?,
+            askedAtMillis: Long,
+            fromAi: Boolean,
+            style: Magic8BallPersonality?
+        ) {
+            entries.update { listOf(HistoryEntry(it.size + 1L, question, answer, askedAtMillis, fromAi, style)) + it }
         }
 
         override suspend fun remove(id: Long) {

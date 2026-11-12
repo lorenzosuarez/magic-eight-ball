@@ -440,7 +440,7 @@ private class BallDrawing(
     private val deepLift = -(dieBottom + dieTop - 2f * center.y) / 2f * DIE_DEEP_SIZE
 
     /** The die with its answer, and the die that has none yet. */
-    private val dieBrush = Brush.verticalGradient(0f to Accent, 1f to AccentDeep, startY = dieTop, endY = dieBottom)
+    private val dieBrush = Brush.verticalGradient(0f to DieTop, 1f to DieBottom, startY = dieTop, endY = dieBottom)
     private val thinkingBrush = Brush.verticalGradient(
         0f to DieThinkingTop,
         1f to DieThinkingBottom,
@@ -749,11 +749,11 @@ private const val RECESS_REACH = 0.14f
 private const val RECESS_ALPHA = 0.38f
 
 /** Where the liquid starts to darken, as a share of the glass's radius, and how dark it gets. */
-private const val DEPTH_CLEAR = 0.55f
+private const val DEPTH_CLEAR = 0.75f
 private const val DEPTH_ALPHA = 0.6f
 
-/** The answer as seen through the liquid: not quite white, not quite solid. */
-private val AnswerInk = Color(0xFFDDE6FF).copy(alpha = 0.86f)
+/** The answer: white, on a die deep enough for it to be read at a glance. */
+private val AnswerInk = Color.White
 
 /** Radii of the two faces, relative to the ball's. */
 private const val EIGHT_RADIUS = 0.46f
@@ -821,4 +821,6 @@ private val WindowRim = Color(BrandPalette.WINDOW_RIM)
 private val DieThinkingTop = Color(BrandPalette.DIE_THINKING_TOP)
 private val DieThinkingBottom = Color(BrandPalette.DIE_THINKING_BOTTOM)
 private val Accent = Color(BrandPalette.ACCENT)
+private val DieTop = Color(BrandPalette.DIE_TOP)
+private val DieBottom = Color(BrandPalette.DIE_BOTTOM)
 private val AccentDeep = Color(BrandPalette.ACCENT_DEEP)

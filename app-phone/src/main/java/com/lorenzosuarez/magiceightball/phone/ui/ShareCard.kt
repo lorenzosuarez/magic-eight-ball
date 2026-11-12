@@ -124,10 +124,13 @@ internal fun ShareCard(
                         Spacer(Modifier.height(12.dp))
                     }
                     // As large as it fits: a short answer shouts, a long one still leaves room.
+                    // And never a word cut in two: the longest one sets the size as well.
+                    val longest = answer.split(' ').maxOf { it.length }
                     val size = when {
-                        answer.length <= SHARE_SHORT_ANSWER -> 58
-                        answer.length <= SHARE_MEDIUM_ANSWER -> 46
-                        else -> 38
+                        longest > SHARE_WORD_AT_38 -> 30
+                        longest > SHARE_WORD_AT_46 || answer.length > SHARE_MEDIUM_ANSWER -> 38
+                        longest > SHARE_WORD_AT_58 || answer.length > SHARE_SHORT_ANSWER -> 46
+                        else -> 58
                     }
                     Text(
                         text = answer,
@@ -340,6 +343,11 @@ private val SHARE_INK = Color(0xFF12110D)
 /** Up to these many letters an answer is set at the largest and the middle size. */
 private const val SHARE_SHORT_ANSWER = 16
 private const val SHARE_MEDIUM_ANSWER = 28
+
+/** The longest word, in letters, that fits the card's width at each size of the answer. */
+private const val SHARE_WORD_AT_58 = 9
+private const val SHARE_WORD_AT_46 = 12
+private const val SHARE_WORD_AT_38 = 15
 private const val SHARE_ANSWER_LEADING = 0.98f
 private const val SHARE_ANSWER_TRACKING = 0.02f
 

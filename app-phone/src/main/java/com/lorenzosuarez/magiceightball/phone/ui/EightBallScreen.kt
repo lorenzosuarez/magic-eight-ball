@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.core.app.NotificationManagerCompat
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -28,6 +29,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.runtime.key
@@ -107,6 +109,11 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -119,6 +126,7 @@ import androidx.core.view.ViewCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.magiceightball.core.domain.model.HistoryEntry
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.lorenzosuarez.magiceightball.phone.AnswerText
 import com.lorenzosuarez.magiceightball.phone.BallPhase
 import com.lorenzosuarez.magiceightball.phone.EightBallEffect
@@ -182,7 +190,11 @@ fun EightBallScreen(
     }
 
     // The accelerometer and the microphone are only used while the screen is in front of the user.
+    // Whether the system lets the app notify: looked at again each time the user comes back,
+    // since it is changed in the system's settings.
+    var notificationsAllowed by remember { mutableStateOf(true) }
     LifecycleResumeEffect(viewModel, context) {
+        notificationsAllowed = NotificationManagerCompat.from(context).areNotificationsEnabled()
         viewModel.onMicrophonePermissionChecked(context.hasMicrophonePermission())
         viewModel.setResumed(true)
         onPauseOrDispose { viewModel.setResumed(false) }
@@ -308,6 +320,7 @@ fun EightBallScreen(
                     tick(HapticFeedbackConstantsCompat.CLOCK_TICK)
                     viewModel.clearHistory()
                 },
+                onShowHistoryEntry = viewModel::showAgain,
                 onSpeakAnswer = {
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
                     answerToSay?.let { voice.say(it, answerLocale) }
@@ -337,6 +350,16 @@ fun EightBallScreen(
                             viewModel.setSpokenAnswersEnabled(it)
                         },
                         onPartyNamesChange = viewModel::setPartyNames,
+                        notificationsAllowed = notificationsAllowed,
+                        // The system's own page for this app's notifications: it works whether or
+                        // not the permission can still be asked for.
+                        onAllowNotifications = {
+                            context.startActivity(
+                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        },
                         onDailyVerdictChange = { on ->
                             tick(on.toggleFeedback())
                             viewModel.setDailyVerdictEnabled(on)
@@ -352,6 +375,16 @@ fun EightBallScreen(
                             context.shareText(shareAppText)
                             viewModel.onAppShared()
                         },
+                        onOpenPrivacyPolicy = {
+                            try {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            } catch (_: ActivityNotFoundException) {
+                                // No browser on the device: there is nothing to open it with.
+                            }
+                        },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
@@ -362,6 +395,10 @@ fun EightBallScreen(
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
                     context.shareAnswer(picture, shareAnswerText)
                     viewModel.onAnswerShared()
+                },
+                onReportAnswer = {
+                    tick(HapticFeedbackConstantsCompat.CONFIRM)
+                    viewModel.reportAnswer()
                 }
             )
         }
@@ -401,8 +438,10 @@ internal fun EightBallContent(
     onRestoreHistoryEntry: (HistoryEntry) -> Unit,
     onClearHistory: () -> Unit,
     modifier: Modifier = Modifier,
+    onShowHistoryEntry: (HistoryEntry) -> Unit = {},
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
+    onReportAnswer: () -> Unit = {},
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
     options: @Composable () -> Unit = {},
@@ -455,8 +494,8 @@ internal fun EightBallContent(
                     answer = answered.answer.text(),
                     layer = shareLayer,
                     remark = answered.answer.remark(),
-                    styleLabel = stringResource(state.settings.personality.labelRes()),
-                    personality = state.settings.personality
+                    styleLabel = answered.style?.let { stringResource(it.labelRes()) },
+                    personality = answered.style ?: Magic8BallPersonality.NEUTRAL
                 )
             }
         }
@@ -520,6 +559,7 @@ internal fun EightBallContent(
                             now = now,
                             onDelete = deleteWithUndo,
                             onClearAll = onClearHistory,
+                            onOpen = onShowHistoryEntry,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
@@ -535,6 +575,7 @@ internal fun EightBallContent(
                             onToggleVoiceQuestion = onToggleVoiceQuestion,
                             onAllowMicrophone = onAllowMicrophone,
                             onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
+                            onReportAnswer = onReportAnswer,
                             onAskWho = onAskWho
                         )
                     }
@@ -700,6 +741,7 @@ private fun Stage(
     onToggleVoiceQuestion: () -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
+    onReportAnswer: () -> Unit,
     onAskWho: (String) -> Unit
 ) {
     // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
@@ -757,6 +799,7 @@ private fun Stage(
                 state = state,
                 onAllowMicrophone = onAllowMicrophone,
                 onShareAnswer = onShareAnswer,
+                onReportAnswer = onReportAnswer,
                 onAskWho = onAskWho,
                 modifier = Modifier
                     .graphicsLayer { alpha = intro() }
@@ -976,6 +1019,7 @@ private fun Caption(
     state: EightBallUiState,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
+    onReportAnswer: () -> Unit,
     onAskWho: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -997,14 +1041,21 @@ private fun Caption(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                QuietText(
-                    text = when (notice) {
-                        Notice.MicrophoneDenied -> stringResource(R.string.notice_microphone_denied)
-                        Notice.VoiceUnsupported -> stringResource(R.string.notice_voice_unsupported)
-                        null -> ""
-                    },
-                    modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
-                )
+                // Nothing to say takes no room; a refusal is said in the colour of a warning.
+                if (notice != null) {
+                    QuietText(
+                        text = stringResource(
+                            when (notice) {
+                                Notice.MicrophoneDenied -> R.string.notice_microphone_denied
+                                Notice.VoiceUnsupported -> R.string.notice_voice_unsupported
+                            }
+                        ),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        color = if (notice == Notice.MicrophoneDenied) {
+                            MaterialTheme.colorScheme.error
+                        } else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 // A run of days is said quietly, where there is nothing else to say.
                 if (notice == null && !state.settings.isParty && state.streakDays >= state.config.streakMinDaysShown) {
                     QuietText(stringResource(R.string.streak_days, state.streakDays))
@@ -1065,8 +1116,40 @@ private fun Caption(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                // Said quietly, and only when it is true: who wrote this answer.
-                if ((phase.answer as? AnswerText.Plain)?.fromAi == true) {
+                // Who said it, signed as on the picture that is shared: an answer is only funny
+                // when it is known whose it is.
+                val fromAi = (phase.answer as? AnswerText.Plain)?.fromAi == true
+                phase.style?.let { style ->
+                    // On the same line, and more quietly: that the AI wrote it.
+                    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+                    val small = MaterialTheme.typography.labelMedium
+                    val ai = stringResource(R.string.source_ai)
+                    Text(
+                        text = buildAnnotatedString {
+                            append("\u2014 " + stringResource(style.labelRes()))
+                            if (fromAi) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = quiet,
+                                        fontSize = small.fontSize,
+                                        fontFamily = small.fontFamily,
+                                        fontStyle = FontStyle.Normal,
+                                        letterSpacing = small.letterSpacing
+                                    )
+                                ) { append("  \u00b7  $ai") }
+                            }
+                        },
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = FontFamily.Serif,
+                            fontStyle = FontStyle.Italic
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
+                // An answer kept before styles were has nobody to sign it: it is still said who wrote it.
+                if (fromAi && phase.style == null) {
                     Text(
                         text = stringResource(R.string.answer_from_ai),
                         style = MaterialTheme.typography.labelMedium,
@@ -1074,19 +1157,58 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
-                TextButton(
-                    onClick = onShareAnswer,
-                    modifier = Modifier.heightIn(min = 48.dp),
-                    shape = ButtonShape,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+                // What can be done with an answer. Sharing is the main thing; what the AI wrote
+                // can also be reported, since nobody read it before it was shown.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_share),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
+                    TextButton(
+                        onClick = onShareAnswer,
+                        modifier = Modifier.heightIn(min = 48.dp),
+                        shape = ButtonShape,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_share),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
+                    }
+                    if (fromAi) {
+                        if (phase.reported) {
+                            Text(
+                                text = stringResource(R.string.report_done),
+                                modifier = Modifier
+                                    .padding(horizontal = 12.dp)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            val label = stringResource(R.string.report_label)
+                            TextButton(
+                                onClick = onReportAnswer,
+                                modifier = Modifier
+                                    .heightIn(min = 48.dp)
+                                    .semantics { contentDescription = label },
+                                shape = ButtonShape,
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_flag),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.action_report))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1094,12 +1216,17 @@ private fun Caption(
 }
 
 @Composable
-private fun QuietText(text: String, modifier: Modifier = Modifier, maxLines: Int = CAPTION_MAX_LINES) {
+private fun QuietText(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = CAPTION_MAX_LINES,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
     Text(
         text = text,
         modifier = modifier.fillMaxWidth(),
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = color,
         textAlign = TextAlign.Center,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis
@@ -1170,6 +1297,9 @@ private val StageEnter = fadeIn(tween(durationMillis = 220, delayMillis = 60)) +
 private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id="
 
 /** What Google Play passes on to the app's install figures: that this install came from a share. */
+/** The policy as published, the same address the store listing gives. */
+private const val PRIVACY_POLICY_URL =
+    "https://github.com/lorenzosuarez/magic-eight-ball/blob/master/docs/PRIVACY_POLICY.md"
 private const val SHARE_REFERRER = "&referrer=utm_source%3Dshare%26utm_medium%3Dapp"
 
 /** A press shorter than this is a tap; from here on it is a hold, and the app listens. */
@@ -1195,7 +1325,7 @@ internal const val HISTORY_PAGE = 0
 internal const val BALL_PAGE = 1
 internal const val OPTIONS_PAGE = 2
 private const val PAGE_COUNT = 3
-private const val DOT_OFF_ALPHA = 0.35f
+private const val DOT_OFF_ALPHA = 0.48f
 
 private const val BALL_WIDTH_FRACTION = 0.58f
 private val BALL_MAX_SIZE = 320.dp
@@ -1219,11 +1349,11 @@ private val CAPTION_HEIGHT = 136.dp
 private val FOOTER_HEIGHT = 48.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val FOOTER_ALPHA = 0.68f
-private const val FOOTER_VERSION_ALPHA = 0.5f
+private const val FOOTER_VERSION_ALPHA = 0.68f
 private const val CAPTION_MAX_LINES = 3
 
 /** How faint the note under an answer the AI wrote is. */
-private const val AI_NOTE_ALPHA = 0.7f
+private const val AI_NOTE_ALPHA = 1f
 
 /** From this font scale up, the answer is also written under the ball. */
 private const val LARGE_FONT_SCALE = 1.3f

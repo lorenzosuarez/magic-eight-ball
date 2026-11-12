@@ -1,5 +1,6 @@
 package com.example.magiceightball.core.data.history
 
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository.Companion.MAX_ENTRIES
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -38,6 +39,29 @@ class FileAnswerHistoryRepositoryTest {
         assertEquals(listOf(null, "Without a doubt"), reopened.map { it.answer })
         assertEquals(listOf(20L, 10L), reopened.map { it.askedAtMillis })
         assertEquals(listOf(false, true), reopened.map { it.fromAi })
+    }
+
+    @Test
+    fun `an entry keeps the style that answered, and a file from before styles were kept is still read`() = runTest {
+        val history = open()
+        history.add("Will it rain?", "Nay, matey.", askedAtMillis = 10L, fromAi = true, style = Magic8BallPersonality.PIRATE)
+        history.add("", "Yes", askedAtMillis = 20L, fromAi = false)
+        assertEquals(listOf(null, Magic8BallPersonality.PIRATE), open().entries.first().map { it.style })
+
+        // The first format: the same entry, with nothing after "from AI".
+        java.io.DataOutputStream(file.outputStream()).use { old ->
+            old.writeInt(1)
+            old.writeInt(1)
+            old.writeLong(3L)
+            old.writeUTF("Old question?")
+            old.writeBoolean(true)
+            old.writeUTF("Old answer")
+            old.writeLong(5L)
+            old.writeBoolean(false)
+        }
+        val read = open().entries.first().single()
+        assertEquals(listOf<Any?>(3L, "Old question?", "Old answer", 5L, false, null),
+            listOf(read.id, read.question, read.answer, read.askedAtMillis, read.fromAi, read.style))
     }
 
     @Test

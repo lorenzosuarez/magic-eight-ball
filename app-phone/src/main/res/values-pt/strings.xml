@@ -1,38 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
-    <string name="hint_hold">Segure\nou agite para perguntar</string>
+    <string name="hint_hold">Segure ou agite\npara perguntar</string>
     <string name="hint_tap">Toque ou agite para perguntar</string>
     <string name="streak_days">%1$d dias seguidos</string>
     <string name="hint_listening">Estou ouvindo…</string>
-    <string name="hint_speak">Diga sua pergunta</string>
+    <string name="hint_speak">Faça uma pergunta de sim ou não</string>
     <string name="hint_thinking">Pensando…</string>
-    <string name="notice_microphone_denied">O microfone está desativado: toque ou agite para perguntar. Você pode permitir nas configurações.</string>
+    <string name="notice_microphone_denied">Para perguntar por voz, permita o acesso ao microfone. Você também pode tocar ou agitar.</string>
     <string name="notice_voice_unsupported">Este dispositivo não consegue ouvir perguntas. Toque ou agite para perguntar.</string>
 
     <!-- Result -->
     <string name="question_quoted">“%1$s”</string>
     <string name="action_close">Fechar</string>
     <string name="action_cancel">Cancelar</string>
-    <string name="answer_from_ai">Respondido com IA</string>
+    <string name="answer_from_ai">Resposta com IA</string>
     <string name="source_ai">IA</string>
-    <string name="source_classic">Clássica</string>
 
     <!-- History -->
     <string name="history_title">Recentes</string>
     <string name="history_empty_title">Ainda não há respostas</string>
     <string name="history_empty">Pergunte à bola e suas respostas aparecerão aqui, salvas apenas neste dispositivo</string>
-    <string name="history_footer">Salvo apenas neste dispositivo</string>
-    <string name="history_delete">Apagar</string>
+    <string name="history_footer">Tudo fica salvo apenas neste dispositivo</string>
+    <string name="history_open">Ver na bola</string>
+    <string name="history_delete">Apagar resposta</string>
     <string name="history_deleted">Resposta apagada</string>
     <string name="action_undo">Desfazer</string>
     <string name="history_clear_all">Apagar tudo</string>
-    <string name="history_clear_title">Apagar todos os recentes?</string>
+    <string name="history_clear_title">Apagar todas as respostas?</string>
     <string name="history_clear_text">Todas as perguntas e respostas salvas serão apagadas deste dispositivo. Não dá para desfazer.</string>
     <string name="time_just_now">Agora</string>
-    <string name="time_minutes_ago">há %1$d min</string>
-    <string name="time_hours_ago">há %1$d h</string>
-    <string name="time_days_ago">há %1$d d</string>
+    <string name="time_minutes_ago">Há %1$d min</string>
+    <string name="time_hours_ago">Há %1$d h</string>
+    <string name="time_days_ago">Há %1$d d</string>
 
     <!-- Ball -->
     <string name="ball_description">Magic AI Ball</string>
@@ -42,7 +42,7 @@
     <string name="action_ask">Perguntar</string>
     <string name="action_ask_by_voice">Perguntar por voz</string>
     <string name="action_finish_question">Terminar a pergunta</string>
-    <string name="answer_fallback">Pergunte mais tarde</string>
+    <string name="answer_fallback">Pergunte mais tarde.</string>
 
     <!-- Settings -->
     <string name="settings_title">Opções</string>
@@ -87,32 +87,32 @@
     <string name="style_therapist_sample">O que você acha?</string>
     <string name="style_dog_sample">Au! Ou seja, sim.</string>
     <string name="styles_title">Estilos</string>
-    <string name="styles_subtitle">Escolha a voz da sua bola</string>
-    <string name="styles_see_all">Ver tudo</string>
-    <string name="styles_group_classics">Clássicos</string>
+    <string name="styles_subtitle">Escolha quem responde</string>
+    <string name="styles_see_all">Ver todos</string>
+    <string name="styles_group_classics">Os de sempre</string>
     <string name="styles_group_heart">Com coração</string>
     <string name="styles_group_movies">De cinema</string>
     <string name="styles_group_attitude">Com atitude</string>
     <string name="settings_ai">Respostas com IA</string>
-    <string name="settings_ai_on">Escritas pelo Gemini, só para você</string>
-    <string name="settings_ai_off">Respostas clássicas do app</string>
-    <string name="settings_ai_unavailable">Indisponível por enquanto</string>
-    <string name="settings_ai_classic">O estilo Clássico usa suas vinte respostas</string>
+    <string name="settings_ai_on">Escritas na hora, só para você</string>
+    <string name="settings_ai_off">A bola responde por conta própria</string>
+    <string name="settings_ai_unavailable">Indisponível por enquanto. A bola continua respondendo</string>
+    <string name="settings_ai_classic">O estilo Clássico não usa IA. Escolha outro para ativar</string>
     <string name="settings_ai_spent">Você já usou as de hoje. Voltam amanhã</string>
-    <string name="settings_ai_more">Mais respostas com IA hoje</string>
-    <string name="settings_ai_more_hint">Veja um anúncio curto para continuar</string>
+    <string name="settings_ai_more">Ganhe mais respostas com IA hoje</string>
+    <string name="settings_ai_more_hint">Assista a um anúncio curto para continuar</string>
     <string name="settings_voice">Perguntas por voz</string>
     <string name="settings_voice_on">Segure a bola e pergunte em voz alta</string>
     <string name="settings_voice_off">Só tocar ou agitar</string>
     <string name="settings_voice_denied">Precisa de acesso ao microfone</string>
-    <string name="settings_voice_unsupported">Este dispositivo não tem reconhecimento de voz</string>
+    <string name="settings_voice_unsupported">Indisponível neste dispositivo</string>
     <string name="settings_voice_allow">Permitir</string>
     <string name="party_turn">%1$s, é sua vez</string>
     <string name="party_who">Quem de vocês…?</string>
-    <string name="widget_description">Magic AI Ball. Toque para uma resposta</string>
+    <string name="widget_description">Magic AI Ball. Toque para ver uma resposta</string>
     <string name="settings_party">Modo festa</string>
-    <string name="settings_party_off">Adicione nomes para jogar em turnos</string>
-    <string name="party_dialog_note">A bola anuncia a vez de cada pessoa e pode escolher uma de vocês.</string>
+    <string name="settings_party_off">Adicione nomes para revezar</string>
+    <string name="party_dialog_note">A bola anuncia a vez de cada pessoa e pode escolher alguém do grupo.</string>
     <string name="party_turn_off">Desativar</string>
     <string name="party_name_hint">Nome</string>
     <string name="action_add">Adicionar</string>
@@ -126,24 +126,32 @@
     <string name="settings_share_app">Compartilhar o app</string>
     <string name="settings_share_app_hint">Conte a alguém sobre o Magic AI Ball</string>
     <string name="share_app_text">Pergunte o que quiser ao Magic AI Ball: %1$s</string>
+    <string name="action_report">Denunciar</string>
+    <string name="report_done">Denunciada. Agradecemos</string>
+    <string name="report_label">Denunciar esta resposta como inadequada</string>
     <string name="action_share">Compartilhar</string>
     <string name="action_read_aloud">Ler a resposta em voz alta</string>
     <string name="brand_tagline">Respostas escritas por IA</string>
     <string name="options_answers">Respostas</string>
-    <string name="options_asking">Perguntar</string>
+    <string name="options_asking">Perguntas</string>
     <string name="options_general">Geral</string>
-    <string name="share_answer_text">Olha o que o Magic AI Ball me disse. Pergunte o seu: %1$s</string>
+    <string name="share_answer_text">Olha o que o Magic AI Ball me disse. Faça a sua pergunta: %1$s</string>
+    <string name="settings_privacy_policy">Política de privacidade</string>
+    <string name="settings_privacy_policy_hint">O que o app faz com seus dados</string>
     <string name="settings_ad_privacy">Privacidade de anúncios</string>
     <string name="settings_ad_privacy_hint">Revise o que você permitiu para os anúncios</string>
     <string name="notifications_channel">Novidades e lembretes</string>
     <string name="daily_verdict_title">Veredito do dia</string>
     <string name="settings_daily">Veredito do dia</string>
-    <string name="settings_daily_on">Uma notificação por dia, na voz da sua bola</string>
+    <string name="settings_daily_on">Uma notificação por dia, no estilo escolhido</string>
+    <string name="settings_daily_blocked">As notificações estão desativadas para este app</string>
+    <string name="settings_daily_allow">Permitir notificações</string>
+    <string name="settings_daily_allow_hint">Abre os ajustes de notificações do app</string>
     <string name="settings_daily_off">Sem notificação diária</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">O serviço de voz do seu dispositivo transforma sua pergunta em texto, que é enviado ao Gemini, do Google, para respondê-la. Suas perguntas e respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
     <string name="privacy_voice_only">O serviço de voz do seu dispositivo transforma sua pergunta em texto. Ela não é enviada ao Gemini. Suas perguntas e respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
     <string name="privacy_ai_only">As respostas vêm do Gemini, do Google. O app não escuta e nenhuma pergunta é enviada. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
-    <string name="privacy_none">As respostas vêm do próprio app. O app não escuta e nenhuma pergunta ou resposta sai deste dispositivo. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
+    <string name="privacy_none">As respostas vêm do próprio app. O app não escuta e nenhuma pergunta é enviada. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
 </resources>

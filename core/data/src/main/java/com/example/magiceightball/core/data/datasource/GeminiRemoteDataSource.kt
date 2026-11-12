@@ -28,7 +28,9 @@ class GeminiRemoteDataSource @Inject constructor(
         AnswerBrief.draw(
             personality = request.personality,
             hasQuestion = request.questionForAi != null,
-            withRemark = request.wantsRemark
+            withRemark = request.wantsRemark,
+            languageCode = request.languageCode,
+            question = request.questionForAi
         )
     }
 
@@ -91,9 +93,12 @@ class GeminiRemoteDataSource @Inject constructor(
                 return Magic8BallResult.Failure(LlmError.SafetyBlocked)
             }
 
+            // The service may send one reply cut into several parts, even in the middle of a
+            // word: they are one text, and reading only the first shows an answer cut short.
             val written =
                 response.candidates?.firstOrNull()?.content?.parts
-                    ?.firstNotNullOfOrNull { part -> part.text?.trim()?.takeIf { it.isNotEmpty() } }
+                    ?.joinToString(separator = "") { part -> part.text.orEmpty() }
+                    ?.trim()?.takeIf { it.isNotEmpty() }
                     ?: return Magic8BallResult.Failure(LlmError.Serialization)
             // The first line is the answer; what follows it, when there is anything, is the remark.
             val lines = written.lines().map { it.tidied() }.filter { it.isNotEmpty() }

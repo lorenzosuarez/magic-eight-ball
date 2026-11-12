@@ -1,6 +1,7 @@
 package com.example.magiceightball.core.data.history
 
 import com.example.magiceightball.core.domain.model.HistoryEntry
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository.Companion.MAX_ENTRIES
 import kotlinx.coroutines.CoroutineDispatcher
@@ -42,14 +43,21 @@ class FileAnswerHistoryRepository(
         emitAll(state)
     }
 
-    override suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean) =
+    override suspend fun add(
+        question: String,
+        answer: String?,
+        askedAtMillis: Long,
+        fromAi: Boolean,
+        style: Magic8BallPersonality?
+    ) =
         change { old ->
             val entry = HistoryEntry(
                 id = ++lastId,
                 question = question,
                 answer = answer,
                 askedAtMillis = askedAtMillis,
-                fromAi = fromAi
+                fromAi = fromAi,
+                style = style
             )
             (listOf(entry) + old).take(MAX_ENTRIES)
         }
@@ -77,17 +85,24 @@ class FileAnswerHistoryRepository(
         }
     }
 
-    /** A file that is missing, cut short or from another format is an empty history. */
+    /**
+     * A file that is missing, cut short or from an unknown format is an empty history. One
+     * written before entries kept their style is read as it is, with no style.
+     */
     private fun read(): List<HistoryEntry> = try {
         DataInputStream(file.inputStream().buffered()).use { input ->
-            if (input.readInt() != FORMAT) return emptyList()
+            val format = input.readInt()
+            if (format !in FIRST_FORMAT..FORMAT) return emptyList()
             List(input.readInt().coerceIn(0, MAX_ENTRIES)) {
                 HistoryEntry(
                     id = input.readLong(),
                     question = input.readUTF(),
                     answer = if (input.readBoolean()) input.readUTF() else null,
                     askedAtMillis = input.readLong(),
-                    fromAi = input.readBoolean()
+                    fromAi = input.readBoolean(),
+                    style = if (format >= STYLED_FORMAT) {
+                        input.readUTF().let { name -> Magic8BallPersonality.entries.firstOrNull { it.name == name } }
+                    } else null
                 )
             }
         }
@@ -113,6 +128,7 @@ class FileAnswerHistoryRepository(
                     entry.answer?.let { output.writeUTF(it.take(MAX_TEXT_LENGTH)) }
                     output.writeLong(entry.askedAtMillis)
                     output.writeBoolean(entry.fromAi)
+                    output.writeUTF(entry.style?.name.orEmpty())
                 }
             }
             if (!pending.renameTo(file)) pending.delete()
@@ -122,7 +138,11 @@ class FileAnswerHistoryRepository(
     }
 
     private companion object {
-        const val FORMAT = 1
+        const val FIRST_FORMAT = 1
+
+        /** Since this format every entry is followed by the name of its style, empty for none. */
+        const val STYLED_FORMAT = 2
+        const val FORMAT = STYLED_FORMAT
         const val PENDING_SUFFIX = ".tmp"
 
         /** Far above any question or answer, and far below what writeUTF can hold. */

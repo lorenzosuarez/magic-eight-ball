@@ -31,7 +31,8 @@ import javax.inject.Inject
 
 /**
  * The ball as a tile, one swipe from the watch face. It shows the "8" until it is touched; a
- * touch reloads the tile with an answer, and the next touch with another.
+ * touch reloads the tile with an answer, and the next touch with another. An answer that is
+ * left there gives way to the "8" again: see [answerTimeline].
  *
  * Its answers are always the bundled ones, in the saved language and style: a tile is touched
  * in passing, and has no time to wait for the AI service nor reason to spend a call on it.
@@ -75,7 +76,13 @@ class AnswerTileService : TileService() {
                 completer.set(
                     TileBuilders.Tile.Builder()
                         .setResourcesVersion(RESOURCES_VERSION)
-                        .setTileTimeline(TimelineBuilders.Timeline.fromLayoutElement(layout(answer, language)))
+                        .setTileTimeline(
+                            answerTimeline(
+                                atRest = layout(answer = null, language),
+                                answered = answer?.let { layout(it, language) },
+                                nowMillis = System.currentTimeMillis()
+                            )
+                        )
                         .build()
                 )
             }
@@ -192,3 +199,35 @@ class AnswerTileService : TileService() {
         const val ANSWER_MAX_LINES = 4
     }
 }
+
+/**
+ * What the tile shows from [nowMillis] on: the ball [atRest], and over it, for as long as an
+ * answer is news, the one that was just asked for ([answered], when there is one). A tile
+ * stays where it is for days, and an answer left on it would be read as the answer to
+ * whatever is wondered next.
+ */
+internal fun answerTimeline(
+    atRest: LayoutElementBuilders.LayoutElement,
+    answered: LayoutElementBuilders.LayoutElement?,
+    nowMillis: Long
+): TimelineBuilders.Timeline {
+    val timeline = TimelineBuilders.Timeline.Builder()
+        .addTimelineEntry(TimelineBuilders.TimelineEntry.fromLayoutElement(atRest))
+    if (answered != null) {
+        timeline.addTimelineEntry(
+            TimelineBuilders.TimelineEntry.Builder()
+                .setLayout(LayoutElementBuilders.Layout.fromLayoutElement(answered))
+                .setValidity(
+                    TimelineBuilders.TimeInterval.Builder()
+                        .setStartMillis(nowMillis)
+                        .setEndMillis(nowMillis + TILE_ANSWER_SHOWN_MS)
+                        .build()
+                )
+                .build()
+        )
+    }
+    return timeline.build()
+}
+
+/** Long enough to read the answer and show it to someone; short enough to be gone at the next glance. */
+internal const val TILE_ANSWER_SHOWN_MS = 60_000L

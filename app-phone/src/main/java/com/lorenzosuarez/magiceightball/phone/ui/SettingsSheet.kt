@@ -77,7 +77,10 @@ internal fun SettingsContent(
     onGetMoreAiAnswers: (() -> Unit)? = null,
     onSpokenAnswersChange: (Boolean) -> Unit = {},
     onPartyNamesChange: (List<String>) -> Unit = {},
-    onDailyVerdictChange: (Boolean) -> Unit = {}
+    onDailyVerdictChange: (Boolean) -> Unit = {},
+    notificationsAllowed: Boolean = true,
+    onAllowNotifications: () -> Unit = {},
+    onOpenPrivacyPolicy: () -> Unit = {}
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -129,7 +132,9 @@ internal fun SettingsContent(
                 ),
                 checked = state.usesAiAnswers && !classic,
                 enabled = state.aiAnswersAvailable && !classic,
-                onCheckedChange = onAiAnswersChange
+                onCheckedChange = onAiAnswersChange,
+                // The one thing on this page that is not as the user set it: today's are used up.
+                alert = state.usesAiAnswers && !classic && state.aiAllowanceSpent
             )
             // The day's AI answers are used up and there is an ad to watch for more: the user's choice.
             if (state.usesAiAnswers && !classic && state.aiAllowanceSpent && onGetMoreAiAnswers != null) {
@@ -185,15 +190,30 @@ internal fun SettingsContent(
         Section(stringResource(R.string.options_general)) {
             // Offered only while the developer has it on: a switch that does nothing is a lie.
             if (state.config.dailyVerdictEnabled) {
+                // On, and yet nothing would arrive: the system is not letting the app notify.
+                val blocked = state.settings.dailyVerdictEnabled && !notificationsAllowed
                 SwitchRow(
                     title = stringResource(R.string.settings_daily),
                     supporting = stringResource(
-                        if (state.settings.dailyVerdictEnabled) R.string.settings_daily_on else R.string.settings_daily_off
+                        when {
+                            blocked -> R.string.settings_daily_blocked
+                            state.settings.dailyVerdictEnabled -> R.string.settings_daily_on
+                            else -> R.string.settings_daily_off
+                        }
                     ),
                     checked = state.settings.dailyVerdictEnabled,
                     enabled = true,
-                    onCheckedChange = onDailyVerdictChange
+                    onCheckedChange = onDailyVerdictChange,
+                    alert = blocked
                 )
+                if (blocked) {
+                    RowDivider()
+                    ActionRow(
+                        title = stringResource(R.string.settings_daily_allow),
+                        supporting = stringResource(R.string.settings_daily_allow_hint),
+                        onClick = onAllowNotifications
+                    )
+                }
                 RowDivider()
             }
             ChoiceRow(
@@ -217,6 +237,12 @@ internal fun SettingsContent(
                     onClick = onShowAdPrivacyOptions
                 )
             }
+            RowDivider()
+            ActionRow(
+                title = stringResource(R.string.settings_privacy_policy),
+                supporting = stringResource(R.string.settings_privacy_policy_hint),
+                onClick = onOpenPrivacyPolicy
+            )
         }
 
         Text(
@@ -330,7 +356,8 @@ private fun SwitchRow(
     supporting: String,
     checked: Boolean,
     enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    alert: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -345,7 +372,7 @@ private fun SwitchRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SettingText(title, supporting, enabled, Modifier.weight(1f))
+        SettingText(title, supporting, enabled, Modifier.weight(1f), alert)
         Spacer(Modifier.width(16.dp))
         Switch(
             checked = checked,
@@ -402,8 +429,16 @@ private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
 }
 
 @Composable
-private fun SettingText(title: String, supporting: String, enabled: Boolean, modifier: Modifier = Modifier) {
+private fun SettingText(
+    title: String,
+    supporting: String,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    alert: Boolean = false
+) {
     val alpha = if (enabled) 1f else DISABLED_ALPHA
+    // What explains the setting is quiet; what says something is wrong is not.
+    val quiet = if (alert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = title,
@@ -413,18 +448,23 @@ private fun SettingText(title: String, supporting: String, enabled: Boolean, mod
         Text(
             text = supporting,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
+            // Why a setting cannot be changed is the one thing to read on a dimmed row.
+            color = quiet
         )
     }
 }
 
 /** What is said about the user's data depends on what the app is doing with it right now. */
 @StringRes
-private fun EightBallUiState.privacyNoteRes(): Int = when {
-    voice.isReady && usesAiAnswers -> R.string.privacy_voice_and_ai
-    voice.isReady -> R.string.privacy_voice_only
-    usesAiAnswers -> R.string.privacy_ai_only
-    else -> R.string.privacy_none
+private fun EightBallUiState.privacyNoteRes(): Int {
+    // The Classic style never asks the AI service, whatever the switch says.
+    val asksAi = usesAiAnswers && settings.personality != Magic8BallPersonality.NEUTRAL
+    return when {
+        voice.isReady && asksAi -> R.string.privacy_voice_and_ai
+        voice.isReady -> R.string.privacy_voice_only
+        asksAi -> R.string.privacy_ai_only
+        else -> R.string.privacy_none
+    }
 }
 
 @StringRes

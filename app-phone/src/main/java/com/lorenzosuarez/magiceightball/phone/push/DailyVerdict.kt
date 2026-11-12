@@ -46,19 +46,32 @@ internal object DailyVerdict {
 
     private const val WORK_NAME = "daily_verdict"
     private const val NOTIFICATION_ID = 8
+    private const val KEY_HOUR = "hour"
+    private const val NO_HOUR = -1
 
     /** Has the verdict made every day at about [hour] o'clock, by the device's own clock. */
     fun schedule(context: Context, hour: Int, now: LocalDateTime = LocalDateTime.now()) {
         val request = PeriodicWorkRequestBuilder<DailyVerdictWorker>(1, TimeUnit.DAYS)
             .setInitialDelay(delayUntil(hour, now).toMillis(), TimeUnit.MILLISECONDS)
             .build()
-        // Started afresh each time, so that a change of hour takes effect and the hour does not drift.
+        val kept = context.getSharedPreferences(WORK_NAME, Context.MODE_PRIVATE)
         WorkManager.getInstance(context)
-            .enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE, request)
+            .enqueueUniquePeriodicWork(WORK_NAME, policyFor(kept.getInt(KEY_HOUR, NO_HOUR), hour), request)
+        kept.edit().putInt(KEY_HOUR, hour).apply()
     }
+
+    /**
+     * This is called every time the app starts, and the app is started by the very job that
+     * gives the verdict: scheduling it afresh there would cancel it as it begins, every day.
+     * So a job already set for [hour] is left alone, and only a change of hour starts another.
+     */
+    internal fun policyFor(scheduledHour: Int, hour: Int): ExistingPeriodicWorkPolicy =
+        if (scheduledHour == hour) ExistingPeriodicWorkPolicy.KEEP else ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE
 
     fun cancel(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        // Turned on again, it is scheduled anew.
+        context.getSharedPreferences(WORK_NAME, Context.MODE_PRIVATE).edit().remove(KEY_HOUR).apply()
     }
 
     /** How long from [now] until it is next [hour] o'clock: later today, or tomorrow if that has passed. */

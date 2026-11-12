@@ -38,6 +38,29 @@ fun ProvideAppLanguage(language: AppLanguage, content: @Composable () -> Unit) {
     )
 }
 
+/**
+ * What [ProvideAppLanguage] set, kept to hand on to a window of its own. A dialog or a sheet
+ * starts again from the device's language: read here, outside the window, and provided again
+ * inside it with [InAppLanguage], its texts stay in the app's.
+ */
+internal class AppLanguageHold(val context: Context, val configuration: Configuration)
+
+@Composable
+internal fun rememberAppLanguage(): AppLanguageHold {
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    return remember(context, configuration) { AppLanguageHold(context, configuration) }
+}
+
+@Composable
+internal fun InAppLanguage(held: AppLanguageHold, content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalContext provides held.context,
+        LocalConfiguration provides held.configuration,
+        content = content
+    )
+}
+
 private class LocalizedContext(base: Context, private val localized: Resources) : ContextWrapper(base) {
     override fun getResources(): Resources = localized
 }

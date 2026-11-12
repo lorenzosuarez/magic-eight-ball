@@ -47,4 +47,19 @@ class DailyVerdictTest {
         assertFalse(isDue(enabledFromAfar = false))
         assertFalse(isDue(mayNotify = false))
     }
+
+    @Test
+    fun `starting the app leaves a verdict already scheduled alone, and a new hour replaces it`() {
+        // The job that gives the verdict starts the app: scheduled afresh there, it would cancel itself.
+        assertEquals(androidx.work.ExistingPeriodicWorkPolicy.KEEP, DailyVerdict.policyFor(scheduledHour = 10, hour = 10))
+        assertEquals(
+            androidx.work.ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
+            DailyVerdict.policyFor(scheduledHour = 10, hour = 18)
+        )
+        // Never scheduled, or turned off and on again.
+        assertEquals(
+            androidx.work.ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
+            DailyVerdict.policyFor(scheduledHour = -1, hour = 10)
+        )
+    }
 }

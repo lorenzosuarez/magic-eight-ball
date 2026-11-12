@@ -13,5 +13,7 @@ data class HistoryEntry(
     val question: String,
     val answer: String?,
     val askedAtMillis: Long,
-    val fromAi: Boolean
+    val fromAi: Boolean,
+    /** The style that gave the answer; null when none did, or for an entry kept before styles were. */
+    val style: Magic8BallPersonality? = null
 )
