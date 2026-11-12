@@ -87,7 +87,7 @@ The phone and tablet app keeps a list of the latest answers the ball gave you, s
 - **Sharing.** The list itself is never sent anywhere. An answer on screen can be shared by you as described under "Sharing an answer". "Share the app" in the options hands only a short text with the app's Google Play link to the app you pick.
 
 ## Sensors and permissions
-- **Motion sensor (accelerometer):** used only on your device to detect a shake. Sensor readings are not stored or sent anywhere. No permission is required.
+- **Motion sensor (accelerometer):** used only on your device to detect a shake and, on phones and tablets, to move the ball slightly as you move the device. Sensor readings are not stored or sent anywhere. No permission is required.
 - **Internet and network state** (`INTERNET`, `ACCESS_NETWORK_STATE`): used to contact Firebase Remote Config, the Gemini API and, after a crash, Firebase Crashlytics.
 - **Other apps on your device:** the app asks Android which speech recognition and text-to-speech services are installed, only to be able to listen to a question and to read answers out loud. It reads nothing else about your apps.
 - **Microphone** (`RECORD_AUDIO`): requested the first time you hold to ask out loud, and used only as described under "Voice questions". You can refuse it or take it back in your device's settings at any time; the app keeps working by tap and shake.
