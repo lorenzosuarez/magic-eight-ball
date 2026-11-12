@@ -15,7 +15,7 @@
     <string name="ask_hint_ai_es">Toca o agita y responde la IA</string>
     <string name="ask_hint_ai_pt">Toque ou agite e a IA responde</string>
     <string name="hold_hint">Tap, shake or hold</string>
-    <string name="hold_hint_es">Toca, agita o mantén presionado</string>
+    <string name="hold_hint_es">Toca, agita o mantén pulsado</string>
     <string name="hold_hint_pt">Toque, agite ou segure</string>
     <string name="ask">Ask</string>
     <string name="ask_es">Preguntar</string>
@@ -114,11 +114,11 @@
     <string name="ai_title_es">Respuestas con IA</string>
     <string name="ai_title_pt">Respostas com IA</string>
     <string name="ai_on">On</string>
-    <string name="ai_on_es">Activadas</string>
-    <string name="ai_on_pt">Ativadas</string>
+    <string name="ai_on_es">Sí</string>
+    <string name="ai_on_pt">Sim</string>
     <string name="ai_off">Off</string>
-    <string name="ai_off_es">Desactivadas</string>
-    <string name="ai_off_pt">Desativadas</string>
+    <string name="ai_off_es">No</string>
+    <string name="ai_off_pt">Não</string>
     <string name="ai_unavailable">Not available right now</string>
     <string name="ai_unavailable_es">No disponible por ahora</string>
     <string name="ai_unavailable_pt">Indisponível por enquanto</string>

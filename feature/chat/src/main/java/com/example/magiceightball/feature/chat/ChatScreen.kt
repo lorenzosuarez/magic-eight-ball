@@ -95,11 +95,14 @@ import kotlin.math.roundToInt
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel(),
-    isAmbient: Boolean = false
+    isAmbient: Boolean = false,
+    onClockWanted: (Boolean) -> Unit = {}
 ) {
     // Nothing is drawn until the saved choices are known, so no default flashes by first.
     val state = viewModel.state.collectAsStateWithLifecycle().value ?: return
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
+    // The pages of settings fill the screen up to where the time goes: it shows over the ball only.
+    LaunchedEffect(pagerState.currentPage) { onClockWanted(pagerState.currentPage == PAGE_PREDICTION) }
     val context = LocalContext.current
     val microphoneRequest = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
