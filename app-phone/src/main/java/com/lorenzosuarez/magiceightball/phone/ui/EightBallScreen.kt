@@ -1200,7 +1200,7 @@ private fun AnswerActions(
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(
@@ -1212,7 +1212,7 @@ private fun AnswerActions(
                 Icon(
                     painter = painterResource(R.drawable.ic_share),
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
@@ -1256,7 +1256,7 @@ private fun AnswerActions(
                     Icon(
                         painter = painterResource(R.drawable.ic_flag),
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.action_report))
@@ -1266,7 +1266,7 @@ private fun AnswerActions(
     }
 }
 
-/** A thumb: filled in the accent once chosen, and stepping back when the other one is. */
+/** A thumb: filled in the accent once chosen. */
 @Composable
 private fun RateButton(good: Boolean, chosen: Boolean?, label: String, onClick: () -> Unit) {
     val selected = chosen == good
@@ -1276,11 +1276,8 @@ private fun RateButton(good: Boolean, chosen: Boolean?, label: String, onClick: 
         selected -> R.drawable.ic_thumb_down_filled
         else -> R.drawable.ic_thumb_down
     }
-    val tint = when {
-        selected -> MaterialTheme.colorScheme.primary
-        chosen == null -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = RATE_UNCHOSEN_ALPHA)
-    }
+    // The one not chosen keeps its full contrast: it can still be chosen instead.
+    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         modifier = Modifier
             .size(48.dp)
@@ -1293,7 +1290,6 @@ private fun RateButton(good: Boolean, chosen: Boolean?, label: String, onClick: 
     }
 }
 
-private const val RATE_UNCHOSEN_ALPHA = 0.4f
 
 @Composable
 private fun QuietText(
