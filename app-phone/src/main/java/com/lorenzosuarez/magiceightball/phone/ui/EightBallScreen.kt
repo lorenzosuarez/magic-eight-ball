@@ -127,6 +127,8 @@ import com.lorenzosuarez.magiceightball.phone.EightBallViewModel
 import com.lorenzosuarez.magiceightball.phone.Notice
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
 import com.lorenzosuarez.magiceightball.phone.push.NotificationsSetup
+import android.os.Build
+import com.lorenzosuarez.magiceightball.phone.push.Notifications
 import com.lorenzosuarez.magiceightball.phone.R
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -169,6 +171,10 @@ fun EightBallScreen(
         }
         askedFromSettings = false
     }
+    val notificationsRequest = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+        viewModel::onNotificationsAnswered
+    )
     val askForMicrophone = { fromSettings: Boolean ->
         askedFromSettings = fromSettings
         askedAtMillis = SystemClock.elapsedRealtime()
@@ -331,6 +337,17 @@ fun EightBallScreen(
                             viewModel.setSpokenAnswersEnabled(it)
                         },
                         onPartyNamesChange = viewModel::setPartyNames,
+                        onDailyVerdictChange = { on ->
+                            tick(on.toggleFeedback())
+                            viewModel.setDailyVerdictEnabled(on)
+                            // Turned on by hand, it is asked for at once: the wish has just been stated.
+                            if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                !Notifications.mayNotify(context)
+                            ) {
+                                Notifications.markAsked(context)
+                                notificationsRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        },
                         onShareApp = {
                             context.shareText(shareAppText)
                             viewModel.onAppShared()

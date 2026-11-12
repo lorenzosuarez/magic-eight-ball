@@ -137,6 +137,10 @@
     <string name="settings_ad_privacy">Privacidade de anúncios</string>
     <string name="settings_ad_privacy_hint">Revise o que você permitiu para os anúncios</string>
     <string name="notifications_channel">Novidades e lembretes</string>
+    <string name="daily_verdict_title">Veredito do dia</string>
+    <string name="settings_daily">Veredito do dia</string>
+    <string name="settings_daily_on">Uma notificação por dia, na voz da sua bola</string>
+    <string name="settings_daily_off">Sem notificação diária</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">O serviço de voz do seu dispositivo transforma sua pergunta em texto, que é enviado ao Gemini, do Google, para respondê-la. Suas perguntas e respostas ficam salvas em Recentes, apenas neste dispositivo.</string>

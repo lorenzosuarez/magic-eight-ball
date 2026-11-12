@@ -48,7 +48,8 @@ class DataStoreUserSettingsRepository(
                     ?: defaults.voiceQuestionsEnabled,
                 spokenAnswersEnabled = preferences[SPOKEN_ANSWERS_ENABLED]
                     ?: defaults.spokenAnswersEnabled,
-                partyNames = UserSettings.parsePartyNames(preferences[PARTY_NAMES].orEmpty())
+                partyNames = UserSettings.parsePartyNames(preferences[PARTY_NAMES].orEmpty()),
+                dailyVerdictEnabled = preferences[DAILY_VERDICT_ENABLED] ?: defaults.dailyVerdictEnabled
             )
         }
         .distinctUntilChanged()
@@ -86,6 +87,10 @@ class DataStoreUserSettingsRepository(
         }
     }
 
+    override suspend fun setDailyVerdictEnabled(enabled: Boolean) {
+        save { it[DAILY_VERDICT_ENABLED] = enabled }
+    }
+
     private companion object {
         const val TAG = "UserSettingsRepository"
         val LANGUAGE = stringPreferencesKey("language")
@@ -94,5 +99,6 @@ class DataStoreUserSettingsRepository(
         val VOICE_QUESTIONS_ENABLED = booleanPreferencesKey("voice_questions_enabled")
         val SPOKEN_ANSWERS_ENABLED = booleanPreferencesKey("spoken_answers_enabled")
         val PARTY_NAMES = stringPreferencesKey("party_names")
+        val DAILY_VERDICT_ENABLED = booleanPreferencesKey("daily_verdict_enabled")
     }
 }

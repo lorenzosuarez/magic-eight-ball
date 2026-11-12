@@ -9,6 +9,8 @@ package com.example.magiceightball.core.domain.model
  * Only the phone app has a microphone feature; the watch app ignores it.
  * @property spokenAnswersEnabled whether answers are also read out loud. Off until asked for:
  * a phone should not start talking on its own. Only the phone app does it.
+ * @property dailyVerdictEnabled whether the phone may give the day's verdict as a notification.
+ * On until switched off, and nothing is shown without the system's own permission either way.
  * @property partyNames who is playing, in the order they take turns. Fewer than two is nobody:
  * the app is then for one person, as it always was. Only the phone app has it.
  */
@@ -18,7 +20,8 @@ data class UserSettings(
     val aiAnswersEnabled: Boolean = true,
     val voiceQuestionsEnabled: Boolean = true,
     val spokenAnswersEnabled: Boolean = false,
-    val partyNames: List<String> = emptyList()
+    val partyNames: List<String> = emptyList(),
+    val dailyVerdictEnabled: Boolean = true
 ) {
     /** Whether several people are playing: see [partyNames]. */
     val isParty: Boolean get() = partyNames.size >= MIN_PARTY

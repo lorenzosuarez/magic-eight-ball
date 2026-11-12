@@ -29,6 +29,8 @@ import javax.inject.Singleton
  * | `streak_min_days_shown` | Number | 2 | From which day a run of days is mentioned |
  * | `notifications_ask_after_days` | Number | 3 | Best run of days after which notifications are asked for; 0 never asks |
  * | `ball_sway_enabled` | Boolean | true | Whether the ball moves with the phone |
+ * | `daily_verdict_enabled` | Boolean | true | Whether the day's verdict is given as a notification |
+ * | `daily_verdict_hour` | Number | 10 | At about what hour of the device's day it is given, 0 to 23 |
  *
  * The parameters about the AI service and about ads being on at all are read where they are used:
  * see RemoteConfigGeminiSettingsSource and AdMobAdsController.
@@ -41,7 +43,9 @@ data class AppConfig(
     val hiddenStyles: Set<Magic8BallPersonality> = emptySet(),
     val streakMinDaysShown: Int = 2,
     val notificationsAskAfterDays: Int = 3,
-    val ballSwayEnabled: Boolean = true
+    val ballSwayEnabled: Boolean = true,
+    val dailyVerdictEnabled: Boolean = true,
+    val dailyVerdictHour: Int = 10
 ) {
     companion object {
         const val KEY_ADS_MIN_ANSWERS = "ads_min_answers"
@@ -52,6 +56,8 @@ data class AppConfig(
         const val KEY_STREAK_MIN_DAYS_SHOWN = "streak_min_days_shown"
         const val KEY_NOTIFICATIONS_ASK_AFTER_DAYS = "notifications_ask_after_days"
         const val KEY_BALL_SWAY_ENABLED = "ball_sway_enabled"
+        const val KEY_DAILY_VERDICT_ENABLED = "daily_verdict_enabled"
+        const val KEY_DAILY_VERDICT_HOUR = "daily_verdict_hour"
 
         val KEYS = listOf(
             KEY_ADS_MIN_ANSWERS,
@@ -61,7 +67,9 @@ data class AppConfig(
             KEY_STYLES_HIDDEN,
             KEY_STREAK_MIN_DAYS_SHOWN,
             KEY_NOTIFICATIONS_ASK_AFTER_DAYS,
-            KEY_BALL_SWAY_ENABLED
+            KEY_BALL_SWAY_ENABLED,
+            KEY_DAILY_VERDICT_ENABLED,
+            KEY_DAILY_VERDICT_HOUR
         )
 
         /** One of each kind of character, the liveliest first, with the plain one always at hand. */
@@ -105,7 +113,9 @@ data class AppConfig(
                 hiddenStyles = hidden,
                 streakMinDaysShown = number(KEY_STREAK_MIN_DAYS_SHOWN, defaults.streakMinDaysShown, 1..365),
                 notificationsAskAfterDays = number(KEY_NOTIFICATIONS_ASK_AFTER_DAYS, defaults.notificationsAskAfterDays, 0..365),
-                ballSwayEnabled = flag(KEY_BALL_SWAY_ENABLED, defaults.ballSwayEnabled)
+                ballSwayEnabled = flag(KEY_BALL_SWAY_ENABLED, defaults.ballSwayEnabled),
+                dailyVerdictEnabled = flag(KEY_DAILY_VERDICT_ENABLED, defaults.dailyVerdictEnabled),
+                dailyVerdictHour = number(KEY_DAILY_VERDICT_HOUR, defaults.dailyVerdictHour, 0..23)
             )
         }
 

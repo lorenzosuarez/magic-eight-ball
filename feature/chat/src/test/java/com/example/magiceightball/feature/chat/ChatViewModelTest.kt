@@ -562,6 +562,11 @@ class ChatViewModelTest {
             saved.update { it?.copy(spokenAnswersEnabled = enabled) }
         }
 
+
+        override suspend fun setDailyVerdictEnabled(enabled: Boolean) {
+            saved.update { it?.copy(dailyVerdictEnabled = enabled) }
+        }
+
         override suspend fun setPartyNames(names: List<String>) {
             saved.update { it?.copy(partyNames = names) }
         }
