@@ -29,7 +29,8 @@ class GeminiRemoteDataSource @Inject constructor(
             personality = request.personality,
             hasQuestion = request.questionForAi != null,
             withRemark = request.wantsRemark,
-            languageCode = request.languageCode
+            languageCode = request.languageCode,
+            question = request.questionForAi
         )
     }
 

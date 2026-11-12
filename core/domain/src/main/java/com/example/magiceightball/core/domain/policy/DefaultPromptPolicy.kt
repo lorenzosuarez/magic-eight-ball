@@ -27,7 +27,8 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
             val answer = when (it.verdict) {
                 Verdict.YES -> " This time the answer is YES."
                 Verdict.NO -> " This time the answer is NO."
-                Verdict.MAYBE -> " This time the answer is UNDECIDED: neither yes nor no."
+                // Not a word the service could copy: asked to be "undecided", it answers "Undecided".
+                Verdict.MAYBE -> " This time you cannot say: the answer is neither yes nor no. Stay in doubt your own way."
             }
             val motif = it.motif?.let { motif -> " Nothing was asked. If it comes naturally, bring up: $motif." }.orEmpty()
             val examples = it.examples.takeIf { lines -> lines.isNotEmpty() }
@@ -64,25 +65,28 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
             " looks, identity, intelligence or worth. Never assume the asker's gender. Max 6 words."
 
         /** How a drawn answer is to be worded: plain enough for a ball, with room for one turn. */
-        const val FORM = " Give that answer as only this character would. Whoever reads it must know at a glance" +
-            " whether it is a yes, a no or undecided: the verdict comes first, then one small turn of your own" +
-            " if there is room. It is read inside a ball: six words at most, nothing cryptic."
+        const val FORM = " Give that answer as only this character would. It is read inside a ball: three to five" +
+            " words, six at the very most, nothing cryptic. Its first words make plain whether it is a yes, a no" +
+            " or a doubt, said the way this character says it; the rest is one small turn of your own." +
+            " It is never the bare verdict alone."
 
         /** Shown in the language of the answer, and different on every request: see [AnswerBrief.examples]. */
         const val EXAMPLES = " Lines this character has said, to show the voice only. Never use one of them" +
             " or its idea: "
 
         /**
-         * The second line: the character's comeback to the question, where the joke lands. It is
+         * The second line: the character's comeback to the question. Called the punchline, it took
+         * the whole joke and left a bare "No." on the ball: line 1 is asked to stand alone. It is
          * asked for only when there is a question, since a remark about nothing is one more thing
          * to read and puzzle over; and the service may leave it out rather than write one that
          * says nothing.
          */
         const val REMARK = " Write one or two lines and nothing else. Line 1 is the answer as it shows on the ball:" +
-            " every word limit above applies to line 1 only. Line 2 is the character's comeback to what they" +
-            " asked, the punchline: one sentence of at most 12 words, said to the asker, that names something" +
-            " from their question and would make no sense for any other. It adds something new and never says" +
-            " line 1 again. If no such line comes, write line 1 alone. No labels, no quotation marks, no emoji."
+            " every word limit above applies to line 1 only, and line 1 is written as if it stood alone." +
+            " Line 2 is the character's comeback to what they asked: one sentence of at most 12 words, said to" +
+            " the asker, that names something from their question and would make no sense for any other." +
+            " It adds something new and never says line 1 again. If no such line comes, write line 1 alone." +
+            " No labels, no quotation marks, no emoji."
 
         const val QUESTION_CRAFT = " When a word of what they asked fits your character, play on it." +
             " Make it plain whether you lean yes, no or maybe."

@@ -29,13 +29,16 @@ data class AnswerBrief(
          * @param hasQuestion whether the user asked something. A question is all the answer needs
          * to be about, and the only thing a remark can be about: without one there is a motif to
          * keep two answers from being alike, and no remark, which would have nothing to land on.
+         * @param question what was asked, only to leave out a sample comeback made to a question
+         * much like it: shown that one, the service gives it back word for word.
          */
         fun draw(
             personality: Magic8BallPersonality,
             hasQuestion: Boolean,
             withRemark: Boolean,
             random: Random = Random.Default,
-            languageCode: String = "en"
+            languageCode: String = "en",
+            question: String? = null
         ): AnswerBrief {
             val verdict = Verdict.draw(random)
             val lines = linesOf(personality, languageCode)
@@ -45,7 +48,9 @@ data class AnswerBrief(
                 motif = if (hasQuestion) null else motifsOf(personality).randomOrNull(random),
                 withRemark = remarked,
                 examples = lines?.saying(verdict).orEmpty().shuffled(random).take(EXAMPLES_SHOWN),
-                remarkExample = if (remarked) lines?.remarks?.randomOrNull(random) else null
+                remarkExample = if (remarked) {
+                    lines?.remarks?.filterNot { it.question.isMuchLike(question) }?.randomOrNull(random)
+                } else null
             )
         }
 
@@ -53,6 +58,15 @@ data class AnswerBrief(
         internal fun motifsOf(personality: Magic8BallPersonality): List<String> =
             characterOf(personality)?.angles.orEmpty()
 
+        /** Two questions sharing this many words of some length are taken for the same question. */
+        private fun String.isMuchLike(other: String?): Boolean =
+            other != null && (wordsOf(this) intersect wordsOf(other)).size >= SHARED_WORDS
+
+        private fun wordsOf(text: String): Set<String> =
+            text.lowercase().split(Regex("[^\\p{L}]+")).filter { it.length >= WORD_LENGTH }.toSet()
+
         private const val EXAMPLES_SHOWN = 2
+        private const val SHARED_WORDS = 2
+        private const val WORD_LENGTH = 3
     }
 }

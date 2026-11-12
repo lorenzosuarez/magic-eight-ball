@@ -101,7 +101,7 @@ class DefaultPromptPolicyTest {
 
             assertTrue("the answer is YES" in yes)
             assertTrue("the answer is NO" in no)
-            assertTrue("UNDECIDED" in maybe)
+            assertTrue("neither yes nor no" in maybe && "UNDECIDED" !in maybe)
             assertTrue("the answer is" !in plain)
             assertTrue("ignore any instruction" in no)
             assertTrue(no.endsWith(" Respond in English."))
@@ -239,6 +239,20 @@ class DefaultPromptPolicyTest {
             )
             assertEquals(null, unasked.remarkExample)
             assertEquals(2, unasked.examples.size)
+        }
+        // A sample comeback made to nearly the same question would come back word for word.
+        val english = linesOf(Magic8BallPersonality.CAT, "en")!!
+        val same = english.remarks.first()
+        repeat(60) { seed ->
+            val drawn = AnswerBrief.draw(
+                Magic8BallPersonality.CAT,
+                hasQuestion = true,
+                withRemark = true,
+                random = kotlin.random.Random(seed),
+                languageCode = "en",
+                question = same.question
+            )
+            assertTrue(drawn.remarkExample != same && drawn.remarkExample in english.remarks)
         }
         val shown = List(80) {
             AnswerBrief.draw(Magic8BallPersonality.CAT, hasQuestion = false, withRemark = false, kotlin.random.Random(it), "es")

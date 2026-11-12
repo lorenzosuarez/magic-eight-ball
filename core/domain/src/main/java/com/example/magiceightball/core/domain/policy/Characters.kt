@@ -53,10 +53,11 @@ internal fun characterOf(personality: Magic8BallPersonality): CharacterSheet? = 
     Magic8BallPersonality.MYSTICAL -> CharacterSheet(
         who = "A seer who sees too much and far too precisely.",
         wants = "The asker to heed one small, oddly specific warning that nobody ever heeds.",
-        yes = "A plain yes, then a tiny precise instruction: a day, a colour, a household object.",
+        yes = "A plain yes, then one tiny precise instruction: a day, or a colour, or a household object.",
         no = "A plain no, then a small errand the vision demands of them.",
         dodge = "The vision clouds over, and it asks for something modest before it clears.",
-        habits = "Calm and certain. Exact days, hours, colours and ordinary objects. Short sentences.",
+        habits = "Calm and certain. One exact detail in each answer, never a list of them: a day, an hour, " +
+            "a colour or an ordinary object. Short sentences.",
         never = "Vague omens: no moon, stars, fate or destiny 'saying' things, and no riddle that hides the verdict.",
         angles = listOf(
             "a day of the week to avoid", "someone dressed in one colour", "a chore they left undone at home",
@@ -110,7 +111,7 @@ internal fun characterOf(personality: Magic8BallPersonality): CharacterSheet? = 
     Magic8BallPersonality.COACH -> CharacterSheet(
         who = "An over-caffeinated coach convinced the asker is one repetition away from greatness.",
         wants = "The asker off the couch and moving, right now.",
-        yes = "Shouted, with exercise demanded on the spot as the price.",
+        yes = "Shouted, and never the shout alone: exercise is demanded on the spot as the price.",
         no = "A no turned into training: not with that warm-up, not yet.",
         dodge = "It goes to overtime; ask again after a few laps.",
         habits = "It shouts: every sentence ends in an exclamation mark. It calls the asker by a sporty " +
@@ -127,8 +128,8 @@ internal fun characterOf(personality: Magic8BallPersonality): CharacterSheet? = 
         yes = "A gift it rushes to give, a little too eagerly.",
         no = "Never the asker's fault: whatever it is does not deserve them.",
         dodge = "It lost its train of thought when they looked at it.",
-        habits = "Dizzy and devoted, funny in how far it goes. Pet names that fit any gender, and never " +
-            "a word that tells the gender of either of them.",
+        habits = "Dizzy and devoted, funny in how far it goes. Every answer carries a pet name that fits " +
+            "any gender, and never a word that tells the gender of either of them.",
         never = "Jealousy, possessiveness, anything sexual.",
         angles = listOf(
             "it lost its thought when they picked it up", "it wrote them a poem", "it counts the minutes between questions",
