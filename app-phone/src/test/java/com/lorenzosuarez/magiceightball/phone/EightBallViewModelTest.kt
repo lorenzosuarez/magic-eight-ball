@@ -42,6 +42,8 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import com.lorenzosuarez.magiceightball.phone.config.AppConfig
+import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -73,6 +75,9 @@ class EightBallViewModelTest {
             streak.value = streak.value.after(epochDay)
         }
     }
+    private val appConfig = object : AppConfigSource {
+        override val config = MutableStateFlow(AppConfig())
+    }
     private var granted = 0
     private val aiAllowance = object : AiAllowance {
         override fun grant(answers: Int) {
@@ -88,6 +93,24 @@ class EightBallViewModelTest {
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
 
     // Start-up and settings
+
+    @Test
+    fun `the second line is asked for only while it is switched on from afar`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertEquals(true, llmGateway.requests.last().wantsRemark)
+        viewModel.dismiss()
+        advanceUntilIdle()
+
+        appConfig.config.value = AppConfig(aiRemarkEnabled = false)
+        viewModel.ask()
+        advanceUntilIdle()
+
+        assertEquals(false, llmGateway.requests.last().wantsRemark)
+        assertEquals(false, viewModel.state.value?.config?.aiRemarkEnabled)
+    }
 
     @Test
     fun `an ad watched through adds to the day's AI answers and is counted`() = runTest {
@@ -1064,7 +1087,8 @@ class EightBallViewModelTest {
             queryConfig = queryConfig,
             usage = usage,
             streaks = streaks,
-            aiAllowance = aiAllowance
+            aiAllowance = aiAllowance,
+            appConfig = appConfig
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

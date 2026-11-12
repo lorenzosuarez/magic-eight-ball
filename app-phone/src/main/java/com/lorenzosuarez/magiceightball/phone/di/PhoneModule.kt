@@ -7,6 +7,8 @@ import com.example.magiceightball.core.data.history.FileAnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.lorenzosuarez.magiceightball.phone.ads.AdMobAdsController
 import com.lorenzosuarez.magiceightball.phone.ads.AdsController
+import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
+import com.lorenzosuarez.magiceightball.phone.config.RemoteAppConfigSource
 import com.lorenzosuarez.magiceightball.phone.usage.FirebaseUsageTracker
 import com.example.magiceightball.core.domain.gateway.UsageTracker
 import dagger.Module
@@ -34,6 +36,10 @@ object PhoneModule {
     @Provides
     @Singleton
     fun provideAdsController(impl: AdMobAdsController): AdsController = impl
+
+    @Provides
+    @Singleton
+    fun provideAppConfigSource(impl: RemoteAppConfigSource): AppConfigSource = impl
 
     @Provides
     @Singleton

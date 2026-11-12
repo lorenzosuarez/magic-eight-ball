@@ -93,6 +93,7 @@ internal fun SettingsContent(
     if (browsingStyles) {
         StylesSheet(
             selected = state.settings.personality,
+            hidden = state.config.hiddenStyles,
             onSelected = onPersonalitySelected,
             onClose = { browsingStyles = false }
         )
@@ -107,7 +108,9 @@ internal fun SettingsContent(
             StyleRow(
                 selected = state.settings.personality,
                 onSelected = onPersonalitySelected,
-                onSeeAll = { browsingStyles = true }
+                onSeeAll = { browsingStyles = true },
+                featured = state.config.featuredStyles,
+                hidden = state.config.hiddenStyles
             )
             RowDivider()
             // The classic style never asks the AI service: the switch says so rather than promise it.

@@ -391,8 +391,27 @@ class EightBallScreenshotTest {
             val row = stylesInRow(style)
             assertTrue(style in row)
             assertTrue(Magic8BallPersonality.NEUTRAL in row)
+            // Whatever is set from afar: the plain style stays, and a hidden one is not offered.
+            val steered = stylesInRow(
+                style,
+                featured = listOf(Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT),
+                hidden = setOf(Magic8BallPersonality.CAT)
+            )
+            assertTrue(Magic8BallPersonality.NEUTRAL in steered && style in steered)
+            assertTrue(style == Magic8BallPersonality.CAT || Magic8BallPersonality.CAT !in steered)
             assertEquals(row.size, row.distinct().size)
         }
+    }
+
+    @Test
+    fun `a style taken out from afar leaves the sheet, unless it is the one in use`() {
+        val hidden = setOf(Magic8BallPersonality.CAT, Magic8BallPersonality.DOG)
+
+        val shown = styleGroups(Magic8BallPersonality.SARCASTIC, hidden).flatMap { it.styles }
+        assertTrue(Magic8BallPersonality.CAT !in shown && Magic8BallPersonality.DOG !in shown)
+        assertEquals(Magic8BallPersonality.entries.size - 2, shown.size)
+
+        assertTrue(Magic8BallPersonality.CAT in styleGroups(Magic8BallPersonality.CAT, hidden).flatMap { it.styles })
     }
 
     /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */

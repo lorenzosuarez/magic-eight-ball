@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.magiceightball.core.domain.model.Streak
 import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.gateway.UsageEvent
@@ -21,6 +22,8 @@ import com.example.magiceightball.core.domain.repository.AnswerHistoryRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
+import com.lorenzosuarez.magiceightball.phone.config.AppConfig
+import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.ZoneId
 import java.time.Clock
@@ -58,7 +61,8 @@ class EightBallViewModel @Inject constructor(
     private val queryConfig: QueryConfig,
     private val usage: UsageTracker,
     private val streaks: StreakRepository,
-    private val aiAllowance: AiAllowance
+    private val aiAllowance: AiAllowance,
+    private val appConfig: AppConfigSource
 ) : ViewModel() {
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
@@ -70,6 +74,14 @@ class EightBallViewModel @Inject constructor(
     /** The saved choices; null until they have been read, right after launch. */
     private val settings: StateFlow<UserSettings?> = userSettingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** What does not come from the user or the ball, gathered to be read as one. */
+    private data class Remote(
+        val aiAvailable: Boolean,
+        val aiSpent: Boolean,
+        val streak: Streak,
+        val config: AppConfig
+    )
 
     /** Whether the last answer was a bundled one for want of the day's AI answers. */
     private val aiAllowanceSpent = MutableStateFlow(false)
@@ -85,10 +97,10 @@ class EightBallViewModel @Inject constructor(
     val state: StateFlow<EightBallUiState?> = combine(
         phase,
         settings,
-        combine(aiAnswersAvailability.isAvailable, aiAllowanceSpent, streaks.streak, ::Triple),
+        combine(aiAnswersAvailability.isAvailable, aiAllowanceSpent, streaks.streak, appConfig.config, ::Remote),
         voiceInputs,
         noticeAndHistory
-    ) { phase, saved, (aiAvailable, aiSpent, streak), (speech, microphone), (notice, history, turn) ->
+    ) { phase, saved, (aiAvailable, aiSpent, streak, config), (speech, microphone), (notice, history, turn) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
@@ -96,6 +108,8 @@ class EightBallViewModel @Inject constructor(
                 aiAnswersAvailable = aiAvailable,
                 aiAllowanceSpent = aiSpent,
                 streakDays = streak.daysOn(today()),
+                streakBest = streak.best,
+                config = config,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -508,8 +522,8 @@ class EightBallViewModel @Inject constructor(
                     personality = settings.personality,
                     useAi = settings.aiAnswersEnabled,
                     question = question.takeIf { it.isNotBlank() },
-                    // Under the ball there is room for a second line.
-                    wantsRemark = true
+                    // Under the ball there is room for a second line, unless it is switched off from afar.
+                    wantsRemark = appConfig.config.value.aiRemarkEnabled
                 )
             }
         } catch (e: CancellationException) {

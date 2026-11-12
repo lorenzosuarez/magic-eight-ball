@@ -3,11 +3,12 @@ package com.lorenzosuarez.magiceightball.phone.ads
 /**
  * When an ad is due: not before the user has closed [minAnswers] answers since the last one,
  * and not before [minIntervalMillis] have passed since it. The first ad of a run waits for
- * [minAnswers] answers too, so nobody is met with an ad.
+ * [minAnswers] answers too, so nobody is met with an ad. Both limits are asked for each time,
+ * so a change made from afar takes effect at the next answer.
  */
 class AdPacing(
-    private val minAnswers: Int = MIN_ANSWERS,
-    private val minIntervalMillis: Long = MIN_INTERVAL_MILLIS
+    private val minAnswers: () -> Int = { MIN_ANSWERS },
+    private val minIntervalMillis: () -> Long = { MIN_INTERVAL_MILLIS }
 ) {
     private var answersSinceAd = 0
     private var lastAdAtMillis: Long? = null
@@ -15,8 +16,8 @@ class AdPacing(
     /** Counts one closed answer and tells whether an ad may be shown now. */
     fun answerClosed(nowMillis: Long): Boolean {
         answersSinceAd++
-        val waitedLongEnough = lastAdAtMillis?.let { nowMillis - it >= minIntervalMillis } ?: true
-        return answersSinceAd >= minAnswers && waitedLongEnough
+        val waitedLongEnough = lastAdAtMillis?.let { nowMillis - it >= minIntervalMillis() } ?: true
+        return answersSinceAd >= minAnswers() && waitedLongEnough
     }
 
     /** An ad was shown at [nowMillis]: the count starts again. */
