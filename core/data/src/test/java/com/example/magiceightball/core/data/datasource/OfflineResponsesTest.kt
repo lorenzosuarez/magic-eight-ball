@@ -81,7 +81,12 @@ class OfflineResponsesTest {
         for ((language, cap) in caps) {
             for (personality in Magic8BallPersonality.entries) {
                 val messages = bundled.messagesFor(language, personality)
-                assertTrue("$language/$personality has ${messages.size}", messages.size >= 40)
+                // The classic style is the toy's twenty answers, no more and no fewer.
+                if (personality == Magic8BallPersonality.NEUTRAL) {
+                    assertEquals(20, messages.size)
+                } else {
+                    assertTrue("$language/$personality has ${messages.size}", messages.size >= 40)
+                }
                 messages.forEach { message ->
                     assertTrue(message, message.length <= cap.first)
                     assertTrue(message, message.trim().split(Regex("\\s+")).size <= cap.second)

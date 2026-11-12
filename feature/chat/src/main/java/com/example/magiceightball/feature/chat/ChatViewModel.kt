@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.SpeechEvent
 import com.example.magiceightball.core.domain.gateway.SpeechListener
+import com.example.magiceightball.core.domain.model.asSpokenQuestion
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallResult
@@ -229,8 +230,11 @@ class ChatViewModel @Inject constructor(
                     heard.onAwait { }
                 }
                 _effects.trySend(ChatEffect.ListeningStopped)
-                val question = withTimeoutOrNull(FINAL_TRANSCRIPT_TIMEOUT_MS) { heard.await() }
-                    ?: transcript.value.also { heard.cancel() }
+                // Whatever was said to the ball is asked of it: see [asSpokenQuestion].
+                val question = (
+                    withTimeoutOrNull(FINAL_TRANSCRIPT_TIMEOUT_MS) { heard.await() }
+                        ?: transcript.value.also { heard.cancel() }
+                    ).asSpokenQuestion(settings.language.code)
 
                 if (question.isNotBlank()) {
                     // Whether or not the words showed up as they were said, the question is

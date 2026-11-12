@@ -54,7 +54,8 @@ data class PersonalityResponsesDto(
     fun replacedBy(other: PersonalityResponsesDto): PersonalityResponsesDto = PersonalityResponsesDto(
         sarcastic = other.sarcastic.ifEmpty { sarcastic },
         mystical = other.mystical.ifEmpty { mystical },
-        neutral = other.neutral.ifEmpty { neutral },
+        // The classic answers are the toy's own twenty: they are not replaced from outside the app.
+        neutral = neutral,
         grandma = other.grandma.ifEmpty { grandma },
         pirate = other.pirate.ifEmpty { pirate },
         philosopher = other.philosopher.ifEmpty { philosopher },
