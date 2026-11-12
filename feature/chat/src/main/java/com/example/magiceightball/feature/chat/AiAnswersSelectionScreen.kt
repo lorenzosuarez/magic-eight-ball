@@ -11,18 +11,29 @@ import com.example.magiceightball.feature.chat.components.SettingsOption
  * While AI answers are not [isAvailable] the choice would change nothing, so the screen says so
  * and shows what actually happens (off) instead of a working toggle; the user's own choice is
  * kept and applies again as soon as AI answers become available.
+ *
+ * The choice stays the user's where it is the style or the day that keeps the service out of
+ * the answers ([isClassicStyle], [isSpentForToday]): the screen then says why "on" does nothing.
  */
 @Composable
 fun AiAnswersSelectionScreen(
     isEnabled: Boolean,
     isAvailable: Boolean,
-    onEnabledChange: (Boolean) -> Unit
+    onEnabledChange: (Boolean) -> Unit,
+    isClassicStyle: Boolean = false,
+    isSpentForToday: Boolean = false
 ) {
     val isOn = isEnabled && isAvailable
 
     SettingsMenu(
         title = localizedString(Strings.AiTitle),
-        caption = if (isAvailable) null else localizedString(Strings.AiUnavailable)
+        caption = when {
+            !isAvailable -> localizedString(Strings.AiUnavailable)
+            !isOn -> null
+            isClassicStyle -> localizedString(Strings.AiClassic)
+            isSpentForToday -> localizedString(Strings.AiSpent)
+            else -> null
+        }
     ) {
         SettingsOption(
             label = localizedString(Strings.AiOn),

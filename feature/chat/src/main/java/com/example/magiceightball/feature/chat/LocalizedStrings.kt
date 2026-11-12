@@ -34,20 +34,25 @@ internal object Strings {
         R.string.title_main_es,
         R.string.title_main_pt
     )
-    val ShakeHint = LocalizedString(
-        R.string.shake_hint,
-        R.string.shake_hint_es,
-        R.string.shake_hint_pt
+    val AskHint = LocalizedString(
+        R.string.ask_hint,
+        R.string.ask_hint_es,
+        R.string.ask_hint_pt
     )
-    val ShakeHintAi = LocalizedString(
-        R.string.shake_hint_ai,
-        R.string.shake_hint_ai_es,
-        R.string.shake_hint_ai_pt
+    val AskHintAi = LocalizedString(
+        R.string.ask_hint_ai,
+        R.string.ask_hint_ai_es,
+        R.string.ask_hint_ai_pt
     )
     val HoldHint = LocalizedString(
         R.string.hold_hint,
         R.string.hold_hint_es,
         R.string.hold_hint_pt
+    )
+    val Ask = LocalizedString(
+        R.string.ask,
+        R.string.ask_es,
+        R.string.ask_pt
     )
     val AskByVoice = LocalizedString(
         R.string.ask_by_voice,
@@ -63,6 +68,21 @@ internal object Strings {
         R.string.answer_fallback,
         R.string.answer_fallback_es,
         R.string.answer_fallback_pt
+    )
+    val Report = LocalizedString(
+        R.string.report,
+        R.string.report_es,
+        R.string.report_pt
+    )
+    val Reported = LocalizedString(
+        R.string.reported,
+        R.string.reported_es,
+        R.string.reported_pt
+    )
+    val ReportLabel = LocalizedString(
+        R.string.report_label,
+        R.string.report_label_es,
+        R.string.report_label_pt
     )
 
     val LanguageTitle = LocalizedString(
@@ -216,6 +236,16 @@ internal object Strings {
         R.string.ai_unavailable,
         R.string.ai_unavailable_es,
         R.string.ai_unavailable_pt
+    )
+    val AiClassic = LocalizedString(
+        R.string.ai_classic,
+        R.string.ai_classic_es,
+        R.string.ai_classic_pt
+    )
+    val AiSpent = LocalizedString(
+        R.string.ai_spent,
+        R.string.ai_spent_es,
+        R.string.ai_spent_pt
     )
 }
 

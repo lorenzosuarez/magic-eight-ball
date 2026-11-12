@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -45,12 +46,12 @@ import kotlin.math.sin
 
 /**
  * The ball at rest, and while it listens: its "8" exactly in the centre and one line a fixed
- * distance below it. The line says how to ask (by holding where the app may listen, by shaking
- * otherwise) and, while the app listens, what it has understood so far.
+ * distance below it. The line says how to ask (by a tap or a shake, and by holding where the
+ * app may listen) and, while the app listens, what it has understood so far.
  *
  * Both are positioned in a single layout pass, so they are in place from the very first frame.
  *
- * @param usesAiAnswers whether a shake asks the AI service, which the hint then says.
+ * @param usesAiAnswers whether the AI service is the one that answers, which the hint then says.
  * @param canAskByVoice whether holding the screen listens to a question.
  * @param listening the listening in progress, if any.
  * @param voiceLevel how loud the voice is while listening, from 0 to 1; read while drawing only.
@@ -72,8 +73,8 @@ fun ChatScreenIdle(
         heard.isNotEmpty() -> heard
         listening != null -> localizedString(Strings.Listening)
         canAskByVoice -> localizedString(Strings.HoldHint)
-        usesAiAnswers -> localizedString(Strings.ShakeHintAi)
-        else -> localizedString(Strings.ShakeHint)
+        usesAiAnswers -> localizedString(Strings.AskHintAi)
+        else -> localizedString(Strings.AskHint)
     }
 
     Layout(
@@ -87,16 +88,13 @@ fun ChatScreenIdle(
             Text(
                 text = line,
                 modifier = Modifier.semantics { if (listening != null) liveRegion = LiveRegionMode.Polite },
-                // What the user said is theirs: it is written larger and brighter than a hint.
-                color = BallColors.OnSurface.copy(alpha = if (heard.isNotEmpty()) 1f else HELPER_ALPHA),
+                // The hint is the only instruction on the screen: it has the size and the
+                // brightness of what the user says, the smallest that reads well on a wrist.
+                color = BallColors.OnSurface,
                 textAlign = TextAlign.Center,
                 maxLines = HELPER_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
-                style = if (heard.isNotEmpty()) {
-                    MaterialTheme.typography.bodySmall
-                } else {
-                    MaterialTheme.typography.bodyExtraSmall
-                }
+                style = MaterialTheme.typography.bodySmall
             )
         },
         modifier = modifier
@@ -162,7 +160,7 @@ private fun EightBadge(
                 val eight = textMeasurer.measure(
                     text = EIGHT,
                     style = TextStyle(
-                        color = BallColors.BallBottom,
+                        color = BallColors.Eight,
                         fontSize = (size.minDimension * EIGHT_SIZE_FRACTION).toSp(),
                         fontWeight = FontWeight.Black,
                         platformStyle = PlatformTextStyle(includeFontPadding = false)
@@ -193,12 +191,49 @@ private fun EightBadge(
     )
 }
 
+/**
+ * The ball while the watch is dimmed to its always-on screen: the outline of the disc and of
+ * its "8", where they are at rest. Nearly every pixel stays off, nothing moves, and no bright
+ * area is left to wear the screen.
+ */
+@Composable
+internal fun AmbientBall(modifier: Modifier = Modifier) {
+    val textMeasurer = rememberTextMeasurer()
+
+    Spacer(
+        modifier
+            .fillMaxSize()
+            .background(BallColors.Background)
+            .drawWithCache {
+                val discSize = size.minDimension * BADGE_SCREEN_FRACTION
+                val outline = Stroke(AmbientOutlineWidth.toPx())
+                val eight = textMeasurer.measure(
+                    text = EIGHT,
+                    style = TextStyle(
+                        color = BallColors.OnSurfaceQuiet,
+                        fontSize = (discSize * EIGHT_SIZE_FRACTION).toSp(),
+                        fontWeight = FontWeight.Black,
+                        drawStyle = outline,
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    )
+                )
+                val topLeft = Offset(
+                    x = (size.width - eight.size.width) / 2f,
+                    y = (size.height - eight.size.height) / 2f
+                )
+                onDrawBehind {
+                    drawCircle(BallColors.OnSurfaceQuiet, radius = (discSize - outline.width) / 2f, style = outline)
+                    drawText(eight, topLeft = topLeft)
+                }
+            }
+    )
+}
+
 private const val EIGHT = "8"
 
 /** Share of the screen taken by the disc, and of the disc taken by its digit. */
 private const val BADGE_SCREEN_FRACTION = 0.44f
 private const val EIGHT_SIZE_FRACTION = 0.72f
-private const val HELPER_ALPHA = 0.75f
 private const val HELPER_MAX_LINES = 2
 private const val HELPER_WIDTH_FRACTION = 0.8f
 
@@ -224,6 +259,7 @@ private const val NANOS_PER_MILLI = 1_000_000L
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
 
 private val HelperSpacing = 10.dp
+private val AmbientOutlineWidth = 1.5.dp
 
 @Preview(name = "ChatScreenIdle - Wear", showBackground = true, widthDp = 192, heightDp = 192)
 @Composable
@@ -233,7 +269,7 @@ private fun ChatScreenIdlePreview() {
             usesAiAnswers = true,
             modifier = Modifier
                 .size(192.dp)
-                .background(BallColors.Ball, shape = CircleShape)
+                .background(BallColors.Background, shape = CircleShape)
         )
     }
 }

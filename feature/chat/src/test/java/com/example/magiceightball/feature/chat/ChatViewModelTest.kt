@@ -1,6 +1,7 @@
 package com.example.magiceightball.feature.chat
 
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
+import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.gateway.MotionGateway
 import com.example.magiceightball.core.domain.gateway.SpeechEvent
@@ -45,7 +46,6 @@ class ChatViewModelTest {
     private val queryConfig = QueryConfig(
         minThinkingMs = MIN_THINKING_MS,
         maxThinkingMs = MAX_THINKING_MS,
-        completionHoldTimeMs = HOLD_MS,
         cooldownMs = COOLDOWN_MS
     )
 
@@ -54,6 +54,7 @@ class ChatViewModelTest {
     private val userSettings = FakeUserSettingsRepository()
     private val aiAvailability = FakeAiAnswersAvailability()
     private val speech = FakeSpeechListener()
+    private val reports = FakeAnswerReports()
 
     @Test
     fun `initial state is idle with the saved choices`() = runTest {
@@ -67,7 +68,7 @@ class ChatViewModelTest {
         val viewModel = createViewModel()
 
         assertEquals(
-            ChatState(ChatStateMachine.Idle, saved, aiAnswersAvailable = false),
+            ChatState(ChatStateMachine.Idle, saved, aiAnswersAvailable = false, canListen = true),
             viewModel.state.value
         )
     }
@@ -131,13 +132,53 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `the classic style has its own answers, so nothing says the ai will answer`() = runTest {
+        aiAvailability.isAvailable.value = true
+        val viewModel = createViewModel(microphoneGranted = true)
+        assertEquals(true, viewModel.state.value?.usesAiAnswers)
+        assertEquals(true, viewModel.state.value?.canAskByVoice)
+
+        viewModel.setPersonality(Magic8BallPersonality.NEUTRAL)
+        runCurrent()
+        assertEquals(false, viewModel.state.value?.usesAiAnswers)
+        assertEquals(false, viewModel.state.value?.canAskByVoice)
+
+        // A hold is then a press like any other: nothing listens.
+        viewModel.onHoldStart()
+        runCurrent()
+        assertEquals(0, speech.sessions.size)
+    }
+
+    @Test
+    fun `once the day's ai answers are used up nothing says the ai will answer, until it does again`() = runTest {
+        aiAvailability.isAvailable.value = true
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, aiAllowanceSpent = true) }
+        val viewModel = createViewModel(detectionEnabled = true, microphoneGranted = true)
+        assertEquals(true, viewModel.state.value?.usesAiAnswers)
+
+        shake()
+        advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS)
+        runCurrent()
+        assertEquals(true, viewModel.state.value?.aiAllowanceSpent)
+        assertEquals(false, viewModel.state.value?.usesAiAnswers)
+        assertEquals(false, viewModel.state.value?.canAskByVoice)
+
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, fromAi = true) }
+        shake()
+        advanceTimeBy(MIN_THINKING_MS)
+        runCurrent()
+        assertEquals(true, viewModel.state.value?.usesAiAnswers)
+        assertEquals(true, viewModel.state.value?.canAskByVoice)
+    }
+
+    @Test
     fun `request carries the user's ai choice`() = runTest {
         val viewModel = createViewModel(detectionEnabled = true)
 
         shake()
         assertEquals(true, llmGateway.requests.single().useAi)
 
-        advanceTimeBy(MIN_THINKING_MS + HOLD_MS + COOLDOWN_MS)
+        advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS)
         runCurrent()
         viewModel.setAiAnswersEnabled(false)
         runCurrent()
@@ -177,13 +218,13 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `answer is held and then the machine returns to idle and listens again`() = runTest {
+    fun `answer stays long enough to be read and then the machine returns to idle`() = runTest {
         val viewModel = createViewModel(detectionEnabled = true)
 
         shake()
         assertEquals(0, motionGateway.subscribers)
 
-        advanceTimeBy(MIN_THINKING_MS + HOLD_MS + COOLDOWN_MS - 1)
+        advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS - 1)
         assertEquals(
             ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER)),
             viewModel.machineState
@@ -202,10 +243,86 @@ class ChatViewModelTest {
         repeat(2) {
             shake()
             assertEquals(ChatStateMachine.Running, viewModel.machineState)
-            advanceTimeBy(MIN_THINKING_MS + HOLD_MS + COOLDOWN_MS)
+            advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS)
             runCurrent()
             assertEquals(ChatStateMachine.Idle, viewModel.machineState)
         }
+        assertEquals(2, llmGateway.requests.size)
+    }
+
+    @Test
+    fun `a tap asks as a shake does`() = runTest {
+        val viewModel = createViewModel()
+        val effects = mutableListOf<ChatEffect>()
+        backgroundScope.launch { viewModel.effects.collect(effects::add) }
+
+        viewModel.onTap()
+        runCurrent()
+        assertEquals(ChatStateMachine.Running, viewModel.machineState)
+        assertEquals(listOf<ChatEffect>(ChatEffect.ShakeDetected), effects)
+
+        // One question at a time: a tap while the ball thinks asks nothing more.
+        viewModel.onTap()
+        runCurrent()
+        assertEquals(1, llmGateway.requests.size)
+
+        advanceTimeBy(MIN_THINKING_MS)
+        runCurrent()
+        assertEquals(
+            ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER)),
+            viewModel.machineState
+        )
+    }
+
+    @Test
+    fun `the next tap ends the answer and asks again`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.onTap()
+        advanceTimeBy(MIN_THINKING_MS)
+        runCurrent()
+        assertEquals(
+            ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER)),
+            viewModel.machineState
+        )
+
+        llmGateway.answer = { Magic8BallResult.Success("Ask the cat") }
+        viewModel.onTap()
+        runCurrent()
+        assertEquals(ChatStateMachine.Running, viewModel.machineState)
+        assertEquals(2, llmGateway.requests.size)
+
+        // The second answer has its whole time, whenever the first one would have left.
+        advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS - 1)
+        assertEquals(ChatStateMachine.Completed(AnswerText.Plain("Ask the cat")), viewModel.machineState)
+
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(ChatStateMachine.Idle, viewModel.machineState)
+    }
+
+    @Test
+    fun `the next shake ends the answer too, but not the tail of the shake that asked`() = runTest {
+        val viewModel = createViewModel(detectionEnabled = true)
+
+        shake()
+        advanceTimeBy(MIN_THINKING_MS)
+        runCurrent()
+        assertEquals(0, motionGateway.subscribers)
+
+        advanceTimeBy(COOLDOWN_MS - 1)
+        assertEquals(0, motionGateway.subscribers)
+
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(1, motionGateway.subscribers)
+        assertEquals(
+            ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER)),
+            viewModel.machineState
+        )
+
+        shake()
+        assertEquals(ChatStateMachine.Running, viewModel.machineState)
         assertEquals(2, llmGateway.requests.size)
     }
 
@@ -266,7 +383,7 @@ class ChatViewModelTest {
             viewModel.machineState
         )
 
-        advanceTimeBy(HOLD_MS + COOLDOWN_MS)
+        advanceTimeBy(ANSWER_SHOWN_MS)
         runCurrent()
         assertEquals(ChatStateMachine.Idle, viewModel.machineState)
     }
@@ -282,9 +399,96 @@ class ChatViewModelTest {
         assertEquals(ChatStateMachine.Idle, viewModel.machineState)
         assertEquals(0, motionGateway.subscribers)
 
-        advanceTimeBy(MIN_THINKING_MS + HOLD_MS + COOLDOWN_MS)
+        advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS)
         runCurrent()
         assertEquals(ChatStateMachine.Idle, viewModel.machineState)
+    }
+
+    @Test
+    fun `an answer already given is still there when the screen comes back within its time`() = runTest {
+        val viewModel = createViewModel(detectionEnabled = true)
+        val answered = ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER))
+
+        shake()
+        advanceTimeBy(MIN_THINKING_MS + COOLDOWN_MS)
+        runCurrent()
+
+        // The screen is left, or the watch dims: no shake counts, and the answer waits.
+        viewModel.setShakeDetectionEnabled(false)
+        runCurrent()
+        assertEquals(answered, viewModel.machineState)
+        assertEquals(0, motionGateway.subscribers)
+
+        viewModel.setShakeDetectionEnabled(true)
+        runCurrent()
+        assertEquals(answered, viewModel.machineState)
+
+        // Its time is counted from when it was given, not from when the screen came back.
+        advanceTimeBy(ANSWER_SHOWN_MS - COOLDOWN_MS)
+        runCurrent()
+        assertEquals(ChatStateMachine.Idle, viewModel.machineState)
+    }
+
+    @Test
+    fun `an answer the ai wrote can be reported once, with its style and language and without the question`() =
+        runTest {
+            aiAvailability.isAvailable.value = true
+            userSettings.saved.value = UserSettings(AppLanguage.SPANISH, Magic8BallPersonality.PIRATE)
+            llmGateway.answer = { Magic8BallResult.Success("Ni lo sueñes, grumete.", fromAi = true) }
+            val viewModel = createViewModel(detectionEnabled = true, microphoneGranted = true)
+
+            viewModel.onHoldStart()
+            runCurrent()
+            viewModel.onHoldEnd()
+            speech.sessions.single().finish("¿Saldrá mi secreto a la luz?")
+            advanceTimeBy(HEARD_QUESTION_MS + MIN_THINKING_MS)
+            runCurrent()
+            val answer = AnswerText.Plain("Ni lo sueñes, grumete.", fromAi = true)
+            assertEquals(ChatStateMachine.Completed(answer), viewModel.machineState)
+
+            // The choices may change while the answer is on screen: the report is about the answer.
+            viewModel.setPersonality(Magic8BallPersonality.CAT)
+            runCurrent()
+            viewModel.reportAnswer()
+            viewModel.reportAnswer()
+
+            assertEquals(listOf("es/PIRATE: Ni lo sueñes, grumete. | null"), reports.sent)
+            assertEquals(ChatStateMachine.Completed(answer, reported = true), viewModel.machineState)
+
+            // Said once, it stays said for as long as the answer does, and no longer.
+            advanceTimeBy(ANSWER_SHOWN_MS)
+            runCurrent()
+            assertEquals(ChatStateMachine.Idle, viewModel.machineState)
+            viewModel.reportAnswer()
+            assertEquals(1, reports.sent.size)
+        }
+
+    @Test
+    fun `the app's own answers cannot be reported`() = runTest {
+        val viewModel = createViewModel(detectionEnabled = true)
+
+        // Nothing is on screen yet.
+        viewModel.reportAnswer()
+
+        // The bundled ones were read before they were shipped.
+        shake()
+        advanceTimeBy(MIN_THINKING_MS)
+        runCurrent()
+        viewModel.reportAnswer()
+        assertEquals(
+            ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER)),
+            viewModel.machineState
+        )
+
+        // Nor is there anything to say about the answer the app gives when it has none.
+        llmGateway.answer = { Magic8BallResult.Failure(LlmError.Network) }
+        viewModel.onTap()
+        advanceTimeBy(MIN_THINKING_MS)
+        runCurrent()
+        viewModel.reportAnswer()
+        assertEquals(ChatStateMachine.Completed(AnswerText.Fallback), viewModel.machineState)
+
+        assertEquals(emptyList<String>(), reports.sent)
     }
 
     @Test
@@ -421,7 +625,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `a hold asks for the microphone, after a refusal too, and the shake always answers`() = runTest {
+    fun `the first hold asks for the microphone, and once it is granted the next one listens`() = runTest {
         aiAvailability.isAvailable.value = true
         val viewModel = createViewModel(detectionEnabled = true)
         val effects = mutableListOf<ChatEffect>()
@@ -432,18 +636,80 @@ class ChatViewModelTest {
         assertEquals(listOf<ChatEffect>(ChatEffect.RequestMicrophonePermission), effects)
         assertEquals(0, speech.sessions.size)
 
-        viewModel.onMicrophonePermissionResult(granted = false)
-        runCurrent()
-        assertEquals(true, viewModel.state.value?.canAskByVoice)
-
+        // A hold while the system's dialog is up asks nothing more.
         viewModel.onHoldStart()
         runCurrent()
-        assertEquals(2, effects.count { it == ChatEffect.RequestMicrophonePermission })
-        assertEquals(0, speech.sessions.size)
+        assertEquals(1, effects.size)
+
+        viewModel.onMicrophonePermissionResult(granted = true)
+        viewModel.onHoldStart()
+        runCurrent()
+        assertEquals(ChatStateMachine.Listening(), viewModel.machineState)
+    }
+
+    @Test
+    fun `a refused microphone is never asked for again, and the shake and the tap still answer`() = runTest {
+        aiAvailability.isAvailable.value = true
+        val viewModel = createViewModel(detectionEnabled = true)
+        val effects = mutableListOf<ChatEffect>()
+        backgroundScope.launch { viewModel.effects.collect(effects::add) }
+
+        viewModel.onHoldStart()
         viewModel.onMicrophonePermissionResult(granted = false)
+        runCurrent()
+        assertEquals(false, viewModel.state.value?.canAskByVoice)
+        // The ai still answers a shake, and the screen may still say so.
+        assertEquals(true, viewModel.state.value?.usesAiAnswers)
+
+        // Coming back to the app with the permission still refused changes nothing.
+        viewModel.onMicrophonePermissionChecked(granted = false)
+        viewModel.onHoldStart()
+        runCurrent()
+        assertEquals(false, viewModel.state.value?.canAskByVoice)
+        assertEquals(1, effects.count { it == ChatEffect.RequestMicrophonePermission })
+        assertEquals(0, speech.sessions.size)
+
+        viewModel.onTap()
+        runCurrent()
+        assertEquals(ChatStateMachine.Running, viewModel.machineState)
+        advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS)
+        runCurrent()
 
         shake()
         assertEquals(ChatStateMachine.Running, viewModel.machineState)
+        advanceTimeBy(MIN_THINKING_MS + ANSWER_SHOWN_MS)
+        runCurrent()
+
+        // Granted later in the system settings, the microphone is offered again.
+        viewModel.onMicrophonePermissionChecked(granted = true)
+        runCurrent()
+        assertEquals(true, viewModel.state.value?.canAskByVoice)
+        viewModel.onHoldStart()
+        runCurrent()
+        assertEquals(ChatStateMachine.Listening(), viewModel.machineState)
+    }
+
+    @Test
+    fun `a question asked out loud ends the answer on screen as a tap does`() = runTest {
+        aiAvailability.isAvailable.value = true
+        val viewModel = createViewModel(detectionEnabled = true, microphoneGranted = true)
+
+        shake()
+        advanceTimeBy(MIN_THINKING_MS)
+        runCurrent()
+        assertEquals(
+            ChatStateMachine.Completed(AnswerText.Plain(FakeLlmGateway.ANSWER)),
+            viewModel.machineState
+        )
+
+        viewModel.onHoldStart()
+        runCurrent()
+        assertEquals(ChatStateMachine.Listening(), viewModel.machineState)
+
+        // What is left of the first answer's time does not cut the question short.
+        advanceTimeBy(ANSWER_SHOWN_MS)
+        runCurrent()
+        assertEquals(ChatStateMachine.Listening(), viewModel.machineState)
     }
 
     @Test
@@ -486,6 +752,7 @@ class ChatViewModelTest {
             userSettingsRepository = userSettings,
             aiAnswersAvailability = aiAvailability,
             speechListener = speech,
+            answerReports = reports,
             queryConfig = queryConfig
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
@@ -576,6 +843,14 @@ class ChatViewModelTest {
         override val isAvailable = MutableStateFlow(false)
     }
 
+    private class FakeAnswerReports : AnswerReports {
+        val sent = mutableListOf<String>()
+
+        override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) {
+            sent += "$languageCode/$style: $answer | $remark"
+        }
+    }
+
     private class FakeLlmGateway : LlmGateway {
         val requests = mutableListOf<Magic8BallRequest>()
         var answer: suspend () -> Magic8BallResult = { Magic8BallResult.Success(ANSWER) }
@@ -593,8 +868,8 @@ class ChatViewModelTest {
     private companion object {
         const val MIN_THINKING_MS = 1_000L
         const val MAX_THINKING_MS = 5_000L
-        const val HOLD_MS = 3_000L
         const val COOLDOWN_MS = 1_000L
+        const val ANSWER_SHOWN_MS = 8_000L
         const val HEARD_QUESTION_MS = 1_200L
     }
 }

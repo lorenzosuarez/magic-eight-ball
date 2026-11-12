@@ -46,7 +46,7 @@ internal fun SettingsMenu(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BallColors.Backdrop),
+            .background(BallColors.Background),
         contentAlignment = Alignment.Center
     ) {
         Column(

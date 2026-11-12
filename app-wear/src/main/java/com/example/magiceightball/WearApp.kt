@@ -11,12 +11,14 @@ import com.example.magiceightball.feature.chat.ChatViewModel
  *
  * There is only one destination, so no navigation host is needed; leaving the app is the
  * system's swipe-to-dismiss on the activity.
+ *
+ * @param isAmbient whether the watch has dimmed to its always-on screen.
  */
 @Composable
-fun WearApp(chatViewModel: ChatViewModel) {
+fun WearApp(chatViewModel: ChatViewModel, isAmbient: Boolean) {
     MagicEightBallTheme {
         AppScaffold {
-            ChatScreen(chatViewModel)
+            ChatScreen(chatViewModel, isAmbient)
         }
     }
 }

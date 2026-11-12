@@ -65,7 +65,7 @@ internal fun PersonalityList(
     ScalingLazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(BallColors.Backdrop)
+            .background(BallColors.Background)
             .selectableGroup(),
         state = list
     ) {
