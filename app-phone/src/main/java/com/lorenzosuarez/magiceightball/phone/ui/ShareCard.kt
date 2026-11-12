@@ -182,7 +182,7 @@ internal fun ShareCard(
     }
 }
 
-/** A white bubble around what was asked, its tail at the right like a message that was sent. */
+/** A white bubble around what was asked, its tail at the left, away from the ball, so it is not the ball that seems to say it. */
 private fun DrawScope.drawBubble() {
     val tail = SHARE_BUBBLE_TAIL.toPx()
     val body = size.height - tail
@@ -190,9 +190,9 @@ private fun DrawScope.drawBubble() {
     drawRoundRect(Color.White, size = Size(size.width, body), cornerRadius = CornerRadius(corner))
     drawPath(
         Path().apply {
-            moveTo(size.width - corner - tail * 1.4f, body - 1f)
-            lineTo(size.width - corner + tail * 0.5f, body + tail)
-            lineTo(size.width - corner, body - tail)
+            moveTo(corner + tail * 1.4f, body - 1f)
+            lineTo(corner - tail * 0.5f, body + tail)
+            lineTo(corner, body - tail)
             close()
         },
         Color.White
