@@ -17,6 +17,14 @@ internal object BallColors {
      */
     val Background = Color.Black
 
+    /** The ball as a sphere, as on the phone: lit from above and a little to the left, black at its edge. */
+    val BodyLit = Color(0xFF3A404A)
+    val BodyMid = Color(0xFF14171C)
+    val BodyEdge = Color.Black
+
+    /** The white disc where it turns away from the light. */
+    val DiscShade = Color(0xFFD3DAE1)
+
     /** The "8" on its white disc. */
     val Eight = Color(BrandPalette.BALL_CLOSE_BOTTOM)
 

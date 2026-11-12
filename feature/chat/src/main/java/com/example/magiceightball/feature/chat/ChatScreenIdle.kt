@@ -16,6 +16,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
@@ -88,13 +89,13 @@ fun ChatScreenIdle(
             Text(
                 text = line,
                 modifier = Modifier.semantics { if (listening != null) liveRegion = LiveRegionMode.Polite },
-                // The hint is the only instruction on the screen: it has the size and the
-                // brightness of what the user says, the smallest that reads well on a wrist.
+                // The hint is the only instruction on the screen, and second to the "8": as
+                // bright as what the user says, and no larger than a caption.
                 color = BallColors.OnSurface,
                 textAlign = TextAlign.Center,
                 maxLines = HELPER_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyExtraSmall
             )
         },
         modifier = modifier
@@ -171,6 +172,13 @@ private fun EightBadge(
                     y = (size.height - eight.size.height) / 2f
                 )
                 val radius = size.minDimension / 2f
+                // Painted on a sphere: white where the light falls, a shade less away from it.
+                val disc = Brush.radialGradient(
+                    DISC_LIT_STOP to Color.White,
+                    1f to BallColors.DiscShade,
+                    center = Offset(size.width * DISC_LIGHT_X, size.height * DISC_LIGHT_Y),
+                    radius = size.minDimension * DISC_LIGHT_REACH
+                )
                 onDrawBehind {
                     val shown = rings.value
                     if (shown > 0f) {
@@ -183,7 +191,7 @@ private fun EightBadge(
                         }
                     }
                     scale(1f + BADGE_VOICE_SWELL * voiceLevel() * shown) {
-                        drawCircle(Color.White)
+                        drawCircle(disc)
                         drawText(eight, topLeft = topLeft)
                     }
                 }
@@ -235,6 +243,12 @@ private const val EIGHT = "8"
 private const val BADGE_SCREEN_FRACTION = 0.44f
 private const val EIGHT_SIZE_FRACTION = 0.72f
 private const val HELPER_MAX_LINES = 2
+
+/** Where the light falls on the disc, as shares of its size, and how far its white reaches. */
+private const val DISC_LIGHT_X = 0.36f
+private const val DISC_LIGHT_Y = 0.3f
+private const val DISC_LIT_STOP = 0.55f
+private const val DISC_LIGHT_REACH = 0.9f
 private const val HELPER_WIDTH_FRACTION = 0.8f
 
 /** No more of what was heard than fits under the "8": beyond this, its latest part. */
