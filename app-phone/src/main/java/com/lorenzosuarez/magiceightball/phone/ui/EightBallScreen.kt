@@ -1034,13 +1034,14 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
-                // What the character adds once the ball has spoken: the line with room to be funny.
+                // The character's comeback to the question, said under its answer and more quietly:
+                // the ball has the word, and this is an aside.
                 phase.answer.remark()?.let { remark ->
                     Text(
                         text = remark,
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         maxLines = CAPTION_MAX_LINES,
                         overflow = TextOverflow.Ellipsis

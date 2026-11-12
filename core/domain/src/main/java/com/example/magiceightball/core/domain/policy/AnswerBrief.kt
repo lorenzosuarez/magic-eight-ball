@@ -9,41 +9,31 @@ import kotlin.random.Random
  * every request a different one, with nothing in it that comes from the user.
  *
  * @property verdict what the answer is; the service only words it.
- * @property motif something from the character's own world to build the answer around.
- * @property angle how to come at it this time.
- * @property withRemark whether a second line is wanted under the answer: a remark with room to
- * be funny, where the screen has room to show it.
+ * @property motif something from the character's own world to build the answer around, when
+ * there is no question to build it around.
+ * @property withRemark whether a second line is wanted under the answer: the character's
+ * comeback to what was asked, where the screen has room to show it.
  */
 data class AnswerBrief(
     val verdict: Verdict,
     val motif: String? = null,
-    val angle: String? = null,
     val withRemark: Boolean = false
 ) {
     companion object {
+        /**
+         * @param hasQuestion whether the user asked something. A question is all the answer needs
+         * to be about, and the only thing a remark can be about: without one there is a motif to
+         * keep two answers from being alike, and no remark, which would have nothing to land on.
+         */
         fun draw(
             personality: Magic8BallPersonality,
+            hasQuestion: Boolean,
             withRemark: Boolean,
             random: Random = Random.Default
         ): AnswerBrief = AnswerBrief(
             verdict = Verdict.draw(random),
-            motif = motifsOf(personality).randomOrNull(random),
-            angle = ANGLES.random(random),
-            withRemark = withRemark
-        )
-
-        /** Ways to come at an answer, whoever is speaking. */
-        internal val ANGLES = listOf(
-            "Be oddly specific: a number, a day or a place.",
-            "Answer as if you had just been interrupted in the middle of something.",
-            "Let slip a small confession on the way.",
-            "Compare it with something that happened to you once.",
-            "Give a piece of advice nobody asked for.",
-            "Sound suspiciously sure of yourself.",
-            "Start as if you were going to say the opposite.",
-            "Blame someone or something for it.",
-            "Make a tiny prediction about what happens next.",
-            "Say it as a rule you live by."
+            motif = if (hasQuestion) null else motifsOf(personality).randomOrNull(random),
+            withRemark = withRemark && hasQuestion
         )
 
         /** Things each character would bring up unprompted. The plain style has none: it stays plain. */
