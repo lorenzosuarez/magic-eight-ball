@@ -17,6 +17,7 @@ import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.FirebaseApp
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
+import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,11 +42,15 @@ import javax.inject.Singleton
 @Singleton
 class AdMobAdsController @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val clock: Clock
+    private val clock: Clock,
+    private val appConfig: AppConfigSource
 ) : AdsController {
 
     private val consent: ConsentInformation by lazy { UserMessagingPlatform.getConsentInformation(context) }
-    private val pacing = AdPacing()
+    private val pacing = AdPacing(
+        minAnswers = { appConfig.config.value.adsMinAnswers },
+        minIntervalMillis = { appConfig.config.value.adsMinIntervalSeconds * 1_000L }
+    )
     private var interstitial: InterstitialAd? = null
     private var loading = false
     private var sdkStarted = false

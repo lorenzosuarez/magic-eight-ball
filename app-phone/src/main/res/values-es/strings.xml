@@ -136,6 +136,7 @@
     <string name="share_card_invite">Pregúntale lo tuyo</string>
     <string name="settings_ad_privacy">Privacidad de anuncios</string>
     <string name="settings_ad_privacy_hint">Revisa lo que permitiste para los anuncios</string>
+    <string name="notifications_channel">Novedades y recordatorios</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">El servicio de voz de tu dispositivo convierte tu pregunta en texto, que se envía a Gemini, de Google, para responderla. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>

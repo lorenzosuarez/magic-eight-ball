@@ -110,6 +110,8 @@ dependencies {
     implementation(libs.firebase.crashlytics)
     // How the app is used, in numbers and only with the user's consent: see FirebaseUsageTracker.
     implementation(libs.firebase.analytics)
+    // Messages from the developer to the app's users: see the push package.
+    implementation(libs.firebase.messaging)
     implementation(libs.androidx.preference)
 
     implementation(project(":core:common"))

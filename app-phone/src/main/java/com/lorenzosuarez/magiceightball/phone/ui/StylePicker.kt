@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.lorenzosuarez.magiceightball.phone.R
+import com.lorenzosuarez.magiceightball.phone.config.AppConfig
 
 /** The styles that belong together, under the name of what they share. */
 internal class StyleGroup(@StringRes val title: Int, val styles: List<Magic8BallPersonality>)
@@ -112,20 +113,29 @@ internal val StyleGroups = listOf(
 )
 
 /**
- * The few styles the options show without asking. The plain one is always among them, second
- * and never dropped: whoever tires of a character should not have to look for the way back.
+ * The styles the options show without asking: [featured], led by [selected] when it is not one
+ * of them, so the choice is always in sight. The plain style is always among them, whatever was
+ * set from afar: whoever tires of a character should not have to look for the way back.
  */
-private val FeaturedStyles = listOf(
-    Magic8BallPersonality.SARCASTIC,
-    Magic8BallPersonality.NEUTRAL,
-    Magic8BallPersonality.LOVESTRUCK,
-    Magic8BallPersonality.CAT,
-    Magic8BallPersonality.DRAMA
-)
+internal fun stylesInRow(
+    selected: Magic8BallPersonality,
+    featured: List<Magic8BallPersonality> = AppConfig.DEFAULT_FEATURED,
+    hidden: Set<Magic8BallPersonality> = emptySet()
+): List<Magic8BallPersonality> {
+    val shown = (featured - hidden).let { if (Magic8BallPersonality.NEUTRAL in it) it else it + Magic8BallPersonality.NEUTRAL }
+    if (selected in shown) return shown
+    // The chosen one takes the place of the last of the others, never of the plain style.
+    val making = shown.lastOrNull { it != Magic8BallPersonality.NEUTRAL }
+    return listOf(selected) + if (shown.size > 1 && making != null) shown - making else shown
+}
 
-/** The featured styles, led by [selected] when it is not one of them, so the choice is always in sight. */
-internal fun stylesInRow(selected: Magic8BallPersonality): List<Magic8BallPersonality> =
-    if (selected in FeaturedStyles) FeaturedStyles else listOf(selected) + FeaturedStyles.dropLast(1)
+/** The groups without the styles taken out from afar; the one in use stays, wherever it is. */
+internal fun styleGroups(
+    selected: Magic8BallPersonality,
+    hidden: Set<Magic8BallPersonality>
+): List<StyleGroup> = StyleGroups
+    .map { group -> StyleGroup(group.title, group.styles.filter { it == selected || it !in hidden }) }
+    .filter { it.styles.isNotEmpty() }
 
 /**
  * The style of the answers, as a row of the options: a few styles side by side, each with a line
@@ -135,7 +145,9 @@ internal fun stylesInRow(selected: Magic8BallPersonality): List<Magic8BallPerson
 internal fun StyleRow(
     selected: Magic8BallPersonality,
     onSelected: (Magic8BallPersonality) -> Unit,
-    onSeeAll: () -> Unit
+    onSeeAll: () -> Unit,
+    featured: List<Magic8BallPersonality> = AppConfig.DEFAULT_FEATURED,
+    hidden: Set<Magic8BallPersonality> = emptySet()
 ) {
     val scroll = rememberScrollState()
     // Where each card starts and how wide it is, within the row.
@@ -170,7 +182,7 @@ internal fun StyleRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            stylesInRow(selected).forEach { style ->
+            stylesInRow(selected, featured, hidden).forEach { style ->
                 StyleCard(
                     style = style,
                     chosen = style == selected,
@@ -222,7 +234,8 @@ internal fun StyleRow(
 internal fun StylesSheet(
     selected: Magic8BallPersonality,
     onSelected: (Magic8BallPersonality) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    hidden: Set<Magic8BallPersonality> = emptySet()
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
@@ -247,7 +260,8 @@ internal fun StylesSheet(
                 putAway()
             },
             onClose = putAway,
-            full = full
+            full = full,
+            hidden = hidden
         )
     }
 }
@@ -265,7 +279,8 @@ internal fun StylesContent(
     onSelected: (Magic8BallPersonality) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    full: Boolean = false
+    full: Boolean = false,
+    hidden: Set<Magic8BallPersonality> = emptySet()
 ) {
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val headerTop by animateDpAsState(if (full) statusBar else 0.dp, label = "sheet header")
@@ -319,7 +334,7 @@ internal fun StylesContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            StyleGroups.forEach { group ->
+            styleGroups(selected, hidden).forEach { group ->
                 Text(
                     text = stringResource(group.title),
                     modifier = Modifier

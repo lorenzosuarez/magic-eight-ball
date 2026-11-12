@@ -81,6 +81,12 @@ sealed interface UsageEvent {
         override val name get() = "earn_ai_answers"
     }
 
+    /** The user answered the system's question about notifications. */
+    data class NotificationsAnswered(val allowed: Boolean) : UsageEvent {
+        override val name get() = "answer_notifications"
+        override val params get() = mapOf("allowed" to allowed.label)
+    }
+
     /** A party was set up or ended: how many are playing, never who. */
     data class PartySet(val players: Int) : UsageEvent {
         override val name get() = "set_party"

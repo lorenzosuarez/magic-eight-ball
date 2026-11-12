@@ -126,6 +126,7 @@ import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.EightBallViewModel
 import com.lorenzosuarez.magiceightball.phone.Notice
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
+import com.lorenzosuarez.magiceightball.phone.push.NotificationsSetup
 import com.lorenzosuarez.magiceightball.phone.R
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -262,6 +263,13 @@ fun EightBallScreen(
                 delay(SPOKEN_ANSWER_DELAY_MS)
                 voice.say(answerToSay, answerLocale)
             }
+            NotificationsSetup(
+                language = current.settings.language,
+                atRest = current.phase is BallPhase.Idle,
+                bestStreak = current.streakBest,
+                askAfterDays = current.config.notificationsAskAfterDays,
+                onAnswered = viewModel::onNotificationsAnswered
+            )
             val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
             EightBallContent(
                 state = current,
@@ -677,7 +685,8 @@ private fun Stage(
     onAskWho: (String) -> Unit
 ) {
     // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
-    val swaying = !still && (state.phase is BallPhase.Idle || state.phase is BallPhase.Thinking)
+    val swaying = !still && state.config.ballSwayEnabled &&
+        (state.phase is BallPhase.Idle || state.phase is BallPhase.Thinking)
     val sway = rememberBallSway(active = swaying, ticks = state.phase is BallPhase.Idle)
     val swayStrength by animateFloatAsState(if (swaying) 1f else 0f, tween(durationMillis = 200), label = "sway")
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -979,7 +988,7 @@ private fun Caption(
                     modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
                 )
                 // A run of days is said quietly, where there is nothing else to say.
-                if (notice == null && !state.settings.isParty && state.streakDays >= MIN_STREAK_SHOWN) {
+                if (notice == null && !state.settings.isParty && state.streakDays >= state.config.streakMinDaysShown) {
                     QuietText(stringResource(R.string.streak_days, state.streakDays))
                 }
                 // The way out of a refusal, right where it is explained.
@@ -1177,9 +1186,6 @@ private val BALL_MIN_SIZE = 96.dp
 private val BALL_GAP = 56.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
-
-/** One day is not yet a run. */
-private const val MIN_STREAK_SHOWN = 2
 
 private val TOP_BAR_HEIGHT = 72.dp
 

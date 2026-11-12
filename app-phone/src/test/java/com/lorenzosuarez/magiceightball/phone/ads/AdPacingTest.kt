@@ -5,7 +5,7 @@ import org.junit.Test
 
 class AdPacingTest {
 
-    private val pacing = AdPacing(minAnswers = 3, minIntervalMillis = 1_000L)
+    private val pacing = AdPacing(minAnswers = { 3 }, minIntervalMillis = { 1_000L })
 
     @Test
     fun `no ad before enough answers have been closed`() {
