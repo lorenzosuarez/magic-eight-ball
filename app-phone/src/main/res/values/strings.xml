@@ -140,7 +140,6 @@
     <string name="options_asking">Asking</string>
     <string name="options_general">General</string>
     <string name="share_answer_text">Look what Magic AI Ball told me. Ask it yours: %1$s</string>
-    <string name="share_card_invite">Ask it yours</string>
     <string name="settings_ad_privacy">Ad privacy choices</string>
     <string name="settings_ad_privacy_hint">Review what you allowed for ads</string>
     <string name="notifications_channel">News and reminders</string>

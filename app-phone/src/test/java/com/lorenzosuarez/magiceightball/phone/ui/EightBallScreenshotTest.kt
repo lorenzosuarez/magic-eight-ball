@@ -108,10 +108,9 @@ class EightBallScreenshotTest {
             question = "Should I order pizza tonight?",
             answer = "Yes. Screenshot this.",
             layer = rememberGraphicsLayer(),
-            fromAi = true,
             visible = true,
             styleLabel = "Sarcastic",
-                paper = shareColor(Magic8BallPersonality.SARCASTIC)
+                personality = Magic8BallPersonality.SARCASTIC
         )
     }
 
@@ -123,11 +122,25 @@ class EightBallScreenshotTest {
                 question = "¿Me va a escribir esta noche o ya me olvido de una vez por todas del asunto?",
                 answer = "Mercurio retrógrado dice no.",
                 layer = rememberGraphicsLayer(),
-                fromAi = true,
-                visible = true,
+                    visible = true,
                 remark = "Y tu ascendente opina que borres el número antes del viernes.",
                 styleLabel = "Horóscopo",
-                paper = shareColor(Magic8BallPersonality.ASTRO)
+                personality = Magic8BallPersonality.ASTRO
+            )
+        }
+    }
+
+    /** Every style in its colour, wearing what it wears. */
+    @Test
+    fun share_card_every_style() = Magic8BallPersonality.entries.forEach { style ->
+        captureRoboImage(filePath = path("phone_37_share_card_${style.name.lowercase()}")) {
+            ShareCard(
+                question = "Will they text me tonight?",
+                answer = "Not a chance.",
+                layer = rememberGraphicsLayer(),
+                visible = true,
+                styleLabel = style.name.lowercase().replaceFirstChar(Char::uppercase),
+                personality = style
             )
         }
     }
@@ -142,7 +155,7 @@ class EightBallScreenshotTest {
                 layer = rememberGraphicsLayer(),
                 visible = true,
                 styleLabel = "Amor ciego",
-                paper = shareColor(Magic8BallPersonality.LOVESTRUCK)
+                personality = Magic8BallPersonality.LOVESTRUCK
             )
         }
     }

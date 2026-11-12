@@ -133,7 +133,6 @@
     <string name="options_asking">Perguntar</string>
     <string name="options_general">Geral</string>
     <string name="share_answer_text">Olha o que o Magic AI Ball me disse. Pergunte o seu: %1$s</string>
-    <string name="share_card_invite">Pergunte o seu</string>
     <string name="settings_ad_privacy">Privacidade de anúncios</string>
     <string name="settings_ad_privacy_hint">Revise o que você permitiu para os anúncios</string>
     <string name="notifications_channel">Novidades e lembretes</string>
