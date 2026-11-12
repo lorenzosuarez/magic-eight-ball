@@ -76,6 +76,10 @@ internal object Strings {
         LocalizedString(R.string.personality_poet, R.string.personality_poet_es)
     val PersonalityAstro =
         LocalizedString(R.string.personality_astro, R.string.personality_astro_es)
+    val PersonalityTherapist =
+        LocalizedString(R.string.personality_therapist, R.string.personality_therapist_es)
+    val PersonalityDog =
+        LocalizedString(R.string.personality_dog, R.string.personality_dog_es)
 
     val AiTitle = LocalizedString(R.string.ai_title, R.string.ai_title_es)
     val AiOn = LocalizedString(R.string.ai_on, R.string.ai_on_es)

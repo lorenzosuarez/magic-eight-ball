@@ -21,5 +21,7 @@ enum class Magic8BallPersonality {
     ZOOMER,
     VILLAIN,
     POET,
-    ASTRO
+    ASTRO,
+    THERAPIST,
+    DOG
 }

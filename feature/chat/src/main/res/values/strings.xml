@@ -63,6 +63,10 @@
     <string name="personality_poet_es">Poeta</string>
     <string name="personality_astro">Horoscope</string>
     <string name="personality_astro_es">Horóscopo</string>
+    <string name="personality_therapist">Therapist</string>
+    <string name="personality_therapist_es">Terapeuta</string>
+    <string name="personality_dog">Dog</string>
+    <string name="personality_dog_es">Perro</string>
 
     <!-- AI answers selection -->
     <string name="ai_title">AI answers</string>

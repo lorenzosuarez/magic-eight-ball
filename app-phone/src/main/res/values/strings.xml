@@ -69,6 +69,8 @@
     <string name="style_villain">Villain</string>
     <string name="style_poet">Poet</string>
     <string name="style_astro">Horoscope</string>
+    <string name="style_therapist">Therapist</string>
+    <string name="style_dog">Dog</string>
     <string name="style_sarcastic_sample">In your dreams.</string>
     <string name="style_mystical_sample">The moon says no.</string>
     <string name="style_neutral_sample">It is certain.</string>
@@ -86,6 +88,8 @@
     <string name="style_villain_sample">Mwahaha! Yes!</string>
     <string name="style_poet_sample">Alas, no.</string>
     <string name="style_astro_sample">Cosmic green light.</string>
+    <string name="style_therapist_sample">What do you think?</string>
+    <string name="style_dog_sample">Woof! That means yes.</string>
     <string name="styles_title">Styles</string>
     <string name="styles_subtitle">Pick the voice of your ball</string>
     <string name="styles_see_all">See all</string>
