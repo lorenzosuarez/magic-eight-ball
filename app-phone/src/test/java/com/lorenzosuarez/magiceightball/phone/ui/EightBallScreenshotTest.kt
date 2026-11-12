@@ -332,6 +332,12 @@ class EightBallScreenshotTest {
     }
 
     @Test
+    fun phone_streak_spanish() = capture(
+        "phone_30_streak_spanish",
+        EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), streakDays = 4)
+    )
+
+    @Test
     fun phone_styles_spanish_dark() = captureStyles("phone_18_styles_spanish_dark", AppLanguage.SPANISH, dark = true)
 
     @Test

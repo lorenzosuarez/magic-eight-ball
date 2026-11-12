@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.model.Streak
+import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.gateway.UsageEvent
 import com.example.magiceightball.core.domain.gateway.UsageTracker
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
@@ -64,6 +66,12 @@ class EightBallViewModelTest {
     private val aiAvailability = FakeAiAnswersAvailability()
     private val speech = FakeSpeechListener()
     private val history = FakeAnswerHistoryRepository()
+    private val streaks = object : StreakRepository {
+        override val streak = MutableStateFlow(Streak())
+        override suspend fun recordAnswer(epochDay: Long) {
+            streak.value = streak.value.after(epochDay)
+        }
+    }
     private val tracked = mutableListOf<UsageEvent>()
     private val usage = object : UsageTracker {
         override fun track(event: UsageEvent) {
@@ -73,6 +81,20 @@ class EightBallViewModelTest {
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
 
     // Start-up and settings
+
+    @Test
+    fun `an answer counts towards the run of days, and the run is shown from the state`() = runTest {
+        val today = NOW / 86_400_000L
+        streaks.streak.value = Streak(days = 2, best = 2, lastDay = today - 1)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        assertEquals(2, viewModel.state.value?.streakDays)
+
+        viewModel.ask()
+        advanceUntilIdle()
+
+        assertEquals(3, viewModel.state.value?.streakDays)
+    }
 
     @Test
     fun `what is done is counted, and never what was asked or answered`() = runTest {
@@ -1020,7 +1042,8 @@ class EightBallViewModelTest {
             history = history,
             clock = clock,
             queryConfig = queryConfig,
-            usage = usage
+            usage = usage,
+            streaks = streaks
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

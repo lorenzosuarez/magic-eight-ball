@@ -3,6 +3,7 @@
     <!-- The one line under the ball -->
     <string name="hint_hold">Mantén presionado\no agita para preguntar</string>
     <string name="hint_tap">Toca o agita para preguntar</string>
+    <string name="streak_days">%1$d días seguidos</string>
     <string name="hint_listening">Te escucho…</string>
     <string name="hint_speak">Di tu pregunta</string>
     <string name="hint_thinking">Pensando…</string>

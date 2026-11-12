@@ -23,7 +23,9 @@ import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.policy.DefaultPromptPolicy
 import com.example.magiceightball.core.domain.policy.PromptPolicy
+import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
+import com.example.magiceightball.core.data.settings.DataStoreStreakRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -56,7 +58,19 @@ object DataConfigModule {
         deviceLanguageCode = { Locale.getDefault().language }
     )
 
+    @Provides
+    @Singleton
+    fun provideStreakRepository(
+        @ApplicationContext context: Context
+    ): StreakRepository = DataStoreStreakRepository(
+        dataStore = PreferenceDataStoreFactory.create(
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+            produceFile = { context.preferencesDataStoreFile(STREAK_FILE) }
+        )
+    )
+
     private const val USER_SETTINGS_FILE = "user_settings"
+    private const val STREAK_FILE = "streak"
 }
 
 @Module

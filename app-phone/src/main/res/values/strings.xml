@@ -5,6 +5,7 @@
     <!-- The one line under the ball -->
     <string name="hint_hold">Hold or shake to ask</string>
     <string name="hint_tap">Tap or shake to ask</string>
+    <string name="streak_days">%1$d days in a row</string>
     <string name="hint_listening">Listening…</string>
     <string name="hint_speak">Say your question</string>
     <string name="hint_thinking">Thinking…</string>

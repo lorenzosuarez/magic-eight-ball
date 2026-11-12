@@ -974,6 +974,10 @@ private fun Caption(
                     },
                     modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
                 )
+                // A run of days is said quietly, where there is nothing else to say.
+                if (notice == null && !state.settings.isParty && state.streakDays >= MIN_STREAK_SHOWN) {
+                    QuietText(stringResource(R.string.streak_days, state.streakDays))
+                }
                 // The way out of a refusal, right where it is explained.
                 if (notice == Notice.MicrophoneDenied) {
                     TextButton(onClick = onAllowMicrophone, modifier = Modifier.heightIn(min = 48.dp)) {
@@ -1169,6 +1173,9 @@ private val BALL_MIN_SIZE = 96.dp
 private val BALL_GAP = 56.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
+
+/** One day is not yet a run. */
+private const val MIN_STREAK_SHOWN = 2
 
 private val TOP_BAR_HEIGHT = 72.dp
 

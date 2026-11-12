@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.gateway.UsageEvent
 import com.example.magiceightball.core.domain.gateway.UsageTracker
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
@@ -20,6 +21,8 @@ import com.example.magiceightball.core.domain.repository.UserSettingsRepository
 import com.example.magiceightball.core.domain.usecase.ObserveShakeUseCase
 import com.example.magiceightball.core.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.Clock
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -53,7 +56,8 @@ class EightBallViewModel @Inject constructor(
     private val history: AnswerHistoryRepository,
     private val clock: Clock,
     private val queryConfig: QueryConfig,
-    private val usage: UsageTracker
+    private val usage: UsageTracker,
+    private val streaks: StreakRepository
 ) : ViewModel() {
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
@@ -80,16 +84,17 @@ class EightBallViewModel @Inject constructor(
     val state: StateFlow<EightBallUiState?> = combine(
         phase,
         settings,
-        combine(aiAnswersAvailability.isAvailable, aiAllowanceSpent, ::Pair),
+        combine(aiAnswersAvailability.isAvailable, aiAllowanceSpent, streaks.streak, ::Triple),
         voiceInputs,
         noticeAndHistory
-    ) { phase, saved, (aiAvailable, aiSpent), (speech, microphone), (notice, history, turn) ->
+    ) { phase, saved, (aiAvailable, aiSpent, streak), (speech, microphone), (notice, history, turn) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
                 settings = it,
                 aiAnswersAvailable = aiAvailable,
                 aiAllowanceSpent = aiSpent,
+                streakDays = streak.daysOn(today()),
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -191,6 +196,9 @@ class EightBallViewModel @Inject constructor(
         microphone.value = if (granted) MicrophoneAccess.Granted else MicrophoneAccess.Denied
         if (!granted) giveNotice(Notice.MicrophoneDenied)
     }
+
+    /** Today on the device's own calendar, in days since 1970: what a streak is counted in. */
+    private fun today(): Long = LocalDate.ofInstant(clock.instant(), ZoneId.systemDefault()).toEpochDay()
 
     /** A tap: asks the ball without a question. Ignored while one is in progress. */
     fun ask() = ask(UsageEvent.Asked.How.TAP)
@@ -464,6 +472,7 @@ class EightBallViewModel @Inject constructor(
             val kept = plain?.let { listOfNotNull(it.value, it.remark).joinToString("\n") }
             history.add(question, kept, clock.millis(), plain?.fromAi == true)
         }
+        viewModelScope.launch { streaks.recordAnswer(today()) }
         // That the ball answered, and how it was asked: never what was asked or answered.
         (answer as? AnswerText.Plain).let {
             usage.track(
