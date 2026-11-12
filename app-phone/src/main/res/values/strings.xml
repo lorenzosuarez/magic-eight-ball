@@ -143,6 +143,7 @@
     <string name="share_card_invite">Ask it yours</string>
     <string name="settings_ad_privacy">Ad privacy choices</string>
     <string name="settings_ad_privacy_hint">Review what you allowed for ads</string>
+    <string name="notifications_channel">News and reminders</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">Your spoken question is turned into text by your device\'s speech service and sent to Google\'s Gemini for the answer. Your questions and answers are saved in Recents, on this device only.</string>

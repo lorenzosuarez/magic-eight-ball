@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Asked for the first time the user holds the screen to ask a question out loud. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Asked for only of someone who has come back for a few days: see Notifications.shouldAsk. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Shaking and speaking are optional (the ball can be tapped), so devices without the sensor or a microphone are not filtered out. -->
     <uses-feature
@@ -37,6 +39,21 @@
         android:theme="@style/Theme.MagicEightBall">
 
         <!-- Required by the Google Mobile Ads SDK; see app-phone/build.gradle.kts for where it comes from. -->
+        <service
+            android:name=".push.PushService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- How a message looks when the system shows it on its own, with the app closed. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="news" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+
         <!-- Nothing is measured until the user's consent allows it, and never for advertising:
              see FirebaseUsageTracker. -->
         <meta-data

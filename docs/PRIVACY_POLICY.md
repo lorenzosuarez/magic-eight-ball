@@ -9,7 +9,7 @@ This policy explains how the Magic AI Ball app (package `com.lorenzosuarez.magic
 - The only things the app saves on your device are your choices in the app (language, answer style, whether to use AI answers and, on phones and tablets, whether to use voice questions and spoken answers, and the names you type for party mode) and, on phones and tablets, a list of your latest questions and answers ("Recents"). The developer runs no server that receives your data.
 - An answer leaves the app for another app or person only when you choose "Share" under it, as described under "Sharing an answer".
 - You can switch AI answers off in the app at any time.
-- The app connects to Google services, all described below: Firebase Remote Config, to check its settings; the Gemini API, when AI answers are switched on; Firebase Crashlytics, when the app crashes; and, on phones and tablets, Google Analytics for Firebase when your consent allows it and Google AdMob while ads are switched on.
+- The app connects to Google services, all described below: Firebase Remote Config, to check its settings; the Gemini API, when AI answers are switched on; Firebase Crashlytics, when the app crashes; and, on phones and tablets, Firebase Cloud Messaging for notifications, Google Analytics for Firebase when your consent allows it and Google AdMob while ads are switched on.
 - **Asking out loud:** on both versions you can hold and say your question. The app uses the microphone only while it is listening to a question you started, your speech is turned into text by your device's speech recognition service, and that text is sent to the Gemini API only when AI answers are switched on. The app never stores your voice. On phones and tablets the text of your question is saved, with its answer, only in the "Recents" list on your device, which you can clear at any time; the watch saves nothing. The app works without the microphone.
 - **On the watch** holding to ask is offered only while AI answers are in use, because only the AI service can answer a question; otherwise the watch answers to a shake and never listens.
 
@@ -46,6 +46,13 @@ To learn which parts of the app are used and whether a change made it better, th
 - **Not for advertising.** The app tells Google Analytics not to use these counts for advertising or for personalising ads.
 - **Who receives it.** Google, on the developer's behalf, under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy). The counts are kept for at most 14 months.
 - **Shared links.** The Google Play link the app puts in what you share says that it was shared from the app, so the developer can see how many installs come from sharing. It says nothing about you.
+
+## Notifications (phones and tablets only)
+The developer can send the app's users a notification now and then, about something new in the app or as a reminder to come back, through Google's Firebase Cloud Messaging. The watch app receives none.
+
+- **Your permission.** On Android 13 and later the app shows no notification unless you allow it. It asks once, and only after you have used the app on several days. You can change your answer at any time in your device's settings, under the app's notifications.
+- **How a message reaches you.** Messages are sent to topics, not to people: every copy of the app follows one topic common to all and one for the language it is set to, so a message can be written in your language. To deliver them, Firebase Cloud Messaging gives this copy of the app a registration token, tied to a random installation identifier created by Firebase. Neither says who you are, and the app sends nothing of your questions, answers or choices with them, apart from the language.
+- **Who receives it.** Google, on the developer's behalf, under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy).
 
 ## Ads (phones and tablets only)
 The phone and tablet app can show a full-screen ad from time to time, only after you have closed an answer and never while you are asking or reading one. The developer can switch ads on and off for everyone; while they are off, nothing described in this section happens. The watch app never shows ads.
@@ -102,6 +109,7 @@ The phone and tablet app keeps a list of the latest answers the ball gave you, s
 - **Motion sensor (accelerometer):** used only on your device to detect a shake and, on phones and tablets, to move the ball slightly as you move the device. Sensor readings are not stored or sent anywhere. No permission is required.
 - **Internet and network state** (`INTERNET`, `ACCESS_NETWORK_STATE`): used to contact Firebase Remote Config, the Gemini API, Firebase Crashlytics after a crash and, on phones and tablets when your consent allows it, Google Analytics for Firebase.
 - **Other apps on your device:** the app asks Android which speech recognition and text-to-speech services are installed, only to be able to listen to a question and to read answers out loud. It reads nothing else about your apps.
+- **Notifications** (`POST_NOTIFICATIONS`): asked for once, as described under "Notifications". The app works the same without it.
 - **Microphone** (`RECORD_AUDIO`): requested the first time you hold to ask out loud, and used only as described under "Voice questions". You can refuse it or take it back in your device's settings at any time; the app keeps working by tap and shake.
 
 Neither version requests location, camera, contacts, body sensors or any other sensitive permission.

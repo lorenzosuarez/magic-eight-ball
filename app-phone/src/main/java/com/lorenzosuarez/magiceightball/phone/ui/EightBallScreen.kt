@@ -126,6 +126,7 @@ import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.EightBallViewModel
 import com.lorenzosuarez.magiceightball.phone.Notice
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
+import com.lorenzosuarez.magiceightball.phone.push.NotificationsSetup
 import com.lorenzosuarez.magiceightball.phone.R
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -262,6 +263,13 @@ fun EightBallScreen(
                 delay(SPOKEN_ANSWER_DELAY_MS)
                 voice.say(answerToSay, answerLocale)
             }
+            NotificationsSetup(
+                language = current.settings.language,
+                atRest = current.phase is BallPhase.Idle,
+                bestStreak = current.streakBest,
+                askAfterDays = current.config.notificationsAskAfterDays,
+                onAnswered = viewModel::onNotificationsAnswered
+            )
             val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
             EightBallContent(
                 state = current,

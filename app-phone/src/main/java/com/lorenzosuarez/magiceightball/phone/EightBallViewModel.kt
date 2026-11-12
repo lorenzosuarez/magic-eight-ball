@@ -243,6 +243,9 @@ class EightBallViewModel @Inject constructor(
         usage.track(UsageEvent.AiAnswersEarned)
     }
 
+    /** The user answered the system's question about notifications. */
+    fun onNotificationsAnswered(allowed: Boolean) = usage.track(UsageEvent.NotificationsAnswered(allowed))
+
     /** The app's link has been handed to another app. */
     fun onAppShared() = usage.track(UsageEvent.AppShared)
 

@@ -83,6 +83,7 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 androidx-preference = { group = "androidx.preference", name = "preference-ktx", version = "1.2.1" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version = "24.8.0" }
 user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version = "4.0.0" }
