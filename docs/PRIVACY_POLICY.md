@@ -135,5 +135,8 @@ The app is not directed at children, and the developer does not knowingly collec
 ## Changes to this policy
 If this policy changes, the updated version will be posted here with a new effective date.
 
+## Languages
+This policy is published in English, Spanish and Portuguese. If the versions differ, the English one applies.
+
 ## Contact
 For questions about this policy, contact the developer through the contact details on the app's Google Play listing.

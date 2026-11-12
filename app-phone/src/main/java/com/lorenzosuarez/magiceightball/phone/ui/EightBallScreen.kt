@@ -125,6 +125,7 @@ import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.lorenzosuarez.magiceightball.phone.AnswerText
@@ -378,7 +379,7 @@ fun EightBallScreen(
                         onOpenPrivacyPolicy = {
                             try {
                                 context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl(current.settings.language)))
                                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 )
                             } catch (_: ActivityNotFoundException) {
@@ -1297,9 +1298,15 @@ private val StageEnter = fadeIn(tween(durationMillis = 220, delayMillis = 60)) +
 private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id="
 
 /** What Google Play passes on to the app's install figures: that this install came from a share. */
-/** The policy as published, the same address the store listing gives. */
-private const val PRIVACY_POLICY_URL =
-    "https://github.com/lorenzosuarez/magic-eight-ball/blob/master/docs/PRIVACY_POLICY.md"
+/** The app's own site, where the policy is published in each language the app speaks. */
+private const val SITE_URL = "https://magic-ai-8-ball.web.app"
+
+/** The policy in the language the app is set to. */
+internal fun privacyPolicyUrl(language: AppLanguage): String = SITE_URL + when (language) {
+    AppLanguage.ENGLISH -> "/privacy"
+    AppLanguage.SPANISH -> "/es/privacy"
+    AppLanguage.PORTUGUESE -> "/pt/privacy"
+}
 private const val SHARE_REFERRER = "&referrer=utm_source%3Dshare%26utm_medium%3Dapp"
 
 /** A press shorter than this is a tap; from here on it is a hold, and the app listens. */

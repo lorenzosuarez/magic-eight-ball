@@ -94,7 +94,7 @@
     <string name="styles_group_movies">De película</string>
     <string name="styles_group_attitude">Con actitud</string>
     <string name="settings_ai">Respuestas con IA</string>
-    <string name="settings_ai_on">Escritas al momento, solo para ti</string>
+    <string name="settings_ai_on">Generadas al momento</string>
     <string name="settings_ai_off">La bola responde por su cuenta</string>
     <string name="settings_ai_unavailable">No disponible por ahora. La bola sigue respondiendo</string>
     <string name="settings_ai_classic">El estilo Clásico no usa IA. Elige otro para activarla</string>
