@@ -431,11 +431,15 @@ private fun SettingText(
 
 /** What is said about the user's data depends on what the app is doing with it right now. */
 @StringRes
-private fun EightBallUiState.privacyNoteRes(): Int = when {
-    voice.isReady && usesAiAnswers -> R.string.privacy_voice_and_ai
-    voice.isReady -> R.string.privacy_voice_only
-    usesAiAnswers -> R.string.privacy_ai_only
-    else -> R.string.privacy_none
+private fun EightBallUiState.privacyNoteRes(): Int {
+    // The Classic style never asks the AI service, whatever the switch says.
+    val asksAi = usesAiAnswers && settings.personality != Magic8BallPersonality.NEUTRAL
+    return when {
+        voice.isReady && asksAi -> R.string.privacy_voice_and_ai
+        voice.isReady -> R.string.privacy_voice_only
+        asksAi -> R.string.privacy_ai_only
+        else -> R.string.privacy_none
+    }
 }
 
 @StringRes

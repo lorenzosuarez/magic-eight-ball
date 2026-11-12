@@ -83,7 +83,7 @@ class HistoryPageTest {
         compose.onNodeWithText("Answer 1").performClick()
         assertEquals(listOf(entries[1]), opened)
 
-        compose.onAllNodesWithContentDescription("Delete").onFirst().performClick()
+        compose.onAllNodesWithContentDescription("Delete answer").onFirst().performClick()
         assertEquals(listOf(entries[1]), opened)
     }
 
@@ -91,7 +91,7 @@ class HistoryPageTest {
     fun `the delete button deletes its own entry`() {
         show()
 
-        compose.onAllNodesWithContentDescription("Delete").onFirst().performClick()
+        compose.onAllNodesWithContentDescription("Delete answer").onFirst().performClick()
 
         assertEquals(listOf(entries[0]), deleted)
     }

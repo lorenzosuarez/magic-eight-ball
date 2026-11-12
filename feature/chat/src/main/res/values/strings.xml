@@ -8,13 +8,13 @@
     <string name="title_main">Magic AI Ball</string>
     <string name="title_main_es">Magic AI Ball</string>
     <string name="title_main_pt">Magic AI Ball</string>
-    <string name="shake_hint">Shake for answers</string>
-    <string name="shake_hint_es">Agita para respuestas</string>
-    <string name="shake_hint_pt">Agite para respostas</string>
+    <string name="shake_hint">Shake to ask</string>
+    <string name="shake_hint_es">Agita para preguntar</string>
+    <string name="shake_hint_pt">Agite para perguntar</string>
     <string name="shake_hint_ai">Shake for AI answers</string>
-    <string name="shake_hint_ai_es">Agita para respuestas IA</string>
-    <string name="shake_hint_ai_pt">Agite para respostas IA</string>
-    <string name="hold_hint">Hold to ask, or shake</string>
+    <string name="shake_hint_ai_es">Agita y responde la IA</string>
+    <string name="shake_hint_ai_pt">Agite e a IA responde</string>
+    <string name="hold_hint">Hold or shake to ask</string>
     <string name="hold_hint_es">Mantén presionado o agita</string>
     <string name="hold_hint_pt">Segure ou agite</string>
     <string name="ask_by_voice">Ask by voice</string>
@@ -23,9 +23,9 @@
     <string name="listening">Listening…</string>
     <string name="listening_es">Te escucho…</string>
     <string name="listening_pt">Estou ouvindo…</string>
-    <string name="answer_fallback">Ask again later</string>
-    <string name="answer_fallback_es">Pregunta más tarde</string>
-    <string name="answer_fallback_pt">Pergunte mais tarde</string>
+    <string name="answer_fallback">Ask again later.</string>
+    <string name="answer_fallback_es">Pregunta más tarde.</string>
+    <string name="answer_fallback_pt">Pergunte mais tarde.</string>
 
     <!-- Language selection: each language is listed under its own name -->
     <string name="lang_title">Language</string>
@@ -102,12 +102,12 @@
     <string name="ai_title_es">Respuestas con IA</string>
     <string name="ai_title_pt">Respostas com IA</string>
     <string name="ai_on">On</string>
-    <string name="ai_on_es">Sí</string>
-    <string name="ai_on_pt">Sim</string>
+    <string name="ai_on_es">Activadas</string>
+    <string name="ai_on_pt">Ativadas</string>
     <string name="ai_off">Off</string>
-    <string name="ai_off_es">No</string>
-    <string name="ai_off_pt">Não</string>
-    <string name="ai_unavailable">Not available yet</string>
-    <string name="ai_unavailable_es">Aún no disponible</string>
-    <string name="ai_unavailable_pt">Ainda não disponível</string>
+    <string name="ai_off_es">Desactivadas</string>
+    <string name="ai_off_pt">Desativadas</string>
+    <string name="ai_unavailable">Not available right now</string>
+    <string name="ai_unavailable_es">No disponible por ahora</string>
+    <string name="ai_unavailable_pt">Indisponível por enquanto</string>
 </resources>

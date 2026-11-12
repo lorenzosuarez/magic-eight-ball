@@ -170,12 +170,12 @@ private fun HistoryRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            // Only what the AI wrote is marked: any other label reads as the name of a style.
+            val ago = timeAgo(entry.askedAtMillis, now)
             Text(
-                text = stringResource(
-                    R.string.history_entry_meta,
-                    timeAgo(entry.askedAtMillis, now),
-                    stringResource(if (entry.fromAi) R.string.source_ai else R.string.source_classic)
-                ),
+                text = if (entry.fromAi) {
+                    stringResource(R.string.history_entry_meta, ago, stringResource(R.string.source_ai))
+                } else ago,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

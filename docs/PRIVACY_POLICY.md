@@ -16,7 +16,7 @@ This policy explains how the Magic AI Ball app (package `com.lorenzosuarez.magic
 ## What the app sends, and to whom
 **Firebase Remote Config.** When the app starts, and at most about once an hour while you use it, it asks Google's Firebase Remote Config service for its current settings, such as whether AI answers are switched on. This request includes a random installation identifier created by Firebase for this copy of the app, and basic app and device information (for example app version, language, country and operating system version). It does not include your name, account or location. Google handles this under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy).
 
-**Gemini API.** AI answers are used only when both you and the developer have them switched on: you choose with "AI answers" in the app's options (on by default), and the developer can switch them on or off for everyone. When the developer has them switched off, that page shows them as not available. While AI answers are off, by your choice or the developer's, the app shows answers from a list built into the app and sends nothing to the Gemini API. The same is true while the "Classic" answer style is chosen: its answers are always the classic twenty built into the app, whatever else is switched on. While they are on, asking the ball sends a request over an encrypted HTTPS connection to Google's Gemini API (`generativelanguage.googleapis.com`). That request contains only:
+**Gemini API.** AI answers are used only when both you and the developer have them switched on: you choose with "AI answers" in the app's options (on by default), and the developer can switch them on or off for everyone. When the developer has them switched off, that page shows them as not available. While AI answers are off, by your choice or the developer's, the app shows answers from a list built into the app and sends nothing to the Gemini API. The same is true while the "Classic" answer style is chosen: its answers are always the classic ones built into the app, whatever else is switched on. While they are on, asking the ball sends a request over an encrypted HTTPS connection to Google's Gemini API (`generativelanguage.googleapis.com`). That request contains only:
 - an instruction written by the developer, which reflects the answer style and answer language (English, Spanish or Portuguese) you chose in the app, together with what the app draws at random for each answer so that no two are alike: whether it is to be a yes, a no or undecided, and a theme and a turn of phrase taken from lists built into the app. Nothing in it comes from you;
 - when you shake, or tap on a phone or tablet: the fixed word "shake";
 - when you asked out loud and your question was recognised: the text of that question (at most 200 characters) instead of the fixed word, so that the answer responds to it;
@@ -39,7 +39,7 @@ If the app stops working unexpectedly, it sends a crash report to Google's Fireb
 ## Usage measurement (phones and tablets only)
 To learn which parts of the app are used and whether a change made it better, the phone and tablet app counts a few things you do in it, with Google Analytics for Firebase. The watch app does not.
 
-- **What is counted.** That the ball answered, and for that answer: whether you tapped, shook, spoke or used "Who of you…?", the answer style in use, whether the answer was written by AI or came from the built-in list, and whether it had a second line. That you shared an answer or the app. That you chose an answer style or turned one of the switches in the options, and which. That party mode was set up, and for how many players.
+- **What is counted.** That the ball answered, and for that answer: whether you tapped, shook, spoke or used "Which of you…?", the answer style in use, whether the answer was written by AI or came from the built-in list, and whether it had a second line. That you shared an answer or the app. That you chose an answer style or turned one of the switches in the options, and which. That party mode was set up, and for how many players.
 - **What is never counted.** Your questions, the ball's answers, the names typed for party mode, your "Recents" list, audio, or anything else you said or wrote. The app has no way to put them in what it counts.
 - **What goes with it.** Google Analytics adds what it collects for every app: a random identifier created for this copy of the app, the app version, the device model and operating system, the language and country, and when and for how long the app was used. The app has switched off its collection of your advertising ID and of the device's own ID.
 - **Your consent.** Where the law requires it (for example in the European Economic Area, the United Kingdom and Switzerland), nothing is counted unless you agreed to it in the consent message, to storing information on your device, to measuring and to improving the service. Until that message has been answered, nothing is counted either. You can change your choice at any time under "Ad privacy choices" in the options, and the counting follows it.
@@ -65,7 +65,7 @@ The phone and tablet app can show a full-screen ad from time to time, only after
 - **Permission.** The advertising software adds the `com.google.android.gms.permission.AD_ID` permission to the phone and tablet app.
 
 ## Voice questions
-On a phone or tablet you hold the ball and say your question; on the watch you hold the screen. This is optional. On a phone or tablet you can switch "Voice questions" off in the settings; on either device you can decline the microphone permission, and then the app answers to a tap or a shake only. The watch offers it only while AI answers are in use.
+On a phone or tablet you hold the ball and say your question; on the watch you hold the screen. This is optional. On a phone or tablet you can switch "Voice questions" off in the options; on either device you can decline the microphone permission, and then the app answers to a tap or a shake only. The watch offers it only while AI answers are in use.
 
 - **When the microphone is used.** Only while you are holding to ask (or, on a phone or tablet with an accessibility service, between choosing "Ask by voice" and the end of your question), and only while the app is on screen. The app does not listen at any other time and never in the background.
 - **Who turns your speech into text.** The app does not process or record audio itself. It hands the listening to the speech recognition service of your device, through Android's standard speech recognition feature. Where your device offers on-device recognition for the app's language (Android 12 and later), the app uses it, and the audio is processed on the device. Otherwise the app uses your device's default speech recognition provider, which is typically Google and which may send the audio to its own servers to recognise it. That provider handles the audio under its own privacy policy (for Google, the [Google Privacy Policy](https://policies.google.com/privacy)); you can see or change the provider in your device's settings.
@@ -80,16 +80,16 @@ The phone and tablet app can read each answer out loud. This is off until you sw
 - **What is kept.** Nothing: the app saves no audio.
 
 ## Party mode (phones and tablets only)
-In the options you can type the names of the people playing, from two to eight. The app then shows whose turn it is and offers "Who of you…?", which answers with one of those names picked at random on the device.
+In the options you can type the names of the people playing, from two to eight. The app then shows whose turn it is and offers "Which of you…?", which answers with one of those names picked at random on the device.
 
-- **Where the names are.** In the app's settings file on your device, and in "Recents" when a name was an answer. They are not sent to the developer, to the Gemini API or to anyone else, and "Who of you…?" contacts no service at all.
+- **Where the names are.** In the app's settings file on your device, and in "Recents" when a name was an answer. They are not sent to the developer, to the Gemini API or to anyone else, and "Which of you…?" contacts no service at all.
 - **Your control.** "Turn off" in the party mode dialog deletes the names. Clearing the app's data or uninstalling the app does too.
 - Please type first names or nicknames only, and only of people who are playing with you.
 
 ## Sharing an answer (phones and tablets only)
 Under an answer, "Share" makes a picture of it and hands it to the app you pick from your device's share menu. Nothing is shared unless you choose it, each time.
 
-- **What is in the picture.** The app's name, your question if you asked one out loud, the answer with the line the character added under it, and a line saying it was written by AI when it was.
+- **What is in the picture.** The app's name, your question if you asked one out loud, the answer with the line the character added under it, and the name of the answer style that gave it.
 - **What goes with it.** A short text with the app's Google Play link.
 - **Where it goes.** Only to the app you pick, which handles it under its own terms. The developer receives nothing, and the app does not learn which app you picked.
 - **What is kept.** The picture is saved as one file in the app's temporary storage so that the other app can read it, and is replaced by the next one you share. It is removed when you clear the app's cache or data or uninstall the app, and your device may remove it on its own.
@@ -100,7 +100,7 @@ The phone and tablet app offers a home screen widget, and the watch app a tile, 
 ## Recents: your latest questions and answers (phones and tablets only)
 The phone and tablet app keeps a list of the latest answers the ball gave you, so you can read them again. The watch app keeps no such list.
 
-- **What is saved.** For each answer: the text of your question if you asked out loud (nothing for a tap or a shake; for "Who of you…?" in party mode, those words and the name that was picked), the answer, the date and time, and whether the answer was written by AI or came from the app's built-in list.
+- **What is saved.** For each answer: the text of your question if you asked out loud (nothing for a tap or a shake; for "Which of you…?" in party mode, those words and the name that was picked), the answer, the answer style that gave it, the date and time, and whether the answer was written by AI or came from the app's built-in list.
 - **Where.** In a private file in the app's own storage on your device. It is not sent to the developer, to Google or to anyone else, it is not synchronised between devices, and it is not included in device backups or device-to-device transfers.
 - **How much.** At most the latest 50 answers; older ones are deleted automatically as new ones arrive.
 - **Your control.** You can delete any single entry (with its delete button; "Undo" brings it back for a few seconds), or all of them with "Clear all", from the list itself. Clearing the app's data or uninstalling the app also deletes the list.
