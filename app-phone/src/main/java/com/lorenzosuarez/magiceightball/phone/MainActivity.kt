@@ -46,12 +46,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val adPrivacyOptionsRequired by ads.privacyOptionsRequired.collectAsStateWithLifecycle()
+            val rewardedReady by ads.rewardedReady.collectAsStateWithLifecycle()
             MagicEightBallPhoneTheme {
                 EightBallScreen(
                     viewModel = viewModel,
                     onAnswerDismissed = { ads.onAnswerDismissed(this) },
                     onShowAdPrivacyOptions = if (adPrivacyOptionsRequired) {
                         { ads.showPrivacyOptions(this) }
+                    } else {
+                        null
+                    },
+                    // Offered only while there is an ad to watch.
+                    onGetMoreAiAnswers = if (rewardedReady) {
+                        { ads.showRewarded(this, viewModel::onAiAnswersEarned) }
                     } else {
                         null
                     }

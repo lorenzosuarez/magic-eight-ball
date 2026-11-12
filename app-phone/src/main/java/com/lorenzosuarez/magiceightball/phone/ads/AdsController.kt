@@ -22,4 +22,16 @@ interface AdsController {
 
     /** Opens the ad privacy choices again. */
     fun showPrivacyOptions(activity: Activity)
+
+    /**
+     * Whether there is an ad the user may choose to watch, right now, in exchange for more
+     * answers from the AI service today. Never shown unasked.
+     */
+    val rewardedReady: StateFlow<Boolean>
+
+    /**
+     * Shows that ad. [onEarned] is called with how many answers it was worth, once and only if
+     * the user watched it through.
+     */
+    fun showRewarded(activity: Activity, onEarned: (answers: Int) -> Unit)
 }

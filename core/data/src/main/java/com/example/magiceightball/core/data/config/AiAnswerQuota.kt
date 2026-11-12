@@ -1,6 +1,7 @@
 package com.example.magiceightball.core.data.config
 
 import android.content.Context
+import com.example.magiceightball.core.domain.gateway.AiAllowance
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Clock
 import java.time.LocalDate
@@ -14,6 +15,9 @@ interface AiAnswerQuota {
      * is already used up, and then nothing is taken.
      */
     fun tryTake(dailyLimit: Int): Boolean
+
+    /** Adds [answers] to today's allowance, on top of whatever the daily limit is. */
+    fun grant(answers: Int)
 }
 
 /**
@@ -27,7 +31,7 @@ interface AiAnswerQuota {
 class DeviceAiAnswerQuota(
     private val store: Store,
     private val today: () -> String
-) : AiAnswerQuota {
+) : AiAnswerQuota, AiAllowance {
 
     @Inject
     constructor(@ApplicationContext context: Context) : this(
@@ -38,17 +42,35 @@ class DeviceAiAnswerQuota(
     @Synchronized
     override fun tryTake(dailyLimit: Int): Boolean {
         val day = today()
-        val used = if (store.day == day) store.used else 0
-        if (used >= dailyLimit) return false
-        store.day = day
-        store.used = used + 1
+        startDay(day)
+        if (store.used >= dailyLimit + store.bonus) return false
+        store.used += 1
         return true
+    }
+
+    @Synchronized
+    override fun grant(answers: Int) {
+        if (answers <= 0) return
+        startDay(today())
+        // Kept within reason whatever asks for it: the count is a guard on the bill.
+        store.bonus = (store.bonus + answers).coerceAtMost(MAX_BONUS)
+    }
+
+    /** A new day starts from nothing: neither what was used nor what was added carries over. */
+    private fun startDay(day: String) {
+        if (store.day == day) return
+        store.day = day
+        store.used = 0
+        store.bonus = 0
     }
 
     /** Where the count is kept. */
     interface Store {
         var day: String?
         var used: Int
+
+        /** Answers added to today's allowance. */
+        var bonus: Int
     }
 
     private class PreferencesStore(context: Context) : Store {
@@ -62,10 +84,19 @@ class DeviceAiAnswerQuota(
             get() = preferences.getInt(KEY_USED, 0)
             set(value) = preferences.edit().putInt(KEY_USED, value).apply()
 
+        override var bonus: Int
+            get() = preferences.getInt(KEY_BONUS, 0)
+            set(value) = preferences.edit().putInt(KEY_BONUS, value).apply()
+
         private companion object {
+            const val KEY_BONUS = "bonus"
             const val FILE = "ai_answer_quota"
             const val KEY_DAY = "day"
             const val KEY_USED = "used"
         }
+    }
+
+    private companion object {
+        const val MAX_BONUS = 100
     }
 }

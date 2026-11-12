@@ -13,6 +13,7 @@ import com.example.magiceightball.core.domain.model.UserSettings
  * @property history the latest answers, newest first.
  * @property aiAllowanceSpent true once an answer came from the bundled list because the day's AI
  * answers are used up; false again as soon as one is written by the AI service.
+ * @property streakDays how many days in a row the ball has been asked, as it stands today.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
 data class EightBallUiState(
@@ -23,7 +24,8 @@ data class EightBallUiState(
     val notice: Notice? = null,
     val history: List<HistoryEntry> = emptyList(),
     val turn: Int = 0,
-    val aiAllowanceSpent: Boolean = false
+    val aiAllowanceSpent: Boolean = false,
+    val streakDays: Int = 0
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?

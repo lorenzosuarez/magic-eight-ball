@@ -3,6 +3,7 @@
     <!-- The one line under the ball -->
     <string name="hint_hold">Mantén presionado\no agita para preguntar</string>
     <string name="hint_tap">Toca o agita para preguntar</string>
+    <string name="streak_days">%1$d días seguidos</string>
     <string name="hint_listening">Te escucho…</string>
     <string name="hint_speak">Di tu pregunta</string>
     <string name="hint_thinking">Pensando…</string>
@@ -98,6 +99,8 @@
     <string name="settings_ai_unavailable">No disponible por ahora</string>
     <string name="settings_ai_classic">El estilo Clásico usa sus veinte respuestas</string>
     <string name="settings_ai_spent">Ya usaste las de hoy. Vuelven mañana</string>
+    <string name="settings_ai_more">Más respuestas con IA hoy</string>
+    <string name="settings_ai_more_hint">Mira un anuncio corto para seguir</string>
     <string name="settings_voice">Preguntas por voz</string>
     <string name="settings_voice_on">Mantén presionada la bola y pregunta en voz alta</string>
     <string name="settings_voice_off">Solo tocar o agitar</string>

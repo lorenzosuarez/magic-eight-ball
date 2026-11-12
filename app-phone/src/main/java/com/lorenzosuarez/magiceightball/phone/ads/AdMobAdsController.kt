@@ -2,6 +2,8 @@ package com.lorenzosuarez.magiceightball.phone.ads
 
 import android.app.Activity
 import android.content.Context
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -31,6 +33,9 @@ import javax.inject.Singleton
  * nothing. When they are on, the user is first asked for consent where the law requires it
  * (through Google's User Messaging Platform), and no ad is requested before that allows it.
  *
+ * Besides the ad shown now and then, there is one the user may choose to watch for more answers
+ * from the AI service: Remote Config parameters [KEY_REWARDED_ENABLED] and [KEY_REWARDED_ANSWERS].
+ *
  * Everything here runs on the main thread, as both SDKs require.
  */
 @Singleton
@@ -44,6 +49,11 @@ class AdMobAdsController @Inject constructor(
     private var interstitial: InterstitialAd? = null
     private var loading = false
     private var sdkStarted = false
+
+    private var rewarded: RewardedAd? = null
+    private var loadingRewarded = false
+    private val _rewardedReady = MutableStateFlow(false)
+    override val rewardedReady: StateFlow<Boolean> = _rewardedReady.asStateFlow()
 
     private val _privacyOptionsRequired = MutableStateFlow(false)
     override val privacyOptionsRequired: StateFlow<Boolean> = _privacyOptionsRequired.asStateFlow()
@@ -85,6 +95,18 @@ class AdMobAdsController @Inject constructor(
         UserMessagingPlatform.showPrivacyOptionsForm(activity) { prepare() }
     }
 
+    override fun showRewarded(activity: Activity, onEarned: (answers: Int) -> Unit) {
+        val ad = rewarded ?: return
+        rewarded = null
+        _rewardedReady.value = false
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() = loadRewarded()
+            override fun onAdFailedToShowFullScreenContent(error: AdError) = loadRewarded()
+        }
+        // Called by the SDK only when the ad was watched through.
+        ad.show(activity) { onEarned(rewardedAnswers()) }
+    }
+
     /** Starts the ads SDK and loads the next ad, once and only if consent allows it. */
     private fun prepare() {
         _privacyOptionsRequired.value =
@@ -95,6 +117,29 @@ class AdMobAdsController @Inject constructor(
             MobileAds.initialize(context)
         }
         load()
+        loadRewarded()
+    }
+
+    private fun loadRewarded() {
+        if (rewarded != null || loadingRewarded || !rewardedEnabled() || !consent.canRequestAds()) return
+        loadingRewarded = true
+        RewardedAd.load(
+            context,
+            BuildConfig.ADMOB_REWARDED_ID,
+            AdRequest.Builder().build(),
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewarded = ad
+                    loadingRewarded = false
+                    _rewardedReady.value = true
+                }
+
+                // No ad to offer this time: the offer simply is not made.
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    loadingRewarded = false
+                }
+            }
+        )
     }
 
     private fun load() {
@@ -121,7 +166,24 @@ class AdMobAdsController @Inject constructor(
     private fun isEnabled(): Boolean =
         FirebaseApp.getApps(context).isNotEmpty() && FirebaseRemoteConfig.getInstance().getBoolean(KEY_ENABLED)
 
+    /**
+     * The ad for more AI answers is offered while ads are on and [KEY_REWARDED_ENABLED] is true.
+     * A release built without its own ad unit never offers it, rather than show a test ad.
+     */
+    private fun rewardedEnabled(): Boolean = isEnabled() &&
+        FirebaseRemoteConfig.getInstance().getBoolean(KEY_REWARDED_ENABLED) &&
+        (BuildConfig.DEBUG || BuildConfig.ADMOB_REWARDED_ID != TEST_REWARDED_ID)
+
+    /** How many answers a watched ad is worth: [KEY_REWARDED_ANSWERS], or [DEFAULT_REWARDED_ANSWERS]. */
+    private fun rewardedAnswers(): Int =
+        FirebaseRemoteConfig.getInstance().getLong(KEY_REWARDED_ANSWERS).toInt().takeIf { it > 0 }
+            ?: DEFAULT_REWARDED_ANSWERS
+
     private companion object {
         const val KEY_ENABLED = "ads_enabled"
+        const val KEY_REWARDED_ENABLED = "rewarded_ai_enabled"
+        const val KEY_REWARDED_ANSWERS = "rewarded_ai_answers"
+        const val DEFAULT_REWARDED_ANSWERS = 5
+        const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
     }
 }

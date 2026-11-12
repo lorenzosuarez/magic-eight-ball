@@ -37,6 +37,20 @@
         android:theme="@style/Theme.MagicEightBall">
 
         <!-- Required by the Google Mobile Ads SDK; see app-phone/build.gradle.kts for where it comes from. -->
+        <!-- Nothing is measured until the user's consent allows it, and never for advertising:
+             see FirebaseUsageTracker. -->
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_ssaid_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}" />

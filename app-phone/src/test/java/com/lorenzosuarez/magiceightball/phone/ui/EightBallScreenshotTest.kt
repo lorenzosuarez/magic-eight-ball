@@ -228,6 +228,34 @@ class EightBallScreenshotTest {
         )
     )
 
+    /** The day's AI answers are used up and there is an ad to watch for more: the offer, in its place. */
+    @Test
+    fun phone_settings_more_ai_answers_spanish() {
+        val state = EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH),
+            aiAnswersAvailable = true,
+            aiAllowanceSpent = true
+        )
+        captureRoboImage(filePath = path("phone_31_settings_more_ai_answers_spanish")) {
+            MagicEightBallPhoneTheme(dark = true) {
+                ProvideAppLanguage(state.settings.language) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        SettingsContent(
+                            state = state,
+                            onLanguageSelected = {},
+                            onPersonalitySelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {},
+                            onGetMoreAiAnswers = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     /** The sheet's content on its own: under a font scale the sheet's window is not rendered on the JVM. */
     @Test
     fun phone_settings_spanish_large_font() {
@@ -330,6 +358,12 @@ class EightBallScreenshotTest {
             )
         )
     }
+
+    @Test
+    fun phone_streak_spanish() = capture(
+        "phone_30_streak_spanish",
+        EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), streakDays = 4)
+    )
 
     @Test
     fun phone_styles_spanish_dark() = captureStyles("phone_18_styles_spanish_dark", AppLanguage.SPANISH, dark = true)

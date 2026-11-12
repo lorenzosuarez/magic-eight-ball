@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.example.magiceightball.core.data.config.AiAnswerQuota
+import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.data.config.DeviceAiAnswerQuota
 import com.example.magiceightball.core.data.config.GeminiSettingsSource
 import com.example.magiceightball.core.data.config.RemoteAnswers
@@ -23,7 +24,9 @@ import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.QueryConfig
 import com.example.magiceightball.core.domain.policy.DefaultPromptPolicy
 import com.example.magiceightball.core.domain.policy.PromptPolicy
+import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
+import com.example.magiceightball.core.data.settings.DataStoreStreakRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -56,7 +59,19 @@ object DataConfigModule {
         deviceLanguageCode = { Locale.getDefault().language }
     )
 
+    @Provides
+    @Singleton
+    fun provideStreakRepository(
+        @ApplicationContext context: Context
+    ): StreakRepository = DataStoreStreakRepository(
+        dataStore = PreferenceDataStoreFactory.create(
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+            produceFile = { context.preferencesDataStoreFile(STREAK_FILE) }
+        )
+    )
+
     private const val USER_SETTINGS_FILE = "user_settings"
+    private const val STREAK_FILE = "streak"
 }
 
 @Module
@@ -89,6 +104,10 @@ abstract class GatewayModule {
     @Binds
     @Singleton
     abstract fun bindAiAnswerQuota(impl: DeviceAiAnswerQuota): AiAnswerQuota
+
+    @Binds
+    @Singleton
+    abstract fun bindAiAllowance(impl: DeviceAiAnswerQuota): AiAllowance
 
     @Binds
     @Singleton
