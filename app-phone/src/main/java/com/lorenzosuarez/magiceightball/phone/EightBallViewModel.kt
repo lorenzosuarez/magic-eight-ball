@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.SpeechEvent
 import com.example.magiceightball.core.domain.gateway.SpeechListener
+import com.example.magiceightball.core.domain.model.asSpokenQuestion
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -418,7 +419,8 @@ class EightBallViewModel @Inject constructor(
         val minimumThinking = launch { delay(queryConfig.minThinkingMs) }
         phase.value = BallPhase.Thinking((phase.value as? BallPhase.Listening)?.transcript.orEmpty())
 
-        val question = awaitQuestion()
+        // Whatever was said to the ball is asked of it: see [asSpokenQuestion].
+        val question = awaitQuestion().asSpokenQuestion(settings.language.code)
         phase.value = BallPhase.Thinking(question)
         val answer = requestAnswer(settings, question)
         minimumThinking.join()

@@ -64,6 +64,8 @@
     <string name="style_villain">Villano</string>
     <string name="style_poet">Poeta</string>
     <string name="style_astro">Horóscopo</string>
+    <string name="style_therapist">Terapeuta</string>
+    <string name="style_dog">Perro</string>
     <string name="style_sarcastic_sample">Ni en tus sueños.</string>
     <string name="style_mystical_sample">La luna dice no.</string>
     <string name="style_neutral_sample">Es seguro.</string>
@@ -81,6 +83,8 @@
     <string name="style_villain_sample">¡Muajajá! ¡Sí!</string>
     <string name="style_poet_sample">Mi pluma llora: no.</string>
     <string name="style_astro_sample">Luz verde cósmica.</string>
+    <string name="style_therapist_sample">¿Tú qué crees?</string>
+    <string name="style_dog_sample">¡Guau! O sea, sí.</string>
     <string name="styles_title">Estilos</string>
     <string name="styles_subtitle">Elige la voz de tu bola</string>
     <string name="styles_see_all">Ver todo</string>

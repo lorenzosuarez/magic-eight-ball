@@ -85,6 +85,7 @@ internal val StyleGroups = listOf(
         listOf(
             Magic8BallPersonality.LOVESTRUCK,
             Magic8BallPersonality.GRANDMA,
+            Magic8BallPersonality.THERAPIST,
             Magic8BallPersonality.DRAMA,
             Magic8BallPersonality.POET
         )
@@ -104,6 +105,7 @@ internal val StyleGroups = listOf(
             Magic8BallPersonality.COACH,
             Magic8BallPersonality.ZOOMER,
             Magic8BallPersonality.CAT,
+            Magic8BallPersonality.DOG,
             Magic8BallPersonality.CONSPIRACY
         )
     )
@@ -418,6 +420,8 @@ internal fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.VILLAIN -> R.string.style_villain
     Magic8BallPersonality.POET -> R.string.style_poet
     Magic8BallPersonality.ASTRO -> R.string.style_astro
+    Magic8BallPersonality.THERAPIST -> R.string.style_therapist
+    Magic8BallPersonality.DOG -> R.string.style_dog
 }
 
 /** Something the style would say, to tell it from the others at a glance. */
@@ -440,6 +444,8 @@ private fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.VILLAIN -> R.string.style_villain_sample
     Magic8BallPersonality.POET -> R.string.style_poet_sample
     Magic8BallPersonality.ASTRO -> R.string.style_astro_sample
+    Magic8BallPersonality.THERAPIST -> R.string.style_therapist_sample
+    Magic8BallPersonality.DOG -> R.string.style_dog_sample
 }
 
 private val STYLE_CARD_MIN_WIDTH = 132.dp

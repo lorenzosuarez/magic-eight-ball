@@ -56,6 +56,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -666,6 +667,10 @@ private fun Stage(
     onShareAnswer: () -> Unit,
     onAskWho: (String) -> Unit
 ) {
+    // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
+    val swaying = !still && (state.phase is BallPhase.Idle || state.phase is BallPhase.Thinking)
+    val sway = rememberBallSway(active = swaying, ticks = state.phase is BallPhase.Idle)
+    val swayStrength by animateFloatAsState(if (swaying) 1f else 0f, tween(durationMillis = 200), label = "sway")
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
             minOf(maxWidth * BALL_WIDTH_FRACTION, BALL_MAX_SIZE),
@@ -705,6 +710,10 @@ private fun Stage(
                         val scale = from + (1f - from) * intro()
                         scaleX = scale
                         scaleY = scale
+                        // And a little behind the hand that moves the phone: see [rememberBallSway].
+                        val reach = BALL_SWAY.toPx() * swayStrength
+                        translationX = sway.x * reach
+                        translationY = sway.y * reach
                     }
             )
             Spacer(Modifier.height(BALL_GAP))
@@ -1150,6 +1159,9 @@ private val BALL_MIN_SIZE = 96.dp
 
 /** Wide enough for the ball to grow into when it shows an answer. */
 private val BALL_GAP = 56.dp
+/** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
+private val BALL_SWAY = 12.dp
+
 private val TOP_BAR_HEIGHT = 72.dp
 
 /** Where a page's name and the dots stand in the bar: one over the other, with the bar's middle between them. */

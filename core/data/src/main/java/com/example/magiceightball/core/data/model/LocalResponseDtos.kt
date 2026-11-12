@@ -27,7 +27,9 @@ data class PersonalityResponsesDto(
     val zoomer: List<String> = emptyList(),
     val villain: List<String> = emptyList(),
     val poet: List<String> = emptyList(),
-    val astro: List<String> = emptyList()
+    val astro: List<String> = emptyList(),
+    val therapist: List<String> = emptyList(),
+    val dog: List<String> = emptyList()
 ) {
     /** Only what can be shown on the ball: see [Magic8BallDataDto.usable]. */
     fun usable(): PersonalityResponsesDto = PersonalityResponsesDto(
@@ -47,14 +49,17 @@ data class PersonalityResponsesDto(
         zoomer = zoomer.usableAnswers(),
         villain = villain.usableAnswers(),
         poet = poet.usableAnswers(),
-        astro = astro.usableAnswers()
+        astro = astro.usableAnswers(),
+        therapist = therapist.usableAnswers(),
+        dog = dog.usableAnswers()
     )
 
     /** These lists, with every one that [other] fills taking the place of this one's. */
     fun replacedBy(other: PersonalityResponsesDto): PersonalityResponsesDto = PersonalityResponsesDto(
         sarcastic = other.sarcastic.ifEmpty { sarcastic },
         mystical = other.mystical.ifEmpty { mystical },
-        neutral = other.neutral.ifEmpty { neutral },
+        // The classic answers are the toy's own twenty: they are not replaced from outside the app.
+        neutral = neutral,
         grandma = other.grandma.ifEmpty { grandma },
         pirate = other.pirate.ifEmpty { pirate },
         philosopher = other.philosopher.ifEmpty { philosopher },
@@ -68,7 +73,9 @@ data class PersonalityResponsesDto(
         zoomer = other.zoomer.ifEmpty { zoomer },
         villain = other.villain.ifEmpty { villain },
         poet = other.poet.ifEmpty { poet },
-        astro = other.astro.ifEmpty { astro }
+        astro = other.astro.ifEmpty { astro },
+        therapist = other.therapist.ifEmpty { therapist },
+        dog = other.dog.ifEmpty { dog }
     )
 
     private fun List<String>.usableAnswers(): List<String> = map { it.trim() }
@@ -96,6 +103,8 @@ data class PersonalityResponsesDto(
         Magic8BallPersonality.VILLAIN -> villain
         Magic8BallPersonality.POET -> poet
         Magic8BallPersonality.ASTRO -> astro
+        Magic8BallPersonality.THERAPIST -> therapist
+        Magic8BallPersonality.DOG -> dog
     }
 }
 

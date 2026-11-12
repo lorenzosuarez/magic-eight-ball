@@ -126,6 +126,12 @@ class AndroidSpeechListener @Inject constructor(
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, language.speechTag())
             .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            .apply {
+                // Where the recognizer can punctuate what it hears, a question comes with its mark.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    putExtra(RecognizerIntent.EXTRA_ENABLE_FORMATTING, RecognizerIntent.FORMATTING_OPTIMIZE_QUALITY)
+                }
+            }
 
     /**
      * The tag the recognizer is asked for: the device's own variant of the app language when

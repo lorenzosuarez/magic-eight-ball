@@ -115,6 +115,15 @@ data class AnswerBrief(
                 "the group chat", "a red flag", "main character energy", "the algorithm", "a screenshot", "the ick",
                 "touching grass", "a playlist", "being left on read", "a villain era", "phone at one percent", "the vibes"
             )
+            Magic8BallPersonality.THERAPIST -> listOf(
+                "boundaries", "the inner child", "a journal", "a breathing exercise", "the clock on the wall",
+                "a pattern from childhood", "the ex", "self-care", "a box of tissues", "next Thursday's session",
+                "projection", "the bill"
+            )
+            Magic8BallPersonality.DOG -> listOf(
+                "a squirrel", "the ball", "a walk", "the mail carrier", "a treat", "the vet", "bath time",
+                "a stick", "the doorbell", "its own tail", "a hole dug in the garden", "the couch it is not allowed on"
+            )
             Magic8BallPersonality.CAT -> listOf(
                 "the food bowl", "a sunbeam", "a cardboard box", "the red dot", "a glass on the edge of a table",
                 "a closed door", "the vacuum cleaner", "three a.m.", "a nap", "tuna", "the human's keyboard", "a bird outside"

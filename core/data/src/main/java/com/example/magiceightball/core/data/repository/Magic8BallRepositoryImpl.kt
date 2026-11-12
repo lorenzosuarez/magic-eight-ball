@@ -7,6 +7,7 @@ import com.example.magiceightball.core.data.datasource.GeminiRemoteDataSource
 import com.example.magiceightball.core.data.datasource.LocalDataSource
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.model.LlmError
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ import javax.inject.Inject
  * off by the user, switched off remotely, no key, allowance used up, offline, any API error) a
  * bundled answer is used, and no request is sent to Gemini when it is
  * off. A question in the request goes to Gemini only; a bundled answer never depends on it.
+ * The classic style always answers from its bundled list, whatever else is switched on.
  */
 class Magic8BallRepositoryImpl(
     private val remoteDataSource: GeminiRemoteDataSource,
@@ -43,7 +45,8 @@ class Magic8BallRepositoryImpl(
 
     override suspend fun generateMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         geminiSettings.refresh()
-        if (request.useAi) {
+        // The classic style is the toy's own twenty answers: nothing is written for it.
+        if (request.useAi && request.personality != Magic8BallPersonality.NEUTRAL) {
             // Remote Config may touch disk the first time it is read.
             val settings = withContext(Dispatchers.IO) { geminiSettings.current() }
             // Past the day's allowance the ball goes on answering, from its own list.

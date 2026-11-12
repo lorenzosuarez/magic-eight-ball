@@ -409,7 +409,8 @@ class EightBallViewModelTest {
         advanceTimeBy(1)
         runCurrent()
 
-        assertEquals("Should I go", llmGateway.requests.single().question)
+        // The words heard, written as the question they were.
+        assertEquals("Should I go?", llmGateway.requests.single().question)
         assertFalse(session.active)
     }
 

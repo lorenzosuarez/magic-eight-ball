@@ -40,6 +40,8 @@ private fun Magic8BallPersonality.label(): LocalizedString = when (this) {
     Magic8BallPersonality.VILLAIN -> Strings.PersonalityVillain
     Magic8BallPersonality.POET -> Strings.PersonalityPoet
     Magic8BallPersonality.ASTRO -> Strings.PersonalityAstro
+    Magic8BallPersonality.THERAPIST -> Strings.PersonalityTherapist
+    Magic8BallPersonality.DOG -> Strings.PersonalityDog
 }
 
 @Preview(widthDp = 200, heightDp = 200, showBackground = true)
