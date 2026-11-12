@@ -24,7 +24,6 @@
     <string name="history_empty_title">No answers yet</string>
     <string name="history_empty">Ask the ball and your answers will show up here, saved only on this device</string>
     <string name="history_footer">Saved only on this device</string>
-    <string name="history_entry_meta" translatable="false">%1$s · %2$s</string>
     <string name="history_open">Show in the ball</string>
     <string name="history_delete">Delete answer</string>
     <string name="history_deleted">Answer deleted</string>
@@ -146,6 +145,9 @@
     <string name="daily_verdict_title">Today\'s verdict</string>
     <string name="settings_daily">Daily verdict</string>
     <string name="settings_daily_on">One notification a day, in your chosen style</string>
+    <string name="settings_daily_blocked">Notifications are off for this app</string>
+    <string name="settings_daily_allow">Allow notifications</string>
+    <string name="settings_daily_allow_hint">Opens this app\'s notification settings</string>
     <string name="settings_daily_off">No daily notification</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->

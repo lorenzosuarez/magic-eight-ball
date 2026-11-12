@@ -139,6 +139,9 @@
     <string name="daily_verdict_title">Veredicto del día</string>
     <string name="settings_daily">Veredicto del día</string>
     <string name="settings_daily_on">Una notificación al día, en el estilo elegido</string>
+    <string name="settings_daily_blocked">Las notificaciones están desactivadas para esta app</string>
+    <string name="settings_daily_allow">Permitir notificaciones</string>
+    <string name="settings_daily_allow_hint">Abre los ajustes de notificaciones de la app</string>
     <string name="settings_daily_off">Sin notificación diaria</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->

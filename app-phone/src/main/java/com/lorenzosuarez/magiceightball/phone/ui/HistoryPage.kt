@@ -170,12 +170,13 @@ private fun HistoryRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            // Only what the AI wrote is marked: any other label reads as the name of a style.
-            val ago = timeAgo(entry.askedAtMillis, now)
+            // When, who answered when that is known, and that the AI wrote it when it did.
             Text(
-                text = if (entry.fromAi) {
-                    stringResource(R.string.history_entry_meta, ago, stringResource(R.string.source_ai))
-                } else ago,
+                text = listOfNotNull(
+                    timeAgo(entry.askedAtMillis, now),
+                    entry.style?.let { stringResource(it.labelRes()) },
+                    if (entry.fromAi) stringResource(R.string.source_ai) else null
+                ).joinToString(" \u00b7 "),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

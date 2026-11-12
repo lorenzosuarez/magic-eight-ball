@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.core.app.NotificationManagerCompat
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -28,6 +29,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.runtime.key
@@ -107,6 +109,9 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -185,7 +190,11 @@ fun EightBallScreen(
     }
 
     // The accelerometer and the microphone are only used while the screen is in front of the user.
+    // Whether the system lets the app notify: looked at again each time the user comes back,
+    // since it is changed in the system's settings.
+    var notificationsAllowed by remember { mutableStateOf(true) }
     LifecycleResumeEffect(viewModel, context) {
+        notificationsAllowed = NotificationManagerCompat.from(context).areNotificationsEnabled()
         viewModel.onMicrophonePermissionChecked(context.hasMicrophonePermission())
         viewModel.setResumed(true)
         onPauseOrDispose { viewModel.setResumed(false) }
@@ -341,6 +350,16 @@ fun EightBallScreen(
                             viewModel.setSpokenAnswersEnabled(it)
                         },
                         onPartyNamesChange = viewModel::setPartyNames,
+                        notificationsAllowed = notificationsAllowed,
+                        // The system's own page for this app's notifications: it works whether or
+                        // not the permission can still be asked for.
+                        onAllowNotifications = {
+                            context.startActivity(
+                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        },
                         onDailyVerdictChange = { on ->
                             tick(on.toggleFeedback())
                             viewModel.setDailyVerdictEnabled(on)
@@ -1003,14 +1022,21 @@ private fun Caption(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                QuietText(
-                    text = when (notice) {
-                        Notice.MicrophoneDenied -> stringResource(R.string.notice_microphone_denied)
-                        Notice.VoiceUnsupported -> stringResource(R.string.notice_voice_unsupported)
-                        null -> ""
-                    },
-                    modifier = Modifier.semantics { if (notice != null) liveRegion = LiveRegionMode.Polite }
-                )
+                // Nothing to say takes no room; a refusal is said in the colour of a warning.
+                if (notice != null) {
+                    QuietText(
+                        text = stringResource(
+                            when (notice) {
+                                Notice.MicrophoneDenied -> R.string.notice_microphone_denied
+                                Notice.VoiceUnsupported -> R.string.notice_voice_unsupported
+                            }
+                        ),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        color = if (notice == Notice.MicrophoneDenied) {
+                            MaterialTheme.colorScheme.error
+                        } else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 // A run of days is said quietly, where there is nothing else to say.
                 if (notice == null && !state.settings.isParty && state.streakDays >= state.config.streakMinDaysShown) {
                     QuietText(stringResource(R.string.streak_days, state.streakDays))
@@ -1073,9 +1099,27 @@ private fun Caption(
                 }
                 // Who said it, signed as on the picture that is shared: an answer is only funny
                 // when it is known whose it is.
+                val fromAi = (phase.answer as? AnswerText.Plain)?.fromAi == true
                 phase.style?.let { style ->
+                    // On the same line, and more quietly: that the AI wrote it.
+                    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+                    val small = MaterialTheme.typography.labelMedium
+                    val ai = stringResource(R.string.source_ai)
                     Text(
-                        text = "\u2014 " + stringResource(style.labelRes()),
+                        text = buildAnnotatedString {
+                            append("\u2014 " + stringResource(style.labelRes()))
+                            if (fromAi) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = quiet,
+                                        fontSize = small.fontSize,
+                                        fontFamily = small.fontFamily,
+                                        fontStyle = FontStyle.Normal,
+                                        letterSpacing = small.letterSpacing
+                                    )
+                                ) { append("  \u00b7  $ai") }
+                            }
+                        },
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontFamily = FontFamily.Serif,
                             fontStyle = FontStyle.Italic
@@ -1085,8 +1129,8 @@ private fun Caption(
                         maxLines = 1
                     )
                 }
-                // Said quietly, and only when it is true: who wrote this answer.
-                if ((phase.answer as? AnswerText.Plain)?.fromAi == true) {
+                // An answer kept before styles were has nobody to sign it: it is still said who wrote it.
+                if (fromAi && phase.style == null) {
                     Text(
                         text = stringResource(R.string.answer_from_ai),
                         style = MaterialTheme.typography.labelMedium,
@@ -1114,12 +1158,17 @@ private fun Caption(
 }
 
 @Composable
-private fun QuietText(text: String, modifier: Modifier = Modifier, maxLines: Int = CAPTION_MAX_LINES) {
+private fun QuietText(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = CAPTION_MAX_LINES,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
     Text(
         text = text,
         modifier = modifier.fillMaxWidth(),
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = color,
         textAlign = TextAlign.Center,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis

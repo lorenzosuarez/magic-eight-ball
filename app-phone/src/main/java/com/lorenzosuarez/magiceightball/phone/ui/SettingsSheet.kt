@@ -77,7 +77,9 @@ internal fun SettingsContent(
     onGetMoreAiAnswers: (() -> Unit)? = null,
     onSpokenAnswersChange: (Boolean) -> Unit = {},
     onPartyNamesChange: (List<String>) -> Unit = {},
-    onDailyVerdictChange: (Boolean) -> Unit = {}
+    onDailyVerdictChange: (Boolean) -> Unit = {},
+    notificationsAllowed: Boolean = true,
+    onAllowNotifications: () -> Unit = {}
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -187,15 +189,30 @@ internal fun SettingsContent(
         Section(stringResource(R.string.options_general)) {
             // Offered only while the developer has it on: a switch that does nothing is a lie.
             if (state.config.dailyVerdictEnabled) {
+                // On, and yet nothing would arrive: the system is not letting the app notify.
+                val blocked = state.settings.dailyVerdictEnabled && !notificationsAllowed
                 SwitchRow(
                     title = stringResource(R.string.settings_daily),
                     supporting = stringResource(
-                        if (state.settings.dailyVerdictEnabled) R.string.settings_daily_on else R.string.settings_daily_off
+                        when {
+                            blocked -> R.string.settings_daily_blocked
+                            state.settings.dailyVerdictEnabled -> R.string.settings_daily_on
+                            else -> R.string.settings_daily_off
+                        }
                     ),
                     checked = state.settings.dailyVerdictEnabled,
                     enabled = true,
-                    onCheckedChange = onDailyVerdictChange
+                    onCheckedChange = onDailyVerdictChange,
+                    alert = blocked
                 )
+                if (blocked) {
+                    RowDivider()
+                    ActionRow(
+                        title = stringResource(R.string.settings_daily_allow),
+                        supporting = stringResource(R.string.settings_daily_allow_hint),
+                        onClick = onAllowNotifications
+                    )
+                }
                 RowDivider()
             }
             ChoiceRow(
@@ -424,7 +441,8 @@ private fun SettingText(
         Text(
             text = supporting,
             style = MaterialTheme.typography.bodyMedium,
-            color = quiet.copy(alpha = alpha)
+            // Why a setting cannot be changed is the one thing to read on a dimmed row.
+            color = quiet
         )
     }
 }
