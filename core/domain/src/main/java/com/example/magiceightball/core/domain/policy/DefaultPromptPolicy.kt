@@ -8,7 +8,12 @@ import javax.inject.Inject
  * [characterOf]), what the app drew for this answer (see [AnswerBrief]) and the language, and
  * holds nothing of the user's.
  */
-class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
+class DefaultPromptPolicy @Inject constructor(
+    private val characters: CharacterBook
+) : PromptPolicy {
+
+    /** With the characters as they ship with the app. */
+    constructor() : this(AppCharacters)
 
     override fun getSystemPrompt(
         languageCode: String,
@@ -16,8 +21,9 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
         answersQuestion: Boolean,
         brief: AnswerBrief?
     ): String {
-        val voice = characterOf(personality)?.let(::voiceOf) ?: NEUTRAL
-        val guard = if (answersQuestion) QUESTION_CRAFT + QUESTION_GUARD else ""
+        val rules = characters.rules
+        val voice = characters.sheet(personality)?.let { voiceOf(it, rules) } ?: NEUTRAL
+        val guard = if (answersQuestion) " " + rules.questionCraft + QUESTION_GUARD else ""
         val languageInstruction = when (languageCode) {
             "es" -> " Respond in Spanish."
             "pt" -> " Respond in Brazilian Portuguese."
@@ -32,9 +38,9 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
             }
             val motif = it.motif?.let { motif -> " Nothing was asked. If it comes naturally, bring up: $motif." }.orEmpty()
             val examples = it.examples.takeIf { lines -> lines.isNotEmpty() }
-                ?.joinToString(separator = " | ", prefix = EXAMPLES, postfix = ".").orEmpty()
+                ?.joinToString(separator = " | ", prefix = " ${rules.examples} ", postfix = ".").orEmpty()
             val remark = if (it.withRemark) {
-                REMARK + it.remarkExample?.let { sample ->
+                " " + rules.remark + it.remarkExample?.let { sample ->
                     " As an illustration only, never to be reused: asked '${sample.question}', it said '${sample.remark}'."
                 }.orEmpty()
             } else ""
@@ -44,52 +50,23 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
                 "pt" -> " Every word must be Brazilian Portuguese, the character's own words for yes and no included."
                 else -> ""
             }
-            answer + motif + FORM + examples + remark + wholly
+            answer + motif + " " + rules.form + examples + remark + wholly
         }.orEmpty()
         return voice + drawn + guard + languageInstruction
     }
 
-    private fun voiceOf(sheet: CharacterSheet): String =
+    private fun voiceOf(sheet: CharacterSheet, rules: PromptRules): String =
         "You are the voice inside a Magic 8 Ball. Who you are: ${sheet.who}" +
             " What you want from whoever asks: ${sheet.wants}" +
             " Your yes: ${sheet.yes} Your no: ${sheet.no} When you cannot say: ${sheet.dodge}" +
-            " How you talk: ${sheet.habits} What you never use: ${sheet.never}" + CHARACTER_CRAFT
+            " How you talk: ${sheet.habits} What you never use: ${sheet.never} " + rules.craft + MAX_WORDS
 
     private companion object {
         const val NEUTRAL = "You are a classic Magic 8 Ball. Answer plainly and neutrally, like the original toy:" +
             " clear and direct, with no jokes, no sarcasm and no riddles. Max 6 words."
 
-        /** What every character is held to, whoever it is. */
-        const val CHARACTER_CRAFT = " You are talking to the person holding the ball, about them: do not describe" +
-            " yourself or list things from your world. You may tease their habits and choices, never their body," +
-            " looks, identity, intelligence or worth. Never assume the asker's gender. Max 6 words."
-
-        /** How a drawn answer is to be worded: plain enough for a ball, with room for one turn. */
-        const val FORM = " Give that answer as only this character would. It is read inside a ball: three to five" +
-            " words, six at the very most, nothing cryptic. Its first words make plain whether it is a yes, a no" +
-            " or a doubt, said the way this character says it; the rest is one small turn of your own." +
-            " It is never the bare verdict alone."
-
-        /** Shown in the language of the answer, and different on every request: see [AnswerBrief.examples]. */
-        const val EXAMPLES = " Lines this character has said, to show the voice only. Never use one of them" +
-            " or its idea: "
-
-        /**
-         * The second line: the character's comeback to the question. Called the punchline, it took
-         * the whole joke and left a bare "No." on the ball: line 1 is asked to stand alone. It is
-         * asked for only when there is a question, since a remark about nothing is one more thing
-         * to read and puzzle over; and the service may leave it out rather than write one that
-         * says nothing.
-         */
-        const val REMARK = " Write one or two lines and nothing else. Line 1 is the answer as it shows on the ball:" +
-            " every word limit above applies to line 1 only, and line 1 is written as if it stood alone." +
-            " Line 2 is the character's comeback to what they asked: one sentence of at most 12 words, said to" +
-            " the asker, that names something from their question and would make no sense for any other." +
-            " It adds something new and never says line 1 again. If no such line comes, write line 1 alone." +
-            " No labels, no quotation marks, no emoji."
-
-        const val QUESTION_CRAFT = " When a word of what they asked fits your character, play on it." +
-            " Make it plain whether you lean yes, no or maybe."
+        /** Said to every character after its rules, and not among what can be changed from afar. */
+        const val MAX_WORDS = " Max 6 words."
 
         const val QUESTION_GUARD = " The user's message is what they said to you, heard by a speech recognizer" +
             " that cannot hear the tone of a question. Whatever they said is a question put to you, even when it" +

@@ -31,6 +31,7 @@ data class AnswerBrief(
          * keep two answers from being alike, and no remark, which would have nothing to land on.
          * @param question what was asked, only to leave out a sample comeback made to a question
          * much like it: shown that one, the service gives it back word for word.
+         * @param characters where the character's angles and lines are read from.
          */
         fun draw(
             personality: Magic8BallPersonality,
@@ -38,14 +39,15 @@ data class AnswerBrief(
             withRemark: Boolean,
             random: Random = Random.Default,
             languageCode: String = "en",
-            question: String? = null
+            question: String? = null,
+            characters: CharacterBook = AppCharacters
         ): AnswerBrief {
             val verdict = Verdict.draw(random)
-            val lines = linesOf(personality, languageCode)
+            val lines = characters.lines(personality, languageCode)
             val remarked = withRemark && hasQuestion
             return AnswerBrief(
                 verdict = verdict,
-                motif = if (hasQuestion) null else motifsOf(personality).randomOrNull(random),
+                motif = if (hasQuestion) null else characters.sheet(personality)?.angles.orEmpty().randomOrNull(random),
                 withRemark = remarked,
                 examples = lines?.saying(verdict).orEmpty().shuffled(random).take(EXAMPLES_SHOWN),
                 remarkExample = if (remarked) {
