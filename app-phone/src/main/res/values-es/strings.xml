@@ -96,6 +96,8 @@
     <string name="settings_ai_on">Escritas por Gemini, solo para ti</string>
     <string name="settings_ai_off">Respuestas clásicas de la app</string>
     <string name="settings_ai_unavailable">No disponible por ahora</string>
+    <string name="settings_ai_classic">El estilo Clásico usa sus veinte respuestas</string>
+    <string name="settings_ai_spent">Ya usaste las de hoy. Vuelven mañana</string>
     <string name="settings_voice">Preguntas por voz</string>
     <string name="settings_voice_on">Mantén presionada la bola y pregunta en voz alta</string>
     <string name="settings_voice_off">Solo tocar o agitar</string>

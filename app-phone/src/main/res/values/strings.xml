@@ -101,6 +101,8 @@
     <string name="settings_ai_on">Written by Gemini, just for you</string>
     <string name="settings_ai_off">Classic answers from the app</string>
     <string name="settings_ai_unavailable">Not available right now</string>
+    <string name="settings_ai_classic">The Classic style uses its own twenty answers</string>
+    <string name="settings_ai_spent">Today\'s are used up. They are back tomorrow</string>
     <string name="settings_voice">Voice questions</string>
     <string name="settings_voice_on">Hold the ball and ask out loud</string>
     <string name="settings_voice_off">Tap or shake only</string>

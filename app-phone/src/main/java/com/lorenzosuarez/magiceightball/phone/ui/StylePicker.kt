@@ -329,24 +329,32 @@ internal fun StylesContent(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                // The line opens on the chosen style when it holds it, with the one before in sight.
-                val lead = (group.styles.indexOf(selected) - 1).coerceAtLeast(0)
+                // Two rows to a group, so that most of it shows at once: the group opens on the
+                // chosen style when it holds it, with the column before in sight.
+                val columns = group.styles.chunked(STYLE_ROWS)
+                val lead = (group.styles.indexOf(selected) / STYLE_ROWS - 1).coerceAtLeast(0)
                 val start = with(density) { ((cardWidth + STYLE_CARD_GAP) * lead).roundToPx() }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState(start))
-                        .padding(horizontal = 16.dp)
-                        .height(IntrinsicSize.Min),
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
                 ) {
-                    group.styles.forEach { style ->
-                        StyleCard(
-                            style = style,
-                            chosen = style == selected,
-                            onClick = { onSelected(style) },
-                            modifier = Modifier.width(cardWidth).fillMaxHeight()
-                        )
+                    columns.forEach { column ->
+                        Column(
+                            modifier = Modifier.width(cardWidth),
+                            verticalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
+                        ) {
+                            column.forEach { style ->
+                                StyleCard(
+                                    style = style,
+                                    chosen = style == selected,
+                                    onClick = { onSelected(style) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -461,4 +469,5 @@ private const val HANDLE_ALPHA = 0.3f
 /** Two cards and the start of a third across a phone: what tells that a line goes on. */
 private val STYLE_CARD_WIDTH = 152.dp
 private val STYLE_CARD_GAP = 8.dp
+private const val STYLE_ROWS = 2
 private const val MAX_CARD_GROWTH = 1.6f

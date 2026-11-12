@@ -61,7 +61,11 @@ class Magic8BallRepositoryImplTest {
         val request = Magic8BallRequest(useAi = true)
 
         repeat(2) { assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(request)) }
-        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request))
+        // And says why, so the user can be told.
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
+            repository.generateMagic8BallMessage(request)
+        )
         coVerify(exactly = 2) { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) }
 
         today = "2026-11-11"
