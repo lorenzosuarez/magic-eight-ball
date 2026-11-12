@@ -109,8 +109,39 @@ class EightBallScreenshotTest {
             answer = "Yes. Screenshot this.",
             layer = rememberGraphicsLayer(),
             fromAi = true,
-            visible = true
+            visible = true,
+            styleLabel = "Sarcastic"
         )
+    }
+
+    /** The longest it gets: a question on two lines, a full answer and a remark. */
+    @Test
+    fun share_card_full_spanish() = captureRoboImage(filePath = path("phone_35_share_card_full_spanish")) {
+        ProvideAppLanguage(AppLanguage.SPANISH) {
+            ShareCard(
+                question = "¿Me va a escribir esta noche o ya me olvido de una vez por todas del asunto?",
+                answer = "Mercurio retrógrado dice no.",
+                layer = rememberGraphicsLayer(),
+                fromAi = true,
+                visible = true,
+                remark = "Y tu ascendente opina que borres el número antes del viernes.",
+                styleLabel = "Horóscopo"
+            )
+        }
+    }
+
+    /** The barest: a tap, a bundled answer. */
+    @Test
+    fun share_card_bare() = captureRoboImage(filePath = path("phone_36_share_card_bare")) {
+        ProvideAppLanguage(AppLanguage.SPANISH) {
+            ShareCard(
+                question = "",
+                answer = "Ni en tus sueños.",
+                layer = rememberGraphicsLayer(),
+                visible = true,
+                styleLabel = "Sarcástico"
+            )
+        }
     }
 
     @Test
