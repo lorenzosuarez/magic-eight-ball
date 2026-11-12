@@ -140,6 +140,12 @@ class WatchScreenshotTest {
         PersonalitySelectionScreen(selectedPersonality = Magic8BallPersonality.NEUTRAL, onPersonalitySelected = {})
     }
 
+    /** The whole list, opened on the style in use: every one of them can be reached. */
+    @Test
+    fun answer_style_list_spanish() = capture("watch_13_answer_style_list_spanish", AppLanguage.SPANISH) {
+        PersonalityList(selectedPersonality = Magic8BallPersonality.DOG, onPersonalitySelected = {})
+    }
+
     @Test
     fun ai_answers_unavailable() = capture("watch_5_ai_answers_unavailable") {
         AiAnswersSelectionScreen(isEnabled = true, isAvailable = false, onEnabledChange = {})
