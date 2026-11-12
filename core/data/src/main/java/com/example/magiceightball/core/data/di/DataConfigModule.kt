@@ -10,6 +10,8 @@ import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.data.config.DeviceAiAnswerQuota
 import com.example.magiceightball.core.data.config.GeminiSettingsSource
 import com.example.magiceightball.core.data.config.RemoteAnswers
+import com.example.magiceightball.core.data.config.RemoteCharacterBook
+import com.example.magiceightball.core.data.config.RemoteCharacters
 import com.example.magiceightball.core.data.config.RemoteConfigGeminiSettingsSource
 import com.example.magiceightball.core.data.datasource.JsonLocalDataSource
 import com.example.magiceightball.core.data.datasource.LocalDataSource
@@ -22,6 +24,7 @@ import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.LlmGateway
 import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.QueryConfig
+import com.example.magiceightball.core.domain.policy.CharacterBook
 import com.example.magiceightball.core.domain.policy.DefaultPromptPolicy
 import com.example.magiceightball.core.domain.policy.PromptPolicy
 import com.example.magiceightball.core.domain.repository.StreakRepository
@@ -100,6 +103,14 @@ abstract class GatewayModule {
     @Binds
     @Singleton
     abstract fun bindRemoteAnswers(impl: RemoteConfigGeminiSettingsSource): RemoteAnswers
+
+    @Binds
+    @Singleton
+    abstract fun bindRemoteCharacters(impl: RemoteConfigGeminiSettingsSource): RemoteCharacters
+
+    @Binds
+    @Singleton
+    abstract fun bindCharacterBook(impl: RemoteCharacterBook): CharacterBook
 
     @Binds
     @Singleton

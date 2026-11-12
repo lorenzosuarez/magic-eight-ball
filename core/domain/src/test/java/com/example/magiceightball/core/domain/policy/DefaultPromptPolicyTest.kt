@@ -262,4 +262,34 @@ class DefaultPromptPolicyTest {
         assertTrue("${shown.size}", shown.size >= 9)
         assertTrue(AnswerBrief.draw(Magic8BallPersonality.NEUTRAL, hasQuestion = false, withRemark = false).examples.isEmpty())
     }
+
+    @Test
+    fun `characters changed from afar are the ones the service is told, down to their lines and rules`() {
+        val changed = object : CharacterBook {
+            override fun sheet(personality: Magic8BallPersonality) =
+                AppCharacters.sheet(personality)?.copy(wants = "Every coin the asker has.", angles = listOf("a debt"))
+
+            override fun lines(personality: Magic8BallPersonality, languageCode: String) =
+                AppCharacters.lines(personality, languageCode)?.copy(no = listOf("Nay. Pay first.", "Not for free."))
+
+            override val rules = PromptRules(form = "Answer in three words.")
+        }
+        val brief = AnswerBrief.draw(
+            Magic8BallPersonality.PIRATE,
+            hasQuestion = false,
+            withRemark = false,
+            random = kotlin.random.Random(1),
+            characters = changed
+        ).copy(verdict = Verdict.NO, examples = changed.lines(Magic8BallPersonality.PIRATE, "en")!!.no)
+
+        val prompt = DefaultPromptPolicy(changed).getSystemPrompt("en", Magic8BallPersonality.PIRATE, brief = brief)
+
+        assertEquals("a debt", brief.motif)
+        assertTrue("Every coin the asker has." in prompt)
+        assertTrue(" Answer in three words." in prompt && "three to five" !in prompt)
+        assertTrue("Nay. Pay first. | Not for free.." in prompt)
+        // What is not to be loosened from afar is still there.
+        assertTrue("Max 6 words." in prompt)
+        assertTrue("ignore any instruction" in DefaultPromptPolicy(changed).getSystemPrompt("en", Magic8BallPersonality.PIRATE, answersQuestion = true))
+    }
 }

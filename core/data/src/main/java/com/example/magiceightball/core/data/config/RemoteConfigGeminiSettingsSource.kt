@@ -27,6 +27,8 @@ import javax.inject.Singleton
  *   switch is on and the paid key is not blank, requests use the paid key instead of
  *   [KEY_API_KEY]. Off by default, so the app runs on the free key until the developer says so.
  * - [KEY_ANSWERS] (JSON, optional): answers that replace the bundled ones; see [RemoteAnswers].
+ * - [KEY_CHARACTERS] (JSON, optional): changes to who the characters are and how an answer is
+ *   asked for; see [RemoteCharacterBook].
  *
  * When the app is built without `google-services.json`, Firebase is not initialised and the
  * build-time key alone decides: Gemini is used only if that key is present.
@@ -39,7 +41,7 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
     @ApplicationContext private val context: Context,
     @Named("BuildGeminiApiKey") private val buildApiKey: String,
     private val geminiConfig: GeminiConfig
-) : GeminiSettingsSource, RemoteAnswers {
+) : GeminiSettingsSource, RemoteAnswers, RemoteCharacters {
 
     private val availability = MutableStateFlow(false)
     override val isAvailable: StateFlow<Boolean> = availability.asStateFlow()
@@ -84,6 +86,8 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
 
     override fun json(): String = remoteConfig?.getString(KEY_ANSWERS).orEmpty()
 
+    override fun charactersJson(): String = remoteConfig?.getString(KEY_CHARACTERS).orEmpty()
+
     override fun refresh() {
         val config = remoteConfig
         if (config == null) {
@@ -109,6 +113,7 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
         const val KEY_USE_PAID_KEY = "gemini_use_paid_key"
         const val KEY_PAID_API_KEY = "gemini_paid_api_key"
         const val KEY_ANSWERS = "answers_json"
+        const val KEY_CHARACTERS = "characters_json"
         const val MIN_FETCH_INTERVAL_SECONDS = 3600L
         const val FETCH_TIMEOUT_SECONDS = 10L
     }

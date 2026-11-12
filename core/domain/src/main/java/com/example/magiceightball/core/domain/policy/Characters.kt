@@ -20,7 +20,7 @@ import com.example.magiceightball.core.domain.model.Magic8BallPersonality
  * @property angles what it may bring up when nothing was asked: things it does or holds against
  * the asker, never props from its world.
  */
-internal data class CharacterSheet(
+data class CharacterSheet(
     val who: String,
     val wants: String,
     val yes: String,
@@ -295,7 +295,7 @@ internal fun characterOf(personality: Magic8BallPersonality): CharacterSheet? = 
  * Lines a character has said in one language, written by hand: what the AI service is shown of
  * the voice, and never an English line for an answer in another language.
  */
-internal data class CharacterLines(
+data class CharacterLines(
     val yes: List<String>,
     val no: List<String>,
     val maybe: List<String>,

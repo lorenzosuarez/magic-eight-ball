@@ -37,6 +37,18 @@ interface RemoteAnswers {
 }
 
 /**
+ * What the developer keeps in Firebase about the characters, to change them without a release:
+ * see [RemoteCharacterBook] for what it may hold.
+ */
+interface RemoteCharacters {
+    /**
+     * The latest characters file known on this device; blank when there is none. Never waits
+     * for the network: it is what the last fetch left on disk.
+     */
+    fun charactersJson(): String
+}
+
+/**
  * Source of the [GeminiSettings]. Its [isAvailable] follows [GeminiSettings.isUsable] and is
  * brought up to date by [refresh].
  */

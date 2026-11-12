@@ -5,6 +5,8 @@ import com.example.magiceightball.core.data.gateway.GeminiApiClient
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
+import com.example.magiceightball.core.domain.policy.AppCharacters
+import com.example.magiceightball.core.domain.policy.CharacterBook
 import com.example.magiceightball.core.domain.policy.PromptPolicy
 import com.example.magiceightball.core.domain.policy.AnswerBrief
 import com.example.magiceightball.core.network.model.Content
@@ -21,7 +23,8 @@ import javax.inject.Inject
 class GeminiRemoteDataSource @Inject constructor(
     private val apiClient: GeminiApiClient,
     private val config: GeminiConfig,
-    private val promptPolicy: PromptPolicy
+    private val promptPolicy: PromptPolicy,
+    private val characters: CharacterBook = AppCharacters
 ) {
     /** How each answer is drawn before it is asked for: only a test has reason to replace it. */
     internal var drawBrief: (Magic8BallRequest) -> AnswerBrief = { request ->
@@ -30,7 +33,8 @@ class GeminiRemoteDataSource @Inject constructor(
             hasQuestion = request.questionForAi != null,
             withRemark = request.wantsRemark,
             languageCode = request.languageCode,
-            question = request.questionForAi
+            question = request.questionForAi,
+            characters = characters
         )
     }
 
