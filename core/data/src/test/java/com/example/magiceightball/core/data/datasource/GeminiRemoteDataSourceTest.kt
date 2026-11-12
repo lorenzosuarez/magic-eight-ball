@@ -166,6 +166,20 @@ class GeminiRemoteDataSourceTest {
         assertEquals(Magic8BallResult.Success("Nay.", fromAi = true), fetch(Magic8BallRequest(wantsRemark = true)))
     }
 
+    @Test
+    fun `a reply sent in several parts is read whole`() = runTest {
+        apiClient.parts = listOf("\u00a1NO! \u00a1Toma bat", "ido!\nTu gemelo malvado ", "rob\u00f3 las respuestas.")
+
+        assertEquals(
+            Magic8BallResult.Success(
+                "\u00a1NO! \u00a1Toma batido!",
+                fromAi = true,
+                remark = "Tu gemelo malvado rob\u00f3 las respuestas."
+            ),
+            fetch(Magic8BallRequest(question = "\u00bfVoy a aprobar?", wantsRemark = true))
+        )
+    }
+
     private suspend fun fetch(request: Magic8BallRequest): Magic8BallResult =
         dataSource.fetchMagic8BallMessage(request, apiKey = "key", modelId = "model")
 
@@ -178,6 +192,9 @@ class GeminiRemoteDataSourceTest {
         val requests = mutableListOf<GeminiRequest>()
         var answer = ANSWER
 
+        /** When set, the reply comes cut into these parts instead of whole. */
+        var parts: List<String>? = null
+
         override suspend fun generateContent(
             apiKey: String,
             modelId: String,
@@ -185,7 +202,9 @@ class GeminiRemoteDataSourceTest {
         ): GeminiResponse {
             requests += request
             return GeminiResponse(
-                candidates = listOf(Candidate(content = Content(parts = listOf(Part(text = answer)))))
+                candidates = listOf(
+                    Candidate(content = Content(parts = (parts ?: listOf(answer)).map { Part(text = it) }))
+                )
             )
         }
 
