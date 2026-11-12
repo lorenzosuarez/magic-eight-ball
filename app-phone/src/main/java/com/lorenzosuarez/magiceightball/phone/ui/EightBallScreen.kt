@@ -25,6 +25,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -400,6 +402,10 @@ fun EightBallScreen(
                 onReportAnswer = {
                     tick(HapticFeedbackConstantsCompat.CONFIRM)
                     viewModel.reportAnswer()
+                },
+                onRateAnswer = { liked ->
+                    tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
+                    viewModel.rateAnswer(liked)
                 }
             )
         }
@@ -443,6 +449,7 @@ internal fun EightBallContent(
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
     onReportAnswer: () -> Unit = {},
+    onRateAnswer: (Boolean) -> Unit = {},
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
     options: @Composable () -> Unit = {},
@@ -577,6 +584,7 @@ internal fun EightBallContent(
                             onAllowMicrophone = onAllowMicrophone,
                             onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
                             onReportAnswer = onReportAnswer,
+                            onRateAnswer = onRateAnswer,
                             onAskWho = onAskWho
                         )
                     }
@@ -743,6 +751,7 @@ private fun Stage(
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
     onReportAnswer: () -> Unit,
+    onRateAnswer: (Boolean) -> Unit,
     onAskWho: (String) -> Unit
 ) {
     // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
@@ -801,6 +810,7 @@ private fun Stage(
                 onAllowMicrophone = onAllowMicrophone,
                 onShareAnswer = onShareAnswer,
                 onReportAnswer = onReportAnswer,
+                onRateAnswer = onRateAnswer,
                 onAskWho = onAskWho,
                 modifier = Modifier
                     .graphicsLayer { alpha = intro() }
@@ -1021,6 +1031,7 @@ private fun Caption(
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
     onReportAnswer: () -> Unit,
+    onRateAnswer: (Boolean) -> Unit,
     onAskWho: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1158,63 +1169,141 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
-                // What can be done with an answer. Sharing is the main thing; what the AI wrote
-                // can also be reported, since nobody read it before it was shown.
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                AnswerActions(
+                    liked = phase.liked,
+                    canReport = fromAi,
+                    reported = phase.reported,
+                    onShare = onShareAnswer,
+                    onRate = onRateAnswer,
+                    onReport = onReportAnswer
+                )
+            }
+        }
+    }
+}
+
+/**
+ * What can be done with an answer, in one quiet pill: share it, which is the main thing, and
+ * say whether it was a good one. What the AI wrote can also be reported, since nobody read it
+ * before it was shown: the way to that opens under the pill once the answer is called a bad one.
+ */
+@Composable
+private fun AnswerActions(
+    liked: Boolean?,
+    canReport: Boolean,
+    reported: Boolean,
+    onShare: () -> Unit,
+    onRate: (Boolean) -> Unit,
+    onReport: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = ACTIONS_PILL_ALPHA))
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(
+                onClick = onShare,
+                modifier = Modifier.heightIn(min = 48.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_share),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(
+                Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(width = 1.dp, height = 20.dp)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = ACTIONS_DIVIDER_ALPHA))
+            )
+            RateButton(
+                good = true,
+                chosen = liked,
+                label = stringResource(R.string.rate_good),
+                onClick = { onRate(true) }
+            )
+            RateButton(
+                good = false,
+                chosen = liked,
+                label = stringResource(R.string.rate_bad),
+                onClick = { onRate(false) }
+            )
+        }
+        AnimatedVisibility(visible = canReport && (liked == false || reported)) {
+            if (reported) {
+                Text(
+                    text = stringResource(R.string.report_done),
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .wrapContentHeight()
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                val label = stringResource(R.string.report_label)
+                TextButton(
+                    onClick = onReport,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .semantics { contentDescription = label },
+                    shape = CircleShape,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 ) {
-                    TextButton(
-                        onClick = onShareAnswer,
-                        modifier = Modifier.heightIn(min = 48.dp),
-                        shape = ButtonShape,
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_share),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
-                    }
-                    if (fromAi) {
-                        if (phase.reported) {
-                            Text(
-                                text = stringResource(R.string.report_done),
-                                modifier = Modifier
-                                    .padding(horizontal = 12.dp)
-                                    .semantics { liveRegion = LiveRegionMode.Polite },
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            val label = stringResource(R.string.report_label)
-                            TextButton(
-                                onClick = onReportAnswer,
-                                modifier = Modifier
-                                    .heightIn(min = 48.dp)
-                                    .semantics { contentDescription = label },
-                                shape = ButtonShape,
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_flag),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.action_report))
-                            }
-                        }
-                    }
+                    Icon(
+                        painter = painterResource(R.drawable.ic_flag),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.action_report))
                 }
             }
         }
     }
 }
+
+/** A thumb: filled in the accent once chosen, and stepping back when the other one is. */
+@Composable
+private fun RateButton(good: Boolean, chosen: Boolean?, label: String, onClick: () -> Unit) {
+    val selected = chosen == good
+    val icon = when {
+        good && selected -> R.drawable.ic_thumb_up_filled
+        good -> R.drawable.ic_thumb_up
+        selected -> R.drawable.ic_thumb_down_filled
+        else -> R.drawable.ic_thumb_down
+    }
+    val tint = when {
+        selected -> MaterialTheme.colorScheme.primary
+        chosen == null -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = RATE_UNCHOSEN_ALPHA)
+    }
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .toggleable(value = selected, role = Role.RadioButton, onValueChange = { onClick() })
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(painter = painterResource(icon), contentDescription = null, modifier = Modifier.size(20.dp), tint = tint)
+    }
+}
+
+private const val ACTIONS_PILL_ALPHA = 0.07f
+private const val ACTIONS_DIVIDER_ALPHA = 0.14f
+private const val RATE_UNCHOSEN_ALPHA = 0.4f
 
 @Composable
 private fun QuietText(

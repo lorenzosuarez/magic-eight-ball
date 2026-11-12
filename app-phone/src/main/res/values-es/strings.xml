@@ -130,6 +130,8 @@
     <string name="report_done">Reportada. Gracias</string>
     <string name="report_label">Reportar esta respuesta como inapropiada</string>
     <string name="action_share">Compartir</string>
+    <string name="rate_good">Buena respuesta</string>
+    <string name="rate_bad">Mala respuesta</string>
     <string name="action_read_aloud">Leer la respuesta en voz alta</string>
     <string name="brand_tagline">Respuestas escritas por IA</string>
     <string name="options_answers">Respuestas</string>

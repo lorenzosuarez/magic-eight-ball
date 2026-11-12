@@ -61,13 +61,15 @@ sealed interface BallPhase {
      * @property id grows with every answer, so two identical answers are still told apart.
      * @property style the style that gave the answer, which signs it; null when none did.
      * @property reported whether the user has reported this answer: it is reported once.
+     * @property liked what the user said of this answer: good, bad, or nothing yet.
      */
     data class Answered(
         val id: Long,
         val question: String,
         val answer: AnswerText,
         val style: Magic8BallPersonality? = null,
-        val reported: Boolean = false
+        val reported: Boolean = false,
+        val liked: Boolean? = null
     ) : BallPhase
 }
 

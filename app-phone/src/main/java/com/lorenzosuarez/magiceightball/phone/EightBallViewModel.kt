@@ -298,6 +298,15 @@ class EightBallViewModel @Inject constructor(
         phase.value = shown.copy(reported = true)
     }
 
+    /** The user says whether the answer on screen was a good one. Saying the same again changes nothing. */
+    fun rateAnswer(liked: Boolean) {
+        val shown = phase.value as? BallPhase.Answered ?: return
+        if (shown.liked == liked) return
+        val fromAi = (shown.answer as? AnswerText.Plain)?.fromAi == true
+        usage.track(UsageEvent.AnswerRated(liked, shown.style, fromAi))
+        phase.value = shown.copy(liked = liked)
+    }
+
     /** The user answered the system's question about notifications. */
     fun onNotificationsAnswered(allowed: Boolean) = usage.track(UsageEvent.NotificationsAnswered(allowed))
 
