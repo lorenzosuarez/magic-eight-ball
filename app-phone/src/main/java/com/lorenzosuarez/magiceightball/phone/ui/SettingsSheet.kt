@@ -453,6 +453,7 @@ private fun EightBallUiState.privacyNoteRes(): Int = when {
 private fun AppLanguage.labelRes(): Int = when (this) {
     AppLanguage.ENGLISH -> R.string.language_english
     AppLanguage.SPANISH -> R.string.language_spanish
+    AppLanguage.PORTUGUESE -> R.string.language_portuguese
 }
 
 /** Cards and the buttons on them: the two corner sizes the whole app uses. */

@@ -366,6 +366,19 @@ class EightBallScreenshotTest {
     )
 
     @Test
+    fun phone_portuguese() {
+        captureStyles("phone_32_styles_portuguese", AppLanguage.PORTUGUESE, dark = true)
+        captureWithSettings(
+            "phone_33_settings_portuguese",
+            EightBallUiState(settings = UserSettings(language = AppLanguage.PORTUGUESE), aiAnswersAvailable = true)
+        )
+        capture(
+            "phone_34_ask_portuguese",
+            EightBallUiState(settings = UserSettings(language = AppLanguage.PORTUGUESE), streakDays = 3)
+        )
+    }
+
+    @Test
     fun phone_styles_spanish_dark() = captureStyles("phone_18_styles_spanish_dark", AppLanguage.SPANISH, dark = true)
 
     @Test

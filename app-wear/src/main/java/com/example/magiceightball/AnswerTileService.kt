@@ -71,11 +71,11 @@ class AnswerTileService : TileService() {
                 } else {
                     null
                 }
-                val spanish = settings?.language == AppLanguage.SPANISH
+                val language = settings?.language ?: AppLanguage.ENGLISH
                 completer.set(
                     TileBuilders.Tile.Builder()
                         .setResourcesVersion(RESOURCES_VERSION)
-                        .setTileTimeline(TimelineBuilders.Timeline.fromLayoutElement(layout(answer, spanish)))
+                        .setTileTimeline(TimelineBuilders.Timeline.fromLayoutElement(layout(answer, language)))
                         .build()
                 )
             }
@@ -91,7 +91,12 @@ class AnswerTileService : TileService() {
     }
 
     /** The whole tile is the button: the ball in the middle and, at rest, what to do under it. */
-    private fun layout(answer: String?, spanish: Boolean): LayoutElementBuilders.LayoutElement {
+    private fun layout(answer: String?, language: AppLanguage): LayoutElementBuilders.LayoutElement {
+        val hint = when (language) {
+            AppLanguage.ENGLISH -> "Tap to ask"
+            AppLanguage.SPANISH -> "Toca para preguntar"
+            AppLanguage.PORTUGUESE -> "Toque para perguntar"
+        }
         val ask = ModifiersBuilders.Clickable.Builder()
             .setId(ASK_ID)
             .setOnClick(ActionBuilders.LoadAction.Builder().build())
@@ -102,7 +107,7 @@ class AnswerTileService : TileService() {
         if (answer == null) {
             column
                 .addContent(LayoutElementBuilders.Spacer.Builder().setHeight(dp(8f)).build())
-                .addContent(text(if (spanish) "Toca para preguntar" else "Tap to ask", HINT_SP, BrandPalette.ON_SURFACE_QUIET, bold = false))
+                .addContent(text(hint, HINT_SP, BrandPalette.ON_SURFACE_QUIET, bold = false))
         }
         return LayoutElementBuilders.Box.Builder()
             .setWidth(expand())

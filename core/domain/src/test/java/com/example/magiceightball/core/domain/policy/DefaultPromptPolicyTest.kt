@@ -148,4 +148,14 @@ class DefaultPromptPolicyTest {
         assertTrue(drawn.map { it.angle }.distinct().size >= 6)
         assertTrue(drawn.all { it.withRemark })
     }
+
+    @Test
+    fun `Portuguese is asked for as it is spoken in Brazil, every word of it`() {
+        val plain = policy.getSystemPrompt("pt", Magic8BallPersonality.PIRATE)
+        val drawn = policy.getSystemPrompt("pt", Magic8BallPersonality.PIRATE, brief = AnswerBrief(Verdict.NO))
+
+        assertTrue(plain.endsWith(" Respond in Brazilian Portuguese."))
+        assertTrue("Every word must be Brazilian Portuguese" in drawn)
+        assertTrue("Every word must be" !in plain)
+    }
 }

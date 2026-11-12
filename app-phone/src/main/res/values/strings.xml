@@ -52,6 +52,7 @@
     <string name="settings_language">Language</string>
     <string name="language_english" translatable="false">English</string>
     <string name="language_spanish" translatable="false">Español</string>
+    <string name="language_portuguese" translatable="false">Português</string>
     <string name="settings_style">Answer style</string>
     <string name="style_sarcastic">Sarcastic</string>
     <string name="style_mystical">Mystical</string>

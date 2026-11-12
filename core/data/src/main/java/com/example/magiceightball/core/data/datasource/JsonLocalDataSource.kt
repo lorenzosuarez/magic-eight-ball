@@ -103,8 +103,11 @@ class JsonLocalDataSource @Inject constructor(
         /** How many of the latest answers are kept out of the next draw. */
         const val RECENT_WINDOW = 12
 
-        fun defaultMessage(languageCode: String): String =
-            if (Magic8BallDataDto.isSpanish(languageCode)) "Pregunta más tarde." else "Ask again later."
+        fun defaultMessage(languageCode: String): String = when (Magic8BallDataDto.baseLanguage(languageCode)) {
+            "es" -> "Pregunta más tarde."
+            "pt" -> "Pergunte mais tarde."
+            else -> "Ask again later."
+        }
 
         /**
          * Picks a random element that is not among the [recent] answers (oldest

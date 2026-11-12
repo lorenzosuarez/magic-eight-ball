@@ -9,6 +9,8 @@ class SpokenQuestionTest {
     fun `what was said is written as a question, in the way of its language`() {
         assertEquals("¿Voy a ganar la lotería?", "voy a ganar la lotería".asSpokenQuestion("es"))
         assertEquals("Will I win the lottery?", "will I win the lottery".asSpokenQuestion("en"))
+        // Portuguese closes a question and does not open it.
+        assertEquals("Vou ganhar na loteria?", "vou ganhar na loteria".asSpokenQuestion("pt"))
     }
 
     @Test
