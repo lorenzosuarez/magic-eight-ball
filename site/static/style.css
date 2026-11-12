@@ -1,0 +1,174 @@
+/* One accent, cool greys, and the page follows the device's light or dark. */
+:root {
+  --page: #f6f7fa;
+  --ink: #12151c;
+  --quiet: #515a68;
+  --line: #dde1e8;
+  --accent: #3a4bc4;
+  --on-accent: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0b0e14;
+    --ink: #eceff5;
+    --quiet: #a3acba;
+    --line: #232936;
+    --accent: #8fa3ff;
+    --on-accent: #0b0e14;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+header,
+main,
+footer {
+  width: min(100% - 40px, 44rem);
+  margin-inline: auto;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding-block: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  gap: 16px;
+  font-size: 15px;
+}
+
+nav a {
+  color: var(--quiet);
+  text-decoration: none;
+}
+
+nav a[aria-current] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+main {
+  padding-block: 40px 56px;
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 2rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 44px 0 12px;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+p,
+ul {
+  margin: 0 0 16px;
+}
+
+ul {
+  padding-left: 22px;
+}
+
+li {
+  margin-bottom: 10px;
+}
+
+code {
+  font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.front {
+  padding-block: 72px 96px;
+  text-align: center;
+}
+
+.ball {
+  display: block;
+  margin: 0 auto 28px;
+}
+
+.front h1 {
+  font-size: 2.5rem;
+}
+
+.tagline {
+  max-width: 26rem;
+  margin-inline: auto;
+  color: var(--quiet);
+  font-size: 1.15rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 24px;
+  margin-top: 32px;
+}
+
+.primary {
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+footer {
+  display: flex;
+  gap: 24px;
+  padding-block: 24px 40px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+
+footer a {
+  color: var(--quiet);
+}

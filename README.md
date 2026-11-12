@@ -146,3 +146,11 @@ The app builds and runs with no setup at all: without Firebase it answers from t
 ## License 📄
 
 Copyright © 2024 **Lorenzo Suarez**. All rights reserved.
+
+## The public site
+
+The privacy policy is published at https://magic-ai-8-ball.web.app in English, Spanish (`/es/privacy`) and Portuguese (`/pt/privacy`), with a front page in each. Its one source is the Markdown under `docs/`: `site/build.py` turns it into pages before every deploy, so what is published cannot drift from the repository.
+
+    firebase deploy --only hosting
+
+The app links to the page in the language it is set to, and the store listing gives the English one.

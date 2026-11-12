@@ -87,3 +87,7 @@ fastlane/readme.md
 
 # Kotlin compiler session files
 .kotlin/
+
+# The public site is built from docs/ before each deploy: see site/build.py
+site/public/
+.firebase/

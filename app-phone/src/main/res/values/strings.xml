@@ -99,7 +99,7 @@
     <string name="styles_group_movies">Straight from a movie</string>
     <string name="styles_group_attitude">With attitude</string>
     <string name="settings_ai">AI answers</string>
-    <string name="settings_ai_on">Written on the spot, just for you</string>
+    <string name="settings_ai_on">Generated on the spot</string>
     <string name="settings_ai_off">The ball answers on its own</string>
     <string name="settings_ai_unavailable">Not available right now. The ball still answers</string>
     <string name="settings_ai_classic">The Classic style doesn\'t use AI. Pick another style to turn it on</string>
