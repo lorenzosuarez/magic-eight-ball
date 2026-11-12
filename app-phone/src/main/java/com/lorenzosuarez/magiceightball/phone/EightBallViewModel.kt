@@ -255,9 +255,32 @@ class EightBallViewModel @Inject constructor(
     fun showDailyVerdict(verdict: String) {
         if (verdict.isBlank() || isBusy()) return
         cycleJob?.cancel()
-        phase.value = BallPhase.Answered(id = nextAnswerId++, question = "", answer = AnswerText.Plain(verdict))
-        viewModelScope.launch { history.add("", verdict, clock.millis(), false) }
+        val style = settings.value?.personality
+        phase.value = BallPhase.Answered(nextAnswerId++, question = "", answer = AnswerText.Plain(verdict), style = style)
+        viewModelScope.launch { history.add("", verdict, clock.millis(), false, style) }
         usage.track(UsageEvent.DailyVerdictOpened)
+        _effects.trySend(EightBallEffect.AnswerRevealed)
+    }
+
+    /**
+     * Puts an answer from the history back in the ball, as it was given: nothing is asked, and
+     * it is not kept a second time.
+     */
+    fun showAgain(entry: HistoryEntry) {
+        if (isBusy()) return
+        cycleJob?.cancel()
+        val said = entry.answer
+        phase.value = BallPhase.Answered(
+            id = nextAnswerId++,
+            question = entry.question,
+            // The remark was kept with its answer, on a line of its own.
+            answer = if (said == null) AnswerText.Fallback else AnswerText.Plain(
+                value = said.substringBefore('\n'),
+                fromAi = entry.fromAi,
+                remark = said.substringAfter('\n', "").takeIf { it.isNotBlank() }
+            ),
+            style = entry.style
+        )
         _effects.trySend(EightBallEffect.AnswerRevealed)
     }
 
@@ -507,13 +530,15 @@ class EightBallViewModel @Inject constructor(
         val answer = requestAnswer(settings, question)
         minimumThinking.join()
 
-        phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = answer)
+        // Classic answers are the toy's own: nobody signs them.
+        val style = settings.personality.takeIf { it != Magic8BallPersonality.NEUTRAL }
+        phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = answer, style = style)
         // Outside this question's own job: closing the answer at once must not lose its entry.
         viewModelScope.launch {
             val plain = answer as? AnswerText.Plain
             // The remark is kept with its answer, on a line of its own.
             val kept = plain?.let { listOfNotNull(it.value, it.remark).joinToString("\n") }
-            history.add(question, kept, clock.millis(), plain?.fromAi == true)
+            history.add(question, kept, clock.millis(), plain?.fromAi == true, style)
         }
         viewModelScope.launch { streaks.recordAnswer(today()) }
         // That the ball answered, and how it was asked: never what was asked or answered.

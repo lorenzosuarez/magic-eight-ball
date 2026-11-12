@@ -1,5 +1,6 @@
 package com.example.magiceightball.core.domain.repository
 
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import kotlinx.coroutines.flow.Flow
 
@@ -11,7 +12,14 @@ interface AnswerHistoryRepository {
     /** The saved entries, newest first, then every change to them. */
     val entries: Flow<List<HistoryEntry>>
 
-    suspend fun add(question: String, answer: String?, askedAtMillis: Long, fromAi: Boolean)
+    /** @param style the style that gave the answer, when one did. */
+    suspend fun add(
+        question: String,
+        answer: String?,
+        askedAtMillis: Long,
+        fromAi: Boolean,
+        style: Magic8BallPersonality? = null
+    )
 
     suspend fun remove(id: Long)
 

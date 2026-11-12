@@ -121,6 +121,7 @@ import androidx.core.view.ViewCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.magiceightball.core.domain.model.HistoryEntry
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.lorenzosuarez.magiceightball.phone.AnswerText
 import com.lorenzosuarez.magiceightball.phone.BallPhase
 import com.lorenzosuarez.magiceightball.phone.EightBallEffect
@@ -310,6 +311,7 @@ fun EightBallScreen(
                     tick(HapticFeedbackConstantsCompat.CLOCK_TICK)
                     viewModel.clearHistory()
                 },
+                onShowHistoryEntry = viewModel::showAgain,
                 onSpeakAnswer = {
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
                     answerToSay?.let { voice.say(it, answerLocale) }
@@ -403,6 +405,7 @@ internal fun EightBallContent(
     onRestoreHistoryEntry: (HistoryEntry) -> Unit,
     onClearHistory: () -> Unit,
     modifier: Modifier = Modifier,
+    onShowHistoryEntry: (HistoryEntry) -> Unit = {},
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
     onAskWho: (String) -> Unit = {},
@@ -457,8 +460,8 @@ internal fun EightBallContent(
                     answer = answered.answer.text(),
                     layer = shareLayer,
                     remark = answered.answer.remark(),
-                    styleLabel = stringResource(state.settings.personality.labelRes()),
-                    personality = state.settings.personality
+                    styleLabel = answered.style?.let { stringResource(it.labelRes()) },
+                    personality = answered.style ?: Magic8BallPersonality.NEUTRAL
                 )
             }
         }
@@ -522,6 +525,7 @@ internal fun EightBallContent(
                             now = now,
                             onDelete = deleteWithUndo,
                             onClearAll = onClearHistory,
+                            onOpen = onShowHistoryEntry,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
@@ -1069,18 +1073,18 @@ private fun Caption(
                 }
                 // Who said it, signed as on the picture that is shared: an answer is only funny
                 // when it is known whose it is.
-                // ponytail: signs with the style chosen now, not the one that answered; keep the
-                // style in the answer if changing style with an answer on screen ever matters.
-                Text(
-                    text = "— " + stringResource(state.settings.personality.labelRes()),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FontFamily.Serif,
-                        fontStyle = FontStyle.Italic
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1
-                )
+                phase.style?.let { style ->
+                    Text(
+                        text = "\u2014 " + stringResource(style.labelRes()),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = FontFamily.Serif,
+                            fontStyle = FontStyle.Italic
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
                 // Said quietly, and only when it is true: who wrote this answer.
                 if ((phase.answer as? AnswerText.Plain)?.fromAi == true) {
                     Text(

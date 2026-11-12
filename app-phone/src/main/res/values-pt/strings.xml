@@ -23,6 +23,7 @@
     <string name="history_empty_title">Ainda não há respostas</string>
     <string name="history_empty">Pergunte à bola e suas respostas aparecerão aqui, salvas apenas neste dispositivo</string>
     <string name="history_footer">Salvo apenas neste dispositivo</string>
+    <string name="history_open">Ver na bola</string>
     <string name="history_delete">Apagar</string>
     <string name="history_deleted">Resposta apagada</string>
     <string name="action_undo">Desfazer</string>

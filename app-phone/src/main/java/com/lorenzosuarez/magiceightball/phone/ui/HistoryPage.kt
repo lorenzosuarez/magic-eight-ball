@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,6 +47,7 @@ import java.util.Date
  *
  * @param now the current time, for "5 min ago".
  * @param onDelete receives the entry to delete; the caller offers to undo it.
+ * @param onOpen receives the entry that was tapped, to show it in the ball again.
  */
 @Composable
 internal fun HistoryContent(
@@ -53,7 +55,8 @@ internal fun HistoryContent(
     now: Long,
     onDelete: (HistoryEntry) -> Unit,
     onClearAll: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpen: (HistoryEntry) -> Unit = {}
 ) {
     var confirmClear by rememberSaveable { mutableStateOf(false) }
 
@@ -78,7 +81,7 @@ internal fun HistoryContent(
         } else {
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                 items(entries, key = { it.id }) { entry ->
-                    HistoryRow(entry, now, onDelete, Modifier.animateItem())
+                    HistoryRow(entry, now, onDelete, onOpen, Modifier.animateItem())
                 }
                 item {
                     Text(
@@ -126,12 +129,15 @@ private fun HistoryRow(
     entry: HistoryEntry,
     now: Long,
     onDelete: (HistoryEntry) -> Unit,
+    onOpen: (HistoryEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // The whole row brings the answer back; its delete button keeps its own touch.
+            .clickable(onClickLabel = stringResource(R.string.history_open)) { onOpen(entry) }
             .padding(start = 16.dp, top = 12.dp, end = 4.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -56,10 +56,11 @@ class HistoryPageTest {
         HistoryEntry(id = (ENTRIES - index).toLong(), question = "", answer = "Answer $index", askedAtMillis = 0L, fromAi = false)
     }
     private val deleted = mutableListOf<HistoryEntry>()
+    private val opened = mutableListOf<HistoryEntry>()
 
     private fun show() = compose.setContent {
         MagicEightBallPhoneTheme {
-            HistoryContent(entries = entries, now = 0L, onDelete = deleted::add, onClearAll = {})
+            HistoryContent(entries = entries, now = 0L, onDelete = deleted::add, onClearAll = {}, onOpen = opened::add)
         }
     }
 
@@ -73,6 +74,17 @@ class HistoryPageTest {
         for (index in entries.indices.reversed()) list.performScrollToIndex(index)
 
         compose.onNodeWithText("Answer 0").assertIsDisplayed()
+    }
+
+    @Test
+    fun `tapping an entry asks for it to be shown again, and deleting one does not`() {
+        show()
+
+        compose.onNodeWithText("Answer 1").performClick()
+        assertEquals(listOf(entries[1]), opened)
+
+        compose.onAllNodesWithContentDescription("Delete").onFirst().performClick()
+        assertEquals(listOf(entries[1]), opened)
     }
 
     @Test
