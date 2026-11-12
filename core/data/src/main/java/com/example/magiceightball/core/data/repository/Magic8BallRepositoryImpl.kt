@@ -45,6 +45,7 @@ class Magic8BallRepositoryImpl(
 
     override suspend fun generateMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         geminiSettings.refresh()
+        var allowanceSpent = false
         // The classic style is the toy's own twenty answers: nothing is written for it.
         if (request.useAi && request.personality != Magic8BallPersonality.NEUTRAL) {
             // Remote Config may touch disk the first time it is read.
@@ -52,7 +53,10 @@ class Magic8BallRepositoryImpl(
             // Past the day's allowance the ball goes on answering, from its own list.
             // While the key's own allowance is used up, asking again only costs the user time.
             val resting = nowMillis() < restingUntilMillis
-            if (settings.isUsable && !resting && aiAnswerQuota.tryTake(settings.dailyLimit)) {
+            val mayAsk = settings.isUsable && !resting
+            val taken = mayAsk && aiAnswerQuota.tryTake(settings.dailyLimit)
+            allowanceSpent = mayAsk && !taken
+            if (taken) {
                 val remote = withTimeoutOrNull(REMOTE_BUDGET_MS) {
                     remoteDataSource.fetchMagic8BallMessage(request, settings.apiKey, settings.modelId)
                 }
@@ -63,7 +67,8 @@ class Magic8BallRepositoryImpl(
             }
         }
         return Magic8BallResult.Success(
-            localDataSource.getRandomMessage(request.languageCode, request.personality)
+            localDataSource.getRandomMessage(request.languageCode, request.personality),
+            aiAllowanceSpent = allowanceSpent
         )
     }
 

@@ -63,6 +63,8 @@ class EightBallViewModel @Inject constructor(
     private val settings: StateFlow<UserSettings?> = userSettingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Whether the last answer was a bundled one for want of the day's AI answers. */
+    private val aiAllowanceSpent = MutableStateFlow(false)
     private val voiceInputs = combine(speechAvailable, microphone, ::Pair)
     private val turn = MutableStateFlow(0)
     private val noticeAndHistory = combine(notice, history.entries, turn, ::Triple)
@@ -75,15 +77,16 @@ class EightBallViewModel @Inject constructor(
     val state: StateFlow<EightBallUiState?> = combine(
         phase,
         settings,
-        aiAnswersAvailability.isAvailable,
+        combine(aiAnswersAvailability.isAvailable, aiAllowanceSpent, ::Pair),
         voiceInputs,
         noticeAndHistory
-    ) { phase, saved, aiAvailable, (speech, microphone), (notice, history, turn) ->
+    ) { phase, saved, (aiAvailable, aiSpent), (speech, microphone), (notice, history, turn) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
                 settings = it,
                 aiAnswersAvailable = aiAvailable,
+                aiAllowanceSpent = aiSpent,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -463,6 +466,7 @@ class EightBallViewModel @Inject constructor(
         } catch (_: Exception) {
             null
         }
+        (result as? Magic8BallResult.Success)?.let { aiAllowanceSpent.value = it.aiAllowanceSpent }
         return when (result) {
             is Magic8BallResult.Success ->
                 result.message.takeIf { it.isNotBlank() }?.let {

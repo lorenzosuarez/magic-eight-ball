@@ -281,6 +281,57 @@ class EightBallScreenshotTest {
     )
 
     @Test
+    fun phone_answer_with_remark_spanish() = capture(
+        "phone_26_answer_with_remark_spanish",
+        EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH, personality = Magic8BallPersonality.PIRATE),
+            aiAnswersAvailable = true,
+            phase = BallPhase.Answered(
+                id = 0,
+                question = "¿Me va a escribir?",
+                answer = AnswerText.Plain(
+                    "No, mapa roto.",
+                    fromAi = true,
+                    remark = "Diecinueve islas hundidas guarden ese secreto maldito."
+                )
+            )
+        )
+    )
+
+    @Test
+    fun phone_history_with_remark_spanish() = capture(
+        "phone_27_history_with_remark_spanish",
+        EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH),
+            history = listOf(
+                HistoryEntry(2, "¿Me va a escribir?", "No, mapa roto.\nDiecinueve islas hundidas guarden ese secreto maldito.", NOW - 20_000L, fromAi = true),
+                HistoryEntry(1, "", "Es cierto.", NOW - 12 * MINUTE, fromAi = false)
+            )
+        ),
+        initialPage = HISTORY_PAGE
+    )
+
+    /** With the classic style the AI switch says why it is off, and with the day's answers spent, that. */
+    @Test
+    fun phone_settings_classic_and_spent() {
+        captureWithSettings(
+            "phone_28_settings_classic",
+            EightBallUiState(
+                settings = UserSettings(language = AppLanguage.SPANISH, personality = Magic8BallPersonality.NEUTRAL),
+                aiAnswersAvailable = true
+            )
+        )
+        captureWithSettings(
+            "phone_29_settings_ai_spent",
+            EightBallUiState(
+                settings = UserSettings(language = AppLanguage.SPANISH),
+                aiAnswersAvailable = true,
+                aiAllowanceSpent = true
+            )
+        )
+    }
+
+    @Test
     fun phone_styles_spanish_dark() = captureStyles("phone_18_styles_spanish_dark", AppLanguage.SPANISH, dark = true)
 
     @Test

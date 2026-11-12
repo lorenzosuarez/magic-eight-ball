@@ -11,6 +11,8 @@ import com.example.magiceightball.core.domain.model.UserSettings
  * @property voice whether holding the screen listens to a question, and if not, why.
  * @property notice a short explanation shown in place of the hint for a moment.
  * @property history the latest answers, newest first.
+ * @property aiAllowanceSpent true once an answer came from the bundled list because the day's AI
+ * answers are used up; false again as soon as one is written by the AI service.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
 data class EightBallUiState(
@@ -20,7 +22,8 @@ data class EightBallUiState(
     val voice: VoiceStatus = VoiceStatus.Ready,
     val notice: Notice? = null,
     val history: List<HistoryEntry> = emptyList(),
-    val turn: Int = 0
+    val turn: Int = 0,
+    val aiAllowanceSpent: Boolean = false
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?

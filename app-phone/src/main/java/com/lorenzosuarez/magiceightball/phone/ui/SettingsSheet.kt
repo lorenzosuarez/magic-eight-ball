@@ -109,17 +109,21 @@ internal fun SettingsContent(
                 onSeeAll = { browsingStyles = true }
             )
             RowDivider()
+            // The classic style never asks the AI service: the switch says so rather than promise it.
+            val classic = state.settings.personality == Magic8BallPersonality.NEUTRAL
             SwitchRow(
                 title = stringResource(R.string.settings_ai),
                 supporting = stringResource(
                     when {
                         !state.aiAnswersAvailable -> R.string.settings_ai_unavailable
-                        state.settings.aiAnswersEnabled -> R.string.settings_ai_on
-                        else -> R.string.settings_ai_off
+                        classic -> R.string.settings_ai_classic
+                        !state.settings.aiAnswersEnabled -> R.string.settings_ai_off
+                        state.aiAllowanceSpent -> R.string.settings_ai_spent
+                        else -> R.string.settings_ai_on
                     }
                 ),
-                checked = state.usesAiAnswers,
-                enabled = state.aiAnswersAvailable,
+                checked = state.usesAiAnswers && !classic,
+                enabled = state.aiAnswersAvailable && !classic,
                 onCheckedChange = onAiAnswersChange
             )
             RowDivider()
