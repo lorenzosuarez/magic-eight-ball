@@ -35,6 +35,19 @@ class SwayFilterTest {
     }
 
     @Test
+    fun `when the hand stops the ball swings on for a moment, then rests`() {
+        repeat(50) { sample(0f) }
+        repeat(30) { index -> sample(if (index / 6 % 2 == 0) 15f else -15f) }
+
+        // A fifth of a second later it is still moving: this is the part that is seen.
+        val swings = List(10) { sample(0f); abs(filter.x) }
+        assertTrue(swings.max() > 0.1f)
+
+        repeat(60) { sample(0f) }
+        assertEquals(0f, filter.x, 0.02f)
+    }
+
+    @Test
     fun `the hardest shake never takes the ball past its limit`() {
         repeat(50) { sample(0f) }
         repeat(200) { index -> sample(if (index / 3 % 2 == 0) 60f else -60f) }

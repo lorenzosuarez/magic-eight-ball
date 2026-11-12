@@ -1160,7 +1160,7 @@ private val BALL_MIN_SIZE = 96.dp
 /** Wide enough for the ball to grow into when it shows an answer. */
 private val BALL_GAP = 56.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
-private val BALL_SWAY = 7.dp
+private val BALL_SWAY = 12.dp
 
 private val TOP_BAR_HEIGHT = 72.dp
 

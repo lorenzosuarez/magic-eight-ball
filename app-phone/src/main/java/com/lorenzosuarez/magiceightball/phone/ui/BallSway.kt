@@ -97,14 +97,21 @@ internal fun rememberBallSway(active: Boolean, ticks: Boolean): BallSway {
  * Turns accelerometer samples into where the ball sits and when a stroke of a shake begins.
  *
  * Gravity is estimated with a slow filter and taken out, so how the phone is held does not
- * matter. What is left pushes the ball the other way, as inertia would, through a curve that
- * flattens out: a gentle move shows, and the hardest shake still moves the ball only so far.
+ * matter. What is left pushes a weight held by a soft spring the other way, as inertia would:
+ * the ball swings with the hand and, when the hand stops, goes on for a moment and settles.
+ * That last swing is the part that is seen, since nobody reads a screen they are shaking. What
+ * is shown passes through a curve that flattens out, so the hardest shake still moves the ball
+ * only so far.
  */
 internal class SwayFilter {
-    var x = 0f
-        private set
-    var y = 0f
-        private set
+    val x: Float get() = tanh(placeX)
+    val y: Float get() = tanh(placeY)
+
+    /** The weight on its spring: where it is and how fast it is going, each way. */
+    private var placeX = 0f
+    private var placeY = 0f
+    private var speedX = 0f
+    private var speedY = 0f
 
     private var hasGravity = false
     private var gravityX = 0f
@@ -134,9 +141,12 @@ internal class SwayFilter {
         val pushY = rawY - gravityY
 
         // The screen's y grows downwards, the sensor's upwards: pushed up, the ball is left below.
-        val follow = elapsed / (FOLLOW_NANOS + elapsed)
-        x += follow * (-tanh(pushX / SOFT_PUSH) - x)
-        y += follow * (tanh(pushY / SOFT_PUSH) - y)
+        // A long gap between samples is no reason for the weight to leap.
+        val seconds = (elapsed / NANOS_PER_SECOND).coerceAtMost(MAX_STEP_SECONDS)
+        speedX += (-DRIVE * pushX - STIFFNESS * placeX - DAMPING * speedX) * seconds
+        speedY += (DRIVE * pushY - STIFFNESS * placeY - DAMPING * speedY) * seconds
+        placeX += speedX * seconds
+        placeY += speedY * seconds
 
         val strength = hypot(pushX, pushY)
         if (strength < STROKE_END) {
@@ -156,10 +166,17 @@ internal class SwayFilter {
 
     private companion object {
         const val GRAVITY_NANOS = 300_000_000f
-        const val FOLLOW_NANOS = 55_000_000f
+        const val NANOS_PER_SECOND = 1_000_000_000f
+        const val MAX_STEP_SECONDS = 0.05f
 
-        /** In m/s²: about where the curve bends, so everyday movement stays well under the limit. */
-        const val SOFT_PUSH = 14f
+        /**
+         * A spring that swings about three and a half times a second and loses most of a swing
+         * each time: quick enough to keep up with a shaking hand, and at rest again within half
+         * a second of it. [DRIVE] is how hard the phone's movement pushes on it.
+         */
+        const val STIFFNESS = 480f
+        const val DAMPING = 13f
+        const val DRIVE = 26f
         const val STROKE_START = 9f
         const val STROKE_END = 3f
 
