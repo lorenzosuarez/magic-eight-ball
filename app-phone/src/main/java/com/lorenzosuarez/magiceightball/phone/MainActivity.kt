@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.lorenzosuarez.magiceightball.phone.push.DailyVerdict
+import android.content.Intent
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.graphics.Color
@@ -67,6 +69,19 @@ class MainActivity : ComponentActivity() {
         }
         ads.start(this)
         holdFirstFrameUntilSettingsAreRead()
+        showDailyVerdictFrom(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        showDailyVerdictFrom(intent)
+    }
+
+    /** Opened from the day's verdict: the ball shows it, once, however often the activity is recreated. */
+    private fun showDailyVerdictFrom(intent: Intent?) {
+        val verdict = intent?.getStringExtra(DailyVerdict.EXTRA_VERDICT) ?: return
+        intent.removeExtra(DailyVerdict.EXTRA_VERDICT)
+        viewModel.showDailyVerdict(verdict)
     }
 
     /**

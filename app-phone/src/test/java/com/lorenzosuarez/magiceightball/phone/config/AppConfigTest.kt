@@ -25,7 +25,9 @@ class AppConfigTest {
             AppConfig.KEY_STYLES_HIDDEN to "conspiracy",
             AppConfig.KEY_STREAK_MIN_DAYS_SHOWN to "3",
             AppConfig.KEY_NOTIFICATIONS_ASK_AFTER_DAYS to "0",
-            AppConfig.KEY_BALL_SWAY_ENABLED to "FALSE"
+            AppConfig.KEY_BALL_SWAY_ENABLED to "FALSE",
+            AppConfig.KEY_DAILY_VERDICT_ENABLED to "false",
+            AppConfig.KEY_DAILY_VERDICT_HOUR to "19"
         )
 
         assertEquals(
@@ -37,7 +39,9 @@ class AppConfigTest {
                 hiddenStyles = setOf(Magic8BallPersonality.CONSPIRACY),
                 streakMinDaysShown = 3,
                 notificationsAskAfterDays = 0,
-                ballSwayEnabled = false
+                ballSwayEnabled = false,
+                dailyVerdictEnabled = false,
+                dailyVerdictHour = 19
             ),
             config
         )
@@ -51,7 +55,8 @@ class AppConfigTest {
             AppConfig.KEY_AI_REMARK_ENABLED to "yes please",
             AppConfig.KEY_STYLES_FEATURED to "unicorn, , ",
             AppConfig.KEY_STREAK_MIN_DAYS_SHOWN to "-4",
-            AppConfig.KEY_NOTIFICATIONS_ASK_AFTER_DAYS to "9999"
+            AppConfig.KEY_NOTIFICATIONS_ASK_AFTER_DAYS to "9999",
+            AppConfig.KEY_DAILY_VERDICT_HOUR to "24"
         )
 
         assertEquals(AppConfig(), config)

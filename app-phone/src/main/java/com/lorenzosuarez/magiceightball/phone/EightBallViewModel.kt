@@ -243,6 +243,24 @@ class EightBallViewModel @Inject constructor(
         usage.track(UsageEvent.AiAnswersEarned)
     }
 
+    fun setDailyVerdictEnabled(enabled: Boolean) {
+        usage.track(UsageEvent.SettingChanged(UsageEvent.SettingChanged.Setting.DAILY_VERDICT, enabled))
+        viewModelScope.launch { userSettingsRepository.setDailyVerdictEnabled(enabled) }
+    }
+
+    /**
+     * The day's verdict was touched in the notifications: the ball opens with it on, as if it
+     * had just answered. It gives way to a question in progress, and is kept with the answers.
+     */
+    fun showDailyVerdict(verdict: String) {
+        if (verdict.isBlank() || isBusy()) return
+        cycleJob?.cancel()
+        phase.value = BallPhase.Answered(id = nextAnswerId++, question = "", answer = AnswerText.Plain(verdict))
+        viewModelScope.launch { history.add("", verdict, clock.millis(), false) }
+        usage.track(UsageEvent.DailyVerdictOpened)
+        _effects.trySend(EightBallEffect.AnswerRevealed)
+    }
+
     /** The user answered the system's question about notifications. */
     fun onNotificationsAnswered(allowed: Boolean) = usage.track(UsageEvent.NotificationsAnswered(allowed))
 

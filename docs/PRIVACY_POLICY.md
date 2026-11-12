@@ -50,6 +50,7 @@ To learn which parts of the app are used and whether a change made it better, th
 ## Notifications (phones and tablets only)
 The developer can send the app's users a notification now and then, about something new in the app or as a reminder to come back, through Google's Firebase Cloud Messaging. The watch app receives none.
 
+- **The day's verdict.** Once a day the app can show a line in the voice of the answer style you chose. It is made on your device from the answers built into the app: nothing is sent or fetched for it, and it is not shown on a day you have already asked the ball. You can switch it off under "Daily verdict" in the options.
 - **Your permission.** On Android 13 and later the app shows no notification unless you allow it. It asks once, and only after you have used the app on several days. You can change your answer at any time in your device's settings, under the app's notifications.
 - **How a message reaches you.** Messages are sent to topics, not to people: every copy of the app follows one topic common to all and one for the language it is set to, so a message can be written in your language. To deliver them, Firebase Cloud Messaging gives this copy of the app a registration token, tied to a random installation identifier created by Firebase. Neither says who you are, and the app sends nothing of your questions, answers or choices with them, apart from the language.
 - **Who receives it.** Google, on the developer's behalf, under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy).

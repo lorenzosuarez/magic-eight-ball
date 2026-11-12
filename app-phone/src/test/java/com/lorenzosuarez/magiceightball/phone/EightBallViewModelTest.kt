@@ -95,6 +95,24 @@ class EightBallViewModelTest {
     // Start-up and settings
 
     @Test
+    fun `the day's verdict opens on the ball, is kept, and gives way to a question in progress`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.showDailyVerdict("That ship has sunk, matey.")
+        advanceUntilIdle()
+
+        val shown = viewModel.state.value?.phase as BallPhase.Answered
+        assertEquals(AnswerText.Plain("That ship has sunk, matey."), shown.answer)
+        assertEquals("That ship has sunk, matey.", history.entries.value.first().answer)
+        assertEquals(listOf("open_daily_verdict"), tracked.map { it.name })
+        assertEquals(0, llmGateway.requests.size)
+
+        viewModel.showDailyVerdict("   ")
+        assertEquals(shown, viewModel.state.value?.phase)
+    }
+
+    @Test
     fun `the second line is asked for only while it is switched on from afar`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -1125,6 +1143,11 @@ class EightBallViewModelTest {
 
         override suspend fun setSpokenAnswersEnabled(enabled: Boolean) {
             saved.update { it?.copy(spokenAnswersEnabled = enabled) }
+        }
+
+
+        override suspend fun setDailyVerdictEnabled(enabled: Boolean) {
+            saved.update { it?.copy(dailyVerdictEnabled = enabled) }
         }
 
         override suspend fun setPartyNames(names: List<String>) {

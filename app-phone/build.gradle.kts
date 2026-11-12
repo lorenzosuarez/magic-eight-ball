@@ -112,6 +112,8 @@ dependencies {
     implementation(libs.firebase.analytics)
     // Messages from the developer to the app's users: see the push package.
     implementation(libs.firebase.messaging)
+    // The day's verdict, made on the device once a day.
+    implementation(libs.androidx.work)
     implementation(libs.androidx.preference)
 
     implementation(project(":core:common"))

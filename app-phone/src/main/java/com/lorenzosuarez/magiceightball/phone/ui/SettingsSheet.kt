@@ -76,7 +76,8 @@ internal fun SettingsContent(
     onShowAdPrivacyOptions: (() -> Unit)? = null,
     onGetMoreAiAnswers: (() -> Unit)? = null,
     onSpokenAnswersChange: (Boolean) -> Unit = {},
-    onPartyNamesChange: (List<String>) -> Unit = {}
+    onPartyNamesChange: (List<String>) -> Unit = {},
+    onDailyVerdictChange: (Boolean) -> Unit = {}
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -182,6 +183,19 @@ internal fun SettingsContent(
         }
 
         Section(stringResource(R.string.options_general)) {
+            // Offered only while the developer has it on: a switch that does nothing is a lie.
+            if (state.config.dailyVerdictEnabled) {
+                SwitchRow(
+                    title = stringResource(R.string.settings_daily),
+                    supporting = stringResource(
+                        if (state.settings.dailyVerdictEnabled) R.string.settings_daily_on else R.string.settings_daily_off
+                    ),
+                    checked = state.settings.dailyVerdictEnabled,
+                    enabled = true,
+                    onCheckedChange = onDailyVerdictChange
+                )
+                RowDivider()
+            }
             ChoiceRow(
                 title = stringResource(R.string.settings_language),
                 options = AppLanguage.entries,

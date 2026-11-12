@@ -72,13 +72,19 @@ sealed interface UsageEvent {
         enum class Setting(val label: String) {
             AI_ANSWERS("ai_answers"),
             VOICE_QUESTIONS("voice_questions"),
-            SPOKEN_ANSWERS("spoken_answers")
+            SPOKEN_ANSWERS("spoken_answers"),
+            DAILY_VERDICT("daily_verdict")
         }
     }
 
     /** The user watched an ad through for more answers from the AI service. */
     data object AiAnswersEarned : UsageEvent {
         override val name get() = "earn_ai_answers"
+    }
+
+    /** The day's verdict was touched and opened the ball. */
+    data object DailyVerdictOpened : UsageEvent {
+        override val name get() = "open_daily_verdict"
     }
 
     /** The user answered the system's question about notifications. */
