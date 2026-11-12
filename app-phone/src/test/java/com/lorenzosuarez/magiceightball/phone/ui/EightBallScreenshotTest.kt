@@ -108,9 +108,56 @@ class EightBallScreenshotTest {
             question = "Should I order pizza tonight?",
             answer = "Yes. Screenshot this.",
             layer = rememberGraphicsLayer(),
-            fromAi = true,
-            visible = true
+            visible = true,
+            styleLabel = "Sarcastic",
+                personality = Magic8BallPersonality.SARCASTIC
         )
+    }
+
+    /** The longest it gets: a question on two lines, a full answer and a remark. */
+    @Test
+    fun share_card_full_spanish() = captureRoboImage(filePath = path("phone_35_share_card_full_spanish")) {
+        ProvideAppLanguage(AppLanguage.SPANISH) {
+            ShareCard(
+                question = "¿Me va a escribir esta noche o ya me olvido de una vez por todas del asunto?",
+                answer = "Mercurio retrógrado dice no.",
+                layer = rememberGraphicsLayer(),
+                    visible = true,
+                remark = "Y tu ascendente opina que borres el número antes del viernes.",
+                styleLabel = "Horóscopo",
+                personality = Magic8BallPersonality.ASTRO
+            )
+        }
+    }
+
+    /** Every style in its colour, wearing what it wears. */
+    @Test
+    fun share_card_every_style() = Magic8BallPersonality.entries.forEach { style ->
+        captureRoboImage(filePath = path("phone_37_share_card_${style.name.lowercase()}")) {
+            ShareCard(
+                question = "Will they text me tonight?",
+                answer = "Not a chance.",
+                layer = rememberGraphicsLayer(),
+                visible = true,
+                styleLabel = style.name.lowercase().replaceFirstChar(Char::uppercase),
+                personality = style
+            )
+        }
+    }
+
+    /** The barest: a tap, a bundled answer. */
+    @Test
+    fun share_card_bare() = captureRoboImage(filePath = path("phone_36_share_card_bare")) {
+        ProvideAppLanguage(AppLanguage.SPANISH) {
+            ShareCard(
+                question = "",
+                answer = "Obvio que sí.",
+                layer = rememberGraphicsLayer(),
+                visible = true,
+                styleLabel = "Amor ciego",
+                personality = Magic8BallPersonality.LOVESTRUCK
+            )
+        }
     }
 
     @Test

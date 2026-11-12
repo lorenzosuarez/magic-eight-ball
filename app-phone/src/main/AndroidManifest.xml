@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Asked for the first time the user holds the screen to ask a question out loud. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- So that the day's verdict is still scheduled after the device restarts. Stated here because
+         the ads library takes it out of the libraries that ask for it, the scheduler among them. -->
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED"
+        tools:node="replace" />
     <!-- Asked for only of someone who has come back for a few days: see Notifications.shouldAsk. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
