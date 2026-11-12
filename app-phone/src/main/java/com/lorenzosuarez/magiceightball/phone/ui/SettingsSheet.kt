@@ -342,45 +342,6 @@ private fun SwitchRow(
     }
 }
 
-/** Who is playing: names typed in one field, since that is how a group is dictated. Saving none ends the party, and so does turning it off. */
-@Composable
-private fun PartyDialog(names: List<String>, onSave: (List<String>) -> Unit, onDismiss: () -> Unit) {
-    var typed by rememberSaveable { mutableStateOf(names.joinToString(", ")) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_party)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = typed,
-                    onValueChange = { typed = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.party_dialog_hint)) },
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
-                )
-                Text(
-                    text = stringResource(R.string.party_dialog_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(UserSettings.parsePartyNames(typed)) }) {
-                Text(stringResource(R.string.action_save))
-            }
-        },
-        dismissButton = {
-            // While a party is on, the way out of it is here, in one touch: touching outside still cancels.
-            if (names.isEmpty()) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-            } else {
-                TextButton(onClick = { onSave(emptyList()) }) { Text(stringResource(R.string.party_turn_off)) }
-            }
-        }
-    )
-}
-
 /** Something to do rather than to set: the whole row is the button. */
 @Composable
 private fun ActionRow(title: String, supporting: String, onClick: () -> Unit) {

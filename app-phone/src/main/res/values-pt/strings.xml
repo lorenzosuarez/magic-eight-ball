@@ -112,9 +112,13 @@
     <string name="widget_description">Magic AI Ball. Toque para uma resposta</string>
     <string name="settings_party">Modo festa</string>
     <string name="settings_party_off">Adicione nomes para jogar em turnos</string>
-    <string name="party_dialog_hint">Nomes, separados por vírgulas</string>
-    <string name="party_dialog_note">Com dois ou mais nomes a bola anuncia a vez de cada pessoa e pode escolher uma de vocês.</string>
+    <string name="party_dialog_note">A bola anuncia a vez de cada pessoa e pode escolher uma de vocês.</string>
     <string name="party_turn_off">Desativar</string>
+    <string name="party_name_hint">Nome</string>
+    <string name="action_add">Adicionar</string>
+    <string name="party_remove">Remover %1$s</string>
+    <string name="party_count">%1$d de %2$d pessoas</string>
+    <string name="party_need_more">Adicione pelo menos duas pessoas</string>
     <string name="action_save">Salvar</string>
     <string name="settings_spoken">Respostas faladas</string>
     <string name="settings_spoken_on">A bola diz a resposta em voz alta</string>
