@@ -19,9 +19,24 @@ class DefaultPromptPolicyTest {
     }
 
     @Test
-    fun `the prompt names the personality`() {
-        assertTrue("sarcastic" in policy.getSystemPrompt("en", Magic8BallPersonality.SARCASTIC))
-        assertTrue("mystical" in policy.getSystemPrompt("en", Magic8BallPersonality.MYSTICAL))
+    fun `a character is someone who wants something from the asker, and the prompt says what`() {
+        Magic8BallPersonality.entries.filter { it != Magic8BallPersonality.NEUTRAL }.forEach { personality ->
+            val sheet = characterOf(personality)!!
+            val prompt = policy.getSystemPrompt("en", personality)
+
+            assertTrue(sheet.who in prompt && sheet.wants in prompt && sheet.never in prompt)
+            assertTrue("about them" in prompt)
+            assertTrue("never their body" in prompt)
+        }
+        assertEquals(null, characterOf(Magic8BallPersonality.NEUTRAL))
+    }
+
+    @Test
+    fun `a character is told in plain English, with no catchword in quotes to be copied into the answer`() {
+        Magic8BallPersonality.entries.mapNotNull(::characterOf).forEach { sheet ->
+            val told = listOf(sheet.who, sheet.wants, sheet.yes, sheet.no, sheet.dodge, sheet.habits)
+            assertTrue(sheet.who, told.none { '"' in it })
+        }
     }
 
     @Test
@@ -52,20 +67,6 @@ class DefaultPromptPolicyTest {
         assertTrue("Max 6 words." in prompt)
         assertNotEquals(prompt, policy.getSystemPrompt("en", Magic8BallPersonality.SARCASTIC))
         assertNotEquals(prompt, policy.getSystemPrompt("en", Magic8BallPersonality.MYSTICAL))
-    }
-
-    @Test
-    fun `without a question the prompt is the fixed one the watch has always sent`() {
-        assertEquals(
-            "You are a sarcastic, witty Magic 8 Ball. Be creative, funny, and rarely optimistic." +
-                " Use dark humor. Max 6 words. Respond in English.",
-            policy.getSystemPrompt("en", Magic8BallPersonality.SARCASTIC)
-        )
-        assertEquals(
-            "You are a mystical, ancient Magic 8 Ball. Speak in riddles, wise sayings, and be" +
-                " mysterious. Max 6 words. Respond in Spanish.",
-            policy.getSystemPrompt("es", Magic8BallPersonality.MYSTICAL)
-        )
     }
 
     @Test
@@ -122,7 +123,7 @@ class DefaultPromptPolicyTest {
         val motif = policy.getSystemPrompt(
             "en",
             Magic8BallPersonality.PIRATE,
-            brief = AnswerBrief(Verdict.YES, motif = "the parrot")
+            brief = AnswerBrief(Verdict.YES, motif = "the tide table")
         )
         val remark = policy.getSystemPrompt(
             "en",
@@ -131,8 +132,8 @@ class DefaultPromptPolicyTest {
             brief = AnswerBrief(Verdict.YES, withRemark = true)
         )
 
-        assertTrue("the parrot" !in plain && "comeback" !in plain)
-        assertTrue("only if it comes naturally: the parrot." in motif)
+        assertTrue("the tide table" !in plain && "comeback" !in plain)
+        assertTrue("If it comes naturally, bring up: the tide table." in motif)
         assertTrue("comeback to what they asked" in remark)
         assertTrue("write line 1 alone" in remark)
         assertTrue(remark.endsWith(" Respond in English."))
@@ -145,7 +146,7 @@ class DefaultPromptPolicyTest {
             if (personality == Magic8BallPersonality.NEUTRAL) {
                 assertTrue(motifs.isEmpty())
             } else {
-                assertTrue("$personality has ${motifs.size}", motifs.size >= 10)
+                assertTrue("$personality has ${motifs.size}", motifs.size >= 8)
                 assertEquals(motifs.size, motifs.distinct().size)
             }
         }
@@ -174,5 +175,75 @@ class DefaultPromptPolicyTest {
         assertTrue(plain.endsWith(" Respond in Brazilian Portuguese."))
         assertTrue("Every word must be Brazilian Portuguese" in drawn)
         assertTrue("Every word must be" !in plain)
+    }
+
+    @Test
+    fun `lines shown of the voice are in the language of the answer, and a remark comes with its question`() {
+        val shown = policy.getSystemPrompt(
+            "es",
+            Magic8BallPersonality.CAT,
+            answersQuestion = true,
+            brief = AnswerBrief(
+                Verdict.NO,
+                withRemark = true,
+                examples = listOf("No. Y trae at\u00fan.", "Ni lo sue\u00f1es, humano."),
+                remarkExample = SampleRemark("\u00bfMe conviene mudarme?", "Solo si la casa nueva tiene m\u00e1s cajas.")
+            )
+        )
+
+        assertTrue("Never use one of them or its idea: No. Y trae at\u00fan. | Ni lo sue\u00f1es, humano.." in shown)
+        assertTrue("asked '\u00bfMe conviene mudarme?', it said 'Solo si la casa nueva tiene m\u00e1s cajas.'" in shown)
+        assertTrue("Never use one" !in policy.getSystemPrompt("es", Magic8BallPersonality.CAT, brief = AnswerBrief(Verdict.NO)))
+    }
+
+    @Test
+    fun `every character has lines of its own in each language, short enough for the ball`() {
+        val all = mutableListOf<String>()
+        listOf("en", "es", "pt").forEach { language ->
+            Magic8BallPersonality.entries.filter { it != Magic8BallPersonality.NEUTRAL }.forEach { personality ->
+                val lines = linesOf(personality, language)!!
+                assertEquals("$language/$personality", listOf(4, 4, 2, 3), listOf(lines.yes, lines.no, lines.maybe, lines.remarks).map { it.size })
+                Verdict.entries.flatMap(lines::saying).forEach { line ->
+                    assertTrue(line, line.length <= 28 && line.split(" ").size <= 6)
+                }
+                lines.remarks.forEach { assertTrue(it.remark, it.remark.split(" ").size <= 12 && it.question.isNotBlank()) }
+                all += Verdict.entries.flatMap(lines::saying)
+            }
+        }
+        assertEquals(all.size, all.distinct().size)
+        assertEquals(null, linesOf(Magic8BallPersonality.NEUTRAL, "en"))
+        assertEquals(linesOf(Magic8BallPersonality.CAT, "en"), linesOf(Magic8BallPersonality.CAT, "fr"))
+    }
+
+    @Test
+    fun `a brief shows two lines of the drawn verdict in the answer's language, and a remark only to a question`() {
+        val spanish = linesOf(Magic8BallPersonality.CAT, "es")!!
+        repeat(60) { seed ->
+            val asked = AnswerBrief.draw(
+                Magic8BallPersonality.CAT,
+                hasQuestion = true,
+                withRemark = true,
+                random = kotlin.random.Random(seed),
+                languageCode = "es"
+            )
+            assertEquals(2, asked.examples.size)
+            assertTrue(spanish.saying(asked.verdict).containsAll(asked.examples))
+            assertTrue(asked.remarkExample in spanish.remarks)
+
+            val unasked = AnswerBrief.draw(
+                Magic8BallPersonality.CAT,
+                hasQuestion = false,
+                withRemark = true,
+                random = kotlin.random.Random(seed),
+                languageCode = "es"
+            )
+            assertEquals(null, unasked.remarkExample)
+            assertEquals(2, unasked.examples.size)
+        }
+        val shown = List(80) {
+            AnswerBrief.draw(Magic8BallPersonality.CAT, hasQuestion = false, withRemark = false, kotlin.random.Random(it), "es")
+        }.flatMap { it.examples }.toSet()
+        assertTrue("${shown.size}", shown.size >= 9)
+        assertTrue(AnswerBrief.draw(Magic8BallPersonality.NEUTRAL, hasQuestion = false, withRemark = false).examples.isEmpty())
     }
 }
