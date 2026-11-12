@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+ draws a launch screen of its own: the ball at rest on the window's colour, so the app's first frame continues it instead of replacing it. -->
+    <!-- Android 12+ draws a launch screen of its own: the ball's "8" on the window's colour, so the app's first frame continues it instead of replacing it. -->
     <style name="Theme.MagicEightBall" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
         <item name="android:windowSplashScreenBackground">@color/window_background</item>

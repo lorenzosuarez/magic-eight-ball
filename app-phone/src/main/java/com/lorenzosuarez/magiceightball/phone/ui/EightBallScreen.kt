@@ -249,8 +249,8 @@ fun EightBallScreen(
         }
     }
 
-    // The app arrives rather than appears: from the launch screen, which shows the ball on the
-    // window's plain colour, the ball grows to its size while everything else fades in.
+    // The app arrives rather than appears: the launch screen shows the ball's "8" on the window's
+    // plain colour, and the ball is drawn around it while everything else fades in.
     val intro = remember { Animatable(0f) }
     val ready = state != null
     DesignedMotionEffect(ready) {
@@ -784,12 +784,7 @@ private fun Stage(
                 modifier = Modifier
                     .size(ballSize)
                     .graphicsLayer {
-                        // From the size the launch screen draws it at, to its own.
-                        val from = (LAUNCH_BALL_SIZE.toPx() / size.minDimension).coerceAtMost(1f)
-                        val scale = from + (1f - from) * intro()
-                        scaleX = scale
-                        scaleY = scale
-                        // And a little behind the hand that moves the phone: see [rememberBallSway].
+                        // A little behind the hand that moves the phone: see [rememberBallSway].
                         val reach = BALL_SWAY.toPx() * swayStrength
                         translationX = sway.x * reach
                         translationY = sway.y * reach
@@ -810,44 +805,6 @@ private fun Stage(
                     .heightIn(min = CAPTION_HEIGHT)
             )
         }
-
-        // At rest only, and never under an explanation: the quietest thing on the screen.
-        AnimatedVisibility(
-            visible = state.phase is BallPhase.Idle && state.notice == null,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
-                .graphicsLayer { alpha = intro() },
-            enter = fadeIn(tween(durationMillis = 400)),
-            exit = fadeOut(tween(durationMillis = 120))
-        ) {
-            Footer()
-        }
-    }
-}
-
-/**
- * What the app is built on and which version it is, one under the other. The first line is
- * always there and always in English, as a name is: it says what the app is made with, whether
- * or not the answer on screen came from it.
- */
-@Composable
-private fun Footer(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.height(FOOTER_HEIGHT),
-        verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = stringResource(R.string.footer_powered_by),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = FOOTER_ALPHA)
-        )
-        Text(
-            text = stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = FOOTER_VERSION_ALPHA)
-        )
     }
 }
 
@@ -1324,9 +1281,8 @@ private const val THINKING_TICK_SLOWDOWN_MS = 70L
 /** No one reads the system's permission dialog and answers it in less than this. */
 private const val DIALOG_SKIPPED_MS = 1_000L
 
-/** The arrival from the launch screen, and the size that screen draws the ball at. */
+/** The arrival from the launch screen. */
 private const val INTRO_MS = 520
-private val LAUNCH_BALL_SIZE = 192.dp
 
 internal const val HISTORY_PAGE = 0
 internal const val BALL_PAGE = 1
@@ -1355,8 +1311,6 @@ private val TITLE_HEIGHT = 64.dp
 private val CAPTION_HEIGHT = 136.dp
 private val FOOTER_HEIGHT = 48.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
-private const val FOOTER_ALPHA = 0.68f
-private const val FOOTER_VERSION_ALPHA = 0.68f
 private const val CAPTION_MAX_LINES = 3
 
 /** How faint the note under an answer the AI wrote is. */
