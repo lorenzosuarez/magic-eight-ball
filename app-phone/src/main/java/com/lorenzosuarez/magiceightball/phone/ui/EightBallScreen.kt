@@ -1183,9 +1183,10 @@ private fun Caption(
 }
 
 /**
- * What can be done with an answer, in one quiet pill: share it, which is the main thing, and
- * say whether it was a good one. What the AI wrote can also be reported, since nobody read it
- * before it was shown: the way to that opens under the pill once the answer is called a bad one.
+ * What can be done with an answer, in one row and with nothing drawn around it: share it,
+ * which is the main thing and the only one with a name, and say whether it was a good one, with
+ * two quiet thumbs. What the AI wrote can also be reported, since nobody read it before it was
+ * shown: the way to that opens under the row once the answer is called a bad one.
  */
 @Composable
 private fun AnswerActions(
@@ -1199,16 +1200,13 @@ private fun AnswerActions(
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Row(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = ACTIONS_PILL_ALPHA))
-                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(
                 onClick = onShare,
                 modifier = Modifier.heightIn(min = 48.dp),
-                shape = CircleShape,
+                shape = ButtonShape,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
                 Icon(
@@ -1219,12 +1217,6 @@ private fun AnswerActions(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
             }
-            Spacer(
-                Modifier
-                    .padding(horizontal = 4.dp)
-                    .size(width = 1.dp, height = 20.dp)
-                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = ACTIONS_DIVIDER_ALPHA))
-            )
             RateButton(
                 good = true,
                 chosen = liked,
@@ -1256,7 +1248,7 @@ private fun AnswerActions(
                     modifier = Modifier
                         .heightIn(min = 48.dp)
                         .semantics { contentDescription = label },
-                    shape = CircleShape,
+                    shape = ButtonShape,
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1301,8 +1293,6 @@ private fun RateButton(good: Boolean, chosen: Boolean?, label: String, onClick: 
     }
 }
 
-private const val ACTIONS_PILL_ALPHA = 0.07f
-private const val ACTIONS_DIVIDER_ALPHA = 0.14f
 private const val RATE_UNCHOSEN_ALPHA = 0.4f
 
 @Composable
