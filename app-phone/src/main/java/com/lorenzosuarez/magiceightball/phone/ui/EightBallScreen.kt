@@ -107,6 +107,8 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -1065,6 +1067,20 @@ private fun Caption(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+                // Who said it, signed as on the picture that is shared: an answer is only funny
+                // when it is known whose it is.
+                // ponytail: signs with the style chosen now, not the one that answered; keep the
+                // style in the answer if changing style with an answer on screen ever matters.
+                Text(
+                    text = "— " + stringResource(state.settings.personality.labelRes()),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontFamily = FontFamily.Serif,
+                        fontStyle = FontStyle.Italic
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
                 // Said quietly, and only when it is true: who wrote this answer.
                 if ((phase.answer as? AnswerText.Plain)?.fromAi == true) {
                     Text(
