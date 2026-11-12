@@ -118,9 +118,13 @@
     <string name="widget_description">Magic AI Ball. Touch for an answer</string>
     <string name="settings_party">Party mode</string>
     <string name="settings_party_off">Add names to take turns</string>
-    <string name="party_dialog_hint">Names, separated by commas</string>
-    <string name="party_dialog_note">With two or more names the ball calls each one\'s turn and can pick one of you.</string>
+    <string name="party_dialog_note">The ball calls each player\'s turn and can pick one of you.</string>
     <string name="party_turn_off">Turn off</string>
+    <string name="party_name_hint">Name</string>
+    <string name="action_add">Add</string>
+    <string name="party_remove">Remove %1$s</string>
+    <string name="party_count">%1$d of %2$d players</string>
+    <string name="party_need_more">Add at least two players</string>
     <string name="action_save">Save</string>
     <string name="settings_spoken">Spoken answers</string>
     <string name="settings_spoken_on">The ball says its answer out loud</string>
