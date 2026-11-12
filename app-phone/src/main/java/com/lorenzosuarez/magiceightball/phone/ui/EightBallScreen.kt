@@ -456,7 +456,8 @@ internal fun EightBallContent(
                     layer = shareLayer,
                     fromAi = (answered.answer as? AnswerText.Plain)?.fromAi == true,
                     remark = answered.answer.remark(),
-                    styleLabel = stringResource(state.settings.personality.labelRes())
+                    styleLabel = stringResource(state.settings.personality.labelRes()),
+                    paper = shareColor(state.settings.personality)
                 )
             }
         }

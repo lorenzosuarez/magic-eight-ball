@@ -110,7 +110,8 @@ class EightBallScreenshotTest {
             layer = rememberGraphicsLayer(),
             fromAi = true,
             visible = true,
-            styleLabel = "Sarcastic"
+            styleLabel = "Sarcastic",
+                paper = shareColor(Magic8BallPersonality.SARCASTIC)
         )
     }
 
@@ -125,7 +126,8 @@ class EightBallScreenshotTest {
                 fromAi = true,
                 visible = true,
                 remark = "Y tu ascendente opina que borres el número antes del viernes.",
-                styleLabel = "Horóscopo"
+                styleLabel = "Horóscopo",
+                paper = shareColor(Magic8BallPersonality.ASTRO)
             )
         }
     }
@@ -136,10 +138,11 @@ class EightBallScreenshotTest {
         ProvideAppLanguage(AppLanguage.SPANISH) {
             ShareCard(
                 question = "",
-                answer = "Ni en tus sueños.",
+                answer = "Obvio que sí.",
                 layer = rememberGraphicsLayer(),
                 visible = true,
-                styleLabel = "Sarcástico"
+                styleLabel = "Amor ciego",
+                paper = shareColor(Magic8BallPersonality.LOVESTRUCK)
             )
         }
     }

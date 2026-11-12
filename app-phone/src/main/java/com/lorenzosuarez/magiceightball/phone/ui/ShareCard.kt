@@ -16,18 +16,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -52,15 +50,16 @@ import com.lorenzosuarez.magiceightball.phone.R
 import java.io.File
 
 /**
- * An answer as a picture to send to someone, composed as a card and not as a picture of the
- * screen: what the ball said is the headline, large enough to read in a chat's small preview,
- * with what was asked over it and who said it under it. The ball itself is the mark in the
- * corner, cut by the edge, so the card is recognised without the ball taking the words' place.
+ * An answer as a picture to send to someone, composed as a poster and not as a picture of the
+ * screen: one flat colour, which is the colour of the style that answered, and black ink. What
+ * the ball said is the headline, as large as it fits, and the style signs it underneath like
+ * the author of a quote. The ball is a flat mark cut by the corner.
  *
- * Always dark and always the same size, whatever the phone and its settings, so it looks the
- * same wherever it ends up. It is laid out but drawn only into [layer], never on the screen:
+ * Always the same size and colours, whatever the phone and its settings, so it looks the same
+ * wherever it ends up. It is laid out but drawn only into [layer], never on the screen:
  * [GraphicsLayer.toImageBitmap] then gives the picture.
  *
+ * @param paper the colour of the card: see [shareColor].
  * @param styleLabel the name of the style that answered: the character is half the joke.
  * @param fromAi whether the AI service wrote this answer: only then does the picture say so.
  * @param remark what the character added under its answer.
@@ -75,11 +74,11 @@ internal fun ShareCard(
     fromAi: Boolean = false,
     visible: Boolean = false,
     remark: String? = null,
-    styleLabel: String? = null
+    styleLabel: String? = null,
+    paper: Color = shareColor(Magic8BallPersonality.NEUTRAL)
 ) {
     CompositionLocalProvider(LocalDensity provides Density(SHARE_DENSITY, fontScale = 1f)) {
-        MagicEightBallPhoneTheme(dark = true) {
-            val glow = MaterialTheme.colorScheme.primary
+        MagicEightBallPhoneTheme(dark = false) {
             Box(
                 modifier = modifier
                     .requiredSize(SHARE_WIDTH, SHARE_HEIGHT)
@@ -89,121 +88,137 @@ internal fun ShareCard(
                         if (visible) drawLayer(layer)
                     }
                     .clipToBounds()
-                    .background(Brush.verticalGradient(listOf(SHARE_TOP, SHARE_BOTTOM)))
-                    .drawBehind {
-                        // Light from the corner the ball sits in, as if it gave it off.
-                        val corner = Offset(size.width, size.height)
-                        drawRect(
-                            Brush.radialGradient(
-                                colors = listOf(glow.copy(alpha = SHARE_GLOW_ALPHA), Color.Transparent),
-                                center = corner,
-                                radius = size.width * SHARE_GLOW_REACH
-                            )
-                        )
-                    }
+                    .background(paper)
             ) {
-                // The mark: the ball at rest, most of it past the corner.
-                EightBall(
-                    mode = BallMode.Idle,
-                    answer = "",
-                    pressed = false,
-                    voiceLevel = { 0f },
-                    still = true,
+                FlatBall(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .offset(x = SHARE_BALL_SIZE * SHARE_BALL_OUT, y = SHARE_BALL_SIZE * SHARE_BALL_DOWN)
+                        .offset(x = SHARE_BALL_SIZE * SHARE_BALL_OUT, y = SHARE_BALL_SIZE * SHARE_BALL_OUT)
                         .requiredSize(SHARE_BALL_SIZE)
                 )
                 Column(modifier = Modifier.fillMaxSize().padding(SHARE_MARGIN)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_notification),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(R.string.brand_name),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Spacer(Modifier.height(32.dp))
                     if (question.isNotBlank()) {
                         Text(
                             text = question,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            color = SHARE_INK,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Spacer(Modifier.height(10.dp))
                     }
-                    // A short answer shouts; a long one still has to leave room for the rest.
-                    val large = answer.length <= SHARE_LARGE_ANSWER
+                    // As large as it fits: a short answer shouts, a long one still leaves room.
+                    val size = when {
+                        answer.length <= SHARE_SHORT_ANSWER -> 58
+                        answer.length <= SHARE_MEDIUM_ANSWER -> 46
+                        else -> 38
+                    }
                     Text(
                         text = answer,
-                        style = MaterialTheme.typography.displaySmall.copy(
-                            fontSize = if (large) SHARE_ANSWER_SIZE else SHARE_LONG_ANSWER_SIZE,
-                            lineHeight = if (large) SHARE_ANSWER_LINE else SHARE_LONG_ANSWER_LINE,
-                            letterSpacing = (-0.5).sp,
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontSize = size.sp,
+                            lineHeight = (size * SHARE_ANSWER_LEADING).sp,
+                            letterSpacing = (-size * SHARE_ANSWER_TRACKING).sp,
                             lineBreak = LineBreak.Heading
                         ),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 3,
+                        fontWeight = FontWeight.Black,
+                        color = SHARE_INK,
+                        maxLines = 4,
                         overflow = TextOverflow.Ellipsis
                     )
                     if (remark != null) {
                         Text(
                             text = remark,
-                            modifier = Modifier.padding(top = 14.dp, end = SHARE_REMARK_INSET),
+                            modifier = Modifier.padding(top = 12.dp),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            color = SHARE_INK,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    // The one touch of the app's colour: it sets off who is speaking.
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 22.dp, bottom = 12.dp)
-                            .size(width = 28.dp, height = 3.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    )
-                    // Who spoke, and on the same line whether the AI wrote it.
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (styleLabel != null) {
-                            Text(
-                                text = styleLabel,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        if (fromAi) {
-                            Text(
-                                text = (if (styleLabel != null) "·  " else "") + stringResource(R.string.answer_from_ai),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    // Signed like a quote, in another hand: the one change of voice on the card.
+                    if (styleLabel != null) {
+                        Text(
+                            text = "\u2014 $styleLabel",
+                            modifier = Modifier.padding(top = 14.dp),
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontFamily = FontFamily.Serif,
+                                fontStyle = FontStyle.Italic,
+                                fontSize = 24.sp
+                            ),
+                            color = SHARE_INK,
+                            maxLines = 1
+                        )
                     }
                     Spacer(Modifier.weight(1f))
                     Text(
-                        text = stringResource(R.string.share_card_invite),
+                        text = stringResource(R.string.brand_name),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = SHARE_INK
+                    )
+                    Text(
+                        text = stringResource(if (fromAi) R.string.answer_from_ai else R.string.share_card_invite),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = SHARE_INK
                     )
                 }
             }
         }
     }
 }
+
+/** The ball with nothing but its two colours, tipped as if it had just been put down. */
+@Composable
+private fun FlatBall(modifier: Modifier = Modifier) {
+    Box(modifier = modifier.background(SHARE_INK, CircleShape), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .offset(x = -SHARE_BALL_SIZE * SHARE_DISC_SHIFT, y = -SHARE_BALL_SIZE * SHARE_DISC_SHIFT)
+                .requiredSize(SHARE_BALL_SIZE * SHARE_DISC)
+                .rotate(SHARE_DISC_TILT)
+                .background(Color.White, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "8",
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 54.sp, lineHeight = 54.sp),
+                fontWeight = FontWeight.Black,
+                color = SHARE_INK
+            )
+        }
+    }
+}
+
+/**
+ * The colour of a style's card. Each is light enough for black ink, and no two neighbours in
+ * the list of styles are close, so a chat full of shared answers tells them apart at a glance.
+ */
+internal fun shareColor(personality: Magic8BallPersonality): Color = Color(
+    when (personality) {
+        Magic8BallPersonality.SARCASTIC -> 0xFFFFDD33
+        Magic8BallPersonality.MYSTICAL -> 0xFFC9B6FF
+        Magic8BallPersonality.NEUTRAL -> 0xFFF2EEE3
+        Magic8BallPersonality.GRANDMA -> 0xFFFFC2D1
+        Magic8BallPersonality.PIRATE -> 0xFF5FD6C9
+        Magic8BallPersonality.PHILOSOPHER -> 0xFFE3D5B8
+        Magic8BallPersonality.COACH -> 0xFFFF8A3D
+        Magic8BallPersonality.LOVESTRUCK -> 0xFFFF7A9C
+        Magic8BallPersonality.DRAMA -> 0xFFFF5A4F
+        Magic8BallPersonality.ROBOT -> 0xFFB8C4D0
+        Magic8BallPersonality.DETECTIVE -> 0xFFD6C68A
+        Magic8BallPersonality.CONSPIRACY -> 0xFF9BE564
+        Magic8BallPersonality.CAT -> 0xFFFFB86B
+        Magic8BallPersonality.ZOOMER -> 0xFFD4FF4F
+        Magic8BallPersonality.VILLAIN -> 0xFFB58CFF
+        Magic8BallPersonality.POET -> 0xFFBFD9FF
+        Magic8BallPersonality.ASTRO -> 0xFF8FA8FF
+        Magic8BallPersonality.THERAPIST -> 0xFFBFE8D2
+        Magic8BallPersonality.DOG -> 0xFFF0B878
+    }
+)
 
 /** Saves [picture] where other apps may read it and hands it, with [text], to whichever app the user picks. */
 internal fun Context.shareAnswer(picture: ImageBitmap, text: String) {
@@ -233,27 +248,21 @@ internal fun Context.shareAnswer(picture: ImageBitmap, text: String) {
 private const val SHARE_DENSITY = 3f
 private val SHARE_WIDTH = 360.dp
 private val SHARE_HEIGHT = 450.dp
-private val SHARE_MARGIN = 32.dp
-private val SHARE_ANSWER_SIZE = 40.sp
-private val SHARE_ANSWER_LINE = 44.sp
-private val SHARE_LONG_ANSWER_SIZE = 34.sp
-private val SHARE_LONG_ANSWER_LINE = 38.sp
+private val SHARE_MARGIN = 28.dp
+private val SHARE_INK = Color(0xFF12110D)
 
-/** Up to this many letters an answer is set at the larger size. */
-private const val SHARE_LARGE_ANSWER = 18
+/** Up to these many letters an answer is set at the largest and the middle size. */
+private const val SHARE_SHORT_ANSWER = 16
+private const val SHARE_MEDIUM_ANSWER = 28
+private const val SHARE_ANSWER_LEADING = 0.98f
+private const val SHARE_ANSWER_TRACKING = 0.02f
 
-/** Kept clear at the right of the remark: lower down, that is where the ball comes in. */
-private val SHARE_REMARK_INSET = 16.dp
-
-/** The ball, and how much of its width and height lies past the corner. */
-private val SHARE_BALL_SIZE = 220.dp
-private const val SHARE_BALL_OUT = 0.36f
-private const val SHARE_BALL_DOWN = 0.46f
-
-private val SHARE_TOP = Color(0xFF05070D)
-private val SHARE_BOTTOM = Color(0xFF0A1130)
-private const val SHARE_GLOW_ALPHA = 0.34f
-private const val SHARE_GLOW_REACH = 0.95f
+/** The ball, how much of it lies past the corner, and the white disc with its number. */
+private val SHARE_BALL_SIZE = 190.dp
+private const val SHARE_BALL_OUT = 0.26f
+private const val SHARE_DISC = 0.46f
+private const val SHARE_DISC_SHIFT = 0.07f
+private const val SHARE_DISC_TILT = -14f
 
 private const val SHARE_DIRECTORY = "share"
 private const val SHARE_FILE = "magic-8-ball.png"
