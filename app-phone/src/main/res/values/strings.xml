@@ -131,6 +131,9 @@
     <string name="settings_share_app">Share the app</string>
     <string name="settings_share_app_hint">Tell someone about Magic AI Ball</string>
     <string name="share_app_text">Ask Magic AI Ball anything: %1$s</string>
+    <string name="action_report">Report</string>
+    <string name="report_done">Reported. Thanks</string>
+    <string name="report_label">Report this answer as inappropriate</string>
     <string name="action_share">Share</string>
     <string name="action_read_aloud">Read the answer aloud</string>
     <string name="brand_name" translatable="false">Magic AI Ball</string>

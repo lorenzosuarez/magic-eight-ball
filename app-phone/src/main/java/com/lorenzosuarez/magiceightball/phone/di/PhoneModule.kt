@@ -10,7 +10,9 @@ import com.lorenzosuarez.magiceightball.phone.ads.AdsController
 import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import com.lorenzosuarez.magiceightball.phone.config.RemoteAppConfigSource
 import com.lorenzosuarez.magiceightball.phone.usage.FirebaseUsageTracker
+import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.UsageTracker
+import com.lorenzosuarez.magiceightball.phone.usage.FirebaseAnswerReports
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,6 +46,10 @@ object PhoneModule {
     @Provides
     @Singleton
     fun provideUsageTracker(impl: FirebaseUsageTracker): UsageTracker = impl
+
+    @Provides
+    @Singleton
+    fun provideAnswerReports(impl: FirebaseAnswerReports): AnswerReports = impl
 
     @Provides
     @Singleton

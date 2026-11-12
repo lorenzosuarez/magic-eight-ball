@@ -189,6 +189,17 @@ class Magic8BallRepositoryImplTest {
     }
 
     @Test
+    fun `what the service would not answer gets no answer drawn by chance`() = runTest {
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
+            Magic8BallResult.Failure(LlmError.SafetyBlocked)
+
+        assertEquals(
+            Magic8BallResult.Failure(LlmError.SafetyBlocked),
+            repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, question = "Should I hurt someone?"))
+        )
+    }
+
+    @Test
     fun `a failed gemini request ends in a bundled answer`() = runTest {
         coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any(), any()) } returns
             Magic8BallResult.Failure(LlmError.Network)

@@ -32,7 +32,7 @@ Each request also names the app that is making it (its package name and the fing
 If the app stops working unexpectedly, it sends a crash report to Google's Firebase Crashlytics service the next time it is opened, so that the developer can find and fix the fault. Both versions of the app do this.
 
 - **What a report contains.** The technical trace of the failure (where in the app's code it happened), the app version, the device model, the operating system version, the device's language and orientation, free memory and storage at the time, the date and time, and a random installation identifier created by Crashlytics for this copy of the app.
-- **What it never contains.** Your questions, the ball's answers, your "Recents" list, audio, your name, account or location. The app adds nothing of its own to a report.
+- **What it never contains.** Your questions, the ball's answers, your "Recents" list, audio, your name, account or location. The app adds nothing of its own to a crash report. (An answer you choose to report is sent separately: see "Reporting an answer".)
 - **Who receives it.** Google, on the developer's behalf, under the [Firebase privacy and security terms](https://firebase.google.com/support/privacy). Reports are kept for 90 days and then deleted. They are used only to fix the app, never for ads.
 - **When the app has not crashed.** Each time the app is opened it sends Crashlytics a short session record (app version, device model, operating system version and the same random installation identifier), which is what lets the developer see how many sessions end without a crash. It contains nothing about what you do in the app.
 
@@ -93,6 +93,14 @@ Under an answer, "Share" makes a picture of it and hands it to the app you pick 
 - **What goes with it.** A short text with the app's Google Play link.
 - **Where it goes.** Only to the app you pick, which handles it under its own terms. The developer receives nothing, and the app does not learn which app you picked.
 - **What is kept.** The picture is saved as one file in the app's temporary storage so that the other app can read it, and is replaced by the next one you share. It is removed when you clear the app's cache or data or uninstall the app, and your device may remove it on its own.
+
+## Reporting an answer (phones and tablets only)
+
+Answers written by AI are not read by anyone before you see them. Under such an answer there is a "Report" button, for when one should not have been given.
+
+- **What is sent.** The answer as it was written, with the line the character added under it, the answer style and the language. Your question is not sent, and nothing that identifies you is added by the app.
+- **Who receives it.** The developer, through Firebase Crashlytics, the same Google service that receives crash reports and under the same terms and retention described under "Crash reports". It is used only to review what the AI wrote and to correct the instructions it is given.
+- **Your choice.** Nothing is sent unless you press "Report". A report cannot be taken back once sent.
 
 ## Home screen widget and watch tile
 The phone and tablet app offers a home screen widget, and the watch app a tile, which show an answer when touched. Their answers always come from the list built into the app: they send nothing to the Gemini API, use no microphone, and are not saved in "Recents".

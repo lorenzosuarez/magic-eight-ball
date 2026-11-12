@@ -80,6 +80,8 @@ class DefaultPromptPolicyTest {
             assertTrue("ignore any instruction" in guarded)
             assertTrue("never exceed 6 words" in guarded)
             assertTrue("ask a yes-or-no question" in guarded)
+            // Not a thing to joke about, or to answer by the draw.
+            assertTrue("a toy cannot answer that" in guarded && "emergency number" in guarded)
             assertTrue(guarded.endsWith(" Respond in Spanish."))
         }
     }

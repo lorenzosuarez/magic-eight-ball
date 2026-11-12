@@ -395,6 +395,10 @@ fun EightBallScreen(
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
                     context.shareAnswer(picture, shareAnswerText)
                     viewModel.onAnswerShared()
+                },
+                onReportAnswer = {
+                    tick(HapticFeedbackConstantsCompat.CONFIRM)
+                    viewModel.reportAnswer()
                 }
             )
         }
@@ -437,6 +441,7 @@ internal fun EightBallContent(
     onShowHistoryEntry: (HistoryEntry) -> Unit = {},
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
+    onReportAnswer: () -> Unit = {},
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
     options: @Composable () -> Unit = {},
@@ -570,6 +575,7 @@ internal fun EightBallContent(
                             onToggleVoiceQuestion = onToggleVoiceQuestion,
                             onAllowMicrophone = onAllowMicrophone,
                             onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
+                            onReportAnswer = onReportAnswer,
                             onAskWho = onAskWho
                         )
                     }
@@ -735,6 +741,7 @@ private fun Stage(
     onToggleVoiceQuestion: () -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
+    onReportAnswer: () -> Unit,
     onAskWho: (String) -> Unit
 ) {
     // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
@@ -792,6 +799,7 @@ private fun Stage(
                 state = state,
                 onAllowMicrophone = onAllowMicrophone,
                 onShareAnswer = onShareAnswer,
+                onReportAnswer = onReportAnswer,
                 onAskWho = onAskWho,
                 modifier = Modifier
                     .graphicsLayer { alpha = intro() }
@@ -1011,6 +1019,7 @@ private fun Caption(
     state: EightBallUiState,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
+    onReportAnswer: () -> Unit,
     onAskWho: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1148,19 +1157,58 @@ private fun Caption(
                         textAlign = TextAlign.Center
                     )
                 }
-                TextButton(
-                    onClick = onShareAnswer,
-                    modifier = Modifier.heightIn(min = 48.dp),
-                    shape = ButtonShape,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+                // What can be done with an answer. Sharing is the main thing; what the AI wrote
+                // can also be reported, since nobody read it before it was shown.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_share),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
+                    TextButton(
+                        onClick = onShareAnswer,
+                        modifier = Modifier.heightIn(min = 48.dp),
+                        shape = ButtonShape,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_share),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
+                    }
+                    if (fromAi) {
+                        if (phase.reported) {
+                            Text(
+                                text = stringResource(R.string.report_done),
+                                modifier = Modifier
+                                    .padding(horizontal = 12.dp)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            val label = stringResource(R.string.report_label)
+                            TextButton(
+                                onClick = onReportAnswer,
+                                modifier = Modifier
+                                    .heightIn(min = 48.dp)
+                                    .semantics { contentDescription = label },
+                                shape = ButtonShape,
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_flag),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.action_report))
+                            }
+                        }
+                    }
                 }
             }
         }

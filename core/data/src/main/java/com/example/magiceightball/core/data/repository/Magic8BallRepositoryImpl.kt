@@ -61,6 +61,9 @@ class Magic8BallRepositoryImpl(
                     remoteDataSource.fetchMagic8BallMessage(request, settings.apiKey, settings.modelId)
                 }
                 if (remote is Magic8BallResult.Success) return remote
+                // What the service would not answer is not answered by chance either: a yes drawn
+                // at random to such a question is worse than no answer.
+                if (remote == Magic8BallResult.Failure(LlmError.SafetyBlocked)) return remote
                 // An answer that never came is not one of the day's: with no network, or a
                 // service that is slow or down, the user would use up the day without seeing one.
                 // What the service did answer, and the app turned down, stays counted.

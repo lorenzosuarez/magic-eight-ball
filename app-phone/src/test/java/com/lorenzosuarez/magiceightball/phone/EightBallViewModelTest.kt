@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.model.Streak
 import com.example.magiceightball.core.domain.repository.StreakRepository
@@ -124,6 +125,40 @@ class EightBallViewModelTest {
         val unanswered = viewModel.state.value?.phase as BallPhase.Answered
         assertEquals(AnswerText.Fallback, unanswered.answer)
         assertEquals(null, unanswered.style)
+    }
+
+    @Test
+    fun `an answer the AI wrote can be reported once, as it was written and without the question`() = runTest {
+        val sent = mutableListOf<String>()
+        val viewModel = createViewModel(
+            reports = object : AnswerReports {
+                override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) {
+                    sent += "$languageCode/$style: $answer | $remark"
+                }
+            }
+        )
+        advanceUntilIdle()
+        val kept = HistoryEntry(
+            id = 7,
+            question = "Will my secret come out?",
+            answer = "Nay, matey.\nThe parrot talks.",
+            askedAtMillis = 1L,
+            fromAi = true,
+            style = Magic8BallPersonality.PIRATE
+        )
+
+        viewModel.showAgain(kept)
+        viewModel.reportAnswer()
+        viewModel.reportAnswer()
+
+        assertEquals(listOf("en/PIRATE: Nay, matey. | The parrot talks."), sent)
+        assertTrue((viewModel.state.value?.phase as BallPhase.Answered).reported)
+
+        // The app's own answers were read before they were shipped: there is nothing to report.
+        viewModel.dismiss()
+        viewModel.showAgain(kept.copy(fromAi = false))
+        viewModel.reportAnswer()
+        assertEquals(1, sent.size)
     }
 
     @Test
@@ -1130,7 +1165,8 @@ class EightBallViewModelTest {
 
     private fun createViewModel(
         resumed: Boolean = false,
-        microphoneGranted: Boolean = false
+        microphoneGranted: Boolean = false,
+        reports: AnswerReports = AnswerReports.None
     ): EightBallViewModel {
         val viewModel = EightBallViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
@@ -1144,7 +1180,8 @@ class EightBallViewModelTest {
             usage = usage,
             streaks = streaks,
             aiAllowance = aiAllowance,
-            appConfig = appConfig
+            appConfig = appConfig,
+            reports = reports
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

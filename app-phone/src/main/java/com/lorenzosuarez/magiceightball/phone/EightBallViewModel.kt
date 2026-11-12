@@ -6,6 +6,7 @@ import com.example.magiceightball.core.domain.model.Streak
 import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.repository.StreakRepository
 import com.example.magiceightball.core.domain.gateway.UsageEvent
+import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.UsageTracker
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.SpeechEvent
@@ -62,7 +63,8 @@ class EightBallViewModel @Inject constructor(
     private val usage: UsageTracker,
     private val streaks: StreakRepository,
     private val aiAllowance: AiAllowance,
-    private val appConfig: AppConfigSource
+    private val appConfig: AppConfigSource,
+    private val reports: AnswerReports = AnswerReports.None
 ) : ViewModel() {
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
@@ -282,6 +284,18 @@ class EightBallViewModel @Inject constructor(
             style = entry.style
         )
         _effects.trySend(EightBallEffect.AnswerRevealed)
+    }
+
+    /**
+     * The user says the answer on screen should not have been given. Only what the AI service
+     * wrote can be reported: the app's own answers were read before they were shipped.
+     */
+    fun reportAnswer() {
+        val shown = phase.value as? BallPhase.Answered ?: return
+        val said = shown.answer as? AnswerText.Plain ?: return
+        if (!said.fromAi || shown.reported) return
+        reports.report(said.value, said.remark, shown.style, settings.value?.language?.code ?: "en")
+        phase.value = shown.copy(reported = true)
     }
 
     /** The user answered the system's question about notifications. */

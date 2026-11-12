@@ -126,6 +126,9 @@
     <string name="settings_share_app">Compartilhar o app</string>
     <string name="settings_share_app_hint">Conte a alguém sobre o Magic AI Ball</string>
     <string name="share_app_text">Pergunte o que quiser ao Magic AI Ball: %1$s</string>
+    <string name="action_report">Denunciar</string>
+    <string name="report_done">Denunciada. Agradecemos</string>
+    <string name="report_label">Denunciar esta resposta como inadequada</string>
     <string name="action_share">Compartilhar</string>
     <string name="action_read_aloud">Ler a resposta em voz alta</string>
     <string name="brand_tagline">Respostas escritas por IA</string>
