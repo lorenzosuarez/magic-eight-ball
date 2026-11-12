@@ -7,74 +7,107 @@
     <!-- Ball -->
     <string name="title_main">Magic AI Ball</string>
     <string name="title_main_es">Magic AI Ball</string>
+    <string name="title_main_pt">Magic AI Ball</string>
     <string name="shake_hint">Shake for answers</string>
     <string name="shake_hint_es">Agita para respuestas</string>
+    <string name="shake_hint_pt">Agite para respostas</string>
     <string name="shake_hint_ai">Shake for AI answers</string>
     <string name="shake_hint_ai_es">Agita para respuestas IA</string>
+    <string name="shake_hint_ai_pt">Agite para respostas IA</string>
     <string name="hold_hint">Hold to ask, or shake</string>
     <string name="hold_hint_es">Mantén presionado o agita</string>
+    <string name="hold_hint_pt">Segure ou agite</string>
     <string name="ask_by_voice">Ask by voice</string>
     <string name="ask_by_voice_es">Preguntar por voz</string>
+    <string name="ask_by_voice_pt">Perguntar por voz</string>
     <string name="listening">Listening…</string>
     <string name="listening_es">Te escucho…</string>
+    <string name="listening_pt">Estou ouvindo…</string>
     <string name="answer_fallback">Ask again later</string>
     <string name="answer_fallback_es">Pregunta más tarde</string>
+    <string name="answer_fallback_pt">Pergunte mais tarde</string>
 
     <!-- Language selection: each language is listed under its own name -->
     <string name="lang_title">Language</string>
     <string name="lang_title_es">Idioma</string>
+    <string name="lang_title_pt">Idioma</string>
     <string name="lang_english" translatable="false">English</string>
     <string name="lang_spanish" translatable="false">Español</string>
+    <string name="lang_portuguese" translatable="false">Português</string>
 
     <!-- Personality selection -->
     <string name="personality_title">Answer style</string>
     <string name="personality_title_es">Estilo de respuesta</string>
+    <string name="personality_title_pt">Estilo de resposta</string>
     <string name="personality_sarcastic">Sarcastic</string>
     <string name="personality_sarcastic_es">Sarcástico</string>
+    <string name="personality_sarcastic_pt">Sarcástico</string>
     <string name="personality_mystical">Mystical</string>
     <string name="personality_mystical_es">Místico</string>
+    <string name="personality_mystical_pt">Místico</string>
     <string name="personality_neutral">Classic</string>
     <string name="personality_neutral_es">Clásico</string>
+    <string name="personality_neutral_pt">Clássico</string>
     <string name="personality_grandma">Grandma</string>
     <string name="personality_grandma_es">Abuela</string>
+    <string name="personality_grandma_pt">Vovó</string>
     <string name="personality_pirate">Pirate</string>
     <string name="personality_pirate_es">Pirata</string>
+    <string name="personality_pirate_pt">Pirata</string>
     <string name="personality_philosopher">Philosopher</string>
     <string name="personality_philosopher_es">Filósofo</string>
+    <string name="personality_philosopher_pt">Filósofo</string>
     <string name="personality_coach">Coach</string>
     <string name="personality_coach_es">Coach</string>
+    <string name="personality_coach_pt">Coach</string>
     <string name="personality_lovestruck">Lovestruck</string>
     <string name="personality_lovestruck_es">Amor ciego</string>
+    <string name="personality_lovestruck_pt">Amor cego</string>
     <string name="personality_drama">Soap opera</string>
     <string name="personality_drama_es">Telenovela</string>
+    <string name="personality_drama_pt">Novela</string>
     <string name="personality_robot">Robot</string>
     <string name="personality_robot_es">Robot</string>
+    <string name="personality_robot_pt">Robô</string>
     <string name="personality_detective">Detective</string>
     <string name="personality_detective_es">Detective</string>
+    <string name="personality_detective_pt">Detetive</string>
     <string name="personality_conspiracy">Conspiracy</string>
     <string name="personality_conspiracy_es">Conspiración</string>
+    <string name="personality_conspiracy_pt">Conspiração</string>
     <string name="personality_cat">Cat</string>
     <string name="personality_cat_es">Gato</string>
+    <string name="personality_cat_pt">Gato</string>
     <string name="personality_zoomer">Gen Z</string>
     <string name="personality_zoomer_es">Gen Z</string>
+    <string name="personality_zoomer_pt">Geração Z</string>
     <string name="personality_villain">Villain</string>
     <string name="personality_villain_es">Villano</string>
+    <string name="personality_villain_pt">Vilão</string>
     <string name="personality_poet">Poet</string>
     <string name="personality_poet_es">Poeta</string>
+    <string name="personality_poet_pt">Poeta</string>
     <string name="personality_astro">Horoscope</string>
     <string name="personality_astro_es">Horóscopo</string>
+    <string name="personality_astro_pt">Horóscopo</string>
     <string name="personality_therapist">Therapist</string>
     <string name="personality_therapist_es">Terapeuta</string>
+    <string name="personality_therapist_pt">Terapeuta</string>
     <string name="personality_dog">Dog</string>
     <string name="personality_dog_es">Perro</string>
+    <string name="personality_dog_pt">Cachorro</string>
 
     <!-- AI answers selection -->
     <string name="ai_title">AI answers</string>
     <string name="ai_title_es">Respuestas con IA</string>
+    <string name="ai_title_pt">Respostas com IA</string>
     <string name="ai_on">On</string>
     <string name="ai_on_es">Sí</string>
+    <string name="ai_on_pt">Sim</string>
     <string name="ai_off">Off</string>
     <string name="ai_off_es">No</string>
+    <string name="ai_off_pt">Não</string>
     <string name="ai_unavailable">Not available yet</string>
     <string name="ai_unavailable_es">Aún no disponible</string>
+    <string name="ai_unavailable_pt">Ainda não disponível</string>
 </resources>

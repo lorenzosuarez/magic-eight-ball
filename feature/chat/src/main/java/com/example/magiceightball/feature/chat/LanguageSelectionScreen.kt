@@ -22,6 +22,11 @@ fun LanguageSelectionScreen(
             isSelected = selectedLanguage == AppLanguage.SPANISH,
             onClick = { onLanguageSelected(AppLanguage.SPANISH) }
         )
+        SettingsOption(
+            label = localizedString(Strings.LanguagePortuguese),
+            isSelected = selectedLanguage == AppLanguage.PORTUGUESE,
+            onClick = { onLanguageSelected(AppLanguage.PORTUGUESE) }
+        )
     }
 }
 

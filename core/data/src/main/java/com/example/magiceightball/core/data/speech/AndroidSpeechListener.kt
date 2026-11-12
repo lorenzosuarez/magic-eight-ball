@@ -143,6 +143,7 @@ class AndroidSpeechListener @Inject constructor(
         return when (this) {
             AppLanguage.ENGLISH -> "en-US"
             AppLanguage.SPANISH -> "es-ES"
+            AppLanguage.PORTUGUESE -> "pt-BR"
         }
     }
 

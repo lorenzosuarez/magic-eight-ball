@@ -137,6 +137,7 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
         val guard = if (answersQuestion) voice + questionCraft + questionGuard else ""
         val languageInstruction = when (languageCode) {
             "es" -> " Respond in Spanish."
+            "pt" -> " Respond in Brazilian Portuguese."
             else -> " Respond in English."
         }
         val drawn = brief?.let {
@@ -148,10 +149,10 @@ class DefaultPromptPolicy @Inject constructor() : PromptPolicy {
             val motif = it.motif?.let { motif -> " Build it around this, in your own way: $motif." }.orEmpty()
             val angle = it.angle?.let { angle -> " $angle" }.orEmpty()
             // The character's catchwords come in English in these instructions: they are to be translated too.
-            val wholly = if (languageCode == "es") {
-                " Every word must be Spanish, the character's own words for yes and no included."
-            } else {
-                ""
+            val wholly = when (languageCode) {
+                "es" -> " Every word must be Spanish, the character's own words for yes and no included."
+                "pt" -> " Every word must be Brazilian Portuguese, the character's own words for yes and no included."
+                else -> ""
             }
             answer + motif + angle + FRESHNESS + (if (it.withRemark) REMARK else "") + wholly
         }.orEmpty()

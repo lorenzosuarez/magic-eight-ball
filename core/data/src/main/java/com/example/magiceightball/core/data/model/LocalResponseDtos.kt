@@ -112,7 +112,8 @@ data class PersonalityResponsesDto(
 @Serializable
 data class Magic8BallDataDto(
     val en: PersonalityResponsesDto = PersonalityResponsesDto(),
-    val es: PersonalityResponsesDto = PersonalityResponsesDto()
+    val es: PersonalityResponsesDto = PersonalityResponsesDto(),
+    val pt: PersonalityResponsesDto = PersonalityResponsesDto()
 ) {
     /**
      * Answers for [languageCode] and [personality].
@@ -142,23 +143,33 @@ data class Magic8BallDataDto(
      * within [MAX_ANSWER_WORDS] words and [MAX_ANSWER_LENGTH] characters. Answers that come
      * from outside the app go through this, so a slip in the console never reaches the die.
      */
-    fun usable(): Magic8BallDataDto = Magic8BallDataDto(en = en.usable(), es = es.usable())
+    fun usable(): Magic8BallDataDto = Magic8BallDataDto(en = en.usable(), es = es.usable(), pt = pt.usable())
 
     /** These answers, with every list that [other] fills taking the place of this one's. */
     fun replacedBy(other: Magic8BallDataDto): Magic8BallDataDto =
-        Magic8BallDataDto(en = en.replacedBy(other.en), es = es.replacedBy(other.es))
+        Magic8BallDataDto(
+            en = en.replacedBy(other.en),
+            es = es.replacedBy(other.es),
+            pt = pt.replacedBy(other.pt)
+        )
 
-    /** Accepts plain codes and locale tags ("es", "ES", "es-MX", "es_419"). */
-    private fun forLanguage(languageCode: String): PersonalityResponsesDto =
-        if (isSpanish(languageCode)) es else en
+    /** Accepts plain codes and locale tags ("es", "ES", "es-MX", "es_419", "pt-BR"). */
+    private fun forLanguage(languageCode: String): PersonalityResponsesDto = when (baseLanguage(languageCode)) {
+        "es" -> es
+        "pt" -> pt
+        else -> en
+    }
 
     companion object {
         /** As many words as the AI service is allowed, and what still reads well on the die. */
         const val MAX_ANSWER_WORDS = 6
         const val MAX_ANSWER_LENGTH = 40
 
-        fun isSpanish(languageCode: String): Boolean =
-            languageCode.trim().lowercase().substringBefore('-').substringBefore('_') == "es"
+        /** The language of a code or locale tag, without its region: "es" for "es-MX". */
+        fun baseLanguage(languageCode: String): String =
+            languageCode.trim().lowercase().substringBefore('-').substringBefore('_')
+
+        fun isSpanish(languageCode: String): Boolean = baseLanguage(languageCode) == "es"
     }
 }
 

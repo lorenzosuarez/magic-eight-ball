@@ -76,7 +76,7 @@ class OfflineResponsesTest {
         val asset = File("src/main/assets/magic_8_ball_responses.json")
         val bundled = json.decodeFromString<Magic8BallDataDto>(asset.readText())
         // (max characters, max words): what the die's text fitting keeps comfortably readable.
-        val caps = mapOf("en" to (28 to 6), "es" to (28 to 6))
+        val caps = mapOf("en" to (28 to 6), "es" to (28 to 6), "pt" to (28 to 6))
         val all = mutableListOf<String>()
         for ((language, cap) in caps) {
             for (personality in Magic8BallPersonality.entries) {
