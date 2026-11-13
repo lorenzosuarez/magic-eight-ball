@@ -97,23 +97,23 @@ class ProfileSheetTest {
     }
 
     @Test
-    fun `a date that does not exist is said, only once it is whole, and cannot be agreed to`() {
+    fun `a date that cannot be one is said, only once it is whole, and cannot be agreed to`() {
         showFields(ProfileDraft("Lorena"))
         compose.onNodeWithText("Día").performTextInput("31")
         compose.onNodeWithText("Mes").performTextInput("2")
-        assertEquals(0, count("Esa fecha no existe"))
+        assertEquals(0, count("Revisa la fecha"))
 
         compose.onNodeWithText("Año").performTextInput("1990")
-        compose.onNodeWithText("Esa fecha no existe").assertIsDisplayed()
+        compose.onNodeWithText("Revisa la fecha").assertIsDisplayed()
         compose.onNodeWithText("Aceptar y continuar").assertIsNotEnabled()
     }
 
     @Test
     fun `what is said to be sent is on the screen before the button that agrees to it`() {
         showFields(ProfileDraft())
-        compose.onNodeWithText("Qué se envía a la IA de Google").assertIsDisplayed()
-        compose.onNodeWithText("Sin perfil no se guarda ninguna cuenta").assertIsDisplayed()
-        compose.onNodeWithText("Ahora no").assertIsEnabled()
+        compose.onNodeWithText("Qué se envía a Gemini, de Google").assertIsDisplayed()
+        // The other way out says what it is: going on with no account.
+        compose.onNodeWithText("Continuar sin cuenta").assertIsEnabled()
     }
 
     @Test
@@ -133,7 +133,7 @@ class ProfileSheetTest {
     }
 
     @Test
-    fun `whoever has just signed in is asked who they are, and not now takes the account back`() {
+    fun `whoever has just signed in is asked who they are, and going on without an account takes it back`() {
         var state by mutableStateOf(signedIn(ProfileState.Missing))
         var declined = 0
         compose.setContent {
@@ -156,7 +156,7 @@ class ProfileSheetTest {
         // Google's name for the account, down to its first word, is where the name starts.
         compose.onNodeWithText("Lorena").assertIsDisplayed()
 
-        compose.onNodeWithText("Ahora no").performClick()
+        compose.onNodeWithText("Continuar sin cuenta").performClick()
         compose.waitForIdle()
 
         assertEquals(1, declined)

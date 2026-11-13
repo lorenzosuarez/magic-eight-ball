@@ -100,6 +100,7 @@
     <string name="settings_ai">AI answers</string>
     <string name="settings_ai_on">Written on the spot</string>
     <string name="settings_ai_unavailable">Not available right now</string>
+    <string name="settings_ai_unavailable_here">Not available on this device</string>
     <string name="settings_ai_classic">Classic doesn\'t use AI</string>
     <string name="settings_ai_spent">You\'ve used today\'s AI answers. More tomorrow</string>
     <string name="settings_ai_more">Get more AI answers today</string>
@@ -172,7 +173,7 @@
     <string name="report_reason_harmful">It could cause harm</string>
     <string name="report_reason_nonsense">It makes no sense</string>
     <string name="report_reason_other">Something else</string>
-    <string name="report_hint">Pick one and it\'s sent.</string>
+    <string name="report_hint">Pick one and it\'s sent</string>
     <string name="settings_voice_allow_hint">So you can ask out loud</string>
     <string name="action_create">Create</string>
     <string name="characters_create">Create a character</string>
@@ -190,7 +191,7 @@
     <string name="account_delete_hint">For good, with everything in it</string>
     <string name="account_delete_title">Delete your account?</string>
     <string name="account_delete_text">Your account and everything in it are erased. This can\'t be undone. Your recent answers stay on this device. Google may ask you to pick your account to confirm.</string>
-    <string name="account_delete_failed">Couldn\'t delete the account. Try again.</string>
+    <string name="account_delete_failed">Couldn\'t delete the account. Try again</string>
     <string name="account_deleted">Account deleted.</string>
     <string name="account_profile">Your profile</string>
     <string name="profile_title_new">Who\'s asking?</string>
@@ -201,16 +202,15 @@
     <string name="profile_day">Day</string>
     <string name="profile_month">Month</string>
     <string name="profile_year">Year</string>
-    <string name="profile_date_invalid">There is no such date</string>
+    <string name="profile_date_invalid">Check the date</string>
     <string name="profile_save_failed">Couldn\'t save. Check your connection and try again</string>
-    <string name="profile_sent_title">What is sent to Google\'s AI</string>
-    <string name="profile_sent_text">Your first name, your zodiac sign and, on the day, that it is your birthday: each only to the characters that use it. Your date of birth, your email and your photo are never sent.</string>
-    <string name="profile_sent_text_edit">Your first name, your zodiac sign and, on the day, that it is your birthday: each only to the characters that use it. Your date of birth, your email and your photo are never sent. To stop sending them, delete your account.</string>
+    <string name="profile_sent_title">What is sent to Google\'s Gemini</string>
+    <string name="profile_sent_text">Your first name, your sign and that it\'s your birthday (only on the day). Each character gets only what it uses. Your date of birth, your email and your photo,&#160;never.</string>
+    <string name="profile_sent_text_edit">Your first name, your sign and that it\'s your birthday (only on the day). They stop being sent if you sign out. Each character gets only what it uses. Your date of birth, your email and your photo,&#160;never.</string>
     <string name="profile_accept">Agree and continue</string>
-    <string name="profile_not_now">Not now</string>
-    <string name="profile_not_now_hint">Without a profile no account is kept</string>
+    <string name="profile_not_now">Continue without an account</string>
     <string name="age_notice_title">You can\'t have an account</string>
-    <string name="age_notice_text">With that date of birth we can\'t give you one. It has been deleted, and nothing you typed was kept. The app goes on working with its usual answers.</string>
+    <string name="age_notice_text">The account was deleted and nothing you typed was kept. On this device the ball keeps answering, without an account and without AI.</string>
     <string name="action_understood">Got it</string>
-    <string name="privacy_account">With your account, Gemini is also told your first name, your sign and, on the day, that it is your birthday.</string>
+    <string name="privacy_account">With your account, Gemini is also told your first name, your sign and that it\'s your birthday (only on the day).</string>
 </resources>

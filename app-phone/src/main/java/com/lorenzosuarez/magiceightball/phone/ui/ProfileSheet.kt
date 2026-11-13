@@ -3,7 +3,6 @@ package com.lorenzosuarez.magiceightball.phone.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +15,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -38,6 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -51,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.magiceightball.core.common.BrandPalette
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.R
@@ -258,7 +262,8 @@ internal class ProfileDraft(name: String = "", birthDate: LocalDate? = null) {
 
 /**
  * What [ProfileSheet] shows: the two things asked, what is sent of them to the AI service and
- * what never is, and the button that is the user's agreement to it.
+ * what never is, and the button that is the user's agreement to it. A date that cannot be one
+ * is said under the date; a save that failed, by the button.
  *
  * @param failed whether the last try to save could not reach the server.
  * @param onSecondary "not now" the first time, and cancelling over a profile that exists.
@@ -277,10 +282,14 @@ internal fun ProfileContent(
 ) {
     val name = draft.nameToSave
     val date = draft.date(today)
+    val badDate = draft.dateTyped && date == null
+    val scroll = rememberScrollState()
+    // A save that failed is said by the button that was touched: brought into sight if it is not.
+    LaunchedEffect(failed) { if (failed) scroll.animateScrollTo(scroll.maxValue) }
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scroll)
             .navigationBarsPadding()
             .imePadding()
             .padding(bottom = 16.dp)
@@ -297,49 +306,39 @@ internal fun ProfileContent(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Column(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        // The fields share the cards' edge, so that what is typed in them starts where every
+        // other line on the sheet does.
+        OutlinedTextField(
+            value = draft.name,
+            onValueChange = draft::typeName,
+            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+            enabled = !busy,
+            singleLine = true,
+            label = { Text(stringResource(R.string.profile_name)) },
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
+            ),
+            shape = ButtonShape
+        )
+        // One date, typed as its three numbers, each under its own name: no calendar to page
+        // back through for decades, and no doubt about which number is the month.
+        Text(
+            text = stringResource(R.string.profile_birth_date),
+            modifier = Modifier.padding(start = 32.dp, top = 24.dp, end = 32.dp, bottom = 8.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
-                value = draft.name,
-                onValueChange = draft::typeName,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !busy,
-                singleLine = true,
-                label = { Text(stringResource(R.string.profile_name)) },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words,
-                    imeAction = ImeAction.Next
-                )
-            )
-            // One date, typed as its three numbers, each under its own name: no calendar to
-            // page back through for decades, and no doubt about which number is the month.
-            Text(
-                text = stringResource(R.string.profile_birth_date),
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DateField(draft.day, draft::typeDay, R.string.profile_day, !busy, Modifier.weight(1f))
-                DateField(draft.month, draft::typeMonth, R.string.profile_month, !busy, Modifier.weight(1f))
-                DateField(draft.year, draft::typeYear, R.string.profile_year, !busy, Modifier.weight(1.3f), last = true)
-            }
-            // What stands in the way, said where it was typed and heard by whoever cannot see it.
-            val trouble = when {
-                draft.dateTyped && date == null -> stringResource(R.string.profile_date_invalid)
-                failed -> stringResource(R.string.profile_save_failed)
-                else -> null
-            }
-            if (trouble != null) {
-                Text(
-                    text = trouble,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+            DateField(draft.day, draft::typeDay, R.string.profile_day, !busy, badDate, Modifier.weight(1f))
+            DateField(draft.month, draft::typeMonth, R.string.profile_month, !busy, badDate, Modifier.weight(1.4f))
+            DateField(draft.year, draft::typeYear, R.string.profile_year, !busy, badDate, Modifier.weight(1.2f), last = true)
+        }
+        if (badDate) {
+            Trouble(stringResource(R.string.profile_date_invalid), Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp))
         }
         // Before the button, and in full: what agreeing to it means.
         Column(
@@ -348,39 +347,59 @@ internal fun ProfileContent(
                 .fillMaxWidth()
                 .clip(CardShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 2.dp)
         ) {
             Text(
                 text = stringResource(R.string.profile_sent_title),
+                modifier = Modifier.padding(start = 16.dp, top = 14.dp, end = 16.dp),
                 style = MaterialTheme.typography.titleMedium.copy(lineBreak = LineBreak.Heading),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = stringResource(if (firstTime) R.string.profile_sent_text else R.string.profile_sent_text_edit),
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier.padding(start = 16.dp, top = 2.dp, end = 16.dp, bottom = 14.dp),
                 // Several lines to be read in full: broken so that none ends on a word alone.
                 style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Box(
+            RowDivider()
+            // The whole of it, for whoever wants it: a row that opens something, as on the options page.
+            Row(
                 modifier = Modifier
+                    .fillMaxWidth()
                     .clickable(role = Role.Button, onClick = onOpenPrivacyPolicy)
-                    .heightIn(min = 48.dp),
-                contentAlignment = Alignment.CenterStart
+                    .heightIn(min = 56.dp)
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = stringResource(R.string.settings_privacy_policy),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
+        if (failed) {
+            Trouble(stringResource(R.string.profile_save_failed), Modifier.padding(start = 32.dp, top = 12.dp, end = 32.dp))
+        }
         Button(
             onClick = { if (name != null && date != null) onSave(name, date) },
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).fillMaxWidth().heightIn(min = 48.dp),
+            modifier = Modifier
+                .padding(start = 16.dp, top = if (failed) 8.dp else 16.dp, end = 16.dp)
+                .fillMaxWidth()
+                .heightIn(min = 48.dp),
             enabled = !busy && name != null && date != null,
-            shape = ButtonShape
+            shape = ButtonShape,
+            // The brand's deep accent in both themes: white on the dark theme's lighter one is too faint to read.
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(BrandPalette.ACCENT_DEEP),
+                contentColor = Color(BrandPalette.ON_ACCENT)
+            )
         ) {
             Text(
                 text = stringResource(if (firstTime) R.string.profile_accept else R.string.action_save),
@@ -388,25 +407,30 @@ internal fun ProfileContent(
                 textAlign = TextAlign.Center
             )
         }
+        // The other way out says what it does: the first time, going on with no account.
         TextButton(
             onClick = onSecondary,
             modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp).fillMaxWidth().heightIn(min = 48.dp),
             enabled = !busy,
             shape = ButtonShape
         ) {
-            Text(stringResource(if (firstTime) R.string.profile_not_now else R.string.action_cancel))
-        }
-        if (firstTime) {
-            // What "not now" does, said before it is touched.
             Text(
-                text = stringResource(R.string.profile_not_now_hint),
-                modifier = Modifier.padding(horizontal = 32.dp).fillMaxWidth(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = stringResource(if (firstTime) R.string.profile_not_now else R.string.action_cancel),
                 textAlign = TextAlign.Center
             )
         }
     }
+}
+
+/** What stands in the way, said where it happened and heard by whoever cannot see it. */
+@Composable
+private fun Trouble(message: String, modifier: Modifier = Modifier) {
+    Text(
+        text = message,
+        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+        style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
+        color = MaterialTheme.colorScheme.error
+    )
 }
 
 /** One of the date's three numbers. */
@@ -416,6 +440,7 @@ private fun DateField(
     onValueChange: (String) -> Unit,
     label: Int,
     enabled: Boolean,
+    wrong: Boolean,
     modifier: Modifier = Modifier,
     last: Boolean = false
 ) {
@@ -424,6 +449,8 @@ private fun DateField(
         onValueChange = onValueChange,
         modifier = modifier,
         enabled = enabled,
+        isError = wrong,
+        shape = ButtonShape,
         singleLine = true,
         label = { Text(stringResource(label), maxLines = 1) },
         keyboardOptions = KeyboardOptions(

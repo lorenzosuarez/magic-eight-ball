@@ -140,6 +140,8 @@ internal fun SettingsContent(
                 title = stringResource(R.string.settings_ai),
                 supporting = stringResource(R.string.settings_ai_on),
                 note = when {
+                    // Not "for now": on a device given an under-age date of birth it is for good.
+                    state.underAge -> stringResource(R.string.settings_ai_unavailable_here)
                     !state.aiAnswersAvailable -> stringResource(R.string.settings_ai_unavailable)
                     classic -> stringResource(R.string.settings_ai_classic)
                     state.usesAiAnswers && state.aiAllowanceSpent -> stringResource(R.string.settings_ai_spent)

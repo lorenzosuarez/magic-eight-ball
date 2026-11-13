@@ -553,8 +553,9 @@ class EightBallScreenshotTest {
         failed = true
     )
 
+    /** On a window tall enough to show the line that says what failed, which a small phone scrolls to. */
     @Test
-    @Config(qualifiers = SMALL_PHONE)
+    @Config(qualifiers = SMALL_PHONE_TALL)
     fun small_phone_account_sheet_large_font() = captureAccountSheet(
         "phone_58_small_phone_account_sheet_large_font",
         LONG_ACCOUNT,
@@ -606,6 +607,17 @@ class EightBallScreenshotTest {
             typeYear("1990")
         },
         AppLanguage.PORTUGUESE,
+        dark = false,
+        fontScale = 1.5f
+    )
+
+    /** English, whose "Month" is the longest name a date field has. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_profile_english_large_font() = captureProfile(
+        "phone_64_small_phone_profile_english_large_font",
+        ProfileDraft("Lorena"),
+        AppLanguage.ENGLISH,
         dark = false,
         fontScale = 1.5f
     )

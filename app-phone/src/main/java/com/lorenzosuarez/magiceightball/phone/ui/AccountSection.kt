@@ -375,10 +375,13 @@ internal fun AccountSheetContent(
     modifier: Modifier = Modifier
 ) {
     val name = account.name.ifBlank { account.email }
+    val scroll = rememberScrollState()
+    // What failed is said under the rows: brought into sight if they have pushed it out of it.
+    LaunchedEffect(failed) { if (failed) scroll.animateScrollTo(scroll.maxValue) }
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scroll)
             .navigationBarsPadding()
             .padding(bottom = 16.dp)
     ) {
@@ -409,7 +412,8 @@ internal fun AccountSheetContent(
                 // Who the characters take the user for, and the way to correct it.
                 ActionRow(
                     title = stringResource(R.string.account_profile),
-                    supporting = profile.firstName + " · " + profile.birthDate.spelledOut(),
+                    // The date is one thing: it goes to the next line whole or not at all.
+                    supporting = profile.firstName + " · " + profile.birthDate.spelledOut().replace(' ', '\u00A0'),
                     onClick = onEditProfile,
                     enabled = !busy
                 )
@@ -454,7 +458,7 @@ private fun AccountFailure(message: String, modifier: Modifier = Modifier) {
     Text(
         text = message,
         modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
         color = MaterialTheme.colorScheme.error
     )
 }

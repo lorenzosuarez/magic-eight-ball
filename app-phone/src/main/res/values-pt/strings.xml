@@ -95,6 +95,7 @@
     <string name="settings_ai">Respostas com IA</string>
     <string name="settings_ai_on">Escritas na hora</string>
     <string name="settings_ai_unavailable">Indisponível por enquanto</string>
+    <string name="settings_ai_unavailable_here">Não disponível neste dispositivo</string>
     <string name="settings_ai_classic">Clássico não usa IA</string>
     <string name="settings_ai_spent">Você já usou as de hoje. Voltam amanhã</string>
     <string name="settings_ai_more">Ganhe mais respostas com IA hoje</string>
@@ -164,7 +165,7 @@
     <string name="report_reason_harmful">Pode causar dano</string>
     <string name="report_reason_nonsense">Não faz sentido</string>
     <string name="report_reason_other">Outra coisa</string>
-    <string name="report_hint">Escolha uma opção e ela é enviada.</string>
+    <string name="report_hint">Escolha uma opção e ela é enviada</string>
     <string name="settings_voice_allow_hint">Para perguntar em voz alta</string>
     <string name="action_create">Criar</string>
     <string name="characters_create">Criar um personagem</string>
@@ -182,7 +183,7 @@
     <string name="account_delete_hint">Para sempre, com tudo o que ela guarda</string>
     <string name="account_delete_title">Excluir sua conta?</string>
     <string name="account_delete_text">Sua conta e tudo o que ela guarda são apagados. Não dá para desfazer. Suas respostas recentes continuam neste dispositivo. O Google pode pedir que você escolha sua conta para confirmar.</string>
-    <string name="account_delete_failed">Não foi possível excluir a conta. Tente de novo.</string>
+    <string name="account_delete_failed">Não foi possível excluir a conta. Tente de novo</string>
     <string name="account_deleted">Conta excluída.</string>
     <string name="account_profile">Seu perfil</string>
     <string name="profile_title_new">Quem pergunta?</string>
@@ -193,16 +194,15 @@
     <string name="profile_day">Dia</string>
     <string name="profile_month">Mês</string>
     <string name="profile_year">Ano</string>
-    <string name="profile_date_invalid">Essa data não existe</string>
+    <string name="profile_date_invalid">Confira a data</string>
     <string name="profile_save_failed">Não foi possível salvar. Verifique sua conexão e tente de novo</string>
-    <string name="profile_sent_title">O que é enviado à IA do Google</string>
-    <string name="profile_sent_text">Seu nome, seu signo do zodíaco e, no dia, que é seu aniversário: cada um só aos personagens que o usam. Sua data de nascimento, seu e-mail e sua foto nunca são enviados.</string>
-    <string name="profile_sent_text_edit">Seu nome, seu signo do zodíaco e, no dia, que é seu aniversário: cada um só aos personagens que o usam. Sua data de nascimento, seu e-mail e sua foto nunca são enviados. Para parar de enviá-los, exclua sua conta.</string>
+    <string name="profile_sent_title">O que é enviado ao Gemini, do Google</string>
+    <string name="profile_sent_text">Seu nome, seu signo e que é seu aniversário (só no dia). Cada personagem recebe só o que usa. Sua data de nascimento, seu e-mail e sua foto,&#160;nunca.</string>
+    <string name="profile_sent_text_edit">Seu nome, seu signo e que é seu aniversário (só no dia). Deixam de ser enviados se você sair da conta. Cada personagem recebe só o que usa. Sua data de nascimento, seu e-mail e sua foto,&#160;nunca.</string>
     <string name="profile_accept">Aceitar e continuar</string>
-    <string name="profile_not_now">Agora não</string>
-    <string name="profile_not_now_hint">Sem perfil, nenhuma conta é guardada</string>
+    <string name="profile_not_now">Continuar sem conta</string>
     <string name="age_notice_title">Você não pode ter conta</string>
-    <string name="age_notice_text">Com essa data de nascimento não podemos criar uma. Ela foi excluída e nada do que você digitou foi guardado. O app continua funcionando com as respostas de sempre.</string>
+    <string name="age_notice_text">A conta foi excluída e nada do que você digitou foi salvo. Neste dispositivo a bola continua respondendo, sem conta e sem IA.</string>
     <string name="action_understood">Entendi</string>
-    <string name="privacy_account">Com sua conta, o Gemini também recebe seu nome, seu signo e, no dia, que é seu aniversário.</string>
+    <string name="privacy_account">Com sua conta, o Gemini também recebe seu nome, seu signo e que é seu aniversário (só no dia).</string>
 </resources>
