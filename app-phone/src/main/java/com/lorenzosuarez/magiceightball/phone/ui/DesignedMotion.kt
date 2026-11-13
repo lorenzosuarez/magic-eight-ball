@@ -14,9 +14,11 @@ import kotlinx.coroutines.withContext
  * Motion at the speed it was designed for, whatever the system's animation scale is.
  *
  * The ball is the app: how it listens, thinks and answers is told by how it moves, and with
- * the system's animations turned off it would only jump from one picture to the next. This is
- * a product decision, and it covers the ball alone; everything else in the app follows the
- * system's setting as usual.
+ * the system's animations turned off it would only jump from one picture to the next. The same
+ * goes for getting around: a page that slides in says where it came from, and one that just
+ * appears does not. This is a product decision. The activity composes everything in it (see
+ * MainActivity), so the whole app moves as designed; what is launched here by hand does too,
+ * wherever it is composed.
  */
 internal object DesignedMotion : MotionDurationScale {
     override val scaleFactor: Float get() = 1f

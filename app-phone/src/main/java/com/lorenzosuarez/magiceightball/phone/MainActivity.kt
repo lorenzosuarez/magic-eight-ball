@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.platform.compositionContext
+import androidx.compose.ui.platform.createLifecycleAwareWindowRecomposer
+import com.lorenzosuarez.magiceightball.phone.ui.DesignedMotion
 import com.lorenzosuarez.magiceightball.phone.push.DailyVerdict
 import android.content.Intent
 import android.annotation.SuppressLint
@@ -32,6 +36,7 @@ class MainActivity : ComponentActivity() {
     // Portrait is a product decision for phones only: R.bool.portrait_only is false from 600dp
     // of width up, so tablets and foldables keep rotating freely, which is what the check asks for.
     @SuppressLint("SourceLockedOrientationActivity")
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app follows the system's light or dark setting, and so do the bars' icons.
         val bars = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
@@ -45,6 +50,11 @@ class MainActivity : ComponentActivity() {
         } else {
             ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
+
+        // How the app moves is part of what it says: pages slide, sheets rise and answers arrive
+        // at the speed they were designed for, whatever the system's animation scale is.
+        window.decorView.compositionContext =
+            window.decorView.createLifecycleAwareWindowRecomposer(DesignedMotion, lifecycle)
 
         setContent {
             val adPrivacyOptionsRequired by ads.privacyOptionsRequired.collectAsStateWithLifecycle()

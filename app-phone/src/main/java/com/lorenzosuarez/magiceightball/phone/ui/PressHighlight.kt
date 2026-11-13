@@ -133,12 +133,14 @@ internal fun BarIconButton(
     @DrawableRes icon: Int,
     description: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSurface
 ) {
     AppIconButton(
         icon = icon,
         description = description,
         onClick = onClick,
+        tint = tint,
         modifier = modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA), CircleShape)
     )
 }

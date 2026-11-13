@@ -473,6 +473,7 @@ internal fun EightBallContent(
     val snackbars = remember { SnackbarHostState() }
     val deletedMessage = stringResource(R.string.history_deleted)
     val undoLabel = stringResource(R.string.action_undo)
+    val reportedMessage = stringResource(R.string.report_done)
     val deleteWithUndo: (HistoryEntry) -> Unit = { entry ->
         onDeleteHistoryEntry(entry.id)
         scope.launch {
@@ -546,6 +547,13 @@ internal fun EightBallContent(
                             busy = busy,
                             onDismiss = onDismiss,
                             onSpeakAnswer = onSpeakAnswer,
+                            onReport = {
+                                onReportAnswer()
+                                scope.launch {
+                                    snackbars.currentSnackbarData?.dismiss()
+                                    snackbars.showSnackbar(reportedMessage, duration = SnackbarDuration.Short)
+                                }
+                            },
                             onOpenHistory = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
                             onOpenOptions = { scope.launch { pagerState.animateScrollToPage(OPTIONS_PAGE) } },
                             modifier = Modifier.fillMaxSize().graphicsLayer { alpha = intro() }
@@ -599,7 +607,6 @@ internal fun EightBallContent(
                             onToggleVoiceQuestion = onToggleVoiceQuestion,
                             onAllowMicrophone = onAllowMicrophone,
                             onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
-                            onReportAnswer = onReportAnswer,
                             onRateAnswer = onRateAnswer,
                             onAskWho = onAskWho
                         )
@@ -636,7 +643,7 @@ internal fun EightBallContent(
 
 /**
  * The top of the ball's page. At rest, the way to each neighbour at the side it lies on; with a
- * question or an answer, the way out of it and, for an answer, the way to hear it.
+ * question or an answer, the way out of it and, for an answer, the ways to hear it and to report it.
  */
 @Composable
 private fun BallBar(
@@ -644,6 +651,7 @@ private fun BallBar(
     busy: Boolean,
     onDismiss: () -> Unit,
     onSpeakAnswer: () -> Unit,
+    onReport: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenOptions: () -> Unit,
     modifier: Modifier = Modifier
@@ -669,14 +677,33 @@ private fun BallBar(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.CenterStart)
             )
-            // With an answer on the die, the one thing left to do with it from up here: hear it.
-            if (state.phase is BallPhase.Answered) {
-                BarButton(
-                    icon = R.drawable.ic_volume,
-                    description = stringResource(R.string.action_read_aloud),
-                    onClick = onSpeakAnswer,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
+            // With an answer on the die, what is done about the answer itself from up here: hear
+            // it and, since nobody read what the AI wrote before it was shown, report it.
+            val answered = state.phase as? BallPhase.Answered
+            if (answered != null) {
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if ((answered.answer as? AnswerText.Plain)?.fromAi == true) {
+                        // Once reported it stays marked, and a second press does nothing.
+                        BarIconButton(
+                            icon = if (answered.reported) R.drawable.ic_flag_filled else R.drawable.ic_flag,
+                            description = stringResource(
+                                if (answered.reported) R.string.report_done else R.string.report_label
+                            ),
+                            onClick = { if (!answered.reported) onReport() },
+                            tint = if (answered.reported) {
+                                MaterialTheme.colorScheme.primary
+                            } else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    BarButton(
+                        icon = R.drawable.ic_volume,
+                        description = stringResource(R.string.action_read_aloud),
+                        onClick = onSpeakAnswer
+                    )
+                }
             }
         }
     }
@@ -738,7 +765,6 @@ private fun Stage(
     onToggleVoiceQuestion: () -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
-    onReportAnswer: () -> Unit,
     onRateAnswer: (Boolean) -> Unit,
     onAskWho: (String) -> Unit
 ) {
@@ -787,7 +813,6 @@ private fun Stage(
                     state = state,
                     onAllowMicrophone = onAllowMicrophone,
                     onShareAnswer = onShareAnswer,
-                    onReportAnswer = onReportAnswer,
                     onRateAnswer = onRateAnswer,
                     onAskWho = onAskWho,
                     modifier = band.padding(bottom = 16.dp).heightIn(min = 48.dp)
@@ -1104,7 +1129,6 @@ private fun Actions(
     state: EightBallUiState,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
-    onReportAnswer: () -> Unit,
     onRateAnswer: (Boolean) -> Unit,
     onAskWho: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -1169,11 +1193,8 @@ private fun Actions(
             }
             is BallPhase.Answered -> AnswerActions(
                 liked = phase.liked,
-                canReport = (phase.answer as? AnswerText.Plain)?.fromAi == true,
-                reported = phase.reported,
                 onShare = onShareAnswer,
                 onRate = onRateAnswer,
-                onReport = onReportAnswer,
                 modifier = Modifier.fillMaxWidth()
             )
             else -> Spacer(Modifier.fillMaxWidth())
@@ -1184,84 +1205,46 @@ private fun Actions(
 /**
  * What can be done with an answer, in one row and with nothing drawn around it: share it,
  * which is the main thing and the only one with a name, and say whether it was a good one, with
- * two quiet thumbs. What the AI wrote can also be reported, since nobody read it before it was
- * shown: the way to that opens under the row once the answer is called a bad one.
+ * two quiet thumbs.
  */
 @Composable
 private fun AnswerActions(
     liked: Boolean?,
-    canReport: Boolean,
-    reported: Boolean,
     onShare: () -> Unit,
     onRate: (Boolean) -> Unit,
-    onReport: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(
+            onClick = onShare,
+            modifier = Modifier.heightIn(min = 48.dp),
+            shape = ButtonShape,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
         ) {
-            TextButton(
-                onClick = onShare,
-                modifier = Modifier.heightIn(min = 48.dp),
-                shape = ButtonShape,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_share),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
-            }
-            RateButton(
-                good = true,
-                chosen = liked,
-                label = stringResource(R.string.rate_good),
-                onClick = { onRate(true) }
+            Icon(
+                painter = painterResource(R.drawable.ic_share),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
             )
-            RateButton(
-                good = false,
-                chosen = liked,
-                label = stringResource(R.string.rate_bad),
-                onClick = { onRate(false) }
-            )
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
         }
-        AnimatedVisibility(visible = canReport && (liked == false || reported)) {
-            if (reported) {
-                Text(
-                    text = stringResource(R.string.report_done),
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .wrapContentHeight()
-                        .semantics { liveRegion = LiveRegionMode.Polite },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                val label = stringResource(R.string.report_label)
-                TextButton(
-                    onClick = onReport,
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .semantics { contentDescription = label },
-                    shape = ButtonShape,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_flag),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_report))
-                }
-            }
-        }
+        RateButton(
+            good = true,
+            chosen = liked,
+            label = stringResource(R.string.rate_good),
+            onClick = { onRate(true) }
+        )
+        RateButton(
+            good = false,
+            chosen = liked,
+            label = stringResource(R.string.rate_bad),
+            onClick = { onRate(false) }
+        )
     }
 }
 

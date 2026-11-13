@@ -220,19 +220,22 @@ private fun DrawScope.drawBubble() {
  */
 @Composable
 private fun FlatBall(personality: Magic8BallPersonality, modifier: Modifier = Modifier) {
-    val worn = remember(personality) { silhouette(personality)?.let { PathParser().parsePathString(it).toPath() } }
-    val cut = remember(personality) { detail(personality)?.let { PathParser().parsePathString(it).toPath() } }
+    val wears = remember(personality) { worn(personality) }
+    val worn = remember(wears) { wears?.shape?.let { PathParser().parsePathString(it).toPath() } }
+    val cut = remember(wears) { wears?.cut?.let { PathParser().parsePathString(it).toPath() } }
     Box(modifier = modifier.rotate(SHARE_BALL_TILT)) {
         Canvas(Modifier.fillMaxSize()) {
             val radius = size.minDimension / 2
-            if (worn != null) {
+            if (wears != null && worn != null) {
                 // Drawn on a ball of radius WORN_RADIUS whose centre is at WORN_CENTRE.
                 val unit = radius / WORN_RADIUS
                 withTransform({
                     translate(center.x - WORN_CENTRE_X * unit, center.y - WORN_CENTRE_Y * unit)
                     scale(unit, unit, pivot = Offset.Zero)
-                    // Small, on the crown of the ball.
-                    scale(WORN_SIZE, WORN_SIZE, pivot = Offset(WORN_CENTRE_X, WORN_CENTRE_Y - WORN_RADIUS))
+                    // Small, on the crown of the ball, and a little crooked where it sits.
+                    val crown = Offset(WORN_CENTRE_X, WORN_CENTRE_Y - WORN_RADIUS)
+                    scale(WORN_SIZE * wears.size, WORN_SIZE * wears.size, pivot = crown)
+                    rotate(wears.tilt, pivot = crown + Offset(0f, WORN_SEAT))
                 }) {
                     drawPath(worn, SHARE_INK)
                     drawPath(worn, SHARE_INK, style = Stroke(width = WORN_SOFTEN, join = StrokeJoin.Round))
@@ -265,96 +268,121 @@ private fun FlatBall(personality: Magic8BallPersonality, modifier: Modifier = Mo
 }
 
 /**
- * What the ball wears for a style: one thing on its head, in the ball's own ink, as an SVG path
- * on a ball of radius [WORN_RADIUS] centred at ([WORN_CENTRE_X], [WORN_CENTRE_Y]). The classic
- * style wears nothing.
+ * What the ball wears for a style, in the ball's own ink: SVG paths on a ball of radius
+ * [WORN_RADIUS] centred at ([WORN_CENTRE_X], [WORN_CENTRE_Y]).
  *
- * They are drawn to one set of rules, so that the nineteen read as one family: each sits on
- * the crown and touches it (only a halo floats), each is built of circles, bars and plain
- * curves, each is about as wide and as heavy as the next, and each stands on the ball's axis.
- * Overlapping parts of one shape run the same way round, or they would cut holes in each other.
+ * @property shape the thing itself. Overlapping parts of it run the same way round, or they
+ * would cut holes in each other.
+ * @property cut what is cut out of it in white: at most one detail, as thick as the next one's,
+ * and only where the shape does not say what it is without it.
+ * @property size how large it is beside the others: a small hat on a large ball is the joke.
+ * @property tilt how crooked it sits, in degrees: put on in a hurry, never straight.
  */
-private fun silhouette(personality: Magic8BallPersonality): String? = when (personality) {
-    Magic8BallPersonality.NEUTRAL -> null
-    Magic8BallPersonality.SARCASTIC ->
-        "M67.0 15.0 L66.4 13.3 L64.7 11.8 L62.0 10.4 L58.5 9.4 L54.4 8.7 L50.0 8.5 L45.6 8.7 L41.5 9.4 L38.0 10.4 L35.3 11.8 L33.6 13.3 L33.0 15.0 L33.6 16.7 L35.3 18.2 L38.0 19.6 L41.5 20.6 L45.6 21.3 L50.0 21.5 L54.4 21.3 L58.5 20.6 L62.0 19.6 L64.7 18.3 L66.4 16.7Z" +
-        " M61.0 15.0 L60.6 15.7 L59.5 16.3 L57.8 16.8 L55.5 17.3 L52.8 17.5 L50.0 17.6 L47.2 17.5 L44.5 17.3 L42.2 16.8 L40.5 16.3 L39.4 15.7 L39.0 15.0 L39.4 14.3 L40.5 13.7 L42.2 13.2 L44.5 12.7 L47.2 12.5 L50.0 12.4 L52.8 12.5 L55.5 12.7 L57.8 13.2 L59.5 13.7 L60.6 14.3Z"
-    Magic8BallPersonality.MYSTICAL ->
-        "M46.0 2.0 L49.6 13.4 L61.0 17.0 L49.6 20.6 L46.0 32.0 L42.4 20.6 L31.0 17.0 L42.4 13.4Z" +
-        " M67.0 1.0 L68.7 6.3 L74.0 8.0 L68.7 9.7 L67.0 15.0 L65.3 9.7 L60.0 8.0 L65.3 6.3Z"
-    Magic8BallPersonality.GRANDMA ->
-        "M35 36 Q33 15 50 15 Q67 15 65 36 Q50 31 35 36Z" +
-        " M43.5 10 a6.5 6.5 0 1 1 13 0 a6.5 6.5 0 1 1 -13 0Z"
-    Magic8BallPersonality.PIRATE ->
-        "M19 25 Q24 30 34 27 Q40 6 50 6 Q60 6 66 27 Q76 30 81 25 Q80 37 50 33 Q20 37 19 25Z"
-    Magic8BallPersonality.PHILOSOPHER ->
-        "M34.5 14 a7.5 7.5 0 1 0 15 0 a7.5 7.5 0 1 0 -15 0Z" +
-        " M44.5 10 a8.5 8.5 0 1 0 17 0 a8.5 8.5 0 1 0 -17 0Z" +
-        " M52.5 17 a7.5 7.5 0 1 0 15 0 a7.5 7.5 0 1 0 -15 0Z" +
-        " M40.5 19 a7.5 7.5 0 1 0 15 0 a7.5 7.5 0 1 0 -15 0Z" +
-        " M42.6 31 a3.4 3.4 0 1 0 6.8 0 a3.4 3.4 0 1 0 -6.8 0Z"
-    Magic8BallPersonality.COACH ->
-        "M37 35 Q36 15 52 15 Q68 15 67 35 Q52 31 37 35Z M14 30 Q26 25 40 27 v6.5 Q27 32 16 35.5Z"
-    Magic8BallPersonality.LOVESTRUCK ->
-        "M35 15 a7.6 7.6 0 1 0 15.2 0 a7.6 7.6 0 1 0 -15.2 0Z" +
-        " M49.8 15 a7.6 7.6 0 1 0 15.2 0 a7.6 7.6 0 1 0 -15.2 0Z M36.2 19 L50 33 L63.8 19 L50 11Z"
-    Magic8BallPersonality.DRAMA ->
-        "M36 34 L34 15 L43 23 L50 10 L57 23 L66 15 L64 34 Q50 30 36 34Z" +
-        " M30.8 13.5 a3.2 3.2 0 1 1 6.4 0 a3.2 3.2 0 1 1 -6.4 0Z" +
-        " M46.8 8.5 a3.2 3.2 0 1 1 6.4 0 a3.2 3.2 0 1 1 -6.4 0Z" +
-        " M62.8 13.5 a3.2 3.2 0 1 1 6.4 0 a3.2 3.2 0 1 1 -6.4 0Z"
-    Magic8BallPersonality.ROBOT ->
-        "M48.5 12 v16 h3 v-16Z M44.5 10 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0Z" +
-        " M41 35 Q50 32 59 35 Q59 25 50 25 Q41 25 41 35Z"
-    Magic8BallPersonality.DETECTIVE ->
-        "M22 35 Q50 26 78 35 v4.5 Q50 30.5 22 39.5Z M35 31 Q33 9 44 9 Q50 12.5 56 9 Q67 9 65 31Z"
-    Magic8BallPersonality.CONSPIRACY ->
-        "M34 37 L50 4 L66 37 Q50 31 34 37Z"
-    Magic8BallPersonality.CAT ->
-        "M34 36 L35 11 L48 29Z M66 36 L52 29 L65 11Z"
-    Magic8BallPersonality.ZOOMER ->
-        "M7.6 47.9 A49 49 0 0 1 92.4 47.9 L88.5 50.2 A44.5 44.5 0 0 0 11.5 50.2Z" +
-        " M16.0 54.0 L15.8 56.6 L15.1 59.0 L14.1 61.1 L12.8 62.7 L11.2 63.7 L9.5 64.0 L7.8 63.7 L6.3 62.7 L4.9 61.1 L3.9 59.0 L3.2 56.6 L3.0 54.0 L3.2 51.4 L3.9 49.0 L4.9 46.9 L6.2 45.3 L7.8 44.3 L9.5 44.0 L11.2 44.3 L12.8 45.3 L14.1 46.9 L15.1 49.0 L15.8 51.4Z" +
-        " M97.0 54.0 L96.8 56.6 L96.1 59.0 L95.1 61.1 L93.8 62.7 L92.2 63.7 L90.5 64.0 L88.8 63.7 L87.2 62.7 L85.9 61.1 L84.9 59.0 L84.2 56.6 L84.0 54.0 L84.2 51.4 L84.9 49.0 L85.9 46.9 L87.2 45.3 L88.8 44.3 L90.5 44.0 L92.2 44.3 L93.8 45.3 L95.1 46.9 L96.1 49.0 L96.8 51.4Z"
-    Magic8BallPersonality.VILLAIN ->
-        "M35 36 Q27 23 35 8 Q38 21 47 29Z M65 36 L53 29 Q62 21 65 8 Q73 23 65 36Z"
-    Magic8BallPersonality.POET ->
-        "M27 31 Q24 15 46 14 Q73 12 73 25 Q73 34 50 33.5 Q34 35 27 31Z M48.6 8 h2.8 v8 h-2.8Z"
-    Magic8BallPersonality.ASTRO ->
-        "M39.5 19 a10.5 10.5 0 1 0 21 0 a10.5 10.5 0 1 0 -21 0Z" +
-        " M70.4 14.4 L69.3 13.2 L67.0 12.4 L63.5 12.1 L59.0 12.3 L54.0 12.9 L48.6 14.1 L43.4 15.6 L38.6 17.3 L34.6 19.3 L31.7 21.2 L30.0 23.0 L29.6 24.6 L30.7 25.8 L33.0 26.6 L36.5 26.9 L41.0 26.7 L46.0 26.1 L51.4 24.9 L56.6 23.4 L61.4 21.7 L65.4 19.7 L68.3 17.8 L70.0 16.0Z" +
-        " M65.5 15.6 L65.1 16.3 L63.7 17.3 L61.4 18.3 L58.2 19.5 L54.6 20.7 L50.6 21.7 L46.5 22.7 L42.7 23.4 L39.4 23.8 L36.8 24.0 L35.1 23.8 L34.5 23.4 L34.9 22.7 L36.3 21.7 L38.6 20.7 L41.8 19.5 L45.4 18.3 L49.4 17.3 L53.5 16.3 L57.3 15.6 L60.6 15.2 L63.2 15.0 L64.9 15.2Z"
-    Magic8BallPersonality.THERAPIST ->
-        "M30 22 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0Z M52 22 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0Z" +
-        " M46 19.5 v3.2 h8 v-3.2Z"
-    Magic8BallPersonality.DOG ->
-        "M34.5 20.7 L36.4 28.5 L65.5 21.3 L63.6 13.5Z" +
-        " M28.9811 20.3595 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z" +
-        " M31.11 28.8981 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z" +
-        " M58.09 13.1019 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z" +
-        " M60.2189 21.6405 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z"
-}
+private class Worn(val shape: String, val cut: String? = null, val size: Float = 1f, val tilt: Float = 0f)
 
 /**
- * What is cut out of [silhouette] in white, drawn in the same place and at the same size: at
- * most one cut each, as thick as the next, and only where the shape does not say what it is
- * without it. A hat's band, a pair of lenses, the eye in a pyramid.
+ * The nineteen, drawn to one set of rules so that they read as one family. There are two
+ * kinds: something worn, which sits on the crown and touches it, and a small charm that floats
+ * just over it (a pair of quotes, a moon, a star, a heart, a thought). Each is built of
+ * circles, bars and plain curves, stands on the ball's axis and is about as heavy as the next.
+ * The classic style wears nothing.
  */
-private fun detail(personality: Magic8BallPersonality): String? = when (personality) {
-    Magic8BallPersonality.GRANDMA ->
-        "M35.6 27.5 Q50 25.1 64.4 27.5 v3.4 Q50 28.5 35.6 30.9Z"
-    Magic8BallPersonality.PIRATE ->
-        "M46.4 13.4 L44.4 15.4 L53.6 24.6 L55.6 22.6Z M44.4 22.6 L46.4 24.6 L55.6 15.4 L53.6 13.4Z"
-    Magic8BallPersonality.ROBOT ->
-        "M47.8 10 a2.2 2.2 0 1 0 4.4 0 a2.2 2.2 0 1 0 -4.4 0Z"
-    Magic8BallPersonality.DETECTIVE ->
-        "M35.2 25 Q50 23 64.8 25 v3.2 Q50 26.2 35.2 28.2Z"
-    Magic8BallPersonality.CONSPIRACY ->
-        "M42 25 Q50 16.5 58 25 Q50 33.5 42 25Z M47 25 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0Z"
-    Magic8BallPersonality.THERAPIST ->
-        "M33.2 22 a5.8 5.8 0 1 0 11.6 0 a5.8 5.8 0 1 0 -11.6 0Z" +
-        " M55.2 22 a5.8 5.8 0 1 0 11.6 0 a5.8 5.8 0 1 0 -11.6 0Z"
-    else -> null
+private fun worn(personality: Magic8BallPersonality): Worn? = when (personality) {
+    Magic8BallPersonality.NEUTRAL -> null
+    Magic8BallPersonality.SARCASTIC -> Worn(
+        shape = "M35 11 a6 6 0 1 1 12 0 q0 9 -9 14 q3 -5 2 -8.4 a6 6 0 0 1 -5 -5.6Z" +
+            " M53 11 a6 6 0 1 1 12 0 q0 9 -9 14 q3 -5 2 -8.4 a6 6 0 0 1 -5 -5.6Z"
+    )
+    Magic8BallPersonality.MYSTICAL -> Worn(
+        shape = "M56 4 A11 11 0 1 0 61 24 A9 9 0 1 1 56 4Z" +
+            " M72 6 l1.6 4.4 l4.4 1.6 l-4.4 1.6 l-1.6 4.4 l-1.6 -4.4 l-4.4 -1.6 l4.4 -1.6Z"
+    )
+    Magic8BallPersonality.GRANDMA -> Worn(
+        shape = "M35 36 Q33 15 50 15 Q67 15 65 36 Q50 31 35 36Z" +
+            " M43.5 10 a6.5 6.5 0 1 1 13 0 a6.5 6.5 0 1 1 -13 0Z",
+        cut = "M35.6 27.5 Q50 25.1 64.4 27.5 v3.4 Q50 28.5 35.6 30.9Z",
+        tilt = 6f
+    )
+    Magic8BallPersonality.PIRATE -> Worn(
+        shape = "M19 25 Q24 30 34 27 Q40 6 50 6 Q60 6 66 27 Q76 30 81 25 Q80 37 50 33 Q20 37 19 25Z",
+        cut = "M46.4 13.4 L44.4 15.4 L53.6 24.6 L55.6 22.6Z M44.4 22.6 L46.4 24.6 L55.6 15.4 L53.6 13.4Z",
+        size = 0.8f,
+        tilt = -5f
+    )
+    Magic8BallPersonality.PHILOSOPHER -> Worn(
+        shape = "M34.5 14 a7.5 7.5 0 1 0 15 0 a7.5 7.5 0 1 0 -15 0Z" +
+            " M44.5 10 a8.5 8.5 0 1 0 17 0 a8.5 8.5 0 1 0 -17 0Z" +
+            " M52.5 17 a7.5 7.5 0 1 0 15 0 a7.5 7.5 0 1 0 -15 0Z" +
+            " M40.5 19 a7.5 7.5 0 1 0 15 0 a7.5 7.5 0 1 0 -15 0Z" +
+            " M42.6 31 a3.4 3.4 0 1 0 6.8 0 a3.4 3.4 0 1 0 -6.8 0Z"
+    )
+    Magic8BallPersonality.COACH -> Worn(
+        shape = "M38 35 Q37 17 52 17 Q67 17 66 35 Q52 31.5 38 35Z M39 35 L18 35.5 Q15 33.5 18 31 L39 29Z",
+        size = 0.9f,
+        tilt = -6f
+    )
+    Magic8BallPersonality.LOVESTRUCK -> Worn(
+        shape = "M50 26 C37 16.5 40.5 4.5 50 11.5 C59.5 4.5 63 16.5 50 26Z"
+    )
+    Magic8BallPersonality.DRAMA -> Worn(
+        shape = "M36 34 L34 15 L43 23 L50 10 L57 23 L66 15 L64 34 Q50 30 36 34Z" +
+            " M30.8 13.5 a3.2 3.2 0 1 1 6.4 0 a3.2 3.2 0 1 1 -6.4 0Z" +
+            " M46.8 8.5 a3.2 3.2 0 1 1 6.4 0 a3.2 3.2 0 1 1 -6.4 0Z" +
+            " M62.8 13.5 a3.2 3.2 0 1 1 6.4 0 a3.2 3.2 0 1 1 -6.4 0Z",
+        size = 0.9f,
+        tilt = 8f
+    )
+    Magic8BallPersonality.ROBOT -> Worn(
+        shape = "M48.5 12 v16 h3 v-16Z M44.5 10 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0Z" +
+            " M41 35 Q50 32 59 35 Q59 25 50 25 Q41 25 41 35Z",
+        cut = "M47.8 10 a2.2 2.2 0 1 0 4.4 0 a2.2 2.2 0 1 0 -4.4 0Z"
+    )
+    Magic8BallPersonality.DETECTIVE -> Worn(
+        shape = "M22 35 Q50 26 78 35 v4.5 Q50 30.5 22 39.5Z M35 31 Q33 9 44 9 Q50 12.5 56 9 Q67 9 65 31Z",
+        cut = "M35.2 25 Q50 23 64.8 25 v3.2 Q50 26.2 35.2 28.2Z",
+        size = 0.72f,
+        tilt = 7f
+    )
+    Magic8BallPersonality.CONSPIRACY -> Worn(
+        shape = "M34 37 L50 4 L66 37 Q50 31 34 37Z",
+        cut = "M42 25 Q50 16.5 58 25 Q50 33.5 42 25Z M47 25 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0Z",
+        size = 0.85f
+    )
+    Magic8BallPersonality.CAT -> Worn(
+        shape = "M34 36 L35 11 L48 29Z M66 36 L52 29 L65 11Z"
+    )
+    Magic8BallPersonality.ZOOMER -> Worn(
+        shape = "M7.6 47.9 A49 49 0 0 1 92.4 47.9 L88.5 50.2 A44.5 44.5 0 0 0 11.5 50.2Z" +
+            " M16.0 54.0 L15.8 56.6 L15.1 59.0 L14.1 61.1 L12.8 62.7 L11.2 63.7 L9.5 64.0 L7.8 63.7 L6.3 62.7 L4.9 61.1 L3.9 59.0 L3.2 56.6 L3.0 54.0 L3.2 51.4 L3.9 49.0 L4.9 46.9 L6.2 45.3 L7.8 44.3 L9.5 44.0 L11.2 44.3 L12.8 45.3 L14.1 46.9 L15.1 49.0 L15.8 51.4Z" +
+            " M97.0 54.0 L96.8 56.6 L96.1 59.0 L95.1 61.1 L93.8 62.7 L92.2 63.7 L90.5 64.0 L88.8 63.7 L87.2 62.7 L85.9 61.1 L84.9 59.0 L84.2 56.6 L84.0 54.0 L84.2 51.4 L84.9 49.0 L85.9 46.9 L87.2 45.3 L88.8 44.3 L90.5 44.0 L92.2 44.3 L93.8 45.3 L95.1 46.9 L96.1 49.0 L96.8 51.4Z"
+    )
+    Magic8BallPersonality.VILLAIN -> Worn(
+        shape = "M35 36 Q27 23 35 8 Q38 21 47 29Z M65 36 L53 29 Q62 21 65 8 Q73 23 65 36Z",
+        size = 0.9f
+    )
+    Magic8BallPersonality.POET -> Worn(
+        shape = "M27 31 Q24 15 46 14 Q73 12 73 25 Q73 34 50 33.5 Q34 35 27 31Z M48.6 8 h2.8 v8 h-2.8Z",
+        size = 0.82f
+    )
+    Magic8BallPersonality.ASTRO -> Worn(
+        shape = "M50 2 L52.5 11.5 L62 14 L52.5 16.5 L50 26 L47.5 16.5 L38 14 L47.5 11.5Z"
+    )
+    Magic8BallPersonality.THERAPIST -> Worn(
+        shape = "M32.6 22.5 a8.4 8.4 0 1 0 16.8 0 a8.4 8.4 0 1 0 -16.8 0Z" +
+            " M50.6 22.5 a8.4 8.4 0 1 0 16.8 0 a8.4 8.4 0 1 0 -16.8 0Z" +
+            " M47.5 21 L47.5 23.8 Q50 21.8 52.5 23.8 L52.5 21 Q50 19 47.5 21Z",
+        cut = "M35.2 22.5 a5.8 5.8 0 1 0 11.6 0 a5.8 5.8 0 1 0 -11.6 0Z" +
+            " M53.2 22.5 a5.8 5.8 0 1 0 11.6 0 a5.8 5.8 0 1 0 -11.6 0Z",
+        tilt = 9f
+    )
+    Magic8BallPersonality.DOG -> Worn(
+        shape = "M34.5 20.7 L36.4 28.5 L65.5 21.3 L63.6 13.5Z" +
+            " M28.9811 20.3595 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z" +
+            " M31.11 28.8981 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z" +
+            " M58.09 13.1019 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z" +
+            " M60.2189 21.6405 a5.4 5.4 0 1 0 10.8 0 a5.4 5.4 0 1 0 -10.8 0Z",
+        size = 0.9f
+    )
 }
 
 /**
@@ -460,6 +488,8 @@ private const val WORN_CENTRE_X = 50f
 private const val WORN_CENTRE_Y = 58f
 private const val WORN_SOFTEN = 1.5f
 private const val WORN_SIZE = 0.66f
+/** How far under the crown the point is that a crooked thing turns about. */
+private const val WORN_SEAT = 2f
 
 private const val SHARE_DIRECTORY = "share"
 private const val SHARE_FILE = "magic-8-ball.png"
