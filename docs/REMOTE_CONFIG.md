@@ -21,6 +21,7 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 | `notifications_ask_after_days` | Number | Days of use before the app asks to send notifications. |
 | `streak_min_days_shown` | Number | The shortest run of days the app mentions. |
 | `ball_sway_enabled` | Boolean | Whether the ball leans with the phone. |
+| `account_enabled` | Boolean | Whether Options offers signing in with Google. Off when absent. It also stays hidden in a build that has no Google sign-in set up, whatever this says. |
 
 ## `answers_json`: the answers the app keeps
 

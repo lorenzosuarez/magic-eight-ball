@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.lorenzosuarez.magiceightball.phone.config.AppConfig
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import android.app.Application
@@ -480,6 +482,92 @@ class EightBallScreenshotTest {
     fun phone_characters_with_create_spanish() =
         captureStyles("phone_46_characters_with_create_spanish", AppLanguage.SPANISH, dark = true, withCreate = true)
 
+    /** The account on the page of options: nobody signed in, and what signing in is for. */
+    @Test
+    fun phone_account_signed_out_spanish() = captureWithSettings(
+        "phone_47_account_signed_out_spanish",
+        accountState(AccountState.SignedOut)
+    )
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_account_signed_out_dark() = captureWithSettings(
+        "phone_48_account_signed_out_dark",
+        accountState(AccountState.SignedOut)
+    )
+
+    /** Someone signed in, with a name and an address as long as they come. */
+    @Test
+    fun phone_account_signed_in_spanish() = captureWithSettings(
+        "phone_49_account_signed_in_spanish",
+        accountState(LONG_ACCOUNT)
+    )
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_account_signed_in_dark() = captureWithSettings(
+        "phone_50_account_signed_in_dark",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"))
+    )
+
+    /** The worst case: a small phone, a large font, and nobody signed in. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_account_large_font() {
+        val state = accountState(AccountState.SignedOut)
+        captureRoboImage(filePath = path("phone_51_small_phone_account_large_font")) {
+            WithFontScale(1.5f) {
+                MagicEightBallPhoneTheme {
+                    ProvideAppLanguage(state.settings.language) {
+                        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                            SettingsContent(
+                                state = state,
+                                onLanguageSelected = {},
+                                onPersonalitySelected = {},
+                                onAiAnswersChange = {},
+                                onVoiceQuestionsChange = {},
+                                onAllowMicrophone = {},
+                                onShareApp = {}
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_account_signed_in_large_font() {
+        val state = accountState(LONG_ACCOUNT)
+        captureRoboImage(filePath = path("phone_52_small_phone_account_signed_in_large_font")) {
+            WithFontScale(1.5f) {
+                MagicEightBallPhoneTheme {
+                    ProvideAppLanguage(state.settings.language) {
+                        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                            SettingsContent(
+                                state = state,
+                                onLanguageSelected = {},
+                                onPersonalitySelected = {},
+                                onAiAnswersChange = {},
+                                onVoiceQuestionsChange = {},
+                                onAllowMicrophone = {},
+                                onShareApp = {}
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun accountState(account: AccountState) = EightBallUiState(
+        settings = UserSettings(language = AppLanguage.SPANISH),
+        aiAnswersAvailable = true,
+        config = AppConfig(accountEnabled = true),
+        account = account
+    )
+
     /** What is asked before an answer is reported. */
     @Test
     fun report_reasons_spanish() = captureRoboImage(filePath = path("phone_45_report_reasons_spanish")) {
@@ -721,3 +809,9 @@ private val ANSWERED = EightBallUiState(
 )
 
 private const val LONG_READING = "Cuatro tazas vacías y un mensaje a medio escribir no son un plan, corazón. Guarda el teléfono en el cajón de las bufandas, cena algo caliente y mañana, con la cabeza fresca, decides si de verdad vale tu desvelo."
+
+private val LONG_ACCOUNT = AccountState.SignedIn(
+    id = "1",
+    name = "María Fernanda de los Ángeles Rodríguez-Echeverría",
+    email = "maria.fernanda.rodriguez.echeverria@correo-electronico.example.com"
+)

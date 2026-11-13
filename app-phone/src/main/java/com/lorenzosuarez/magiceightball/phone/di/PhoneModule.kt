@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.di
 
+import com.lorenzosuarez.magiceightball.phone.account.FirebaseAccount
+import com.lorenzosuarez.magiceightball.phone.account.Account
 import android.content.Context
 import com.example.magiceightball.core.common.DefaultDispatcherProvider
 import com.example.magiceightball.core.common.DispatcherProvider
@@ -50,6 +52,10 @@ object PhoneModule {
     @Provides
     @Singleton
     fun provideAnswerReports(impl: FirebaseAnswerReports): AnswerReports = impl
+
+    @Provides
+    @Singleton
+    fun provideAccount(impl: FirebaseAccount): Account = impl
 
     @Provides
     @Singleton

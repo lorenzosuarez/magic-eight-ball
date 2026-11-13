@@ -168,4 +168,17 @@
     <string name="settings_voice_allow_hint">Para perguntar em voz alta</string>
     <string name="action_create">Criar</string>
     <string name="characters_create">Criar um personagem</string>
+    <string name="options_account">Conta</string>
+    <string name="account_title">Respostas mais suas</string>
+    <string name="account_hint">Entre para que os personagens saibam com quem falam e para criar os seus.</string>
+    <string name="account_continue_google">Continuar com o Google</string>
+    <string name="account_sign_in_failed">Não foi possível entrar. Verifique sua conexão e tente de novo.</string>
+    <string name="account_no_google">Não há nenhuma conta do Google neste aparelho. Adicione uma nas Configurações e tente de novo.</string>
+    <string name="account_sign_out">Sair</string>
+    <string name="account_sign_out_hint">O app continua funcionando sem conta</string>
+    <string name="account_delete">Excluir conta</string>
+    <string name="account_delete_hint">Apaga sua conta e tudo o que ela guarda</string>
+    <string name="account_delete_title">Excluir sua conta?</string>
+    <string name="account_delete_text">Sua conta e tudo o que ela guarda são apagados. Não dá para desfazer. Suas respostas recentes continuam neste dispositivo.</string>
+    <string name="account_delete_failed">Não foi possível excluir a conta. Tente de novo.</string>
 </resources>

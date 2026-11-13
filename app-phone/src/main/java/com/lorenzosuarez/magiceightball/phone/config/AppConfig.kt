@@ -45,7 +45,8 @@ data class AppConfig(
     val notificationsAskAfterDays: Int = 3,
     val ballSwayEnabled: Boolean = true,
     val dailyVerdictEnabled: Boolean = true,
-    val dailyVerdictHour: Int = 10
+    val dailyVerdictHour: Int = 10,
+    val accountEnabled: Boolean = false
 ) {
     companion object {
         const val KEY_ADS_MIN_ANSWERS = "ads_min_answers"
@@ -58,6 +59,7 @@ data class AppConfig(
         const val KEY_BALL_SWAY_ENABLED = "ball_sway_enabled"
         const val KEY_DAILY_VERDICT_ENABLED = "daily_verdict_enabled"
         const val KEY_DAILY_VERDICT_HOUR = "daily_verdict_hour"
+        const val KEY_ACCOUNT_ENABLED = "account_enabled"
 
         val KEYS = listOf(
             KEY_ADS_MIN_ANSWERS,
@@ -69,7 +71,8 @@ data class AppConfig(
             KEY_NOTIFICATIONS_ASK_AFTER_DAYS,
             KEY_BALL_SWAY_ENABLED,
             KEY_DAILY_VERDICT_ENABLED,
-            KEY_DAILY_VERDICT_HOUR
+            KEY_DAILY_VERDICT_HOUR,
+            KEY_ACCOUNT_ENABLED
         )
 
         /** One of each kind of character, the liveliest first, with the plain one always at hand. */
@@ -115,7 +118,8 @@ data class AppConfig(
                 notificationsAskAfterDays = number(KEY_NOTIFICATIONS_ASK_AFTER_DAYS, defaults.notificationsAskAfterDays, 0..365),
                 ballSwayEnabled = flag(KEY_BALL_SWAY_ENABLED, defaults.ballSwayEnabled),
                 dailyVerdictEnabled = flag(KEY_DAILY_VERDICT_ENABLED, defaults.dailyVerdictEnabled),
-                dailyVerdictHour = number(KEY_DAILY_VERDICT_HOUR, defaults.dailyVerdictHour, 0..23)
+                dailyVerdictHour = number(KEY_DAILY_VERDICT_HOUR, defaults.dailyVerdictHour, 0..23),
+                accountEnabled = flag(KEY_ACCOUNT_ENABLED, defaults.accountEnabled)
             )
         }
 

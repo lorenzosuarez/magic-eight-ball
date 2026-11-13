@@ -1,5 +1,10 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import kotlinx.coroutines.flow.StateFlow
+import android.content.Context
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
+import com.lorenzosuarez.magiceightball.phone.account.Account
 import com.example.magiceightball.core.domain.gateway.ReportReason
 import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.AiAllowance
@@ -1202,10 +1207,45 @@ class EightBallViewModelTest {
         runCurrent()
     }
 
+    @Test
+    fun `whoever is signed in is on the screen's state, and signing out goes through the account`() = runTest {
+        val current = MutableStateFlow<AccountState>(AccountState.SignedOut)
+        var signedOut = 0
+        val account = object : Account {
+            override val state: StateFlow<AccountState> = current
+            override suspend fun signIn(host: Context): AccountOutcome {
+                current.value = AccountState.SignedIn("1", "Ana", "ana@example.com")
+                return AccountOutcome.DONE
+            }
+
+            override suspend fun signOut() {
+                signedOut++
+                current.value = AccountState.SignedOut
+            }
+
+            override suspend fun delete(host: Context) = AccountOutcome.FAILED
+        }
+        val viewModel = createViewModel(account = account)
+        runCurrent()
+        assertEquals(AccountState.SignedOut, viewModel.state.value?.account)
+        // Nothing is offered until the developer turns it on.
+        assertEquals(false, viewModel.state.value?.offersAccount)
+
+        current.value = AccountState.SignedIn("1", "Ana", "ana@example.com")
+        runCurrent()
+        assertEquals("Ana", (viewModel.state.value?.account as AccountState.SignedIn).name)
+
+        viewModel.signOut()
+        runCurrent()
+        assertEquals(1, signedOut)
+        assertEquals(AccountState.SignedOut, viewModel.state.value?.account)
+    }
+
     private fun createViewModel(
         resumed: Boolean = false,
         microphoneGranted: Boolean = false,
-        reports: AnswerReports = AnswerReports.None
+        reports: AnswerReports = AnswerReports.None,
+        account: Account = Account.None
     ): EightBallViewModel {
         val viewModel = EightBallViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
@@ -1220,7 +1260,8 @@ class EightBallViewModelTest {
             streaks = streaks,
             aiAllowance = aiAllowance,
             appConfig = appConfig,
-            reports = reports
+            reports = reports,
+            account = account
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

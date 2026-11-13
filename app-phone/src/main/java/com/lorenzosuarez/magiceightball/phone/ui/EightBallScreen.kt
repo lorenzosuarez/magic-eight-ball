@@ -408,6 +408,9 @@ fun EightBallScreen(
                                 // No browser on the device: there is nothing to open it with.
                             }
                         },
+                        onSignIn = { viewModel.signIn(context) },
+                        onSignOut = viewModel::signOut,
+                        onDeleteAccount = { viewModel.deleteAccount(context) },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
