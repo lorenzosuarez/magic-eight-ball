@@ -110,6 +110,9 @@ dependencies {
     implementation(libs.firebase.messaging)
     // The optional account, signed in to with the user's Google account: see the account package.
     implementation(libs.firebase.auth)
+    // The profile of whoever is signed in, in a document only they can read.
+    implementation(libs.firebase.firestore)
+    implementation(libs.datastore.preferences)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)

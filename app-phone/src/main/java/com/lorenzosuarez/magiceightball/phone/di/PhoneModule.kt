@@ -17,6 +17,14 @@ import com.example.magiceightball.core.domain.gateway.UsageTracker
 import com.lorenzosuarez.magiceightball.phone.usage.FirebaseAnswerReports
 import dagger.Module
 import dagger.Provides
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.preferencesDataStoreFile
+import com.lorenzosuarez.magiceightball.phone.account.DataStoreDeviceMarks
+import com.lorenzosuarez.magiceightball.phone.account.DeviceMarks
+import com.lorenzosuarez.magiceightball.phone.account.FirestoreProfiles
+import com.lorenzosuarez.magiceightball.phone.account.Profiles
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
@@ -59,6 +67,20 @@ object PhoneModule {
 
     @Provides
     @Singleton
+    fun provideProfiles(impl: FirestoreProfiles): Profiles = impl
+
+    @Provides
+    @Singleton
+    fun provideDeviceMarks(@ApplicationContext context: Context): DeviceMarks = DataStoreDeviceMarks(
+        PreferenceDataStoreFactory.create(
+            // A damaged file is replaced by an empty one, which holds no marks.
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+            produceFile = { context.preferencesDataStoreFile(DEVICE_MARKS_FILE) }
+        )
+    )
+
+    @Provides
+    @Singleton
     fun provideAnswerHistoryRepository(
         @ApplicationContext context: Context,
         dispatchers: DispatcherProvider
@@ -69,4 +91,5 @@ object PhoneModule {
     )
 
     private const val HISTORY_FILE = "history.bin"
+    private const val DEVICE_MARKS_FILE = "device_marks"
 }

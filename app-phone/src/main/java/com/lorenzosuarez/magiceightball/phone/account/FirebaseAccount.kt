@@ -8,7 +8,6 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
-import com.google.android.gms.tasks.Task
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseApp
@@ -18,13 +17,10 @@ import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * The account, kept by Firebase Authentication and signed in to with the user's Google account
@@ -133,17 +129,6 @@ class FirebaseAccount @Inject constructor(
             throw e
         } catch (_: Exception) {
             // Nothing depends on it: the account is signed out of the app either way.
-        }
-    }
-
-    private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
-        addOnCompleteListener { task ->
-            val failure = task.exception
-            when {
-                failure != null -> continuation.resumeWithException(failure)
-                task.isCanceled -> continuation.cancel()
-                else -> continuation.resume(task.result)
-            }
         }
     }
 
