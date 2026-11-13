@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.UserSettings
@@ -18,6 +19,7 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * @property streakBest the longest run of days there has been.
  * @property config what the developer has set from afar: see [AppConfig].
  * @property streakDays how many days in a row the ball has been asked, as it stands today.
+ * @property account who is signed in, if anyone: see [AccountState].
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
 data class EightBallUiState(
@@ -31,11 +33,15 @@ data class EightBallUiState(
     val aiAllowanceSpent: Boolean = false,
     val streakDays: Int = 0,
     val streakBest: Int = 0,
-    val config: AppConfig = AppConfig()
+    val config: AppConfig = AppConfig(),
+    val account: AccountState = AccountState.Unavailable
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?
         get() = settings.partyNames.takeIf { settings.isParty }?.let { it[turn % it.size] }
+
+    /** Whether the page of options has an account on it: off until the developer turns it on, and only where it can work. */
+    val offersAccount: Boolean get() = config.accountEnabled && account != AccountState.Unavailable
 
     /** Whether a question the app hears is sent to the AI service to be answered. */
     val usesAiAnswers: Boolean get() = settings.aiAnswersEnabled && aiAnswersAvailable

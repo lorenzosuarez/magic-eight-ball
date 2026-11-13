@@ -176,4 +176,20 @@
     <string name="settings_voice_allow_hint">So you can ask out loud</string>
     <string name="action_create">Create</string>
     <string name="characters_create">Create a character</string>
+    <string name="options_account">Account</string>
+    <string name="account_title">Answers made for you</string>
+    <string name="account_hint">Sign in so the characters know who\'s asking</string>
+    <string name="account_continue_google">Continue with Google</string>
+    <string name="account_sign_in_failed">Couldn\'t sign in. Check your connection and try again</string>
+    <string name="account_no_google">No Google account on this device</string>
+    <string name="account_add_google">Add a Google account</string>
+    <string name="account_add_google_hint">Opens your device\'s account settings</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_sign_out_hint">Your account will be here when you\'re back</string>
+    <string name="account_delete">Delete account</string>
+    <string name="account_delete_hint">For good, with everything in it</string>
+    <string name="account_delete_title">Delete your account?</string>
+    <string name="account_delete_text">Your account and everything in it are erased. This can\'t be undone. Your recent answers stay on this device. Google may ask you to pick your account to confirm.</string>
+    <string name="account_delete_failed">Couldn\'t delete the account. Try again.</string>
+    <string name="account_deleted">Account deleted.</string>
 </resources>

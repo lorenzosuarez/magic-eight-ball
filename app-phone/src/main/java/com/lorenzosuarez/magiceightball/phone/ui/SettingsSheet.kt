@@ -1,8 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Icon
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,23 +23,18 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,12 +44,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
-import com.example.magiceightball.core.domain.model.UserSettings
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.R
@@ -83,7 +78,10 @@ internal fun SettingsContent(
     onDailyVerdictChange: (Boolean) -> Unit = {},
     notificationsAllowed: Boolean = true,
     onAllowNotifications: () -> Unit = {},
-    onOpenPrivacyPolicy: () -> Unit = {}
+    onOpenPrivacyPolicy: () -> Unit = {},
+    onSignIn: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
+    onSignOut: () -> Unit = {},
+    onDeleteAccount: suspend () -> AccountOutcome = { AccountOutcome.FAILED }
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -111,6 +109,15 @@ internal fun SettingsContent(
             .verticalScroll(rememberScrollState())
             .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
     ) {
+        // First on the page where it is offered: who the answers are for comes before how they are given.
+        if (state.offersAccount) {
+            AccountSection(
+                account = state.account,
+                onSignIn = onSignIn,
+                onSignOut = onSignOut,
+                onDeleteAccount = onDeleteAccount
+            )
+        }
         Section(stringResource(R.string.options_answers)) {
             StyleRow(
                 selected = state.settings.personality,
@@ -284,7 +291,7 @@ internal fun SettingsContent(
 
 /** A subject: its name, and under it one card that holds everything about it. */
 @Composable
-private fun Section(title: String, rows: @Composable () -> Unit) {
+internal fun Section(title: String, rows: @Composable () -> Unit) {
     Text(
         text = title,
         modifier = Modifier
@@ -305,7 +312,7 @@ private fun Section(title: String, rows: @Composable () -> Unit) {
 
 /** The hairline between two rows of a card, starting where their text does. */
 @Composable
-private fun RowDivider() {
+internal fun RowDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = ROW_TEXT_START),
         thickness = 1.dp,
@@ -409,43 +416,59 @@ private fun SwitchRow(
     }
 }
 
-/** Something to do rather than to set: the whole row is the button. */
+/**
+ * Something to do rather than to set: the whole row is the button.
+ *
+ * @param opens whether the touch opens something, which is what the arrow at the row's end
+ *   says; a row that does its work on the touch has none.
+ */
 @Composable
-private fun ActionRow(title: String, supporting: String, onClick: () -> Unit) {
+internal fun ActionRow(
+    title: String,
+    supporting: String,
+    onClick: () -> Unit,
+    danger: Boolean = false,
+    opens: Boolean = true,
+    enabled: Boolean = true
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .heightIn(min = 72.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f))
-        // What tells a row that opens something from one that only says something.
-        Icon(
-            painter = painterResource(R.drawable.ic_chevron_right),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f), danger = danger)
+        if (opens) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
 @Composable
-private fun SettingText(
+internal fun SettingText(
     title: String,
     supporting: String,
     enabled: Boolean,
     modifier: Modifier = Modifier,
     alert: Boolean = false,
-    note: String? = null
+    note: String? = null,
+    danger: Boolean = false
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            // Broken as a heading is: no word left alone on the last line.
+            style = MaterialTheme.typography.titleMedium.copy(lineBreak = LineBreak.Heading),
             // Always in full: a row that cannot be changed just now is still to be read, and
-            // its switch and the line under it say that it cannot.
-            color = MaterialTheme.colorScheme.onSurface
+            // its switch and the line under it say that it cannot. What cannot be taken back
+            // is named in the colour of a warning.
+            color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
         )
         // What the setting does: said once, and the same whichever way the switch is.
         Text(

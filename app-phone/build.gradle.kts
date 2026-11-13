@@ -67,9 +67,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -111,6 +108,11 @@ dependencies {
     implementation(libs.firebase.analytics)
     // Messages from the developer to the app's users: see the push package.
     implementation(libs.firebase.messaging)
+    // The optional account, signed in to with the user's Google account: see the account package.
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     // The day's verdict, made on the device once a day.
     implementation(libs.androidx.work)
     implementation(libs.androidx.preference)
@@ -128,4 +130,10 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.ui.test.junit4)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
 }

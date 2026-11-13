@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import android.content.Context
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
+import com.lorenzosuarez.magiceightball.phone.account.Account
 import com.example.magiceightball.core.domain.gateway.ReportReason
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -65,7 +69,8 @@ class EightBallViewModel @Inject constructor(
     private val streaks: StreakRepository,
     private val aiAllowance: AiAllowance,
     private val appConfig: AppConfigSource,
-    private val reports: AnswerReports = AnswerReports.None
+    private val reports: AnswerReports = AnswerReports.None,
+    private val account: Account = Account.None
 ) : ViewModel() {
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
@@ -83,7 +88,8 @@ class EightBallViewModel @Inject constructor(
         val aiAvailable: Boolean,
         val aiSpent: Boolean,
         val streak: Streak,
-        val config: AppConfig
+        val config: AppConfig,
+        val account: AccountState
     )
 
     /** Whether the last answer was a bundled one for want of the day's AI answers. */
@@ -100,10 +106,17 @@ class EightBallViewModel @Inject constructor(
     val state: StateFlow<EightBallUiState?> = combine(
         phase,
         settings,
-        combine(aiAnswersAvailability.isAvailable, aiAllowanceSpent, streaks.streak, appConfig.config, ::Remote),
+        combine(
+            aiAnswersAvailability.isAvailable,
+            aiAllowanceSpent,
+            streaks.streak,
+            appConfig.config,
+            account.state,
+            ::Remote
+        ),
         voiceInputs,
         noticeAndHistory
-    ) { phase, saved, (aiAvailable, aiSpent, streak, config), (speech, microphone), (notice, history, turn) ->
+    ) { phase, saved, (aiAvailable, aiSpent, streak, config, account), (speech, microphone), (notice, history, turn) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
@@ -113,6 +126,7 @@ class EightBallViewModel @Inject constructor(
                 streakDays = streak.daysOn(today()),
                 streakBest = streak.best,
                 config = config,
+                account = account,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -167,6 +181,19 @@ class EightBallViewModel @Inject constructor(
         usage.track(UsageEvent.SettingChanged(UsageEvent.SettingChanged.Setting.VOICE_QUESTIONS, enabled))
         viewModelScope.launch { userSettingsRepository.setVoiceQuestionsEnabled(enabled) }
     }
+
+    /**
+     * Signs in with the Google account the user picks. Suspends for as long as the system's
+     * picker is up, in the caller's scope, so the activity it opens over is never kept.
+     */
+    suspend fun signIn(host: Context): AccountOutcome = account.signIn(host)
+
+    fun signOut() {
+        viewModelScope.launch { account.signOut() }
+    }
+
+    /** Deletes the account for good; see [Account.delete]. */
+    suspend fun deleteAccount(host: Context): AccountOutcome = account.delete(host)
 
     fun setDetailedAnswers(enabled: Boolean) {
         viewModelScope.launch { userSettingsRepository.setDetailedAnswers(enabled) }
