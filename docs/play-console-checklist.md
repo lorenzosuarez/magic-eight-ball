@@ -133,7 +133,7 @@ No change: the app contains ads.
 ## 8. Outside Play Console, the same day
 
 - [ ] **Google Cloud console, OAuth consent screen:** the app's name, and the privacy policy address. Google asks developers to "list the privacy policy URL in your OAuth client configuration when your application is made available to the public", and says "Don't request access to information that you don't need." ([Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy))
-- [ ] **Firebase console:** the steps in the feature's plan (Blaze plan, Authentication with Google, Firestore and its rules, App Check with Play Integrity). Note where Firestore is created: the policy says only "Google's servers, which may be in a country other than yours", which holds for any location.
+- [ ] **Firebase console:** the steps in the feature's plan (Blaze plan, Authentication with Google, Firestore and its rules, App Check with Play Integrity). Firestore was created in `eur3`, Google's Europe multi-region (Belgium and the Netherlands, with Finland as witness), and the policy says the profile, the agreement and the characters are kept in the European Union. A database's location cannot be changed afterwards, and a second database anywhere else would make that sentence false. ([Cloud Firestore locations](https://firebase.google.com/docs/firestore/locations)) App Check may be registered without being enforced: the policy says only that its token tells whether a request comes from the app, which holds either way.
 
 ## 9. When a deletion request arrives by email
 
