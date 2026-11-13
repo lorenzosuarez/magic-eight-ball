@@ -235,7 +235,8 @@ internal fun StylesSheet(
     selected: Magic8BallPersonality,
     onSelected: (Magic8BallPersonality) -> Unit,
     onClose: () -> Unit,
-    hidden: Set<Magic8BallPersonality> = emptySet()
+    hidden: Set<Magic8BallPersonality> = emptySet(),
+    onCreate: (() -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
@@ -264,7 +265,8 @@ internal fun StylesSheet(
                 },
                 onClose = putAway,
                 full = full,
-                hidden = hidden
+                hidden = hidden,
+                onCreate = onCreate
             )
         }
     }
@@ -276,6 +278,8 @@ internal fun StylesSheet(
  * off at the edge says there are more; the page itself only scrolls up and down.
  *
  * @param full whether the sheet takes the whole screen: the header then clears the status bar.
+ * @param onCreate the way to make a character of one's own; null where that is not offered, and
+ * then nothing is shown for it.
  */
 @Composable
 internal fun StylesContent(
@@ -284,7 +288,8 @@ internal fun StylesContent(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     full: Boolean = false,
-    hidden: Set<Magic8BallPersonality> = emptySet()
+    hidden: Set<Magic8BallPersonality> = emptySet(),
+    onCreate: (() -> Unit)? = null
 ) {
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val headerTop by animateDpAsState(if (full) statusBar else 0.dp, label = "sheet header")
@@ -303,12 +308,24 @@ internal fun StylesContent(
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = HANDLE_ALPHA))
         )
-        BarIconButton(
-            icon = R.drawable.ic_close,
-            description = stringResource(R.string.action_close),
-            onClick = onClose,
-            modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)
-        )
+        // The way out at one end and, where characters can be made, the way to make one at the other.
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            BarIconButton(
+                icon = R.drawable.ic_close,
+                description = stringResource(R.string.action_close),
+                onClick = onClose,
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+            if (onCreate != null) {
+                BarTextButton(
+                    icon = R.drawable.ic_add,
+                    label = stringResource(R.string.action_create),
+                    description = stringResource(R.string.characters_create),
+                    onClick = onCreate,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                )
+            }
+        }
         // Only once something has scrolled under the header is there an edge worth drawing.
         HorizontalDivider(
             thickness = 1.dp,

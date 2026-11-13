@@ -48,9 +48,9 @@
     <string name="lang_portuguese" translatable="false">Português</string>
 
     <!-- Personality selection -->
-    <string name="personality_title">Answer style</string>
-    <string name="personality_title_es">Estilo de respuesta</string>
-    <string name="personality_title_pt">Estilo de resposta</string>
+    <string name="personality_title">Character</string>
+    <string name="personality_title_es">Personaje</string>
+    <string name="personality_title_pt">Personagem</string>
     <string name="personality_sarcastic">Sarcastic</string>
     <string name="personality_sarcastic_es">Sarcástico</string>
     <string name="personality_sarcastic_pt">Sarcástico</string>
@@ -122,9 +122,9 @@
     <string name="ai_unavailable">Not available right now</string>
     <string name="ai_unavailable_es">No disponible por ahora</string>
     <string name="ai_unavailable_pt">Indisponível por enquanto</string>
-    <string name="ai_classic">The Classic style doesn\'t use AI</string>
-    <string name="ai_classic_es">El estilo Clásico no usa IA</string>
-    <string name="ai_classic_pt">O estilo Clássico não usa IA</string>
+    <string name="ai_classic">Classic doesn\'t use AI</string>
+    <string name="ai_classic_es">Clásico no usa IA</string>
+    <string name="ai_classic_pt">Clássico não usa IA</string>
     <string name="ai_spent">You\'ve used today\'s AI answers. More tomorrow</string>
     <string name="ai_spent_es">Ya usaste las de hoy. Vuelven mañana</string>
     <string name="ai_spent_pt">Você já usou as de hoje. Voltam amanhã</string>

@@ -475,6 +475,11 @@ class EightBallScreenshotTest {
     fun phone_crowded_answer_large_font() =
         capture("phone_44_crowded_answer_large_font", crowded(), fontScale = 1.5f)
 
+    /** The sheet where characters can be made: the way to make one is at its top, on the right. */
+    @Test
+    fun phone_characters_with_create_spanish() =
+        captureStyles("phone_46_characters_with_create_spanish", AppLanguage.SPANISH, dark = true, withCreate = true)
+
     /** What is asked before an answer is reported. */
     @Test
     fun report_reasons_spanish() = captureRoboImage(filePath = path("phone_45_report_reasons_spanish")) {
@@ -598,12 +603,14 @@ class EightBallScreenshotTest {
     }
 
     /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */
-    private fun captureStyles(name: String, language: AppLanguage, dark: Boolean) {
+    private fun captureStyles(name: String, language: AppLanguage, dark: Boolean, withCreate: Boolean = false) {
         captureRoboImage(filePath = path(name)) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                        StylesContent(selected = Magic8BallPersonality.LOVESTRUCK, onSelected = {}, onClose = {})
+                        StylesContent(selected = Magic8BallPersonality.LOVESTRUCK, onSelected = {}, onClose = {},
+                            onCreate = if (withCreate) ({}) else null
+                        )
                     }
                 }
             }
