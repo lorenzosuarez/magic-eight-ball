@@ -1,8 +1,9 @@
 rules_version = '2';
 
 // What the app keeps in Cloud Firestore: one document to an account, its profile, at
-// users/{the account's id}. Whoever is signed in reads and writes their own and nothing else;
-// what is not allowed here is refused. Checked by firestore/rules_test.py.
+// users/{the account's id}, and under it the characters that account made up, at most five.
+// Whoever is signed in reads and writes their own and nothing else; what is not allowed here is
+// refused. Checked by firestore/rules_test.py.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -56,6 +57,35 @@ service cloud.firestore {
       // A correction leaves the agreement as it was made, or makes it anew: never anything else.
       allow update: if isOwner(uid) && isProfile(request.resource.data)
         && (request.resource.data.consent == resource.data.consent || isAgreedNow(request.resource.data));
+
+      // The characters this account made up, one to a slot. The slots are named "1" to "5" and
+      // no other name is allowed: that, and not the app, is what keeps an account to five.
+      match /characters/{slot} {
+        allow read, delete: if isOwner(uid);
+        // Only for an account that has its profile, which is where its owner agreed to what
+        // is sent of a character to the AI service.
+        allow create, update: if isOwner(uid)
+          && slot.matches('^[1-5]$')
+          && isCharacter(request.resource.data)
+          && exists(/databases/$(database)/documents/users/$(uid));
+      }
+    }
+
+    // A character is these four fields and no other: a name, how it answers, and whose colour
+    // and whose accessory it borrows among the app's own, by their names in lower case.
+    function isCharacter(data) {
+      return data.keys().hasOnly(['name', 'description', 'colour', 'emblem'])
+        && data.keys().hasAll(['name', 'description', 'colour', 'emblem'])
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 16
+        && data.description is string
+        && data.description.size() >= 1
+        && data.description.size() <= 280
+        && data.colour is string
+        && data.colour.matches('^[a-z]{1,16}$')
+        && data.emblem is string
+        && data.emblem.matches('^[a-z]{1,16}$');
     }
   }
 }

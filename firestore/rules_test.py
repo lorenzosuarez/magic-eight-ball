@@ -78,6 +78,15 @@ def correct(uid, as_uid, **fields):
     return call("POST", f"http://{HOST}/v1/{ROOT}:commit", as_uid, {"writes": [write]})
 
 
+def keep(uid, as_uid, slot, **changed):
+    """A character written whole into a slot, as the app writes one."""
+    whole = {"name": "Capitán Nemo", "description": "Un capitán gruñón del mar.", "colour": "pirate", "emblem": "cat"}
+    whole.update(changed)
+    fields = {k: value(v) for k, v in whole.items() if v is not None}
+    write = {"update": {"name": f"{ROOT}/users/{uid}/characters/{slot}", "fields": fields}}
+    return call("POST", f"http://{HOST}/v1/{ROOT}:commit", as_uid, {"writes": [write]})
+
+
 def profile(**changed):
     whole = {"firstName": "Lorena", "birthDate": "1990-03-12", "consent": {"version": 1}}
     whole.update(changed)
@@ -140,7 +149,32 @@ check("something else slipped into the agreement is refused",
       save("cai", "cai", profile(consent={"version": 1, "note": "x"})), REFUSED)
 
 check("nothing else can be kept anywhere", save("ana", "ana", {"a": "b"}, server_time=None, collection="notes"), REFUSED)
-check("nor under the profile", call("GET", f"{BASE}/users/ana/characters/one", "ana"), REFUSED)
+check("nor under the profile", call("GET", f"{BASE}/users/ana/notes/one", "ana"), REFUSED)
+
+check("the owner keeps a character in the first slot", keep("ana", "ana", "1"), OK)
+check("and in the fifth", keep("ana", "ana", "5"), OK)
+check("there is no sixth slot", keep("ana", "ana", "6"), REFUSED)
+check("nor a slot by any other name", keep("ana", "ana", "nemo"), REFUSED)
+check("the owner changes a character", keep("ana", "ana", "1", name="Nemo"), OK)
+check("the owner reads a character", call("GET", f"{BASE}/users/ana/characters/1", "ana"), OK)
+check("and lists them", call("GET", f"{BASE}/users/ana/characters", "ana"), OK)
+check("someone else cannot read a character", call("GET", f"{BASE}/users/ana/characters/1", "eve"), REFUSED)
+check("nor list them", call("GET", f"{BASE}/users/ana/characters", "eve"), REFUSED)
+check("nor write one", keep("ana", "eve", "2"), REFUSED)
+check("nobody signed in cannot write one", keep("ana", None, "2"), REFUSED)
+check("an account with no profile keeps no character", keep("zoe", "zoe", "1"), REFUSED)
+check("a character with no name is refused", keep("ana", "ana", "2", name=None), REFUSED)
+check("an empty name is refused", keep("ana", "ana", "2", name=""), REFUSED)
+check("a name longer than a name is refused", keep("ana", "ana", "2", name="N" * 17), REFUSED)
+check("sixteen letters with accents are a name", keep("ana", "ana", "2", name="Ñ" * 16), OK)
+check("nothing said of how it answers is refused", keep("ana", "ana", "3", description=""), REFUSED)
+check("more than can be said is refused", keep("ana", "ana", "3", description="a" * 281), REFUSED)
+check("as much as can be said is kept", keep("ana", "ana", "3", description="á" * 280), OK)
+check("a colour that is no name is refused", keep("ana", "ana", "4", colour="#FF0000"), REFUSED)
+check("an accessory that is not text is refused", keep("ana", "ana", "4", emblem=7), REFUSED)
+check("a field the app does not ask for is refused", keep("ana", "ana", "4", premium=True), REFUSED)
+check("someone else cannot delete a character", call("DELETE", f"{BASE}/users/ana/characters/1", "eve"), REFUSED)
+check("the owner deletes a character", call("DELETE", f"{BASE}/users/ana/characters/1", "ana"), OK)
 
 check("someone else cannot delete it", call("DELETE", f"{BASE}/users/ana", "eve"), REFUSED)
 check("the owner deletes it", call("DELETE", f"{BASE}/users/ana", "ana"), OK)

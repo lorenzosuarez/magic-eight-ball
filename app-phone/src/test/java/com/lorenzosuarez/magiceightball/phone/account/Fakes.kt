@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.account
 
 import android.content.Context
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** An account driven by the test: signing in makes [who], and what was asked of it is counted. */
@@ -92,5 +93,39 @@ class FakeDeviceMarks : DeviceMarks {
 
     override suspend fun markBirthdayWished(year: Int) {
         birthdayWishedIn.value = year
+    }
+}
+
+/** Stands for the characters kept on the server: five slots, and what is saved is what is read. */
+class FakeCustomCharacters(initial: List<CustomCharacter>? = emptyList()) : CustomCharacters {
+    override val state = MutableStateFlow(initial)
+
+    /** How the server takes a save, when it does not simply keep it. */
+    var saves: CharacterSave? = null
+    var deletes = true
+    var deletedAll = 0
+
+    override suspend fun save(character: CustomCharacter): CharacterSave {
+        saves?.let { return it }
+        val kept = state.value.orEmpty()
+        val slot = character.id.takeIf { it in CustomCharacter.SLOTS }
+            ?: CustomCharacter.SLOTS.firstOrNull { free -> kept.none { it.id == free } }
+            ?: return CharacterSave.Full
+        val saved = character.copy(id = slot)
+        state.value = (kept.filterNot { it.id == slot } + saved).sortedBy { it.id }
+        return CharacterSave.Saved(saved)
+    }
+
+    override suspend fun delete(id: String): Boolean {
+        if (deletes) state.value = state.value.orEmpty().filterNot { it.id == id }
+        return deletes
+    }
+
+    override suspend fun deleteAll(): Boolean {
+        if (deletes) {
+            deletedAll++
+            state.value = emptyList()
+        }
+        return deletes
     }
 }

@@ -7,6 +7,7 @@ import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.Zodiac
+import com.lorenzosuarez.magiceightball.phone.account.CustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.DeviceMarks
 import com.lorenzosuarez.magiceightball.phone.account.FakeAccount
 import com.lorenzosuarez.magiceightball.phone.account.FakeDeviceMarks
@@ -1393,7 +1394,8 @@ class EightBallViewModelTest {
         reports: AnswerReports = AnswerReports.None,
         account: Account = Account.None,
         profiles: Profiles = Profiles.None,
-        marks: DeviceMarks = DeviceMarks.None
+        marks: DeviceMarks = DeviceMarks.None,
+        characters: CustomCharacters = CustomCharacters.None
     ): EightBallViewModel {
         val viewModel = EightBallViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
@@ -1409,7 +1411,7 @@ class EightBallViewModelTest {
             aiAllowance = aiAllowance,
             appConfig = appConfig,
             reports = reports,
-            membership = Membership(account, profiles, marks)
+            membership = Membership(account, profiles, marks, characters)
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

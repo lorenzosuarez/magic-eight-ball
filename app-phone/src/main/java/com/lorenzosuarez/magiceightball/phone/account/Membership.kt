@@ -2,6 +2,8 @@ package com.lorenzosuarez.magiceightball.phone.account
 
 import android.content.Context
 import com.example.magiceightball.core.domain.model.AskerFacts
+import com.example.magiceightball.core.domain.model.CustomCharacter
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.NonCancellable
@@ -20,19 +22,21 @@ import kotlinx.coroutines.withContext
  * that there is no account for them.
  * @property removing true while an account is being taken away: between its profile going and
  * the account itself, it is not an account that still needs a profile.
+ * @property characters the characters they made up; null while those are not known.
  */
 data class Who(
     val account: AccountState = AccountState.Unavailable,
     val profile: ProfileState = ProfileState.Unknown,
     val underAge: Boolean = false,
     val ageNotice: Boolean = false,
-    val removing: Boolean = false
+    val removing: Boolean = false,
+    val characters: List<CustomCharacter>? = null
 )
 
 /**
- * The account, its profile and what the device remembers, kept in step with one another: an
- * account has a profile or is not kept, a profile is deleted before its account is, and nobody
- * under [ProfileRules.ADULT_AGE] has either.
+ * The account, what is kept with it and what the device remembers, kept in step with one
+ * another: an account has a profile or is not kept, its characters and its profile are deleted
+ * before it is, and nobody under [ProfileRules.ADULT_AGE] has any of them.
  *
  * Taking an account away is never left half done because the screen that asked for it went
  * away: those steps run to their end whatever happens to whoever called.
@@ -40,10 +44,11 @@ data class Who(
 class Membership @Inject constructor(
     private val account: Account,
     private val profiles: Profiles,
-    private val marks: DeviceMarks
+    private val marks: DeviceMarks,
+    private val characters: CustomCharacters
 ) {
     /** With nothing to sign in to: for tests, and for whatever has no account at all. */
-    constructor(account: Account = Account.None) : this(account, Profiles.None, DeviceMarks.None)
+    constructor(account: Account = Account.None) : this(account, Profiles.None, DeviceMarks.None, CustomCharacters.None)
 
     private val ageNotice = MutableStateFlow(false)
     private val removing = MutableStateFlow(false)
@@ -52,7 +57,14 @@ class Membership @Inject constructor(
     private val markedNow = MutableStateFlow(false)
     private val underAge: Flow<Boolean> = combine(marks.underAge, markedNow) { written, now -> written || now }
 
-    val who: Flow<Who> = combine(account.state, profiles.state, underAge, ageNotice, removing, ::Who)
+    val who: Flow<Who> = combine(
+        combine(account.state, profiles.state, characters.state, ::Triple),
+        underAge,
+        ageNotice,
+        removing
+    ) { (account, profile, characters), underAge, ageNotice, removing ->
+        Who(account, profile, underAge, ageNotice, removing, characters)
+    }
 
     /** Whether this device may ask the AI service for nothing: read where it is kept, never guessed. */
     suspend fun isUnderAge(): Boolean = underAge.first()
@@ -144,14 +156,42 @@ class Membership @Inject constructor(
     suspend fun birthdayWished(today: LocalDate) = marks.markBirthdayWished(today.year)
 
     /**
-     * The profile, then the account: in that order, to the end, and with nothing asked for in
-     * between. The profile is deleted whether or not this device knows of one, since what it
-     * does not know of may still be there.
+     * Saves a character of the user's own, as typed: over the one in slot [id], or as a new one
+     * when [id] is null. Only for someone signed in with a profile, which is where they agreed
+     * to what is sent to the AI service.
+     */
+    suspend fun saveCharacter(
+        id: String?,
+        name: String,
+        description: String,
+        colour: Magic8BallPersonality,
+        emblem: Magic8BallPersonality
+    ): CharacterSave {
+        if (account.state.value !is AccountState.SignedIn || profiles.state.value !is ProfileState.Present || isUnderAge()) {
+            return CharacterSave.Failed
+        }
+        val character = CustomCharacter(
+            id = id.orEmpty(),
+            name = CustomCharacter.nameOrNull(name) ?: return CharacterSave.Refused,
+            description = CustomCharacter.descriptionOrNull(description) ?: return CharacterSave.Refused,
+            colour = colour.takeIf { it in CustomCharacter.LOOKS } ?: Magic8BallPersonality.NEUTRAL,
+            emblem = emblem.takeIf { it in CustomCharacter.LOOKS } ?: Magic8BallPersonality.NEUTRAL
+        )
+        return characters.save(character)
+    }
+
+    /** Deletes the character in slot [id], for good. */
+    suspend fun deleteCharacter(id: String): Boolean = characters.delete(id)
+
+    /**
+     * The characters, the profile, then the account: in that order, to the end, and with
+     * nothing asked for in between. What is kept with the account is deleted whether or not
+     * this device knows of any, since what it does not know of may still be there.
      */
     private suspend fun remove(host: Context?): AccountOutcome = withContext(NonCancellable) {
         removing.value = true
         try {
-            if (profiles.delete()) account.delete(host) else AccountOutcome.FAILED
+            if (characters.deleteAll() && profiles.delete()) account.delete(host) else AccountOutcome.FAILED
         } finally {
             removing.value = false
         }
