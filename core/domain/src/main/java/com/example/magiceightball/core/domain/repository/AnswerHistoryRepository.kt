@@ -12,13 +12,17 @@ interface AnswerHistoryRepository {
     /** The saved entries, newest first, then every change to them. */
     val entries: Flow<List<HistoryEntry>>
 
-    /** @param style the style that gave the answer, when one did. */
+    /**
+     * @param style the style that gave the answer, when one did.
+     * @param customName the name of the character, when it was one of the user's own.
+     */
     suspend fun add(
         question: String,
         answer: String?,
         askedAtMillis: Long,
         fromAi: Boolean,
-        style: Magic8BallPersonality? = null
+        style: Magic8BallPersonality? = null,
+        customName: String? = null
     )
 
     suspend fun remove(id: Long)

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.UserSettings
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
@@ -38,11 +39,14 @@ class DataStoreUserSettingsRepository(
         }
         .map { preferences ->
             val defaults = UserSettings()
+            val custom = preferences.customCharacter()
+            val chosen = Magic8BallPersonality.entries.find { it.name == preferences[PERSONALITY] }
             UserSettings(
                 language = AppLanguage.fromCode(preferences[LANGUAGE] ?: deviceLanguageCode()),
-                personality = Magic8BallPersonality.entries
-                    .find { it.name == preferences[PERSONALITY] }
+                // One of the user's own is chosen only with the character itself beside it.
+                personality = chosen?.takeIf { it != Magic8BallPersonality.CUSTOM || custom != null }
                     ?: defaults.personality,
+                customCharacter = custom.takeIf { chosen == Magic8BallPersonality.CUSTOM },
                 aiAnswersEnabled = preferences[AI_ANSWERS_ENABLED] ?: defaults.aiAnswersEnabled,
                 voiceQuestionsEnabled = preferences[VOICE_QUESTIONS_ENABLED]
                     ?: defaults.voiceQuestionsEnabled,
@@ -60,7 +64,50 @@ class DataStoreUserSettingsRepository(
     }
 
     override suspend fun setPersonality(personality: Magic8BallPersonality) {
-        save { it[PERSONALITY] = personality.name }
+        // One of the user's own is not chosen by its kind alone: see [setCustomCharacter].
+        if (personality == Magic8BallPersonality.CUSTOM) return
+        save {
+            it[PERSONALITY] = personality.name
+            it.forgetCustomCharacter()
+        }
+    }
+
+    override suspend fun setCustomCharacter(character: CustomCharacter?) {
+        save {
+            if (character == null) {
+                if (it[PERSONALITY] == Magic8BallPersonality.CUSTOM.name) it.remove(PERSONALITY)
+                it.forgetCustomCharacter()
+            } else {
+                it[PERSONALITY] = Magic8BallPersonality.CUSTOM.name
+                it[CUSTOM_ID] = character.id
+                it[CUSTOM_NAME] = character.name
+                it[CUSTOM_DESCRIPTION] = character.description
+                it[CUSTOM_COLOUR] = character.colour.name
+                it[CUSTOM_EMBLEM] = character.emblem.name
+            }
+        }
+    }
+
+    /** The character of the user's own kept with the choice of it; null unless all of it is there. */
+    private fun Preferences.customCharacter(): CustomCharacter? {
+        val id = this[CUSTOM_ID] ?: return null
+        val name = this[CUSTOM_NAME] ?: return null
+        val description = this[CUSTOM_DESCRIPTION] ?: return null
+        return CustomCharacter(
+            id = id,
+            name = name,
+            description = description,
+            colour = lookOf(this[CUSTOM_COLOUR]),
+            emblem = lookOf(this[CUSTOM_EMBLEM])
+        )
+    }
+
+    private fun lookOf(name: String?): Magic8BallPersonality =
+        CustomCharacter.LOOKS.find { it.name == name } ?: Magic8BallPersonality.NEUTRAL
+
+    /** Nothing of a character the user made up stays once another is chosen. */
+    private fun MutablePreferences.forgetCustomCharacter() {
+        listOf(CUSTOM_ID, CUSTOM_NAME, CUSTOM_DESCRIPTION, CUSTOM_COLOUR, CUSTOM_EMBLEM).forEach { remove(it) }
     }
 
     override suspend fun setAiAnswersEnabled(enabled: Boolean) {
@@ -106,5 +153,10 @@ class DataStoreUserSettingsRepository(
         val DETAILED_ANSWERS = booleanPreferencesKey("detailed_answers")
         val PARTY_NAMES = stringPreferencesKey("party_names")
         val DAILY_VERDICT_ENABLED = booleanPreferencesKey("daily_verdict_enabled")
+        val CUSTOM_ID = stringPreferencesKey("custom_character_id")
+        val CUSTOM_NAME = stringPreferencesKey("custom_character_name")
+        val CUSTOM_DESCRIPTION = stringPreferencesKey("custom_character_description")
+        val CUSTOM_COLOUR = stringPreferencesKey("custom_character_colour")
+        val CUSTOM_EMBLEM = stringPreferencesKey("custom_character_emblem")
     }
 }

@@ -23,5 +23,12 @@ enum class Magic8BallPersonality {
     POET,
     ASTRO,
     THERAPIST,
-    DOG
+    DOG,
+
+    /**
+     * One of the user's own: see [CustomCharacter], which says which one and how it answers.
+     * Not a character the app can describe, list or offer: without that record it answers as
+     * the classic one. Only the phone has them; the watch never shows this.
+     */
+    CUSTOM
 }

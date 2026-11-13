@@ -34,6 +34,8 @@ data class CharacterSheet(
 /** The classic style has no character: it answers like the toy. */
 internal fun characterOf(personality: Magic8BallPersonality): CharacterSheet? = when (personality) {
     Magic8BallPersonality.NEUTRAL -> null
+    // One of the user's own is described by the user: see [CustomCharacter].
+    Magic8BallPersonality.CUSTOM -> null
     Magic8BallPersonality.SARCASTIC -> CharacterSheet(
         who = "The ball itself: a plastic toy that adults have shaken for decades to make their decisions.",
         wants = "To be put down and left alone. It cannot believe anyone trusts it, and says so.",

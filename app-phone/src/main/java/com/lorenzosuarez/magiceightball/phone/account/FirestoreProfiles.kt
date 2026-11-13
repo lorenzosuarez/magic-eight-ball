@@ -1,22 +1,15 @@
 package com.lorenzosuarez.magiceightball.phone.account
 
-import android.content.Context
 import android.util.Log
-import com.google.firebase.FirebaseApp
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
-import com.google.firebase.firestore.FirebaseFirestoreSettings
-import com.google.firebase.firestore.MemoryCacheSettings
 import com.google.firebase.firestore.MetadataChanges
-import com.google.firebase.firestore.Transaction
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,32 +27,20 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The profile, kept by Cloud Firestore in a document of the account's own, `users/{id}`, which
  * the project's rules let nobody else read or write.
  *
- * Nothing of it is written to this device: the copy Firestore keeps is in memory only, and
- * every change is made on the server or not at all, so that a profile is never saved or deleted
- * behind the back of a screen that said it could not be.
- *
- * Where there is no Firebase project, or nobody is signed in, there is no profile to know of.
+ * Nothing of it is written to this device, and every change is made on the server or not at
+ * all: see [AccountStore]. Where there is no Firebase project, or nobody is signed in, there is
+ * no profile to know of.
  */
 @Singleton
 class FirestoreProfiles @Inject constructor(
-    @ApplicationContext context: Context,
+    private val store: AccountStore,
     account: Account
 ) : Profiles {
-
-    private val store: FirebaseFirestore? =
-        if (FirebaseApp.getApps(context).isNotEmpty()) {
-            FirebaseFirestore.getInstance().apply {
-                firestoreSettings = FirebaseFirestoreSettings.Builder()
-                    .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build())
-                    .build()
-            }
-        } else null
 
     /** The document of whoever is signed in; null when nobody is. */
     @Volatile
@@ -70,7 +51,7 @@ class FirestoreProfiles @Inject constructor(
         .map { (it as? AccountState.SignedIn)?.id }
         .distinctUntilChanged()
         .flatMapLatest { id ->
-            document = id?.let { store?.collection(USERS)?.document(it) }
+            document = id?.let { store.firestore?.collection(AccountStore.USERS)?.document(it) }
             document?.let(::profileIn) ?: flowOf(ProfileState.Unknown)
         }
         .stateIn(CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate), SharingStarted.Eagerly, ProfileState.Unknown)
@@ -102,8 +83,9 @@ class FirestoreProfiles @Inject constructor(
         true
     }.onStart { emit(ProfileState.Unknown) }
 
-    override suspend fun save(profile: Profile): SaveOutcome = when (
-        write { transaction, document ->
+    override suspend fun save(profile: Profile): SaveOutcome {
+        val document = document ?: return SaveOutcome.FAILED
+        return store.write(refused = SaveOutcome.REFUSED) { transaction, _ ->
             val name = mapOf<String, Any>(FIRST_NAME to profile.firstName, BIRTH_DATE to profile.birthDate.toString())
             if (agreedTo(transaction.get(document).data)) {
                 // A correction: the record of the user's agreement stays as it was made.
@@ -113,45 +95,24 @@ class FirestoreProfiles @Inject constructor(
                 val consent = mapOf(CONSENT_VERSION_FIELD to CONSENT_VERSION, CONSENT_AT to FieldValue.serverTimestamp())
                 transaction.set(document, name + (CONSENT to consent))
             }
-        }
-    ) {
-        true -> SaveOutcome.SAVED
-        false -> SaveOutcome.REFUSED
-        null -> SaveOutcome.FAILED
+            SaveOutcome.SAVED
+        } ?: SaveOutcome.FAILED
     }
 
-    override suspend fun delete(): Boolean = write { transaction, document -> transaction.delete(document) } == true
-
-    /**
-     * Makes a change on the server, as a transaction: it is made there or not at all, and
-     * nothing waits on the device to be sent later. True when made, false when the project's
-     * rules refused it, null when it could not be made within [WRITE_TIMEOUT_MS].
-     */
-    private suspend fun write(change: (Transaction, DocumentReference) -> Unit): Boolean? {
-        val store = store ?: return null
-        val document = document ?: return null
-        return try {
-            withTimeoutOrNull(WRITE_TIMEOUT_MS) {
-                store.runTransaction { transaction ->
-                    change(transaction, document)
-                    null
-                }.await()
-                true
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: FirebaseFirestoreException) {
-            Log.w(TAG, "Could not write the profile: ${e.code}")
-            if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) false else null
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not write the profile: ${e.javaClass.simpleName}")
-            null
-        }
+    override suspend fun delete(): Boolean {
+        val document = document ?: return false
+        return store.write(refused = false) { transaction, _ ->
+            // In one change: characters left under a profile that is gone could be reached by
+            // nobody, and the project's rules refuse a profile deleted without them.
+            val characters = document.collection(AccountStore.CHARACTERS)
+            CustomCharacter.SLOTS.forEach { transaction.delete(characters.document(it)) }
+            transaction.delete(document)
+            true
+        } == true
     }
 
     internal companion object {
         private const val TAG = "Profiles"
-        private const val USERS = "users"
         const val FIRST_NAME = "firstName"
         const val BIRTH_DATE = "birthDate"
         const val CONSENT = "consent"
@@ -160,7 +121,6 @@ class FirestoreProfiles @Inject constructor(
 
         /** The wording of the agreement the profile screen shows; raised when it says something new. */
         const val CONSENT_VERSION = 1L
-        private const val WRITE_TIMEOUT_MS = 10_000L
         private const val RETRY_FIRST_MS = 2_000L
         private const val RETRY_DOUBLINGS = 5
 

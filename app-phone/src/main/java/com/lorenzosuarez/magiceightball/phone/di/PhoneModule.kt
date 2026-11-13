@@ -21,7 +21,9 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.lorenzosuarez.magiceightball.phone.account.CustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.DataStoreDeviceMarks
+import com.lorenzosuarez.magiceightball.phone.account.FirestoreCustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.DeviceMarks
 import com.lorenzosuarez.magiceightball.phone.account.FirestoreProfiles
 import com.lorenzosuarez.magiceightball.phone.account.Profiles
@@ -68,6 +70,10 @@ object PhoneModule {
     @Provides
     @Singleton
     fun provideProfiles(impl: FirestoreProfiles): Profiles = impl
+
+    @Provides
+    @Singleton
+    fun provideCustomCharacters(impl: FirestoreCustomCharacters): CustomCharacters = impl
 
     @Provides
     @Singleton

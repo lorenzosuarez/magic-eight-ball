@@ -38,8 +38,10 @@ class GeminiRemoteDataSource @Inject constructor(
      * Asks Gemini for an answer.
      *
      * The system instruction is always the app's own, with what the app drew for this answer.
-     * Nothing in it is the user's, unless the request carries [Magic8BallRequest.asker]: then it
-     * also holds what the character makes use of among those facts. The user content is the
+     * Nothing in it is the user's, unless the request carries [Magic8BallRequest.asker], and then
+     * it also holds what the character makes use of among those facts, or
+     * [Magic8BallRequest.custom], and then it holds the name and the description the user gave
+     * the character that answers. The user content is the
      * user's question when the request carries one (capped by
      * [Magic8BallRequest.questionForAi]), and the fixed trigger otherwise. Nothing else about
      * the user is sent.
@@ -60,11 +62,12 @@ class GeminiRemoteDataSource @Inject constructor(
                 // Drawn here, as a shake would: the service words the answer, it does not choose it.
                 // It is also all that tells one request from the next when nothing was asked.
                 brief = brief,
-                asker = request.asker
+                asker = request.asker,
+                custom = request.custom
             )
             val userText = question ?: request.userTrigger ?: "What is my fortune?"
 
-            executeWithRetry(settings, systemPromptText, userText, brief.detailed)
+            executeWithRetry(settings, systemPromptText, userText, brief.detailed, brief.withRemark)
         }
     }
 
@@ -73,6 +76,7 @@ class GeminiRemoteDataSource @Inject constructor(
         systemPromptText: String,
         userText: String,
         detailed: Boolean,
+        withRemark: Boolean,
         attempt: Int = 1
     ): Magic8BallResult {
         val instruction =
@@ -92,11 +96,13 @@ class GeminiRemoteDataSource @Inject constructor(
         // The first line is the answer; what follows it, when there is anything, is the remark.
         val lines = written.lines().map { it.tidied() }.filter { it.isNotEmpty() }
         val text = lines.firstOrNull() ?: return Magic8BallResult.Failure(LlmError.Serialization)
-        val remark = lines.drop(1).joinToString(" ").takeIf { it.isUsableRemark(text, detailed) }
+        // Only when one was asked for: a second line nobody asked for is not shown, whatever
+        // made the service write it.
+        val remark = lines.drop(1).joinToString(" ").takeIf { withRemark && it.isUsableRemark(text, detailed) }
 
         if (!validateWordCount(text)) {
             return if (attempt <= config.maxRetries) {
-                executeWithRetry(settings, systemPromptText, userText, detailed, attempt + 1)
+                executeWithRetry(settings, systemPromptText, userText, detailed, withRemark, attempt + 1)
             } else {
                 Magic8BallResult.Failure(LlmError.ValidationFailed)
             }
@@ -119,12 +125,16 @@ class GeminiRemoteDataSource @Inject constructor(
             length <= (if (detailed) MAX_READING_LENGTH else MAX_REMARK_LENGTH) &&
             split(WHITESPACE).count { it.isNotBlank() } <= (if (detailed) MAX_READING_WORDS else MAX_REMARK_WORDS)
 
+    /** Six words at most, and no more letters than six words take: a line written without spaces is not one word. */
     private fun validateWordCount(text: String): Boolean {
         val wordCount = text.split("\\s+".toRegex()).count { it.isNotBlank() }
-        return wordCount <= 6
+        return wordCount <= 6 && text.length <= MAX_ANSWER_LENGTH
     }
 
     private companion object {
+        /** Far more than six words take in any of the app's languages, and far less than a paragraph. */
+        const val MAX_ANSWER_LENGTH = 72
+
         /** A little over what is asked for: a remark one word long is not thrown away. */
         const val MAX_REMARK_WORDS = 18
         const val MAX_REMARK_LENGTH = 120

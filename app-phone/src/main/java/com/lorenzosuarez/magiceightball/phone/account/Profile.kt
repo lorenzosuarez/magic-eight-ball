@@ -66,8 +66,9 @@ interface Profiles {
     suspend fun save(profile: Profile): SaveOutcome
 
     /**
-     * Deletes the profile of the account signed in, whether or not this device knows of one:
-     * done before the account itself is deleted. True once the server holds none.
+     * Deletes the profile of the account signed in and, with it and at once, everything kept
+     * under it: the characters that account made up. Whether or not this device knows of any:
+     * done before the account itself is deleted. True once the server holds none of it.
      */
     suspend fun delete(): Boolean
 

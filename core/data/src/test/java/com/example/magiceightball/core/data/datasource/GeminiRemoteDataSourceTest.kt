@@ -6,6 +6,7 @@ import com.example.magiceightball.core.data.gateway.GeminiApiClient
 import com.example.magiceightball.core.data.gateway.GeminiReply
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.AskerFacts
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Zodiac
 import com.example.magiceightball.core.domain.policy.AnswerBrief
@@ -57,6 +58,17 @@ class GeminiRemoteDataSourceTest {
         assertFalse("Leo" in pirate.systemText)
         // Never in what is sent as the user's own words.
         assertEquals("shake", grandma.userText)
+    }
+
+    @Test
+    fun `the words of a character the user made up go in the instruction, never as the user's message`() = runTest {
+        val nemo = CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el mar.")
+        fetch(Magic8BallRequest(userTrigger = "shake", personality = Magic8BallPersonality.CUSTOM, custom = nemo))
+
+        val sent = apiClient.requests.single()
+        assertTrue("[[Un capitán gruñón que todo lo compara con el mar.]]" in sent.systemText)
+        assertTrue("[[Capitán Nemo]]" in sent.systemText)
+        assertEquals("shake", sent.userText)
     }
 
     @Test
@@ -177,6 +189,26 @@ class GeminiRemoteDataSourceTest {
         fetch(Magic8BallRequest(question = "Will I win?"))
 
         assertTrue("comeback" !in apiClient.requests.single().systemText)
+    }
+
+    @Test
+    fun `a second line the service wrote without being asked is not shown`() = runTest {
+        // Whatever made it write one: a character the user described, told to always add something.
+        apiClient.answer = "Nay.\nAnd here is a line nobody asked for."
+
+        val result = fetch(Magic8BallRequest(userTrigger = "shake"))
+
+        assertEquals(Magic8BallResult.Success("Nay.", fromAi = true, remark = null), result)
+    }
+
+    @Test
+    fun `an answer far too long for a ball is asked for again, however few spaces it has`() = runTest {
+        apiClient.answers = ArrayDeque(listOf("Nay" + "-and-on".repeat(20), "Nay."))
+
+        val result = fetch(Magic8BallRequest(userTrigger = "shake"))
+
+        assertEquals(Magic8BallResult.Success("Nay.", fromAi = true), result)
+        assertEquals(2, apiClient.requests.size)
     }
 
     @Test

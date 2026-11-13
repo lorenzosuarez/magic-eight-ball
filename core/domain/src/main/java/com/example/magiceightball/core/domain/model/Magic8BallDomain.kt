@@ -38,6 +38,8 @@ sealed interface LlmError {
  * room to show one.
  * @property asker what the character may be told about whoever is asking: see [AskerFacts].
  * Null wherever nobody is signed in, which is everywhere but a phone with an account.
+ * @property custom who answers when [personality] is [Magic8BallPersonality.CUSTOM]. Without
+ * it such a request is answered as the classic style is, from the app's own answers.
  */
 data class Magic8BallRequest(
     val userTrigger: String? = null,
@@ -47,7 +49,8 @@ data class Magic8BallRequest(
     val question: String? = null,
     val wantsRemark: Boolean = false,
     val detailed: Boolean = false,
-    val asker: AskerFacts? = null
+    val asker: AskerFacts? = null,
+    val custom: CustomCharacter? = null
 ) {
     /**
      * The only form in which [question] may leave the device: one line, without control

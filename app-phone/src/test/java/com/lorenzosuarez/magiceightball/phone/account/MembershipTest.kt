@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.example.magiceightball.core.domain.model.AskerFacts
+import com.example.magiceightball.core.domain.model.CustomCharacter
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Zodiac
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
@@ -29,9 +31,10 @@ class MembershipTest {
 
     private val host: Context = ApplicationProvider.getApplicationContext()
     private val account = FakeAccount(initial = FakeAccount.ANA)
-    private val profiles = FakeProfiles(initial = ProfileState.Missing)
+    private val characters = FakeCustomCharacters()
+    private val profiles = FakeProfiles(initial = ProfileState.Missing, under = characters)
     private val marks = FakeDeviceMarks()
-    private val membership = Membership(account, profiles, marks)
+    private val membership = Membership(account, profiles, marks, characters)
 
     @Test
     fun `an adult's profile is saved as typed, tidied, and the account stays`() = runTest {
@@ -109,7 +112,7 @@ class MembershipTest {
         assertNull(membership.asker(TODAY))
 
         account.deletes = AccountOutcome.DONE
-        Membership(account, profiles, marks).enforceAge()
+        Membership(account, profiles, marks, characters).enforceAge()
 
         assertEquals(1, account.deleted)
         // Nothing is asked of anyone at start.
@@ -206,6 +209,111 @@ class MembershipTest {
 
         assertEquals(1, profiles.deleted)
         assertEquals(1, account.deleted)
+    }
+
+    @Test
+    fun `a character is saved as typed, tidied, in the first free slot, and then over itself`() = runTest {
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+
+        val first = membership.saveCharacter(null, "  Capitán\nNemo ", "  Un capitán gruñón del mar. ", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT)
+        val second = membership.saveCharacter(null, "Doña Rosa", "Una vecina que lo sabe todo.", Magic8BallPersonality.GRANDMA, Magic8BallPersonality.NEUTRAL)
+
+        val nemo = CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT)
+        assertEquals(CharacterSave.Saved(nemo), first)
+        assertEquals("2", (second as CharacterSave.Saved).character.id)
+
+        membership.saveCharacter(nemo, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT)
+        assertEquals(listOf("Nemo", "Doña Rosa"), characters.state.value?.map { it.name })
+        assertEquals(characters.state.value, membership.who.first().characters)
+    }
+
+    @Test
+    fun `a correction is not written over what another device changed, nor brings back what it deleted`() = runTest {
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+        val opened = (membership.saveCharacter(null, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT) as CharacterSave.Saved).character
+
+        // Changed elsewhere while it was open here.
+        characters.state.value = listOf(opened.copy(name = "Otro"))
+        assertEquals(CharacterSave.Changed, membership.saveCharacter(opened, "Nemo II", opened.description, opened.colour, opened.emblem))
+        assertEquals(listOf("Otro"), characters.state.value?.map { it.name })
+
+        // Deleted elsewhere.
+        characters.state.value = emptyList()
+        assertEquals(CharacterSave.Changed, membership.saveCharacter(opened, "Nemo II", opened.description, opened.colour, opened.emblem))
+        assertTrue(characters.state.value.orEmpty().isEmpty())
+    }
+
+    @Test
+    fun `a sixth character has nowhere to go, and one with no name or nothing said of it is not saved`() = runTest {
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+        repeat(CustomCharacter.MAX_COUNT) { membership.saveCharacter(null, "Nemo $it", "Un capitán gruñón del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT) }
+        val first = characters.state.value!!.first()
+
+        assertEquals(CharacterSave.Full, membership.saveCharacter(null, "Otro", "Uno más, que ya no cabe.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
+        assertEquals(CharacterSave.Refused, membership.saveCharacter(first, " -- ", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
+        assertEquals(CharacterSave.Refused, membership.saveCharacter(first, "Nemo", "ok", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
+        assertEquals(CustomCharacter.MAX_COUNT, characters.state.value?.size)
+    }
+
+    @Test
+    fun `nobody without an account and a profile makes a character, nor does a marked device`() = runTest {
+        suspend fun save() = membership.saveCharacter(null, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT)
+        // Signed in, and not yet asked who they are: nothing was agreed to.
+        assertEquals(CharacterSave.Failed, save())
+
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+        marks.underAge.value = true
+        assertEquals(CharacterSave.Failed, save())
+
+        marks.underAge.value = false
+        account.state.value = AccountState.SignedOut
+        assertEquals(CharacterSave.Failed, save())
+        assertTrue(characters.state.value.orEmpty().isEmpty())
+    }
+
+    @Test
+    fun `one of the app's characters lends a look, and the user's own kind lends none`() = runTest {
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+
+        val saved = membership.saveCharacter(null, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.CUSTOM, Magic8BallPersonality.CUSTOM)
+
+        assertEquals(Magic8BallPersonality.NEUTRAL, (saved as CharacterSave.Saved).character.colour)
+        assertEquals(Magic8BallPersonality.NEUTRAL, saved.character.emblem)
+    }
+
+    @Test
+    fun `an account goes with its profile and its characters at once, and stays if they cannot be deleted`() = runTest {
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+        membership.saveCharacter(null, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT)
+
+        profiles.deletes = false
+        assertEquals(AccountOutcome.FAILED, membership.deleteAccount(host))
+        assertEquals(0, account.deleted)
+        assertEquals(1, characters.state.value?.size)
+
+        profiles.deletes = true
+        assertEquals(AccountOutcome.DONE, membership.deleteAccount(host))
+        assertEquals(1, profiles.deleted)
+        assertTrue(characters.state.value.orEmpty().isEmpty())
+        assertEquals(1, account.deleted)
+    }
+
+    @Test
+    fun `what the server holds is a character only in a slot, with a name and something said of it`() {
+        val whole = mapOf("name" to "Capitán Nemo", "description" to "Un capitán gruñón del mar.", "colour" to "pirate", "emblem" to "cat")
+        assertEquals(
+            CustomCharacter("3", "Capitán Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT),
+            FirestoreCustomCharacters.characterOf("3", whole)
+        )
+        assertEquals(whole, FirestoreCustomCharacters.fieldsOf(FirestoreCustomCharacters.characterOf("3", whole)!!))
+        assertNull(FirestoreCustomCharacters.characterOf("6", whole))
+        assertNull(FirestoreCustomCharacters.characterOf("3", whole - "description"))
+        assertNull(FirestoreCustomCharacters.characterOf("3", whole + ("name" to 7)))
+        assertNull(FirestoreCustomCharacters.characterOf("3", null))
+        // A look this app does not know, or the user's own kind, is no look.
+        val odd = FirestoreCustomCharacters.characterOf("3", whole + ("colour" to "unicorn") + ("emblem" to "custom"))
+        assertEquals(Magic8BallPersonality.NEUTRAL, odd?.colour)
+        assertEquals(Magic8BallPersonality.NEUTRAL, odd?.emblem)
     }
 
     @Test

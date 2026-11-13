@@ -9,6 +9,7 @@ import com.example.magiceightball.core.domain.gateway.SpeechEvent
 import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.LlmError
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
@@ -815,7 +816,17 @@ class ChatViewModelTest {
         }
 
         override suspend fun setPersonality(personality: Magic8BallPersonality) {
-            saved.update { it?.copy(personality = personality) }
+            saved.update { it?.copy(personality = personality, customCharacter = null) }
+        }
+
+        override suspend fun setCustomCharacter(character: CustomCharacter?) {
+            saved.update {
+                when {
+                    character != null -> it?.copy(personality = Magic8BallPersonality.CUSTOM, customCharacter = character)
+                    it?.personality == Magic8BallPersonality.CUSTOM -> it.copy(personality = UserSettings().personality, customCharacter = null)
+                    else -> it
+                }
+            }
         }
 
         override suspend fun setAiAnswersEnabled(enabled: Boolean) {

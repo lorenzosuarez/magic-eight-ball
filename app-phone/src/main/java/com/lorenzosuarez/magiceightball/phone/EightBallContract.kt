@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone
 
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.UserSettings
@@ -27,6 +28,7 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * @property ageNotice true from the moment that date was given until the user has been told
  * that there is no account for them.
  * @property removingAccount true while an account is being taken away, profile first.
+ * @property characters the characters whoever is signed in made up; null while not known.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
 data class EightBallUiState(
@@ -45,7 +47,8 @@ data class EightBallUiState(
     val profile: ProfileState = ProfileState.Unknown,
     val underAge: Boolean = false,
     val ageNotice: Boolean = false,
-    val removingAccount: Boolean = false
+    val removingAccount: Boolean = false,
+    val characters: List<CustomCharacter>? = null
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?
@@ -57,6 +60,28 @@ data class EightBallUiState(
     /** Whether whoever has just signed in is still to be asked who they are: no account is kept without. */
     val needsProfile: Boolean
         get() = offersAccount && account is AccountState.SignedIn && profile == ProfileState.Missing && !removingAccount
+
+    /**
+     * Whether whoever is here can make a character now: signed in, with the profile that is
+     * their agreement to what is sent of it. Anyone else is first shown the way to an account.
+     */
+    val canMakeCharacters: Boolean
+        get() = offersAccount && account is AccountState.SignedIn && profile is ProfileState.Present
+
+    /** The character of the user's own that answers in its voice, when one does: chosen, and still theirs to use. */
+    val answeringCustom: CustomCharacter?
+        get() = settings.customCharacter.takeIf {
+            // With the profile in sight: it is where they agreed to what is sent of a character.
+            settings.personality == Magic8BallPersonality.CUSTOM && canMakeCharacters
+        }
+
+    /**
+     * Whether the character chosen has no voice the AI service could be asked for: the classic
+     * one, or one of the user's own that is not theirs to use just now.
+     */
+    val answersAsClassic: Boolean
+        get() = settings.personality == Magic8BallPersonality.NEUTRAL ||
+            (settings.personality == Magic8BallPersonality.CUSTOM && answeringCustom == null)
 
     /** Whether a question the app hears is sent to the AI service to be answered. */
     val usesAiAnswers: Boolean get() = settings.aiAnswersEnabled && aiAnswersAvailable
@@ -81,6 +106,8 @@ sealed interface BallPhase {
     /**
      * @property id grows with every answer, so two identical answers are still told apart.
      * @property style the style that gave the answer, which signs it; null when none did.
+     * @property custom the character of the user's own that gave it, as it was then: its name
+     * signs the answer and its look is the card's. Null unless [style] is one of the user's own.
      * @property reported whether the user has reported this answer: it is reported once.
      * @property liked what the user said of this answer: good, bad, or nothing yet.
      */
@@ -89,6 +116,7 @@ sealed interface BallPhase {
         val question: String,
         val answer: AnswerText,
         val style: Magic8BallPersonality? = null,
+        val custom: CustomCharacter? = null,
         val reported: Boolean = false,
         val liked: Boolean? = null
     ) : BallPhase

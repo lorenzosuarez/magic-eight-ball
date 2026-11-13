@@ -13,9 +13,13 @@ class DefaultPromptPolicyTest {
 
     private val policy = DefaultPromptPolicy()
 
+    /** The characters the app wrote: all but the plain style, which is nobody, and the user's own. */
+    private val written = Magic8BallPersonality.entries - Magic8BallPersonality.NEUTRAL - Magic8BallPersonality.CUSTOM
+
     @Test
     fun `every personality has its own prompt`() {
-        val prompts = Magic8BallPersonality.entries.map { policy.getSystemPrompt("en", it) }
+        // One of the user's own has no prompt of its own without the user's words: see CustomCharacterTest.
+        val prompts = (Magic8BallPersonality.entries - Magic8BallPersonality.CUSTOM).map { policy.getSystemPrompt("en", it) }
 
         assertTrue(prompts.all { it.isNotBlank() })
         assertTrue(prompts.distinct().size == prompts.size)
@@ -23,7 +27,7 @@ class DefaultPromptPolicyTest {
 
     @Test
     fun `a character is someone who wants something from the asker, and the prompt says what`() {
-        Magic8BallPersonality.entries.filter { it != Magic8BallPersonality.NEUTRAL }.forEach { personality ->
+        written.forEach { personality ->
             val sheet = characterOf(personality)!!
             val prompt = policy.getSystemPrompt("en", personality)
 
@@ -148,7 +152,7 @@ class DefaultPromptPolicyTest {
     fun `every character has things of its own to bring up, and the plain style has none`() {
         Magic8BallPersonality.entries.forEach { personality ->
             val motifs = AnswerBrief.motifsOf(personality)
-            if (personality == Magic8BallPersonality.NEUTRAL) {
+            if (personality !in written) {
                 assertTrue(motifs.isEmpty())
             } else {
                 assertTrue("$personality has ${motifs.size}", motifs.size >= 8)
@@ -219,7 +223,7 @@ class DefaultPromptPolicyTest {
     fun `every character has lines of its own in each language, short enough for the ball`() {
         val all = mutableListOf<String>()
         listOf("en", "es", "pt").forEach { language ->
-            Magic8BallPersonality.entries.filter { it != Magic8BallPersonality.NEUTRAL }.forEach { personality ->
+            written.forEach { personality ->
                 val lines = linesOf(personality, language)!!
                 assertEquals("$language/$personality", listOf(4, 4, 2, 3), listOf(lines.yes, lines.no, lines.maybe, lines.remarks).map { it.size })
                 Verdict.entries.flatMap(lines::saying).forEach { line ->
@@ -325,7 +329,8 @@ class DefaultPromptPolicyTest {
             Magic8BallPersonality.THERAPIST,
             Magic8BallPersonality.GRANDMA,
             Magic8BallPersonality.COACH,
-            Magic8BallPersonality.LOVESTRUCK
+            Magic8BallPersonality.LOVESTRUCK,
+            Magic8BallPersonality.CUSTOM
         )
         val bySign = setOf(Magic8BallPersonality.ASTRO, Magic8BallPersonality.MYSTICAL)
         Magic8BallPersonality.entries.forEach { personality ->

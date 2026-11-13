@@ -43,6 +43,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,14 +55,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
@@ -147,7 +151,8 @@ internal fun StyleRow(
     onSelected: (Magic8BallPersonality) -> Unit,
     onSeeAll: () -> Unit,
     featured: List<Magic8BallPersonality> = AppConfig.DEFAULT_FEATURED,
-    hidden: Set<Magic8BallPersonality> = emptySet()
+    hidden: Set<Magic8BallPersonality> = emptySet(),
+    custom: CustomCharacter? = null
 ) {
     val scroll = rememberScrollState()
     // Where each card starts and how wide it is, within the row.
@@ -183,8 +188,12 @@ internal fun StyleRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             stylesInRow(selected, featured, hidden).forEach { style ->
+                // One of the user's own, when it is the one chosen, under the name they gave it.
+                val own = custom.takeIf { style == Magic8BallPersonality.CUSTOM }
                 StyleCard(
-                    style = style,
+                    title = own?.name ?: stringResource(style.labelRes()),
+                    // What the user wrote of it is theirs and long: a line of the app's says whose words it speaks in.
+                    sample = stringResource(style.sampleRes()),
                     chosen = style == selected,
                     onClick = { onSelected(style) },
                     // As wide as what it says: in a row that scrolls, nothing has to be cut short.
@@ -236,7 +245,11 @@ internal fun StylesSheet(
     onSelected: (Magic8BallPersonality) -> Unit,
     onClose: () -> Unit,
     hidden: Set<Magic8BallPersonality> = emptySet(),
-    onCreate: (() -> Unit)? = null
+    onCreate: (() -> Unit)? = null,
+    yours: List<CustomCharacter> = emptyList(),
+    chosenOfYours: String? = null,
+    onYoursSelected: (CustomCharacter) -> Unit = {},
+    onEditYours: (CustomCharacter) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
@@ -266,7 +279,14 @@ internal fun StylesSheet(
                 onClose = putAway,
                 full = full,
                 hidden = hidden,
-                onCreate = onCreate
+                onCreate = onCreate,
+                yours = yours,
+                chosenOfYours = chosenOfYours,
+                onYoursSelected = {
+                    onYoursSelected(it)
+                    putAway()
+                },
+                onEditYours = onEditYours
             )
         }
     }
@@ -280,6 +300,8 @@ internal fun StylesSheet(
  * @param full whether the sheet takes the whole screen: the header then clears the status bar.
  * @param onCreate the way to make a character of one's own; null where that is not offered, and
  * then nothing is shown for it.
+ * @param yours the characters the user made up, shown first, each with the way to correct it.
+ * @param chosenOfYours the slot of the one that answers, when one of them does.
  */
 @Composable
 internal fun StylesContent(
@@ -289,7 +311,11 @@ internal fun StylesContent(
     modifier: Modifier = Modifier,
     full: Boolean = false,
     hidden: Set<Magic8BallPersonality> = emptySet(),
-    onCreate: (() -> Unit)? = null
+    onCreate: (() -> Unit)? = null,
+    yours: List<CustomCharacter> = emptyList(),
+    chosenOfYours: String? = null,
+    onYoursSelected: (CustomCharacter) -> Unit = {},
+    onEditYours: (CustomCharacter) -> Unit = {}
 ) {
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val headerTop by animateDpAsState(if (full) statusBar else 0.dp, label = "sheet header")
@@ -355,6 +381,36 @@ internal fun StylesContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
+            if (yours.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.styles_group_yours),
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
+                        .semantics { heading() },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // One row, of cards as wide as the app's own: there are five at most.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
+                ) {
+                    yours.forEach { character ->
+                        StyleCard(
+                            title = character.name,
+                            sample = stringResource(R.string.style_custom_sample),
+                            chosen = selected == Magic8BallPersonality.CUSTOM && character.id == chosenOfYours,
+                            onClick = { onYoursSelected(character) },
+                            modifier = Modifier.width(cardWidth).fillMaxHeight(),
+                            onEdit = { onEditYours(character) }
+                        )
+                    }
+                }
+            }
             styleGroups(selected, hidden).forEach { group ->
                 Text(
                     text = stringResource(group.title),
@@ -384,7 +440,8 @@ internal fun StylesContent(
                         ) {
                             column.forEach { style ->
                                 StyleCard(
-                                    style = style,
+                                    title = stringResource(style.labelRes()),
+                                    sample = stringResource(style.sampleRes()),
                                     chosen = style == selected,
                                     onClick = { onSelected(style) },
                                     modifier = Modifier.fillMaxWidth()
@@ -407,13 +464,15 @@ internal fun StylesContent(
  */
 @Composable
 private fun StyleCard(
-    style: Magic8BallPersonality,
+    title: String,
+    sample: String,
     chosen: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onEdit: (() -> Unit)? = null
 ) {
     val ink = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
-    Column(
+    Box(
         modifier = modifier
             .clip(ButtonShape)
             .background(
@@ -424,24 +483,50 @@ private fun StyleCard(
                 }
             )
             .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(
-            text = stringResource(style.labelRes()),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = ink,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = stringResource(style.sampleRes()),
-            style = MaterialTheme.typography.bodySmall,
-            color = ink.copy(alpha = SAMPLE_ALPHA),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = sample,
+                // Clear of the pencil, where there is one.
+                modifier = Modifier.padding(end = if (onEdit == null) 0.dp else EDIT_GLYPH + 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = ink.copy(alpha = SAMPLE_ALPHA),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        // On a character of the user's own: the way to correct it, a touch of its own, at the
+        // end of the second line. The card stays as wide and as tall as the app's.
+        if (onEdit != null) {
+            val edit = stringResource(R.string.character_edit, title)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(EDIT_TARGET)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = edit, role = Role.Button, onClick = onEdit)
+                    .semantics { contentDescription = edit },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_edit),
+                    contentDescription = null,
+                    modifier = Modifier.size(EDIT_GLYPH),
+                    tint = ink
+                )
+            }
+        }
     }
 }
 
@@ -466,11 +551,13 @@ internal fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.ASTRO -> R.string.style_astro
     Magic8BallPersonality.THERAPIST -> R.string.style_therapist
     Magic8BallPersonality.DOG -> R.string.style_dog
+    // What one of the user's own is called where its own name is not known.
+    Magic8BallPersonality.CUSTOM -> R.string.style_custom
 }
 
 /** Something the style would say, to tell it from the others at a glance. */
 @StringRes
-private fun Magic8BallPersonality.sampleRes(): Int = when (this) {
+internal fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.SARCASTIC -> R.string.style_sarcastic_sample
     Magic8BallPersonality.MYSTICAL -> R.string.style_mystical_sample
     Magic8BallPersonality.NEUTRAL -> R.string.style_neutral_sample
@@ -490,6 +577,7 @@ private fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.ASTRO -> R.string.style_astro_sample
     Magic8BallPersonality.THERAPIST -> R.string.style_therapist_sample
     Magic8BallPersonality.DOG -> R.string.style_dog_sample
+    Magic8BallPersonality.CUSTOM -> R.string.style_custom_sample
 }
 
 private val STYLE_CARD_MIN_WIDTH = 132.dp
@@ -506,4 +594,8 @@ private const val HANDLE_ALPHA = 0.3f
 private val STYLE_CARD_WIDTH = 152.dp
 private val STYLE_CARD_GAP = 8.dp
 private const val STYLE_ROWS = 2
+
+/** The pencil on a card of the user's own, and the room round it that takes the touch. */
+private val EDIT_GLYPH = 18.dp
+private val EDIT_TARGET = 44.dp
 private const val MAX_CARD_GROWTH = 1.6f

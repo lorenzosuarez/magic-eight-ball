@@ -15,5 +15,10 @@ data class HistoryEntry(
     val askedAtMillis: Long,
     val fromAi: Boolean,
     /** The style that gave the answer; null when none did, or for an entry kept before styles were. */
-    val style: Magic8BallPersonality? = null
+    val style: Magic8BallPersonality? = null,
+    /**
+     * The name of the character that gave it, when it was one of the user's own: kept here so
+     * that the answer stays signed after the character, or the account, is gone.
+     */
+    val customName: String? = null
 )

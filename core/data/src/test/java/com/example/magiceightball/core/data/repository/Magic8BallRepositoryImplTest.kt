@@ -7,6 +7,7 @@ import com.example.magiceightball.core.data.datasource.GeminiRemoteDataSource
 import com.example.magiceightball.core.data.datasource.LocalDataSource
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import io.mockk.coEvery
@@ -136,6 +137,21 @@ class Magic8BallRepositoryImplTest {
 
         assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), result)
         coVerify(exactly = 0) { remoteDataSource.fetchMagic8BallMessage(any(), any()) }
+    }
+
+    @Test
+    fun `a character of the user's own is written for with its description, and answers from the app without it`() = runTest {
+        val nemo = CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el mar.")
+        val described = Magic8BallRequest(useAi = true, personality = Magic8BallPersonality.CUSTOM, custom = nemo)
+        assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(described))
+        coVerify(exactly = 1) { remoteDataSource.fetchMagic8BallMessage(described, geminiSettings.settings) }
+
+        // Chosen, and nothing said of how it answers: there is no voice to ask the service for.
+        val bare = Magic8BallRequest(useAi = true, personality = Magic8BallPersonality.CUSTOM)
+        val wordless = bare.copy(custom = nemo.copy(description = " [] "))
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(bare))
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(wordless))
+        coVerify(exactly = 1) { remoteDataSource.fetchMagic8BallMessage(any(), any()) }
     }
 
     @Test

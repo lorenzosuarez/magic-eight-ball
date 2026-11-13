@@ -422,6 +422,9 @@ fun EightBallScreen(
                         onSignOut = viewModel::signOut,
                         onDeleteAccount = { viewModel.deleteAccount(context) },
                         onSaveProfile = { name, birthDate -> viewModel.saveProfile(name, birthDate, context) },
+                        onChooseCharacter = viewModel::chooseCharacter,
+                        onSaveCharacter = viewModel::saveCharacter,
+                        onDeleteCharacter = viewModel::deleteCharacter,
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
@@ -561,8 +564,9 @@ internal fun EightBallContent(
                     answer = answered.answer.text(),
                     layer = shareLayer,
                     remark = answered.answer.remark(),
-                    styleLabel = answered.style?.let { stringResource(it.labelRes()) },
-                    personality = answered.style ?: Magic8BallPersonality.NEUTRAL
+                    styleLabel = answered.custom?.name ?: answered.style?.let { stringResource(it.labelRes()) },
+                    personality = answered.style ?: Magic8BallPersonality.NEUTRAL,
+                    look = answered.custom
                 )
             }
         }
@@ -1238,7 +1242,7 @@ private fun Caption(state: EightBallUiState, answerSmall: Boolean, modifier: Mod
                     val ai = stringResource(R.string.source_ai)
                     Text(
                         text = buildAnnotatedString {
-                            append("\u2014 " + stringResource(style.labelRes()))
+                            append("\u2014 " + (phase.custom?.name ?: stringResource(style.labelRes())))
                             if (fromAi) {
                                 withStyle(
                                     SpanStyle(

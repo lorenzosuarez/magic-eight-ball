@@ -48,7 +48,8 @@ class FileAnswerHistoryRepository(
         answer: String?,
         askedAtMillis: Long,
         fromAi: Boolean,
-        style: Magic8BallPersonality?
+        style: Magic8BallPersonality?,
+        customName: String?
     ) =
         change { old ->
             val entry = HistoryEntry(
@@ -57,7 +58,8 @@ class FileAnswerHistoryRepository(
                 answer = answer,
                 askedAtMillis = askedAtMillis,
                 fromAi = fromAi,
-                style = style
+                style = style,
+                customName = customName?.takeIf { style == Magic8BallPersonality.CUSTOM && it.isNotBlank() }
             )
             (listOf(entry) + old).take(MAX_ENTRIES)
         }
@@ -87,7 +89,8 @@ class FileAnswerHistoryRepository(
 
     /**
      * A file that is missing, cut short or from an unknown format is an empty history. One
-     * written before entries kept their style is read as it is, with no style.
+     * written before entries kept their style, or the name of a character of the user's own, is
+     * read as it is, without them.
      */
     private fun read(): List<HistoryEntry> = try {
         DataInputStream(file.inputStream().buffered()).use { input ->
@@ -102,7 +105,8 @@ class FileAnswerHistoryRepository(
                     fromAi = input.readBoolean(),
                     style = if (format >= STYLED_FORMAT) {
                         input.readUTF().let { name -> Magic8BallPersonality.entries.firstOrNull { it.name == name } }
-                    } else null
+                    } else null,
+                    customName = if (format >= NAMED_FORMAT) input.readUTF().takeIf { it.isNotEmpty() } else null
                 )
             }
         }
@@ -129,6 +133,7 @@ class FileAnswerHistoryRepository(
                     output.writeLong(entry.askedAtMillis)
                     output.writeBoolean(entry.fromAi)
                     output.writeUTF(entry.style?.name.orEmpty())
+                    output.writeUTF(entry.customName.orEmpty().take(MAX_TEXT_LENGTH))
                 }
             }
             if (!pending.renameTo(file)) pending.delete()
@@ -142,7 +147,10 @@ class FileAnswerHistoryRepository(
 
         /** Since this format every entry is followed by the name of its style, empty for none. */
         const val STYLED_FORMAT = 2
-        const val FORMAT = STYLED_FORMAT
+
+        /** Since this format the name of a character of the user's own follows, empty for none. */
+        const val NAMED_FORMAT = 3
+        const val FORMAT = NAMED_FORMAT
         const val PENDING_SUFFIX = ".tmp"
 
         /** Far above any question or answer, and far below what writeUTF can hold. */
