@@ -142,6 +142,8 @@ The app builds and runs with no setup at all: without Firebase it answers from t
 
 Copyright © 2024 **Lorenzo Suarez**. All rights reserved.
 
+Two things in the phone app are not the author's. The words on the sign-in button are set in Google Sans Medium, © 2025 The Google Sans Project Authors, under the [SIL Open Font License 1.1](https://openfontlicense.org); the file in `app-phone/src/main/res/font` is that font cut down to the Latin letters. The "G" on the same button is Google's mark, taken from Google's own sign-in assets and used as its [branding guidelines](https://developers.google.com/identity/branding-guidelines) set out.
+
 ## What can be changed without a release
 
 Switches, limits, the answers the app keeps and who each character is are Remote Config parameters: see [docs/REMOTE_CONFIG.md](docs/REMOTE_CONFIG.md).

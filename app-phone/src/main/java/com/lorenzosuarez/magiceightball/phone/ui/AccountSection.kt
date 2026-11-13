@@ -55,11 +55,15 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
@@ -401,9 +405,10 @@ private fun AccountFailure(message: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * The button that signs in with Google, in the colours, words and spacing Google sets for one
- * drawn by an app: white with an outline on a light screen, dark with an outline on a dark one.
- * A label too long for one line takes a second, and the button grows to hold it.
+ * The button that signs in with Google, as Google sets it for one drawn by an app: its own mark,
+ * taken from its own files, its words in its own type, and its colours and spacing, white with
+ * an outline on a light screen and dark with an outline on a dark one. A label too long for one
+ * line takes a second, and the button grows to hold it.
  */
 @Composable
 private fun GoogleButton(enabled: Boolean, onClick: () -> Unit) {
@@ -438,8 +443,7 @@ private fun GoogleButton(enabled: Boolean, onClick: () -> Unit) {
                 val width = longestLine?.coerceAtMost(label.width) ?: label.width
                 layout(width, label.height) { label.place((width - label.width) / 2, 0) }
             },
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
+            style = GoogleLabel,
             color = if (dark) GoogleDarkInk else GoogleLightInk,
             textAlign = TextAlign.Center,
             onTextLayout = { result ->
@@ -458,6 +462,14 @@ private val GoogleLightInk = Color(0xFF1F1F1F)
 private val GoogleDarkGround = Color(0xFF131314)
 private val GoogleDarkOutline = Color(0xFF8E918F)
 private val GoogleDarkInk = Color(0xFFE3E3E3)
+
+/** Google Sans Medium, 14 on 20: the type Google sets for the button's words. */
+private val GoogleLabel = TextStyle(
+    fontFamily = FontFamily(Font(R.font.google_sans_medium, FontWeight.Medium)),
+    fontWeight = FontWeight.Medium,
+    fontSize = 14.sp,
+    lineHeight = 20.sp
+)
 
 /** A pill at one line's height, and still round-cornered when the label takes two. */
 private val GoogleButtonShape = RoundedCornerShape(24.dp)
