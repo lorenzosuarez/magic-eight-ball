@@ -67,7 +67,12 @@ internal fun Modifier.fadingEdges(scroll: ScrollState, length: Dp = EDGE_FADE): 
     }
 
 /** A row that scrolls sideways and fades at whichever edge it runs past: the two always go together. */
-internal fun Modifier.fadingRow(scroll: ScrollState): Modifier = fadingEdges(scroll).horizontalScroll(scroll)
+internal fun Modifier.fadingRow(scroll: ScrollState, length: Dp = EDGE_FADE): Modifier =
+    fadingEdges(scroll, length).horizontalScroll(scroll)
 
-/** How far in from an edge a row fades: enough to read as a fade, not so much that a card is lost in it. */
-internal val EDGE_FADE = 32.dp
+/**
+ * How far in from an edge a row fades: enough to read as a fade, not so much that a card is lost
+ * in it. A row whose things are small, as dots of colour are, fades over the room it leaves at
+ * its edge and no more, so that the first thing in it is never half gone.
+ */
+internal val EDGE_FADE = 24.dp

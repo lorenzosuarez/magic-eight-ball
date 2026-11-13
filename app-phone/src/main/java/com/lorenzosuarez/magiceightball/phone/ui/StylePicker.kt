@@ -1,9 +1,15 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.indication
+import androidx.compose.animation.Crossfade
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -265,7 +271,7 @@ internal fun StylesSheet(
     yours: List<CustomCharacter> = emptyList(),
     chosenOfYours: String? = null,
     onYoursSelected: (CustomCharacter) -> Unit = {},
-    onEditYours: (CustomCharacter) -> Unit = {},
+    onEditYours: ((CustomCharacter) -> Unit)? = {},
     yoursPlaces: Int = 0,
     creating: Boolean = false
 ) {
@@ -320,7 +326,8 @@ internal fun StylesSheet(
  * @param full whether the sheet takes the whole screen: the header then clears the status bar.
  * @param onCreate the way to make a character of one's own; null where that is not offered, and
  * then nothing is shown for it.
- * @param yours the characters the user made up, shown first, each with the way to correct it.
+ * @param yours the characters the user made up, shown first, each with the way to correct it
+ * where [onEditYours] is given: where they are only chosen among, it is null.
  * @param chosenOfYours the slot of the one that answers, when one of them does.
  * @param yoursPlaces how many places to keep for the user's own while they are on their way:
  * as many as there were, or none when there is no reason to think there are any.
@@ -338,7 +345,7 @@ internal fun StylesContent(
     yours: List<CustomCharacter> = emptyList(),
     chosenOfYours: String? = null,
     onYoursSelected: (CustomCharacter) -> Unit = {},
-    onEditYours: (CustomCharacter) -> Unit = {},
+    onEditYours: ((CustomCharacter) -> Unit)? = {},
     yoursPlaces: Int = 0,
     creating: Boolean = false
 ) {
@@ -469,7 +476,7 @@ internal fun StylesContent(
                                 onYoursSelected(character)
                             },
                             modifier = Modifier.width(cardWidth).fillMaxHeight(),
-                            onEdit = { onEditYours(character) }
+                            onEdit = onEditYours?.let { edit -> { edit(character) } }
                         )
                     }
                 }
@@ -488,7 +495,7 @@ internal fun StylesContent(
                 // chosen style when it holds it, with the column before in sight.
                 val columns = group.styles.chunked(STYLE_ROWS)
                 val lead = (group.styles.indexOf(selected) / STYLE_ROWS - 1).coerceAtLeast(0)
-                val start = with(density) { ((cardWidth + STYLE_CARD_GAP) * lead).roundToPx() }
+                val start = with(density) { ((cardWidth + STYLE_CARD_GAP) * lead - ROW_EDGE).roundToPx().coerceAtLeast(0) }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -537,7 +544,13 @@ private fun StyleCardPlace(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(CARD_INSET),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.size(CARD_FACE).clip(ButtonShape).waitingBar())
+        // Where the face will be, in the shape it will have.
+        Box(
+            modifier = Modifier
+                .size(CARD_FACE)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = PLACE_FACE_ALPHA))
+        )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             // Each line holds its room with words that are not drawn, and its bar lies along it.
             listOf(MaterialTheme.typography.titleSmall to PLACE_NAME_WIDTH, MaterialTheme.typography.bodySmall to PLACE_LINE_WIDTH)
@@ -552,18 +565,19 @@ private fun StyleCardPlace(modifier: Modifier = Modifier) {
 }
 
 /**
- * A character: who it is, as the card it signs shows it, with its name and something it would
- * say. The face is the ball wearing what is theirs, on their colour.
+ * A character: its face, its name, and something it would say.
  *
- * Not chosen, the card has a breath of that colour in it; chosen, it is that colour through and
- * through, with the ink the shared card is written in, so the one that answers is told from the
- * rest by how much colour it has and not by which. The colours are light in both themes.
+ * The card is the app's own, as every other choice is: a quiet tile, and the chosen one filled
+ * with the text's colour. A character's colour is kept to its face, which is small, and is
+ * muted there for as long as the character is one among many: with twenty of them side by side,
+ * twenty colours at full strength would be all anyone saw. The one that answers has its colour
+ * whole, so the eye finds it by that as well as by the card.
  *
  * A name over one line: cards side by side then have their names on one line and their sayings
  * on the next. The sayings are picked short enough to fit, see the `style_*_sample` strings; one
  * that does not is cut rather than let it push the card wider.
  *
- * @param colour whose colour the card has, and [emblem] what its ball wears: for one of the
+ * @param colour whose colour the face has, and [emblem] what its ball wears: for one of the
  * app's own both are the character itself, and for one the user made, what they picked.
  */
 @Composable
@@ -578,49 +592,33 @@ private fun StyleCard(
     onEdit: (() -> Unit)? = null
 ) {
     val scheme = MaterialTheme.colorScheme
-    val own = shareColor(colour)
     // The choice arrives on one card as it leaves another: ground and ink pass into each other,
-    // and nothing of either card moves but the face, which comes forward a little.
+    // the face takes its colour, and nothing of either card moves.
     val ground by animateColorAsState(
-        targetValue = if (chosen) own else own.copy(alpha = if (scheme.isDark) CARD_TINT_DARK else CARD_TINT_LIGHT),
+        targetValue = if (chosen) scheme.onSurface else scheme.onSurface.copy(alpha = TILE_ALPHA),
         animationSpec = choiceTween(),
         label = "card ground"
     )
     val ink by animateColorAsState(
-        targetValue = if (chosen) ShareInk else scheme.onSurface,
+        targetValue = if (chosen) scheme.surface else scheme.onSurface,
         animationSpec = choiceTween(),
         label = "card ink"
     )
     val arrived by animateFloatAsState(if (chosen) 1f else 0f, choiceTween(), label = "card chosen")
-    // The light of a touch is the ink's: on a card in its own colour the sheet's would not show.
+    // The light of a touch is the ink's: on the chosen card the page's own would not show.
     CompositionLocalProvider(LocalContentColor provides ink) {
         Box(
             modifier = modifier
                 .clip(CardShape)
-                // Under the colour, the tile every choice in the app stands on: the palest of the
-                // colours would otherwise leave a card with no edge on a pale sheet.
-                .background(scheme.onSurface.copy(alpha = CARD_BASE_ALPHA * (1f - arrived)))
                 .background(ground)
                 .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
         ) {
             Row(
                 modifier = Modifier.padding(start = CARD_INSET, top = CARD_INSET, end = CARD_END, bottom = CARD_INSET),
-                horizontalArrangement = Arrangement.spacedBy(CARD_INSET),
+                horizontalArrangement = Arrangement.spacedBy(CARD_GAP),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(CARD_FACE)
-                        .graphicsLayer {
-                            val grown = 1f + FACE_GROWTH * arrived
-                            scaleX = grown
-                            scaleY = grown
-                        }
-                        .clip(ButtonShape)
-                        .background(own)
-                ) {
-                    CharacterBall(emblem = emblem, size = CARD_FACE)
-                }
+                CharacterFace(colour = colour, emblem = emblem, size = CARD_FACE, vivid = { arrived })
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = title,
@@ -635,7 +633,7 @@ private fun StyleCard(
                         // Clear of the pencil, where there is one.
                         modifier = Modifier.padding(end = if (onEdit == null) 0.dp else EDIT_GLYPH + 4.dp),
                         style = MaterialTheme.typography.bodySmall,
-                        color = ink.copy(alpha = SAMPLE_ALPHA + (CHOSEN_SAMPLE_ALPHA - SAMPLE_ALPHA) * arrived),
+                        color = ink.copy(alpha = SAMPLE_ALPHA),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -650,7 +648,8 @@ private fun StyleCard(
                         .align(Alignment.BottomEnd)
                         .size(EDIT_TARGET)
                         .clip(CircleShape)
-                        .clickable(onClickLabel = edit, role = Role.Button, onClick = onEdit)
+                        // Named once, by what it says it is: said again as what a touch does, it is heard twice.
+                        .clickable(role = Role.Button, onClick = onEdit)
                         .semantics { contentDescription = edit },
                     contentAlignment = Alignment.Center
                 ) {
@@ -661,6 +660,109 @@ private fun StyleCard(
                         tint = ink
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The face of a character wherever it is shown small: the ball wearing what is theirs, on their
+ * colour, in a round. It is the drawing the shared card signs with, so a character looks the
+ * same on a card to choose, on the ball's page and in a chat.
+ *
+ * @param vivid how much of its colour the face has, from 0, muted as one among many, to 1, the
+ * colour whole: read while drawing, so a face can take its colour without anything composing again.
+ */
+@Composable
+internal fun CharacterFace(
+    colour: Magic8BallPersonality,
+    emblem: Magic8BallPersonality,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    vivid: () -> Float = { 1f }
+) {
+    val whole = shareColor(colour)
+    val muted = remember(whole) { lerp(whole, FACE_NEUTRAL, FACE_MUTING) }
+    // A line round it, barely there: the palest of the colours has an edge on a pale card too.
+    val edge = ShareInk.copy(alpha = FACE_EDGE_ALPHA)
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape)
+            .drawBehind { drawRect(lerp(muted, whole, vivid())) }
+            .border(1.dp, edge, CircleShape)
+    ) {
+        CharacterBall(emblem = emblem, size = size)
+    }
+}
+
+/**
+ * Who answers now, under the ball: a disc as the buttons at the top of the page are, a size up
+ * since it is the one thing to do down here, with the face of who answers in it and under it
+ * their name, with the mark of something that opens. One touch leads to everyone else. When who
+ * answers changes, the one face passes into the other.
+ *
+ * @param named whether the name is written under the disc: beside another button it is not,
+ * and is then only said to whoever cannot see the face.
+ */
+@Composable
+internal fun CharacterButton(
+    name: String,
+    colour: Magic8BallPersonality,
+    emblem: Magic8BallPersonality,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    named: Boolean = true
+) {
+    val said = stringResource(R.string.character_now, name)
+    val touch = remember { MutableInteractionSource() }
+    val disc = if (named) WHO_DISC else WHO_DISC_BESIDE
+    Column(
+        // One thing to touch and one thing said: the disc lights up, and the name is its name.
+        modifier = modifier
+            .clickable(
+                interactionSource = touch,
+                indication = null,
+                onClickLabel = stringResource(R.string.styles_subtitle),
+                role = Role.Button,
+                onClick = onClick
+            )
+            .semantics(mergeDescendants = true) { contentDescription = said },
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(disc)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
+                .indication(touch, PressHighlight),
+            contentAlignment = Alignment.Center
+        ) {
+            Crossfade(targetState = colour to emblem, animationSpec = choiceTween(), label = "who answers") { (colour, emblem) ->
+                CharacterFace(colour = colour, emblem = emblem, size = disc * WHO_FACE_SHARE)
+            }
+        }
+        if (named) {
+            Row(
+                modifier = Modifier.clearAndSetSemantics {},
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = name,
+                    modifier = Modifier.widthIn(max = WHO_NAME_WIDEST),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Icon(
+                    painter = painterResource(R.drawable.ic_expand_more),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -730,7 +832,7 @@ private const val HANDLE_ALPHA = 0.3f
 private val STYLE_CARD_WIDTH = 196.dp
 
 /** How much of the sheet's width a card takes, the widest it gets, and the least of the next one that shows. */
-private const val STYLE_CARD_SHARE = 0.54f
+private const val STYLE_CARD_SHARE = 0.5f
 private val STYLE_CARD_WIDEST = 260.dp
 private val STYLE_CARD_PEEK = 88.dp
 
@@ -746,23 +848,30 @@ private const val STYLE_ROWS = 2
 
 /** The pencil on a card of the user's own, and the room round it that takes the touch. */
 private val EDIT_GLYPH = 18.dp
-private val EDIT_TARGET = 44.dp
+private val EDIT_TARGET = 48.dp
 private const val MAX_CARD_GROWTH = 1.5f
 
-/** The face on a card, the room between it and the card's edge, and the room after the words. */
-private val CARD_FACE = 44.dp
+/** The face on a card, the room between it and the card's edge and its words, and the room after the words. */
+private val CARD_FACE = 40.dp
 private val CARD_INSET = 8.dp
+private val CARD_GAP = 10.dp
 private val CARD_END = 14.dp
 
-/** How much of its own colour a card that is not chosen has in it, on a dark ground and on a light one. */
-private const val CARD_TINT_DARK = 0.16f
-private const val CARD_TINT_LIGHT = 0.3f
+/** Who answers, under the ball: the disc, how much of it the face takes, and the longest name shown whole. */
+private val WHO_DISC = 56.dp
+private val WHO_DISC_BESIDE = 48.dp
+private const val WHO_FACE_SHARE = 0.68f
+private val WHO_NAME_WIDEST = 200.dp
 
-/** How much of the text's colour lies under a card's own, while it is not chosen. */
-private const val CARD_BASE_ALPHA = 0.05f
+/** How strong the place of a face that is still on its way. */
+private const val PLACE_FACE_ALPHA = 0.14f
 
-/** What a chosen card's second line keeps of its ink: more than elsewhere, to read on the strongest colours. */
-private const val CHOSEN_SAMPLE_ALPHA = 0.8f
+/**
+ * What a face's colour is drawn towards while it is one among many, and how far: a cool grey
+ * of the colours' own lightness, so the ball on it reads as before and only the colour is less.
+ */
+private val FACE_NEUTRAL = Color(0xFFC6CCD4)
+private const val FACE_MUTING = 0.55f
 
-/** How much the face of the chosen card grows: just enough to be seen arriving. */
-private const val FACE_GROWTH = 0.06f
+/** The line round a face. */
+private const val FACE_EDGE_ALPHA = 0.14f

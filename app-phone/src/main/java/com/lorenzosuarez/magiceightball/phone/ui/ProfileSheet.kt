@@ -448,7 +448,8 @@ internal fun ProfileContent(
             onClick = onSecondary,
             modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp).fillMaxWidth().heightIn(min = 48.dp),
             enabled = !busy,
-            shape = ButtonShape
+            shape = ButtonShape,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.sheetAction)
         ) {
             Text(
                 text = stringResource(if (firstTime) R.string.profile_not_now else R.string.action_cancel),

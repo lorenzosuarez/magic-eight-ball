@@ -309,7 +309,8 @@ internal fun PremiumContent(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
                 enabled = !busy,
-                shape = ButtonShape
+                shape = ButtonShape,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.sheetAction)
             ) {
                 Text(
                     text = stringResource(if (held) R.string.action_close else R.string.action_not_now),

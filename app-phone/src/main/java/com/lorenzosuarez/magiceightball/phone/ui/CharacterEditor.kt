@@ -410,7 +410,8 @@ internal fun CharacterEditorContent(
             onClick = onCancel,
             modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp).fillMaxWidth().heightIn(min = 48.dp),
             enabled = !busy,
-            shape = ButtonShape
+            shape = ButtonShape,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.sheetAction)
         ) {
             Text(stringResource(R.string.action_cancel), textAlign = TextAlign.Center)
         }
@@ -516,7 +517,7 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .fadingRow(rememberScrollState(start))
+                .fadingRow(rememberScrollState(start), PICK_EDGE)
                 .padding(start = PICK_EDGE)
                 .selectableGroup()
         ) {
@@ -582,7 +583,7 @@ private fun EmblemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .fadingRow(rememberScrollState(start))
+                .fadingRow(rememberScrollState(start), PICK_EDGE)
                 .padding(horizontal = PICK_EDGE)
                 .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(EMBLEM_GAP)

@@ -547,7 +547,7 @@ internal fun Section(title: String, rows: @Composable () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(CardShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .background(MaterialTheme.colorScheme.pageCard)
     ) {
         rows()
     }

@@ -3,6 +3,7 @@
     <string name="app_name" translatable="false">Magic AI Ball</string>
 
     <!-- The one line under the ball -->
+    <string name="character_now">%1$s answers</string>
     <string name="hint_hold">Tap or shake to ask.\nHold to speak.</string>
     <string name="hint_tap">Tap or shake to ask</string>
     <string name="hint_listening">Listening…</string>

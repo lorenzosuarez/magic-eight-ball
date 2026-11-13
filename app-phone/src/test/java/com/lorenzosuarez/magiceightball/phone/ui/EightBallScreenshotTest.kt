@@ -1,9 +1,16 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.Profile
+import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import java.time.LocalDate
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
@@ -804,6 +811,45 @@ class EightBallScreenshotTest {
         )
     }
 
+    /** The ball's page at rest where it is tightest: a small phone, a large font, a run of days to say. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_ask_large_font() = capture(
+        "phone_95_small_phone_ask_portuguese_large_font",
+        EightBallUiState(settings = UserSettings(language = AppLanguage.PORTUGUESE), streakDays = 12),
+        fontScale = 1.5f
+    )
+
+    /** And at a party there: whose turn it is, how to ask, and two buttons under the ball. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_party_large_font() = capture(
+        "phone_96_small_phone_party_large_font",
+        EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH, partyNames = listOf("Ana", "Beto", "Caro")),
+            turn = 1
+        ),
+        fontScale = 1.5f
+    )
+
+    /** One of the user's own answering: its name and its look on the pill, at the longest a name gets. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_ask_yours_longest_name_dark() = capture(
+        "phone_97_ask_yours_longest_name_dark",
+        EightBallUiState(
+            settings = UserSettings(
+                language = AppLanguage.SPANISH,
+                personality = Magic8BallPersonality.CUSTOM,
+                customCharacter = YOURS[2]
+            ),
+            config = AppConfig(accountEnabled = true),
+            account = AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"),
+            profile = ProfileState.Present(Profile("Lorena", LocalDate.of(1990, 3, 12))),
+            characters = YOURS
+        )
+    )
+
     @Test
     fun phone_streak_spanish() = capture(
         "phone_30_streak_spanish",
@@ -1144,6 +1190,50 @@ class EightBallScreenshotTest {
             .let { it.copy(config = it.config.copy(premiumEnabled = true)) },
         1f
     )
+
+    /** A sheet over the page it came up from, under the dimming a sheet brings: the two are told apart at a glance. */
+    @Test
+    fun phone_sheet_over_page_light() = captureSheetOverPage("phone_98_sheet_over_page_light", dark = false)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_sheet_over_page_dark() = captureSheetOverPage("phone_99_sheet_over_page_dark", dark = true)
+
+    private fun captureSheetOverPage(name: String, dark: Boolean) = captureRoboImage(filePath = path(name)) {
+        MagicEightBallPhoneTheme(dark = dark) {
+            ProvideAppLanguage(AppLanguage.SPANISH) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Surface(color = MaterialTheme.colorScheme.pageGround) {
+                        SettingsContent(
+                            state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), aiAnswersAvailable = true),
+                            onLanguageSelected = {},
+                            onPersonalitySelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {}
+                        )
+                    }
+                    // The dimming Material draws behind a sheet.
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)))
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                        color = MaterialTheme.colorScheme.sheetGround
+                    ) {
+                        PremiumContent(
+                            price = "0,99 €",
+                            terms = stringResource(R.string.premium_terms),
+                            wanted = PremiumFor.EVERYTHING,
+                            onUpgrade = {},
+                            onNotNow = {},
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     private fun capturePremium(
         name: String,
