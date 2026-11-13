@@ -1,0 +1,286 @@
+package com.lorenzosuarez.magiceightball.phone.ui
+
+import android.app.Application
+import android.content.pm.ActivityInfo
+import androidx.activity.ComponentActivity
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ApplicationProvider
+import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.CustomCharacter
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
+import com.example.magiceightball.core.domain.model.UserSettings
+import com.lorenzosuarez.magiceightball.phone.EightBallUiState
+import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
+import com.lorenzosuarez.magiceightball.phone.account.Profile
+import com.lorenzosuarez.magiceightball.phone.account.ProfileState
+import com.lorenzosuarez.magiceightball.phone.config.AppConfig
+import java.time.LocalDate
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+
+/** Making a character of one's own, as the user meets it: from "Create" to the one that answers. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], application = Application::class, qualifiers = "w360dp-h2400dp-xhdpi")
+class CharacterEditorTest {
+
+    private val compose = createComposeRule()
+
+    /** See [HistoryPageTest]: the rule's empty activity is declared to Robolectric here. */
+    @get:Rule
+    val rules: RuleChain = RuleChain
+        .outerRule(
+            object : ExternalResource() {
+                override fun before() {
+                    val context = ApplicationProvider.getApplicationContext<Application>()
+                    shadowOf(context.packageManager).addOrUpdateActivity(
+                        ActivityInfo().apply {
+                            packageName = context.packageName
+                            name = ComponentActivity::class.java.name
+                            theme = android.R.style.Theme_Material_NoActionBar
+                        }
+                    )
+                }
+            }
+        )
+        .around(compose)
+
+    private fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
+
+    private fun showEditor(draft: CharacterDraft, isNew: Boolean = true, onSave: (String, String) -> Unit = { _, _ -> }, onDelete: (() -> Unit)? = null) =
+        compose.setContent {
+            MagicEightBallPhoneTheme {
+                ProvideAppLanguage(AppLanguage.SPANISH) {
+                    CharacterEditorContent(
+                        draft = draft,
+                        isNew = isNew,
+                        busy = false,
+                        trouble = null,
+                        onSave = onSave,
+                        onCancel = {},
+                        onDelete = onDelete
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun `a character is saved once it has a name and something said of it, with the look picked for it`() {
+        val draft = CharacterDraft()
+        val saved = mutableListOf<Pair<String, String>>()
+        showEditor(draft, onSave = { name, description -> saved += name to description })
+        compose.onNodeWithText("Guardar").assertIsNotEnabled()
+        // Before the button, and said in full: what saving it sends.
+        compose.onNodeWithText("El nombre y la descripción se envían a Gemini, de Google, cuando este personaje responde. No escribas nada personal.")
+            .assertIsDisplayed()
+
+        compose.onNodeWithText("Nombre").performTextInput("Capitán Nemo")
+        compose.onNodeWithText("Guardar").assertIsNotEnabled()
+        compose.onNodeWithText("¿Cómo responde?").performTextInput("ok")
+        compose.onNodeWithText("Guardar").assertIsNotEnabled()
+        // Typed on after what is there: a few words more, and it says something.
+        compose.onNodeWithText("ok").performTextInput(", pero gruñón como el mar ")
+        // The colour of one of the app's characters, and what another wears: the first of each name is the colour.
+        compose.onAllNodesWithContentDescription("Pirata")[0].performScrollTo().performClick()
+        compose.onAllNodesWithContentDescription("Gato")[1].performScrollTo().performClick()
+
+        compose.onNodeWithText("Guardar").assertIsEnabled().performClick()
+        assertEquals(listOf("Capitán Nemo" to "ok, pero gruñón como el mar"), saved)
+        assertEquals(Magic8BallPersonality.PIRATE, draft.colour)
+        assertEquals(Magic8BallPersonality.CAT, draft.emblem)
+        // The card follows what is typed.
+        compose.onNodeWithText("— Capitán Nemo").assertIsDisplayed()
+    }
+
+    @Test
+    fun `what is typed is kept to a name's length and a description's, and a name to one line`() {
+        val draft = CharacterDraft()
+        draft.typeName("Capitán\nNemo el del fondo del mar")
+        draft.typeDescription("a".repeat(400))
+
+        assertEquals("Capitán Nemo el ", draft.name)
+        assertEquals(CustomCharacter.MAX_DESCRIPTION_LENGTH, draft.descriptionLength)
+        assertEquals("Capitán Nemo el", draft.nameToSave)
+        assertNull(CharacterDraft().nameToSave)
+        // One kept longer than it should be is cut as it is opened, and counted as cut.
+        assertEquals(CustomCharacter.MAX_DESCRIPTION_LENGTH, CharacterDraft(NEMO.copy(description = "b".repeat(300))).descriptionLength)
+    }
+
+    @Test
+    fun `one that exists opens on what it is, and can be deleted from there`() {
+        var asked = 0
+        showEditor(CharacterDraft(NEMO), isNew = false, onDelete = { asked++ })
+
+        compose.onNodeWithText("Tu personaje").assertIsDisplayed()
+        compose.onNodeWithText("Capitán Nemo").assertIsDisplayed()
+        compose.onNodeWithText(NEMO.description).assertIsDisplayed()
+        compose.onNodeWithText("Guardar").assertIsEnabled()
+        compose.onNodeWithText("Eliminar personaje").performScrollTo().performClick()
+        assertEquals(1, asked)
+    }
+
+    @Test
+    fun `a new one has nothing to delete`() {
+        showEditor(CharacterDraft())
+
+        compose.onNodeWithText("Nuevo personaje").assertIsDisplayed()
+        assertEquals(0, count("Eliminar personaje"))
+    }
+
+    // ---- from the page of options
+
+    private var state by mutableStateOf(EightBallUiState())
+    private val chosen = mutableListOf<CustomCharacter>()
+    private val saved = mutableListOf<String?>()
+    private var signIns = 0
+
+    private fun showOptions(account: AccountState, characters: List<CustomCharacter>?, profile: ProfileState = ProfileState.Present(LORENA)) {
+        state = EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH),
+            config = AppConfig(accountEnabled = true),
+            account = account,
+            profile = profile,
+            characters = characters
+        )
+        compose.setContent {
+            MagicEightBallPhoneTheme {
+                ProvideAppLanguage(AppLanguage.SPANISH) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        SettingsContent(
+                            state = state,
+                            onLanguageSelected = {},
+                            onPersonalitySelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {},
+                            onSignIn = {
+                                signIns++
+                                AccountOutcome.FAILED
+                            },
+                            onChooseCharacter = { chosen += it },
+                            onSaveCharacter = { id, _, _, _, _ ->
+                                saved += id
+                                CharacterSave.Failed
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        compose.onNodeWithText("Ver todos").performScrollTo().performClick()
+    }
+
+    @Test
+    fun `whoever has no account is shown the way to one, and told when it led nowhere`() {
+        showOptions(AccountState.SignedOut, characters = null)
+        assertEquals(0, count("Tuyos"))
+
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText("Los personajes propios van con una cuenta").assertIsDisplayed()
+        assertEquals(0, count("Nuevo personaje"))
+
+        // The page's own button is under the sheet: the dialog's is the later of the two.
+        compose.onAllNodesWithText("Continuar con Google")[1].performClick()
+        compose.waitForIdle()
+        assertEquals(1, signIns)
+        compose.onNodeWithText("No se pudo entrar. Revisa tu conexión e inténtalo de nuevo").assertIsDisplayed()
+    }
+
+    @Test
+    fun `signed in, create opens on a new character, and yours are listed first with the way to correct each`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO))
+        compose.onNodeWithText("Tuyos").assertIsDisplayed()
+
+        compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
+        compose.onNodeWithText("Tu personaje").assertIsDisplayed()
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+        compose.waitForIdle()
+        // Saved over itself, by its slot; and what could not be saved is said by the button.
+        assertEquals(listOf<String?>("1"), saved)
+        compose.onNodeWithText("No se pudo guardar. Revisa tu conexión e inténtalo de nuevo").assertIsDisplayed()
+    }
+
+    @Test
+    fun `one of yours is chosen with a touch`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO))
+
+        compose.onNodeWithText("Capitán Nemo").performClick()
+        compose.waitForIdle()
+
+        assertEquals(listOf(NEMO), chosen)
+    }
+
+    @Test
+    fun `with five there is no room for another, and with the account unheard of nothing is made on a guess`() {
+        showOptions(SIGNED_IN, characters = (1..5).map { NEMO.copy(id = it.toString(), name = "Nemo $it") })
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText("Ya tienes cinco personajes").assertIsDisplayed()
+        compose.onNodeWithText("Entendido").performClick()
+
+        state = state.copy(characters = null)
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText("No se pudo leer tu cuenta").assertIsDisplayed()
+        assertEquals(0, count("Nuevo personaje"))
+    }
+
+    @Test
+    fun `where accounts are not offered there is no create, and nobody's characters`() {
+        state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), characters = listOf(NEMO), account = SIGNED_IN)
+        compose.setContent {
+            MagicEightBallPhoneTheme {
+                ProvideAppLanguage(AppLanguage.SPANISH) {
+                    SettingsContent(
+                        state = state,
+                        onLanguageSelected = {},
+                        onPersonalitySelected = {},
+                        onAiAnswersChange = {},
+                        onVoiceQuestionsChange = {},
+                        onAllowMicrophone = {},
+                        onShareApp = {}
+                    )
+                }
+            }
+        }
+        compose.onNodeWithText("Ver todos").performScrollTo().performClick()
+
+        assertEquals(0, compose.onAllNodesWithContentDescription("Crear un personaje").fetchSemanticsNodes().size)
+        assertEquals(0, count("Tuyos"))
+    }
+
+    private companion object {
+        val SIGNED_IN = AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com")
+        val LORENA = Profile("Lorena", LocalDate.of(1990, 3, 12))
+        val NEMO = CustomCharacter(
+            id = "1",
+            name = "Capitán Nemo",
+            description = "Un capitán gruñón que todo lo compara con el mar.",
+            colour = Magic8BallPersonality.PIRATE,
+            emblem = Magic8BallPersonality.CAT
+        )
+    }
+}

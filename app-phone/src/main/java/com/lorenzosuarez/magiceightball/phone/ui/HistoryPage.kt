@@ -197,7 +197,8 @@ private fun HistoryRow(
             Text(
                 text = listOfNotNull(
                     timeAgo(entry.askedAtMillis, now),
-                    entry.style?.let { stringResource(it.labelRes()) },
+                    // One of the user's own under the name it had, which is what was kept.
+                    entry.customName ?: entry.style?.let { stringResource(it.labelRes()) },
                     if (entry.fromAi) stringResource(R.string.source_ai) else null
                 ).joinToString(" \u00b7 "),
                 style = MaterialTheme.typography.labelMedium,

@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -87,8 +89,12 @@ internal fun ShareCard(
     visible: Boolean = false,
     remark: String? = null,
     styleLabel: String? = null,
-    personality: Magic8BallPersonality = Magic8BallPersonality.NEUTRAL
+    personality: Magic8BallPersonality = Magic8BallPersonality.NEUTRAL,
+    look: CustomCharacter? = null
 ) {
+    // A character of the user's own has the colour and wears the accessory it borrowed.
+    val colour = look?.colour ?: personality
+    val emblem = look?.emblem ?: personality
     CompositionLocalProvider(LocalDensity provides Density(SHARE_DENSITY, fontScale = 1f)) {
         MagicEightBallPhoneTheme(dark = false) {
             Box(
@@ -100,12 +106,12 @@ internal fun ShareCard(
                         if (visible) drawLayer(layer)
                     }
                     .clipToBounds()
-                    .background(shareColor(personality))
+                    .background(shareColor(colour))
             ) {
                 // Anything written under the answer needs the room: the ball steps back into the corner for it.
                 val reading = remark != null && remark.length > SHARE_LONG_REMARK
                 FlatBall(
-                    personality = personality,
+                    personality = emblem,
                     modifier = Modifier
                         .offset(x = SHARE_BALL_LEFT, y = SHARE_BALL_TOP)
                         .requiredSize(SHARE_BALL_SIZE)
@@ -180,7 +186,10 @@ internal fun ShareCard(
                                 fontSize = 24.sp
                             ),
                             color = SHARE_INK,
-                            maxLines = 1
+                            // One line and never a second: a name too wide for it is cut short, not lost.
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     Spacer(Modifier.weight(1f))
@@ -213,6 +222,33 @@ private fun DrawScope.drawBubble() {
         Color.White
     )
 }
+
+/**
+ * The ball as the card draws it, wearing what [emblem] wears, in a square of [size]: for showing
+ * a look where one is picked. It is the card's own drawing at the card's own measures, brought
+ * to the size asked for, with room over and beside the ball for what it wears.
+ */
+@Composable
+internal fun CharacterBall(emblem: Magic8BallPersonality, size: Dp, modifier: Modifier = Modifier) {
+    val density = LocalDensity.current.density
+    Box(modifier = modifier.requiredSize(size).clipToBounds().clearAndSetSemantics {}) {
+        CompositionLocalProvider(
+            LocalDensity provides Density(density * (size / SHARE_BALL_SIZE) * BALL_IN_SQUARE, fontScale = 1f)
+        ) {
+            FlatBall(
+                personality = emblem,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(y = SHARE_BALL_SIZE * BALL_DROP)
+                    .requiredSize(SHARE_BALL_SIZE)
+            )
+        }
+    }
+}
+
+/** How much of its square the ball takes, and how far under the middle it sits, to leave the crown its room. */
+private const val BALL_IN_SQUARE = 0.6f
+private const val BALL_DROP = 0.16f
 
 /**
  * The ball with nothing but its two colours. It has one axis, tipped towards the words: what
@@ -503,6 +539,9 @@ private val SHARE_WIDTH = 360.dp
 private val SHARE_HEIGHT = 450.dp
 private val SHARE_MARGIN = 28.dp
 private val SHARE_INK = Color(0xFF12110D)
+
+/** The card's ink, for whatever shows a card's look elsewhere: the same in both themes. */
+internal val ShareInk = SHARE_INK
 
 /** Up to these many letters an answer is set at the largest and the middle size. */
 private const val SHARE_SHORT_ANSWER = 16

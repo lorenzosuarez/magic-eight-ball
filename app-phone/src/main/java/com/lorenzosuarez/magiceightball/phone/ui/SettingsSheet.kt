@@ -1,9 +1,13 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Icon
@@ -29,11 +33,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -85,7 +93,11 @@ internal fun SettingsContent(
     onSignIn: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onSignOut: () -> Unit = {},
     onDeleteAccount: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
-    onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED }
+    onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
+    onChooseCharacter: (CustomCharacter) -> Unit = {},
+    onSaveCharacter: suspend (String?, String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave =
+        { _, _, _, _, _ -> CharacterSave.Failed },
+    onDeleteCharacter: suspend (String) -> Boolean = { false }
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -99,12 +111,81 @@ internal fun SettingsContent(
         )
     }
     var browsingStyles by rememberSaveable { mutableStateOf(false) }
+    // Which character of the user's own is open in the editor: its slot, or [NEW] for one being made.
+    var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    var notice by rememberSaveable { mutableStateOf<CharactersNotice?>(null) }
+    val scope = rememberCoroutineScope()
+    val signedIn = state.account is AccountState.SignedIn
     if (browsingStyles) {
         StylesSheet(
             selected = state.settings.personality,
             hidden = state.config.hiddenStyles,
             onSelected = onPersonalitySelected,
-            onClose = { browsingStyles = false }
+            onClose = { browsingStyles = false },
+            // Offered wherever an account is: whoever has none yet is shown the way to one.
+            onCreate = if (state.offersAccount) {
+                {
+                    val kept = state.characters
+                    when {
+                        !signedIn -> notice = CharactersNotice.ACCOUNT
+                        !state.canMakeCharacters || kept == null -> notice = CharactersNotice.UNKNOWN
+                        kept.size >= CustomCharacter.MAX_COUNT -> notice = CharactersNotice.FULL
+                        else -> editing = NEW
+                    }
+                }
+            } else null,
+            yours = state.characters.orEmpty().takeIf { state.offersAccount && signedIn }.orEmpty(),
+            chosenOfYours = state.settings.customCharacter?.id,
+            onYoursSelected = onChooseCharacter,
+            onEditYours = { editing = it.id }
+        )
+    }
+    editing?.let { slot ->
+        val character = state.characters?.find { it.id == slot }
+        if (slot == NEW || character != null) {
+            CharacterEditorSheet(
+                character = character,
+                onSave = { name, description, colour, emblem -> onSaveCharacter(character?.id, name, description, colour, emblem) },
+                onDelete = character?.let { { onDeleteCharacter(it.id) } },
+                onClose = { editing = null }
+            )
+        } else {
+            // Gone while it was open, from here or from another device: there is nothing to correct.
+            LaunchedEffect(slot) { editing = null }
+        }
+    }
+    notice?.let { what ->
+        // The dialog is a window of its own: its texts are read here, in the app's language.
+        val title = stringResource(what.title)
+        val text = stringResource(what.text)
+        val go = stringResource(R.string.account_continue_google)
+        val later = stringResource(R.string.action_not_now)
+        val understood = stringResource(R.string.action_understood)
+        AlertDialog(
+            onDismissRequest = { notice = null },
+            title = { Text(title) },
+            text = { Text(text) },
+            confirmButton = {
+                if (what == CharactersNotice.ACCOUNT) {
+                    TextButton(
+                        onClick = {
+                            notice = null
+                            scope.launch {
+                                val outcome = onSignIn()
+                                // Backing out of Google's own question needs no telling.
+                                if (outcome != AccountOutcome.DONE && outcome != AccountOutcome.CANCELLED) {
+                                    notice = CharactersNotice.NO_SIGN_IN
+                                }
+                            }
+                        }
+                    ) { Text(go) }
+                } else {
+                    TextButton(onClick = { notice = null }) { Text(understood) }
+                }
+            },
+            dismissButton = if (what == CharactersNotice.ACCOUNT) {
+                { TextButton(onClick = { notice = null }) { Text(later) } }
+            } else null
         )
     }
     Column(
@@ -131,7 +212,8 @@ internal fun SettingsContent(
                 onSelected = onPersonalitySelected,
                 onSeeAll = { browsingStyles = true },
                 featured = state.config.featuredStyles,
-                hidden = state.config.hiddenStyles
+                hidden = state.config.hiddenStyles,
+                custom = state.settings.customCharacter
             )
             RowDivider()
             // The classic style never asks the AI service: the switch says so rather than promise it.
@@ -499,6 +581,24 @@ internal fun SettingText(
         }
     }
 }
+
+/** What making a character can run into before the editor opens, and how each is said. */
+internal enum class CharactersNotice(@StringRes val title: Int, @StringRes val text: Int) {
+    /** Nobody is signed in: the way to an account. */
+    ACCOUNT(R.string.characters_account_title, R.string.characters_account_text),
+
+    /** Signed in, and what is kept with the account has not been heard of. */
+    UNKNOWN(R.string.characters_unknown_title, R.string.characters_unknown_text),
+
+    /** Every slot is taken. */
+    FULL(R.string.characters_full_title, R.string.characters_full_text),
+
+    /** The way to an account was taken, and led nowhere. */
+    NO_SIGN_IN(R.string.characters_account_title, R.string.account_sign_in_failed)
+}
+
+/** What [SettingsContent] calls the editor open on nobody yet. */
+private const val NEW = ""
 
 /** Whether answers are being made for whoever is signed in: the AI service is asked, and they have a profile. */
 private val EightBallUiState.sendsProfile: Boolean

@@ -847,18 +847,184 @@ class EightBallScreenshotTest {
     }
 
     /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */
-    private fun captureStyles(name: String, language: AppLanguage, dark: Boolean, withCreate: Boolean = false) {
+    private fun captureStyles(
+        name: String,
+        language: AppLanguage,
+        dark: Boolean,
+        withCreate: Boolean = false,
+        yours: List<CustomCharacter> = emptyList(),
+        fontScale: Float = 1f
+    ) {
         captureRoboImage(filePath = path(name)) {
+            WithFontScale(fontScale) {
+                MagicEightBallPhoneTheme(dark = dark) {
+                    ProvideAppLanguage(language) {
+                        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                            StylesContent(
+                                // With characters of the user's own, the first of them is the one that answers.
+                                selected = if (yours.isEmpty()) Magic8BallPersonality.LOVESTRUCK else Magic8BallPersonality.CUSTOM,
+                                onSelected = {},
+                                onClose = {},
+                                onCreate = if (withCreate) ({}) else null,
+                                yours = yours,
+                                chosenOfYours = yours.firstOrNull()?.id
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** The sheet with the characters the user made up, first: as many as there can be, the longest names. */
+    @Test
+    fun phone_characters_yours_spanish() = captureStyles(
+        "phone_65_characters_yours_spanish",
+        AppLanguage.SPANISH,
+        dark = false,
+        withCreate = true,
+        yours = YOURS
+    )
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_characters_yours_dark() = captureStyles(
+        "phone_66_characters_yours_dark",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        yours = YOURS.take(2)
+    )
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_characters_yours_large_font() = captureStyles(
+        "phone_67_small_phone_characters_yours_large_font",
+        AppLanguage.SPANISH,
+        dark = false,
+        withCreate = true,
+        yours = YOURS,
+        fontScale = 1.5f
+    )
+
+    /** Making a character: nothing typed yet, the first colour, nothing worn. */
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun phone_character_new_spanish() =
+        captureEditor("phone_68_character_new_spanish", CharacterDraft(), AppLanguage.SPANISH, dark = false)
+
+    /** One that exists, being corrected, in the dark theme: the card and its picks stay light. */
+    @Test
+    @Config(qualifiers = "w432dp-h1200dp-night-400dpi")
+    fun phone_character_edit_dark() =
+        captureEditor("phone_69_character_edit_dark", CharacterDraft(YOURS[0]), AppLanguage.SPANISH, dark = true, isNew = false)
+
+    /** The worst case: a small phone, a large font, as much as can be typed, and a save that failed. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_VERY_TALL)
+    fun small_phone_character_portuguese_large_font() = captureEditor(
+        "phone_70_small_phone_character_portuguese_large_font",
+        CharacterDraft(
+            CustomCharacter(
+                id = "2",
+                name = "Dona Florinda XVI",
+                description = "Uma vizinha que sabe de tudo e não perdoa nada. ".repeat(6),
+                colour = Magic8BallPersonality.DRAMA,
+                emblem = Magic8BallPersonality.DETECTIVE
+            )
+        ),
+        AppLanguage.PORTUGUESE,
+        dark = false,
+        isNew = false,
+        failed = true,
+        fontScale = 1.5f
+    )
+
+    private fun captureEditor(
+        name: String,
+        draft: CharacterDraft,
+        language: AppLanguage,
+        dark: Boolean,
+        isNew: Boolean = true,
+        failed: Boolean = false,
+        fontScale: Float = 1f
+    ) = captureRoboImage(filePath = path(name)) {
+        WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                        StylesContent(selected = Magic8BallPersonality.LOVESTRUCK, onSelected = {}, onClose = {},
-                            onCreate = if (withCreate) ({}) else null
+                        CharacterEditorContent(
+                            draft = draft,
+                            isNew = isNew,
+                            busy = false,
+                            trouble = if (failed) stringResource(R.string.profile_save_failed) else null,
+                            onSave = { _, _ -> },
+                            onCancel = {},
+                            onDelete = if (isNew) null else ({}),
+                            modifier = Modifier.padding(top = 24.dp)
                         )
                     }
                 }
             }
         }
+    }
+
+    /** A character of the user's own on its card: the colour and the accessory it borrowed, and its name. */
+    @Test
+    fun share_card_of_a_character_of_the_user_s_own() = YOURS.forEach { character ->
+        captureRoboImage(filePath = path("phone_71_share_card_yours_${character.id}")) {
+            ShareCard(
+                question = "¿Me va a escribir esta noche?",
+                answer = "Ni con marea alta.",
+                layer = rememberGraphicsLayer(),
+                visible = true,
+                styleLabel = character.name,
+                personality = Magic8BallPersonality.CUSTOM,
+                look = character
+            )
+        }
+    }
+
+    /** Chosen: first in the row of the options, under its own name; and signing its answers. */
+    @Test
+    fun phone_settings_with_a_character_of_the_user_s_own() = captureWithSettings(
+        "phone_72_settings_yours_spanish",
+        EightBallUiState(
+            settings = UserSettings(
+                language = AppLanguage.SPANISH,
+                personality = Magic8BallPersonality.CUSTOM,
+                customCharacter = YOURS[0]
+            ),
+            aiAnswersAvailable = true
+        )
+    )
+
+    @Test
+    fun phone_answer_and_history_of_a_character_of_the_user_s_own() {
+        capture(
+            "phone_73_answer_yours_spanish",
+            EightBallUiState(
+                phase = BallPhase.Answered(
+                    id = 1,
+                    question = "¿Me va a escribir esta noche?",
+                    answer = AnswerText.Plain("Ni con marea alta.", fromAi = true),
+                    style = Magic8BallPersonality.CUSTOM,
+                    custom = YOURS[0]
+                ),
+                settings = UserSettings(language = AppLanguage.SPANISH)
+            )
+        )
+        capture(
+            "phone_74_history_yours_spanish",
+            EightBallUiState(
+                settings = UserSettings(language = AppLanguage.SPANISH),
+                history = listOf(
+                    HistoryEntry(2, "¿Me va a escribir?", "Ni con marea alta.", NOW - 20_000L, fromAi = true, style = Magic8BallPersonality.CUSTOM, customName = YOURS[0].name),
+                    HistoryEntry(1, "", "Es cierto.", NOW - 12 * MINUTE, fromAi = false)
+                )
+            ),
+            initialPage = HISTORY_PAGE
+        )
     }
 
     private fun capture(
@@ -943,6 +1109,12 @@ private const val SMALL_PHONE = "w360dp-h640dp-xhdpi"
 /** As wide as a small phone and as tall as it takes to see the whole of something that scrolls. */
 private const val SMALL_PHONE_TALL = "w360dp-h1500dp-xhdpi"
 
+/** Taller still, for what scrolls further. */
+private const val SMALL_PHONE_VERY_TALL = "w360dp-h2400dp-xhdpi"
+
+/** As wide as the phone, and tall enough to see the whole of a sheet that scrolls. */
+private const val PHONE_TALL = "w432dp-h1200dp-400dpi"
+
 /** 1200 x 1920 px, a 7-inch tablet. */
 private const val TABLET = "w600dp-h960dp-xhdpi"
 
@@ -970,6 +1142,15 @@ private val ANSWERED = EightBallUiState(
 private const val LONG_READING = "Cuatro tazas vacías y un mensaje a medio escribir no son un plan, corazón. Guarda el teléfono en el cajón de las bufandas, cena algo caliente y mañana, con la cabeza fresca, decides si de verdad vale tu desvelo."
 
 private val PROFILE = Profile("Lorena", LocalDate.of(1990, 3, 12))
+
+/** As many characters as an account can have, with names and descriptions as long as they come. */
+private val YOURS = listOf(
+    CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el fondo del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT),
+    CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.", Magic8BallPersonality.GRANDMA, Magic8BallPersonality.DETECTIVE),
+    CustomCharacter("3", "Wwwwwwwwwwwwwwww", "W".repeat(280), Magic8BallPersonality.ZOOMER, Magic8BallPersonality.DRAMA),
+    CustomCharacter("4", "Mi jefe", "Responde con frases de reunión.", Magic8BallPersonality.ROBOT, Magic8BallPersonality.NEUTRAL),
+    CustomCharacter("5", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.SARCASTIC, Magic8BallPersonality.THERAPIST)
+)
 
 private val LONG_ACCOUNT = AccountState.SignedIn(
     id = "1",
