@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -214,6 +217,16 @@ internal const val BAR_DISC_ALPHA = 0.1f
 
 /**
  * How long a choice takes to show where it was made, and to leave where it was, instead of
- * jumping: it has arrived before the light of the touch that made it has gone.
+ * jumping. Short: it is the answer to a touch, and an answer that takes its time reads as a
+ * screen that is slow.
  */
-internal const val CHOICE_MS = 200
+internal const val CHOICE_MS = 120
+
+/**
+ * How a choice arrives: at full speed from the frame of the touch, and settling. One pace for
+ * every card, tile and mark that is chosen, so that they all answer alike.
+ */
+internal fun <T> choiceTween(): TweenSpec<T> = tween(CHOICE_MS, easing = LinearOutSlowInEasing)
+
+/** How long a row takes to bring what was chosen into the middle of it. */
+internal const val ROW_GLIDE_MS = 220

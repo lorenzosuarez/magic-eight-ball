@@ -519,6 +519,9 @@ private fun <T> ChoiceRow(
     label: (T) -> Int,
     onSelected: (T) -> Unit
 ) {
+    // As on the cards of the characters: what was just touched is chosen in the frame of the
+    // touch, and follows what is saved whenever that changes.
+    var touched by remember(selected) { mutableStateOf(selected) }
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
         Text(
             text = title,
@@ -534,7 +537,7 @@ private fun <T> ChoiceRow(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             options.forEach { option ->
-                val chosen = option == selected
+                val chosen = option == touched
                 // As on the cards of the characters, right above: the choice passes from one
                 // tile to another, and nothing of either moves.
                 val ground by animateColorAsState(
@@ -543,19 +546,26 @@ private fun <T> ChoiceRow(
                     } else {
                         MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
                     },
-                    animationSpec = tween(CHOICE_MS),
+                    animationSpec = choiceTween(),
                     label = "tile ground"
                 )
                 val ink by animateColorAsState(
                     targetValue = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
-                    animationSpec = tween(CHOICE_MS),
+                    animationSpec = choiceTween(),
                     label = "tile ink"
                 )
                 Box(
                     modifier = Modifier
                         .clip(ButtonShape)
                         .background(ground)
-                        .selectable(selected = chosen, role = Role.RadioButton, onClick = { onSelected(option) })
+                        .selectable(
+                            selected = chosen,
+                            role = Role.RadioButton,
+                            onClick = {
+                                touched = option
+                                onSelected(option)
+                            }
+                        )
                         .heightIn(min = 48.dp)
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center

@@ -16,6 +16,9 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -187,6 +190,19 @@ class AccountSectionTest {
         account = LORENA
         compose.waitForIdle()
         compose.onNodeWithText("Lorena Suárez").assert(LOADING)
+    }
+
+    @Test
+    fun `a choice shows where it was touched at once, before it has been saved`() {
+        // Nothing here saves anything: what is chosen stays as it was, however long one waits.
+        show()
+        compose.onNodeWithText("Clásico").performScrollTo().performClick()
+        compose.onNodeWithText("Clásico").assertIsSelected()
+        compose.onNodeWithText("Sarcástico").assertIsNotSelected()
+
+        compose.onNodeWithText("English").performScrollTo().performClick()
+        compose.onNodeWithText("English").assertIsSelected()
+        compose.onNodeWithText("Español").assertIsNotSelected()
     }
 
     @Test

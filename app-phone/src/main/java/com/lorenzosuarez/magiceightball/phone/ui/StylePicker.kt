@@ -161,15 +161,19 @@ internal fun StyleRow(
     // Where each card starts and how wide it is, within the row.
     val spans = remember { mutableStateMapOf<Magic8BallPersonality, IntRange>() }
     var shown by remember { mutableStateOf(false) }
+    // What was just touched is shown as chosen in the frame of the touch: saving a choice and
+    // hearing it back takes a moment, and a card that waited for it would answer late. It
+    // follows what is saved whenever that changes, from here or from anywhere else.
+    var touched by remember(selected) { mutableStateOf(selected) }
     // The chosen style is brought to the middle of the row, with its neighbours on either side:
     // at once when the row first shows, so it is simply there, and gliding after every choice,
     // so a card touched at the edge comes fully into view.
-    val span = spans[selected]
-    LaunchedEffect(selected, span, scroll.viewportSize) {
+    val span = spans[touched]
+    LaunchedEffect(touched, span, scroll.viewportSize) {
         if (span == null || scroll.viewportSize == 0) return@LaunchedEffect
         val middle = (span.first + span.last) / 2 - scroll.viewportSize / 2
         val target = middle.coerceIn(0, scroll.maxValue)
-        if (shown) scroll.animateScrollTo(target) else scroll.scrollTo(target)
+        if (shown) scroll.animateScrollTo(target, tween(ROW_GLIDE_MS)) else scroll.scrollTo(target)
         shown = true
     }
     val edge = with(LocalDensity.current) { ROW_EDGE.roundToPx() }
@@ -197,8 +201,11 @@ internal fun StyleRow(
                     title = own?.name ?: stringResource(style.labelRes()),
                     // What the user wrote of it is theirs and long: a line of the app's says whose words it speaks in.
                     sample = stringResource(style.sampleRes()),
-                    chosen = style == selected,
-                    onClick = { onSelected(style) },
+                    chosen = style == touched,
+                    onClick = {
+                        touched = style
+                        onSelected(style)
+                    },
                     // As wide as what it says: in a row that scrolls, nothing has to be cut short.
                     modifier = Modifier
                         .widthIn(min = STYLE_CARD_MIN_WIDTH)
@@ -329,6 +336,12 @@ internal fun StylesContent(
     yoursPlaces: Int = 0,
     creating: Boolean = false
 ) {
+    // As in the row on the options page: what was just touched is chosen in the frame of the
+    // touch, and follows what is saved whenever that changes. One of the user's own is told
+    // from the others by its slot.
+    var touched by remember(selected, chosenOfYours) {
+        mutableStateOf(selected to chosenOfYours.takeIf { selected == Magic8BallPersonality.CUSTOM })
+    }
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val headerTop by animateDpAsState(if (full) statusBar else 0.dp, label = "sheet header")
     val handleAlpha by animateFloatAsState(if (full) 0f else 1f, label = "sheet handle")
@@ -438,8 +451,11 @@ internal fun StylesContent(
                         StyleCard(
                             title = character.name,
                             sample = stringResource(R.string.style_custom_sample),
-                            chosen = selected == Magic8BallPersonality.CUSTOM && character.id == chosenOfYours,
-                            onClick = { onYoursSelected(character) },
+                            chosen = touched == Magic8BallPersonality.CUSTOM to character.id,
+                            onClick = {
+                                touched = Magic8BallPersonality.CUSTOM to character.id
+                                onYoursSelected(character)
+                            },
                             modifier = Modifier.width(cardWidth).fillMaxHeight(),
                             onEdit = { onEditYours(character) }
                         )
@@ -477,8 +493,11 @@ internal fun StylesContent(
                                 StyleCard(
                                     title = stringResource(style.labelRes()),
                                     sample = stringResource(style.sampleRes()),
-                                    chosen = style == selected,
-                                    onClick = { onSelected(style) },
+                                    chosen = touched == style to null,
+                                    onClick = {
+                                        touched = style to null
+                                        onSelected(style)
+                                    },
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -538,12 +557,12 @@ private fun StyleCard(
         } else {
             MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
         },
-        animationSpec = tween(CHOICE_MS),
+        animationSpec = choiceTween(),
         label = "card ground"
     )
     val ink by animateColorAsState(
         targetValue = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
-        animationSpec = tween(CHOICE_MS),
+        animationSpec = choiceTween(),
         label = "card ink"
     )
     Box(

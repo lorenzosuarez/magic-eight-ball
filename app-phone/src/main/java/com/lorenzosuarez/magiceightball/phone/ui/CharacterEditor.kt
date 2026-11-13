@@ -450,11 +450,11 @@ private fun CharacterPreview(draft: CharacterDraft) {
     val lift by animateDpAsState(
         targetValue = if (draft.emblem == Magic8BallPersonality.NEUTRAL) PREVIEW_BARE_LIFT else 0.dp,
         // In step with the cross-fade of what it wears: neither is still going when the other is done.
-        animationSpec = tween(CHOICE_MS),
+        animationSpec = choiceTween(),
         label = "preview ball"
     )
     // The card follows a pick as the mark of the pick arrives: one colour passes into the next.
-    val ground by animateColorAsState(shareColor(draft.colour), tween(CHOICE_MS), label = "preview colour")
+    val ground by animateColorAsState(shareColor(draft.colour), choiceTween(), label = "preview colour")
     Row(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -525,7 +525,7 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
                     val picked = look == chosen
                     val label = stringResource(look.labelRes())
                     val touch = remember { MutableInteractionSource() }
-                    val mark by animateFloatAsState(if (picked) 1f else 0f, tween(CHOICE_MS), label = "colour picked")
+                    val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "colour picked")
                     // The touch takes the dot and the gap after it: the dots stay where the edge is.
                     // The light of the touch is the dot's alone: to the eye, it is what was touched.
                     Box(
@@ -578,7 +578,7 @@ private fun EmblemRow(
         val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
         val start = with(LocalDensity.current) { ((tile + EMBLEM_GAP) * (at - 1).coerceAtLeast(0)).roundToPx() }
         // The tiles take the colour picked as the card over them does, and with it.
-        val ground by animateColorAsState(shareColor(colour), tween(CHOICE_MS), label = "emblem ground")
+        val ground by animateColorAsState(shareColor(colour), choiceTween(), label = "emblem ground")
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -592,7 +592,7 @@ private fun EmblemRow(
                     val picked = look == chosen
                     val label = stringResource(if (look == Magic8BallPersonality.NEUTRAL) R.string.character_no_emblem else look.labelRes())
                     val touch = remember { MutableInteractionSource() }
-                    val mark by animateFloatAsState(if (picked) 1f else 0f, tween(CHOICE_MS), label = "emblem picked")
+                    val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
                     // Picked: a ring at the tile's own edge, in the text's colour, and the tile a little
                     // inside it. A ring drawn on the tile would be lost on the lighter colours. The
                     // ring comes as the tile draws in from it, and goes as the tile fills out again.
