@@ -513,35 +513,58 @@ class EightBallScreenshotTest {
     /** The worst case: a small phone, a large font, and nobody signed in. */
     @Test
     @Config(qualifiers = SMALL_PHONE)
-    fun small_phone_account_large_font() {
-        val state = accountState(AccountState.SignedOut)
-        captureRoboImage(filePath = path("phone_51_small_phone_account_large_font")) {
-            WithFontScale(1.5f) {
-                MagicEightBallPhoneTheme {
-                    ProvideAppLanguage(state.settings.language) {
-                        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                            SettingsContent(
-                                state = state,
-                                onLanguageSelected = {},
-                                onPersonalitySelected = {},
-                                onAiAnswersChange = {},
-                                onVoiceQuestionsChange = {},
-                                onAllowMicrophone = {},
-                                onShareApp = {}
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    fun small_phone_account_large_font() =
+        captureAccountOptions("phone_51_small_phone_account_large_font", accountState(AccountState.SignedOut), 1.5f)
 
     @Test
     @Config(qualifiers = SMALL_PHONE)
-    fun small_phone_account_signed_in_large_font() {
-        val state = accountState(LONG_ACCOUNT)
-        captureRoboImage(filePath = path("phone_52_small_phone_account_signed_in_large_font")) {
-            WithFontScale(1.5f) {
+    fun small_phone_account_signed_in_large_font() =
+        captureAccountOptions("phone_52_small_phone_account_signed_in_large_font", accountState(LONG_ACCOUNT), 1.5f)
+
+    /** The button's longest label, which is the Portuguese one. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_account_portuguese_large_font() = captureAccountOptions(
+        "phone_54_small_phone_account_portuguese_large_font",
+        accountState(AccountState.SignedOut, AppLanguage.PORTUGUESE),
+        1.5f
+    )
+
+    /** The largest type the system offers: the button's label takes a second line. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_account_largest_font() =
+        captureAccountOptions("phone_55_small_phone_account_largest_font", accountState(AccountState.SignedOut), 2f)
+
+    /** The account, opened: a name and an address as long as they come, in full. */
+    @Test
+    fun phone_account_sheet_spanish() =
+        captureAccountSheet("phone_56_account_sheet_spanish", LONG_ACCOUNT, dark = false)
+
+    /** A deletion that failed, said under the row that was touched. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_account_sheet_delete_failed_dark() = captureAccountSheet(
+        "phone_57_account_sheet_delete_failed_dark",
+        AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"),
+        dark = true,
+        failed = true
+    )
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_account_sheet_large_font() = captureAccountSheet(
+        "phone_58_small_phone_account_sheet_large_font",
+        LONG_ACCOUNT,
+        dark = false,
+        failed = true,
+        fontScale = 1.5f
+    )
+
+    /** The options page on its own, from its top, where the account is. */
+    private fun captureAccountOptions(name: String, state: EightBallUiState, fontScale: Float) =
+        captureRoboImage(filePath = path(name)) {
+            WithFontScale(fontScale) {
                 MagicEightBallPhoneTheme {
                     ProvideAppLanguage(state.settings.language) {
                         Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
@@ -559,10 +582,34 @@ class EightBallScreenshotTest {
                 }
             }
         }
+
+    private fun captureAccountSheet(
+        name: String,
+        account: AccountState.SignedIn,
+        dark: Boolean,
+        failed: Boolean = false,
+        fontScale: Float = 1f
+    ) = captureRoboImage(filePath = path(name)) {
+        WithFontScale(fontScale) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                ProvideAppLanguage(AppLanguage.SPANISH) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        AccountSheetContent(
+                            account = account,
+                            failed = failed,
+                            busy = false,
+                            onSignOut = {},
+                            onDelete = {},
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 
-    private fun accountState(account: AccountState) = EightBallUiState(
-        settings = UserSettings(language = AppLanguage.SPANISH),
+    private fun accountState(account: AccountState, language: AppLanguage = AppLanguage.SPANISH) = EightBallUiState(
+        settings = UserSettings(language = language),
         aiAnswersAvailable = true,
         config = AppConfig(accountEnabled = true),
         account = account

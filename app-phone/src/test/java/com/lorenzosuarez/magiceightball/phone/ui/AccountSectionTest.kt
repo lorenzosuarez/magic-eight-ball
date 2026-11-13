@@ -13,7 +13,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.test.core.app.ApplicationProvider
 import com.example.magiceightball.core.domain.model.AppLanguage
@@ -117,33 +116,43 @@ class AccountSectionTest {
     }
 
     @Test
-    fun `signing out is one touch, and deleting the account asks first`() {
+    fun `the account opens from its row, and signing out there is one touch`() {
         var signedOut = 0
-        var deleted = 0
-        show(
-            AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"),
-            onSignOut = { signedOut++ },
-            onDeleteAccount = { deleted++; AccountOutcome.FAILED }
-        )
+        show(LORENA, onSignOut = { signedOut++ })
+        assertEquals(0, compose.onAllNodesWithText("Cerrar sesión").fetchSemanticsNodes().size)
+
+        compose.onNodeWithText("Lorena Suárez").performClick()
         compose.onNodeWithText("Cerrar sesión").performClick()
+        compose.waitForIdle()
+
         assertEquals(1, signedOut)
+        assertEquals(0, compose.onAllNodesWithText("Cerrar sesión").fetchSemanticsNodes().size)
+    }
 
-        compose.onNodeWithText("Eliminar cuenta").performScrollTo().performClick()
+    @Test
+    fun `deleting the account asks first, and a deletion that fails is said where it was tried`() {
+        var deleted = 0
+        show(LORENA, onDeleteAccount = { deleted++; AccountOutcome.FAILED })
+        compose.onNodeWithText("Lorena Suárez").performClick()
+
+        compose.onNodeWithText("Eliminar cuenta").performClick()
         compose.onNodeWithText("¿Eliminar tu cuenta?").assertIsDisplayed()
-        assertEquals(0, deleted)
-
         compose.onNodeWithText("Cancelar").performClick()
         assertEquals(0, deleted)
 
         compose.onNodeWithText("Eliminar cuenta").performClick()
+        // The row under the dialog, and the dialog's own button: the button is the later one.
         compose.onAllNodesWithText("Eliminar cuenta")[1].performClick()
+        compose.waitForIdle()
+
         assertEquals(1, deleted)
         compose.onNodeWithText("No se pudo eliminar la cuenta. Inténtalo de nuevo.").assertIsDisplayed()
     }
 
     private companion object {
+        val LORENA = AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com")
         const val NO_GOOGLE =
-            "No hay ninguna cuenta de Google en este teléfono. Añade una en Ajustes e inténtalo de nuevo."
+            "No hay ninguna cuenta de Google en este dispositivo. Añade una en los ajustes e inténtalo de nuevo."
         const val SIGN_IN_FAILED = "No se pudo entrar. Revisa tu conexión e inténtalo de nuevo."
     }
 }

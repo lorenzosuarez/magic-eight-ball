@@ -1,22 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
-import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.border
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Icon
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,23 +23,18 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,12 +44,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
-import com.example.magiceightball.core.domain.model.UserSettings
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.R
@@ -310,7 +290,7 @@ internal fun SettingsContent(
 
 /** A subject: its name, and under it one card that holds everything about it. */
 @Composable
-private fun Section(title: String, rows: @Composable () -> Unit) {
+internal fun Section(title: String, rows: @Composable () -> Unit) {
     Text(
         text = title,
         modifier = Modifier
@@ -331,7 +311,7 @@ private fun Section(title: String, rows: @Composable () -> Unit) {
 
 /** The hairline between two rows of a card, starting where their text does. */
 @Composable
-private fun RowDivider() {
+internal fun RowDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = ROW_TEXT_START),
         thickness = 1.dp,
@@ -436,218 +416,41 @@ private fun SwitchRow(
 }
 
 /**
- * The account. With nobody signed in: what signing in is for, and the one button that does it,
- * which is also how an account is made. With someone signed in: who it is, and the two ways
- * out. Whatever fails is said here, where it was tried, until the next try.
+ * Something to do rather than to set: the whole row is the button.
+ *
+ * @param opens whether the touch opens something, which is what the arrow at the row's end
+ *   says; a row that does its work on the touch has none.
  */
 @Composable
-private fun AccountSection(
-    account: AccountState,
-    onSignIn: suspend () -> AccountOutcome,
-    onSignOut: () -> Unit,
-    onDeleteAccount: suspend () -> AccountOutcome
+internal fun ActionRow(
+    title: String,
+    supporting: String,
+    onClick: () -> Unit,
+    danger: Boolean = false,
+    opens: Boolean = true,
+    enabled: Boolean = true
 ) {
-    val scope = rememberCoroutineScope()
-    var busy by remember { mutableStateOf(false) }
-    var failure by rememberSaveable { mutableStateOf<AccountOutcome?>(null) }
-    var confirmingDelete by rememberSaveable { mutableStateOf(false) }
-    // One thing at a time: a second touch while the first is still being answered does nothing.
-    fun attempt(work: suspend () -> AccountOutcome) {
-        if (busy) return
-        scope.launch {
-            busy = true
-            failure = null
-            try {
-                failure = work().takeIf { it == AccountOutcome.FAILED || it == AccountOutcome.NO_GOOGLE_ACCOUNT }
-            } finally {
-                busy = false
-            }
-        }
-    }
-
-    Section(stringResource(R.string.options_account)) {
-        if (account is AccountState.SignedIn) {
-            AccountIdentity(account)
-            if (failure != null) AccountFailure(stringResource(R.string.account_delete_failed))
-            RowDivider()
-            ActionRow(
-                title = stringResource(R.string.account_sign_out),
-                supporting = stringResource(R.string.account_sign_out_hint),
-                onClick = onSignOut
-            )
-            RowDivider()
-            ActionRow(
-                title = stringResource(R.string.account_delete),
-                supporting = stringResource(R.string.account_delete_hint),
-                onClick = { confirmingDelete = true },
-                danger = true
-            )
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                SettingText(
-                    title = stringResource(R.string.account_title),
-                    supporting = stringResource(R.string.account_hint),
-                    enabled = true
-                )
-                GoogleButton(enabled = !busy, onClick = { attempt(onSignIn) })
-            }
-            when (failure) {
-                AccountOutcome.NO_GOOGLE_ACCOUNT -> AccountFailure(stringResource(R.string.account_no_google))
-                null -> Unit
-                else -> AccountFailure(stringResource(R.string.account_sign_in_failed))
-            }
-        }
-    }
-
-    if (confirmingDelete) {
-        // The dialog is a window of its own, which starts again from the device's language:
-        // its texts are read here, in the app's.
-        val title = stringResource(R.string.account_delete_title)
-        val text = stringResource(R.string.account_delete_text)
-        val confirm = stringResource(R.string.account_delete)
-        val cancel = stringResource(R.string.action_cancel)
-        AlertDialog(
-            onDismissRequest = { confirmingDelete = false },
-            title = { Text(title) },
-            text = { Text(text) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmingDelete = false
-                        attempt(onDeleteAccount)
-                    }
-                ) {
-                    Text(confirm, color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(cancel) } }
-        )
-    }
-}
-
-/** Who is signed in: a letter for a face, the name, and the address that tells one account from another. */
-@Composable
-private fun AccountIdentity(account: AccountState.SignedIn) {
-    val name = account.name.ifBlank { account.email }
-    Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(horizontal = 16.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
-                .clearAndSetSemantics {},
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = name.trim().take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            // Under a name, the address; when the account gave no name, the address is the name.
-            if (account.name.isNotBlank() && account.email.isNotBlank()) {
-                Text(
-                    text = account.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-/** What did not work, said in the colour of a warning and heard by whoever cannot see it. */
-@Composable
-private fun AccountFailure(message: String) {
-    Text(
-        text = message,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-            .semantics { liveRegion = LiveRegionMode.Polite },
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.error
-    )
-}
-
-/**
- * The button that signs in with Google, drawn as Google asks for it to be: its mark in its own
- * colours and its own words, on the neutral ground Google names for a light screen and the dark
- * one, outlined, for a dark screen.
- */
-@Composable
-private fun GoogleButton(enabled: Boolean, onClick: () -> Unit) {
-    val dark = MaterialTheme.colorScheme.onSurface.luminance() > 0.5f
-    val ground = if (dark) GoogleDarkGround else GoogleLightGround
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clip(CircleShape)
-            .background(ground)
-            .then(if (dark) Modifier.border(1.dp, GoogleDarkOutline, CircleShape) else Modifier)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .alpha(if (enabled) 1f else BUSY_ALPHA)
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_google),
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = Color.Unspecified
-        )
-        Text(
-            text = stringResource(R.string.account_continue_google),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
-            color = if (dark) GoogleDarkInk else GoogleLightInk
-        )
-    }
-}
-
-/** Something to do rather than to set: the whole row is the button. */
-@Composable
-private fun ActionRow(title: String, supporting: String, onClick: () -> Unit, danger: Boolean = false) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 72.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f), danger = danger)
-        // What tells a row that opens something from one that only says something.
-        Icon(
-            painter = painterResource(R.drawable.ic_chevron_right),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (opens) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
 @Composable
-private fun SettingText(
+internal fun SettingText(
     title: String,
     supporting: String,
     enabled: Boolean,
@@ -716,13 +519,3 @@ private const val DISABLED_ALPHA = 0.38f
 
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
 internal const val TILE_ALPHA = 0.08f
-
-/** The grounds, outline and inks Google sets for its sign-in button. */
-private val GoogleLightGround = Color(0xFFF2F2F2)
-private val GoogleLightInk = Color(0xFF1F1F1F)
-private val GoogleDarkGround = Color(0xFF131314)
-private val GoogleDarkOutline = Color(0xFF8E918F)
-private val GoogleDarkInk = Color(0xFFE3E3E3)
-
-/** How faint the button is while the system is still answering the last touch on it. */
-private const val BUSY_ALPHA = 0.6f
