@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutSine
 import androidx.compose.animation.core.EaseOutSine
@@ -489,7 +490,7 @@ private class BallDrawing(
     }
 
     /** How the answer was fitted: whether every line is inside the die, and at what size. */
-    val answerFit: AnswerFit? = answerLayout?.let { AnswerFit(it.fits, it.fontSizePx / dieRadius) }
+    val answerFit: AnswerFit? = answerLayout?.let { AnswerFit(it.fits, it.fontSizePx / dieRadius, it.fontSizePx) }
 
     /**
      * @param face 0 for the "8", 1 for the window; in between the ball turns from one to the other.
@@ -650,7 +651,7 @@ private class BallDrawing(
 }
 
 /** @property fontSize the answer's font size relative to the die's radius. */
-internal class AnswerFit(val fits: Boolean, val fontSize: Float)
+internal class AnswerFit(val fits: Boolean, val fontSize: Float, val fontSizePx: Float = 0f)
 
 /** How [answer] is fitted on the die of a ball [diameterPx] across; for tests of the fitting. */
 internal fun fitAnswerInBall(
@@ -665,6 +666,17 @@ internal fun fitAnswerInBall(
     answer = answer,
     textMeasurer = textMeasurer
 ).answerFit
+
+/**
+ * How large the answer's letters come out on the die of a ball [ballSize] across, once the
+ * ball has grown to show it; null when there is nothing to fit. The die's text cannot follow
+ * the system's font size, so the screen asks this to know when the answer has to be written
+ * under the ball as well.
+ */
+internal fun answerTextSizeOnBall(answer: String, ballSize: Dp, density: Density, textMeasurer: TextMeasurer): Dp? {
+    val fit = fitAnswerInBall(answer, with(density) { ballSize.toPx() }, density, textMeasurer) ?: return null
+    return with(density) { (fit.fontSizePx * (1f + ANSWER_GROWTH)).toDp() }
+}
 
 private val FaceSpring = spring<Float>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)
 
@@ -809,7 +821,7 @@ private const val GLOSS_ALPHA = 0.13f
 
 private const val EDGE_WIDTH = 0.01f
 private const val EDGE_TOP_ALPHA = 0.3f
-private const val EDGE_BOTTOM_ALPHA = 0.06f
+private const val EDGE_BOTTOM_ALPHA = 0.2f
 
 /** The "8" as the window comes to the front: how far up it rolls and how much it flattens on the way out. */
 private const val EIGHT_ROLL = 0.86f

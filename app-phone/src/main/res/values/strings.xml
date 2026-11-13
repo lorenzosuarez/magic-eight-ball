@@ -3,14 +3,13 @@
     <string name="app_name" translatable="false">Magic AI Ball</string>
 
     <!-- The one line under the ball -->
-    <string name="hint_hold">Hold or shake to ask</string>
+    <string name="hint_hold">Tap or shake to ask.\nHold to speak.</string>
     <string name="hint_tap">Tap or shake to ask</string>
-    <string name="streak_days">%1$d-day streak</string>
     <string name="hint_listening">Listening…</string>
     <string name="hint_speak">Ask a yes-or-no question</string>
     <string name="hint_thinking">Thinking…</string>
-    <string name="notice_microphone_denied">To ask by voice, allow microphone access. You can still tap or shake.</string>
-    <string name="notice_voice_unsupported">This device can\'t listen to questions. Tap or shake to ask.</string>
+    <string name="notice_microphone_denied">To ask by voice, allow microphone access.</string>
+    <string name="notice_voice_unsupported">This device can\'t listen to questions.</string>
 
     <!-- Result -->
     <string name="question_quoted">“%1$s”</string>
@@ -28,8 +27,8 @@
     <string name="history_delete">Delete answer</string>
     <string name="history_deleted">Answer deleted</string>
     <string name="action_undo">Undo</string>
-    <string name="history_clear_all">Clear all</string>
-    <string name="history_clear_title">Clear all answers?</string>
+    <string name="history_clear_all">Delete all</string>
+    <string name="history_clear_title">Delete all answers?</string>
     <string name="history_clear_text">Every saved question and answer will be deleted from this device. This can\'t be undone.</string>
     <string name="time_just_now">Just now</string>
     <string name="time_minutes_ago">%1$d min ago</string>
@@ -99,7 +98,7 @@
     <string name="styles_group_movies">Straight from a movie</string>
     <string name="styles_group_attitude">With attitude</string>
     <string name="settings_ai">AI answers</string>
-    <string name="settings_ai_on">Generated on the spot</string>
+    <string name="settings_ai_on">Written on the spot</string>
     <string name="settings_ai_off">The ball answers on its own</string>
     <string name="settings_ai_unavailable">Not available right now. The ball still answers</string>
     <string name="settings_ai_classic">The Classic style doesn\'t use AI. Pick another style to turn it on</string>
@@ -134,15 +133,13 @@
     <string name="settings_share_app">Share the app</string>
     <string name="settings_share_app_hint">Tell someone about Magic AI Ball</string>
     <string name="share_app_text">Ask Magic AI Ball anything: %1$s</string>
-    <string name="action_report">Report</string>
-    <string name="report_done">Reported. Thanks</string>
+    <string name="report_done">Reported. Thank you.</string>
     <string name="report_label">Report this answer as inappropriate</string>
     <string name="action_share">Share</string>
     <string name="rate_good">Good answer</string>
     <string name="rate_bad">Bad answer</string>
     <string name="action_read_aloud">Read the answer aloud</string>
     <string name="brand_name" translatable="false">Magic AI Ball</string>
-    <string name="brand_tagline">Answers written by AI</string>
     <string name="options_answers">Answers</string>
     <string name="options_asking">Questions</string>
     <string name="options_general">General</string>
@@ -168,4 +165,11 @@
     <string name="footer_powered_by" translatable="false">Powered by Gemini</string>
     <string name="footer_version" translatable="false">v%1$s</string>
     <string name="action_back_to_ball">Back to the ball</string>
+    <string name="report_state_done">Answer reported</string>
+    <string name="settings_detailed_needs_ai">Only with AI answers</string>
+    <string name="settings_voice_allow_microphone">Allow microphone</string>
+    <plurals name="streak_days">
+        <item quantity="one">%1$d-day streak</item>
+        <item quantity="other">%1$d-day streak</item>
+    </plurals>
 </resources>

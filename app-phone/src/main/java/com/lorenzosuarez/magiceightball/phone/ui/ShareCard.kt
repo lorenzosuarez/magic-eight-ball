@@ -102,7 +102,7 @@ internal fun ShareCard(
                     .clipToBounds()
                     .background(shareColor(personality))
             ) {
-                // A few sentences need the room: the ball steps back into the corner for them.
+                // Anything written under the answer needs the room: the ball steps back into the corner for it.
                 val reading = remark != null && remark.length > SHARE_LONG_REMARK
                 FlatBall(
                     personality = personality,
@@ -110,7 +110,7 @@ internal fun ShareCard(
                         .offset(x = SHARE_BALL_LEFT, y = SHARE_BALL_TOP)
                         .requiredSize(SHARE_BALL_SIZE)
                         .graphicsLayer {
-                            if (reading) {
+                            if (remark != null) {
                                 scaleX = SHARE_BALL_BACK
                                 scaleY = SHARE_BALL_BACK
                                 translationX = SHARE_BALL_BACK_SHIFT.toPx()
@@ -159,7 +159,7 @@ internal fun ShareCard(
                         Text(
                             text = remark,
                             // Kept clear of the ball, which comes in from the right lower down.
-                            modifier = Modifier.padding(top = 12.dp, end = if (reading) SHARE_READING_INSET else SHARE_REMARK_INSET),
+                            modifier = Modifier.padding(top = 12.dp, end = SHARE_READING_INSET),
                             // A few sentences are set smaller, so that all of them are on the card.
                             style = if (reading) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
@@ -456,9 +456,8 @@ private const val SHARE_ANSWER_LEADING = 0.98f
 private const val SHARE_ANSWER_TRACKING = 0.02f
 
 /** How faint the name of the app is: there to be found, not to be read first. */
-private const val SHARE_MARK_ALPHA = 0.55f
+private const val SHARE_MARK_ALPHA = 0.8f
 
-private val SHARE_REMARK_INSET = 76.dp
 /** From this many characters a remark is a few sentences, not a line. */
 private const val SHARE_LONG_REMARK = 120
 /** How far the ball steps back for them: its size, and how far towards the corner. */

@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.Icon
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -150,8 +152,13 @@ internal fun SettingsContent(
             // How much the ball says: only what the AI writes can be longer.
             SwitchRow(
                 title = stringResource(R.string.settings_detailed),
+                // Dimmed, it says why; otherwise it says what the switch does as it stands.
                 supporting = stringResource(
-                    if (state.settings.detailedAnswers) R.string.settings_detailed_on else R.string.settings_detailed_off
+                    when {
+                        !state.usesAiAnswers || classic -> R.string.settings_detailed_needs_ai
+                        state.settings.detailedAnswers -> R.string.settings_detailed_on
+                        else -> R.string.settings_detailed_off
+                    }
                 ),
                 checked = state.settings.detailedAnswers && state.usesAiAnswers && !classic,
                 enabled = state.usesAiAnswers && !classic,
@@ -353,7 +360,7 @@ private fun <T> ChoiceRow(
                             }
                         )
                         .selectable(selected = chosen, role = Role.RadioButton, onClick = { onSelected(option) })
-                        .heightIn(min = 44.dp)
+                        .heightIn(min = 48.dp)
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -418,6 +425,12 @@ private fun ActionRow(title: String, supporting: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f))
+        // What tells a row that opens something from one that only says something.
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -456,7 +469,7 @@ private fun SettingText(
     modifier: Modifier = Modifier,
     alert: Boolean = false
 ) {
-    val alpha = if (enabled) 1f else DISABLED_ALPHA
+    val alpha = if (enabled) 1f else DISABLED_TITLE_ALPHA
     // What explains the setting is quiet; what says something is wrong is not.
     val quiet = if (alert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -503,6 +516,8 @@ private val ROW_TEXT_START = 16.dp
 
 /** Material's emphasis for disabled content. */
 private const val DISABLED_ALPHA = 0.38f
+/** A dimmed row's name is still to be read: 4.5:1 on its card, where the switch may fade further. */
+private const val DISABLED_TITLE_ALPHA = 0.6f
 
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
 internal const val TILE_ALPHA = 0.08f

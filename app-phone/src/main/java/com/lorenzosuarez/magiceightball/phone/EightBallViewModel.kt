@@ -215,7 +215,7 @@ class EightBallViewModel @Inject constructor(
     fun onMicrophonePermissionResult(granted: Boolean) {
         awaitingPermission = false
         microphone.value = if (granted) MicrophoneAccess.Granted else MicrophoneAccess.Denied
-        if (!granted) giveNotice(Notice.MicrophoneDenied)
+        if (granted) clearNotice() else giveNotice(Notice.MicrophoneDenied)
     }
 
     /** Today on the device's own calendar, in days since 1970: what a streak is counted in. */
@@ -333,6 +333,7 @@ class EightBallViewModel @Inject constructor(
             delay(queryConfig.minThinkingMs)
             val name = names.random()
             phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = AnswerText.Plain(name))
+            turn.value++
             settings.value?.let {
                 usage.track(UsageEvent.Asked(UsageEvent.Asked.How.WHO, it.personality, fromAi = false, withRemark = false))
             }
@@ -380,8 +381,6 @@ class EightBallViewModel @Inject constructor(
     /** Closes whatever is on screen, a question in progress included, and goes back to rest. */
     fun dismiss() {
         if (phase.value is BallPhase.Idle) return
-        // An answer that has been read is a turn taken.
-        if (phase.value is BallPhase.Answered) turn.value++
         val cycle = cycleJob?.also { it.cancel() }
         viewModelScope.launch {
             // An abandoned listening puts back what was there before; rest comes after that.
@@ -560,6 +559,9 @@ class EightBallViewModel @Inject constructor(
         // Classic answers are the toy's own: nobody signs them.
         val style = settings.personality.takeIf { it != Magic8BallPersonality.NEUTRAL }
         phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = answer, style = style)
+        // An answer given is a turn taken: the next press on the ball is the next player's, whether
+        // or not this answer is closed first. Looking at an old answer takes no turn.
+        turn.value++
         // Outside this question's own job: closing the answer at once must not lose its entry.
         viewModelScope.launch {
             val plain = answer as? AnswerText.Plain
@@ -651,6 +653,9 @@ class EightBallViewModel @Inject constructor(
         noticeJob?.cancel()
         noticeJob = viewModelScope.launch {
             notice.value = what
+            // A refusal comes with the way out of it, which must not be taken away while it is
+            // being read: it stays until the next question, or until the permission is given.
+            if (what == Notice.MicrophoneDenied) return@launch
             delay(NOTICE_DURATION_MS)
             notice.value = null
         }

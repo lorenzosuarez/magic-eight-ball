@@ -103,13 +103,15 @@ internal fun AppIconButton(
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSurface
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    enabled: Boolean = true
 ) {
     Box(
         modifier = modifier
             .size(ICON_BUTTON_SIZE)
             .clip(CircleShape)
             .clickable(
+                enabled = enabled,
                 interactionSource = null,
                 indication = PressHighlight,
                 role = Role.Button,
@@ -134,13 +136,15 @@ internal fun BarIconButton(
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSurface
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    enabled: Boolean = true
 ) {
     AppIconButton(
         icon = icon,
         description = description,
         onClick = onClick,
         tint = tint,
+        enabled = enabled,
         modifier = modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA), CircleShape)
     )
 }

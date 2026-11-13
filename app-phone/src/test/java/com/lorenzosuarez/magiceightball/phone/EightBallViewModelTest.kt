@@ -803,9 +803,10 @@ class EightBallViewModelTest {
         assertEquals(VoiceStatus.PermissionDenied, viewModel.state.value?.voice)
         assertEquals(Notice.MicrophoneDenied, viewModel.state.value?.notice)
 
+        // It comes with the way out of it, so it is not taken away while it may still be read.
         advanceTimeBy(EightBallViewModel.NOTICE_DURATION_MS)
         runCurrent()
-        assertNull(viewModel.state.value?.notice)
+        assertEquals(Notice.MicrophoneDenied, viewModel.state.value?.notice)
 
         // A hold is still someone wanting to speak: asked again, and no answer to nothing.
         viewModel.onHoldStart()

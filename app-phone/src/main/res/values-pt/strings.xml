@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
-    <string name="hint_hold">Segure ou agite para perguntar</string>
+    <string name="hint_hold">Toque ou agite para perguntar.\nSegure para falar.</string>
     <string name="hint_tap">Toque ou agite para perguntar</string>
-    <string name="streak_days">%1$d dias seguidos</string>
     <string name="hint_listening">Estou ouvindo…</string>
     <string name="hint_speak">Faça uma pergunta de sim ou não</string>
     <string name="hint_thinking">Pensando…</string>
-    <string name="notice_microphone_denied">Para perguntar por voz, permita o acesso ao microfone. Você também pode tocar ou agitar.</string>
-    <string name="notice_voice_unsupported">Este dispositivo não consegue ouvir perguntas. Toque ou agite para perguntar.</string>
+    <string name="notice_microphone_denied">Para perguntar por voz, permita o acesso ao microfone.</string>
+    <string name="notice_voice_unsupported">Este dispositivo não consegue ouvir perguntas.</string>
 
     <!-- Result -->
     <string name="question_quoted">“%1$s”</string>
@@ -54,7 +53,7 @@
     <string name="style_grandma">Vovó</string>
     <string name="style_pirate">Pirata</string>
     <string name="style_philosopher">Filósofo</string>
-    <string name="style_coach">Coach</string>
+    <string name="style_coach">Treinador</string>
     <string name="style_lovestruck">Amor cego</string>
     <string name="style_drama">Novela</string>
     <string name="style_robot">Robô</string>
@@ -82,7 +81,7 @@
     <string name="style_cat_sample">Miau. Isso é não.</string>
     <string name="style_zoomer_sample">Tá com cara de sim.</string>
     <string name="style_villain_sample">Muahaha! Sim!</string>
-    <string name="style_poet_sample">Ai, não.</string>
+    <string name="style_poet_sample">Ai de mim: não.</string>
     <string name="style_astro_sample">Sinal verde cósmico.</string>
     <string name="style_therapist_sample">O que você acha?</string>
     <string name="style_dog_sample">Au! Ou seja, sim.</string>
@@ -94,7 +93,7 @@
     <string name="styles_group_movies">De cinema</string>
     <string name="styles_group_attitude">Com atitude</string>
     <string name="settings_ai">Respostas com IA</string>
-    <string name="settings_ai_on">Geradas na hora</string>
+    <string name="settings_ai_on">Escritas na hora</string>
     <string name="settings_ai_off">A bola responde por conta própria</string>
     <string name="settings_ai_unavailable">Indisponível por enquanto. A bola continua respondendo</string>
     <string name="settings_ai_classic">O estilo Clássico não usa IA. Escolha outro para ativar</string>
@@ -123,20 +122,18 @@
     <string name="settings_detailed">Respostas mais longas</string>
     <string name="settings_detailed_on">A bola se explica em algumas frases</string>
     <string name="settings_detailed_off">Uma resposta curta e nada mais</string>
-    <string name="settings_spoken">Respostas faladas</string>
-    <string name="settings_spoken_on">A bola diz a resposta em voz alta</string>
+    <string name="settings_spoken">Respostas em voz alta</string>
+    <string name="settings_spoken_on">A bola também fala a resposta</string>
     <string name="settings_spoken_off">As respostas só aparecem na tela</string>
     <string name="settings_share_app">Compartilhar o app</string>
     <string name="settings_share_app_hint">Conte a alguém sobre o Magic AI Ball</string>
     <string name="share_app_text">Pergunte o que quiser ao Magic AI Ball: %1$s</string>
-    <string name="action_report">Denunciar</string>
-    <string name="report_done">Denunciada. Agradecemos</string>
+    <string name="report_done">Denunciada. Obrigado.</string>
     <string name="report_label">Denunciar esta resposta como inadequada</string>
     <string name="action_share">Compartilhar</string>
     <string name="rate_good">Boa resposta</string>
     <string name="rate_bad">Resposta ruim</string>
     <string name="action_read_aloud">Ler a resposta em voz alta</string>
-    <string name="brand_tagline">Respostas escritas por IA</string>
     <string name="options_answers">Respostas</string>
     <string name="options_asking">Perguntas</string>
     <string name="options_general">Geral</string>
@@ -151,7 +148,7 @@
     <string name="settings_daily_on">Uma notificação por dia, no estilo escolhido</string>
     <string name="settings_daily_blocked">As notificações estão desativadas para este app</string>
     <string name="settings_daily_allow">Permitir notificações</string>
-    <string name="settings_daily_allow_hint">Abre os ajustes de notificações do app</string>
+    <string name="settings_daily_allow_hint">Abre as configurações de notificações do app</string>
     <string name="settings_daily_off">Sem notificação diária</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
@@ -160,4 +157,11 @@
     <string name="privacy_ai_only">As respostas vêm do Gemini, do Google. O app não escuta e nenhuma pergunta é enviada. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
     <string name="privacy_none">As respostas vêm do próprio app. O app não escuta e nenhuma pergunta é enviada. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
     <string name="action_back_to_ball">Voltar à bola</string>
+    <string name="report_state_done">Resposta denunciada</string>
+    <string name="settings_detailed_needs_ai">Só com respostas com IA</string>
+    <string name="settings_voice_allow_microphone">Permitir microfone</string>
+    <plurals name="streak_days">
+        <item quantity="one">%1$d dia seguido</item>
+        <item quantity="other">%1$d dias seguidos</item>
+    </plurals>
 </resources>

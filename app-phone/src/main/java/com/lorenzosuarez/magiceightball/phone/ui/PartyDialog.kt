@@ -152,7 +152,8 @@ internal fun PartyFields(draft: PartyDraft, focusOnOpen: Boolean, modifier: Modi
             modifier = Modifier.fillMaxWidth().focusRequester(field),
             enabled = !draft.full,
             singleLine = true,
-            placeholder = { Text(stringResource(R.string.party_name_hint)) },
+            // A label, which stays in sight once something is typed, where a placeholder would not.
+            label = { Text(stringResource(R.string.party_name_hint)) },
             trailingIcon = {
                 TextButton(onClick = draft::add, enabled = draft.canAdd) {
                     Text(stringResource(R.string.action_add))
@@ -179,10 +180,11 @@ internal fun PartyFields(draft: PartyDraft, focusOnOpen: Boolean, modifier: Modi
         }
         // What is still missing, or how many are in: said again as it changes.
         Text(
-            text = if (draft.players.size < UserSettings.MIN_PARTY) {
+            // Counted as saving would count them, the name still in the field included.
+            text = if (draft.toSave().size < UserSettings.MIN_PARTY) {
                 stringResource(R.string.party_need_more)
             } else {
-                stringResource(R.string.party_count, draft.players.size, UserSettings.MAX_PARTY)
+                stringResource(R.string.party_count, draft.toSave().size, UserSettings.MAX_PARTY)
             },
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             style = MaterialTheme.typography.bodySmall,
@@ -200,7 +202,7 @@ private fun PlayerChip(name: String, onRemove: () -> Unit) {
             .clip(ButtonShape)
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA))
             .clickable(onClickLabel = remove, role = Role.Button, onClick = onRemove)
-            .heightIn(min = 40.dp)
+            .heightIn(min = 48.dp)
             .padding(start = 14.dp, end = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
