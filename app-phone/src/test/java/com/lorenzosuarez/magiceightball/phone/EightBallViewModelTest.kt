@@ -8,8 +8,10 @@ import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.Zodiac
 import com.lorenzosuarez.magiceightball.phone.account.CustomCharacters
+import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
 import com.lorenzosuarez.magiceightball.phone.account.DeviceMarks
 import com.lorenzosuarez.magiceightball.phone.account.FakeAccount
+import com.lorenzosuarez.magiceightball.phone.account.FakeCustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.FakeDeviceMarks
 import com.lorenzosuarez.magiceightball.phone.account.FakeProfiles
 import com.lorenzosuarez.magiceightball.phone.account.Membership
@@ -1388,6 +1390,129 @@ class EightBallViewModelTest {
         assertEquals(AccountState.SignedOut, viewModel.state.value?.account)
     }
 
+    @Test
+    fun `a character of the user's own answers in their words, signs the answer and is kept with it by name`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        aiAvailability.isAvailable.value = true
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, fromAi = true) }
+        val viewModel = createViewModel(account = FakeAccount(initial = FakeAccount.ANA), characters = FakeCustomCharacters(listOf(NEMO)))
+        advanceUntilIdle()
+
+        viewModel.chooseCharacter(NEMO)
+        advanceUntilIdle()
+        assertEquals(Magic8BallPersonality.CUSTOM, viewModel.state.value?.settings?.personality)
+        assertEquals(NEMO, viewModel.state.value?.settings?.customCharacter)
+
+        viewModel.ask()
+        advanceUntilIdle()
+        val request = llmGateway.requests.last()
+        assertEquals(Magic8BallPersonality.CUSTOM, request.personality)
+        assertEquals(NEMO, request.custom)
+        val answered = viewModel.state.value?.phase as BallPhase.Answered
+        assertEquals(Magic8BallPersonality.CUSTOM, answered.style)
+        assertEquals(NEMO, answered.custom)
+        val kept = history.entries.value.first()
+        assertEquals(Magic8BallPersonality.CUSTOM, kept.style)
+        assertEquals("Capitán Nemo", kept.customName)
+        // Counted as one of the user's own, never by its name.
+        assertTrue(tracked.any { it == UsageEvent.StyleChosen(Magic8BallPersonality.CUSTOM) })
+    }
+
+    @Test
+    fun `what the user wrote for a character is not sent once accounts are switched off, or they sign out`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        val account = FakeAccount(initial = FakeAccount.ANA)
+        val viewModel = createViewModel(account = account, characters = FakeCustomCharacters(listOf(NEMO)))
+        advanceUntilIdle()
+        viewModel.chooseCharacter(NEMO)
+        advanceUntilIdle()
+
+        appConfig.config.value = AppConfig(accountEnabled = false)
+        viewModel.ask()
+        advanceUntilIdle()
+        assertNull(llmGateway.requests.last().custom)
+        viewModel.dismiss()
+        advanceUntilIdle()
+
+        // Signed out, the choice itself is given up: nothing of the character stays in the settings.
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        account.state.value = AccountState.SignedOut
+        advanceUntilIdle()
+        assertEquals(UserSettings().personality, viewModel.state.value?.settings?.personality)
+        assertNull(viewModel.state.value?.settings?.customCharacter)
+    }
+
+    @Test
+    fun `a character just made is chosen, and the one chosen follows what is kept with the account`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        val characters = FakeCustomCharacters()
+        val profiles = FakeProfiles(ProfileState.Present(Profile("Lorena", LocalDate.of(1990, 3, 12))))
+        val viewModel = createViewModel(account = FakeAccount(initial = FakeAccount.ANA), profiles = profiles, characters = characters)
+        advanceUntilIdle()
+
+        val saved = viewModel.saveCharacter(null, NEMO.name, NEMO.description, NEMO.colour, NEMO.emblem)
+        advanceUntilIdle()
+        assertEquals(CharacterSave.Saved(NEMO), saved)
+        assertEquals(NEMO, viewModel.state.value?.settings?.customCharacter)
+        assertEquals(listOf(NEMO), viewModel.state.value?.characters)
+
+        // Corrected, here or on another device: the copy in the settings is corrected with it.
+        viewModel.saveCharacter("1", "Nemo", NEMO.description, NEMO.colour, NEMO.emblem)
+        advanceUntilIdle()
+        assertEquals("Nemo", viewModel.state.value?.settings?.customCharacter?.name)
+
+        // Not heard from the server: the copy stands.
+        characters.state.value = null
+        advanceUntilIdle()
+        assertEquals("Nemo", viewModel.state.value?.settings?.customCharacter?.name)
+
+        // Deleted on another device: there is nobody left to choose.
+        characters.state.value = emptyList()
+        advanceUntilIdle()
+        assertNull(viewModel.state.value?.settings?.customCharacter)
+        assertEquals(UserSettings().personality, viewModel.state.value?.settings?.personality)
+    }
+
+    @Test
+    fun `deleting the character that is chosen goes back to the app's first, and deleting another changes nothing`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        val rosa = CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.")
+        val characters = FakeCustomCharacters(listOf(NEMO, rosa))
+        val viewModel = createViewModel(account = FakeAccount(initial = FakeAccount.ANA), characters = characters)
+        advanceUntilIdle()
+        viewModel.chooseCharacter(NEMO)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.deleteCharacter("2"))
+        advanceUntilIdle()
+        assertEquals(NEMO, viewModel.state.value?.settings?.customCharacter)
+
+        characters.deletes = false
+        assertFalse(viewModel.deleteCharacter("1"))
+        advanceUntilIdle()
+        assertEquals(NEMO, viewModel.state.value?.settings?.customCharacter)
+
+        characters.deletes = true
+        assertTrue(viewModel.deleteCharacter("1"))
+        advanceUntilIdle()
+        assertNull(viewModel.state.value?.settings?.customCharacter)
+        assertEquals(UserSettings().personality, viewModel.state.value?.settings?.personality)
+    }
+
+    @Test
+    fun `an old answer of a character of the user's own is shown again under its name, even with the character gone`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.showAgain(
+            HistoryEntry(3, "", "Al fondo del mar.", NOW, fromAi = true, style = Magic8BallPersonality.CUSTOM, customName = "Capitán Nemo")
+        )
+
+        val shown = viewModel.state.value?.phase as BallPhase.Answered
+        assertEquals("Capitán Nemo", shown.custom?.name)
+        assertEquals(Magic8BallPersonality.CUSTOM, shown.style)
+    }
+
     private fun createViewModel(
         resumed: Boolean = false,
         microphoneGranted: Boolean = false,
@@ -1564,5 +1689,13 @@ class EightBallViewModelTest {
         const val MAX_THINKING_MS = 5_000L
         const val COOLDOWN_MS = 500L
         const val NOW = 1_800_000_000_000L
+
+        val NEMO = CustomCharacter(
+            id = "1",
+            name = "Capitán Nemo",
+            description = "Un capitán gruñón que todo lo compara con el mar.",
+            colour = Magic8BallPersonality.PIRATE,
+            emblem = Magic8BallPersonality.CAT
+        )
     }
 }

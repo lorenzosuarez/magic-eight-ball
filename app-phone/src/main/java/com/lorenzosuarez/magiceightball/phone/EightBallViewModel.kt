@@ -2,6 +2,9 @@ package com.lorenzosuarez.magiceightball.phone
 
 import android.content.Context
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.lorenzosuarez.magiceightball.phone.account.Membership
 import com.lorenzosuarez.magiceightball.phone.account.Who
 import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
@@ -51,6 +54,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -135,6 +140,7 @@ class EightBallViewModel @Inject constructor(
                 underAge = who.underAge,
                 ageNotice = who.ageNotice,
                 removingAccount = who.removing,
+                characters = who.characters,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -171,6 +177,64 @@ class EightBallViewModel @Inject constructor(
         observeShakes()
         // An account that an under-age date could not take away then is taken away now.
         viewModelScope.launch { membership.enforceAge() }
+        keepChosenCharacterTrue()
+    }
+
+    /**
+     * The character of the user's own that is chosen is a copy, kept so that it answers
+     * without a connection: it follows the one kept with the account. Changed there, it changes
+     * here; gone from there, or with nobody signed in, the choice of it is given up.
+     */
+    private fun keepChosenCharacterTrue() {
+        viewModelScope.launch {
+            combine(membership.who, settings.filterNotNull(), ::Pair).collect { (who, saved) ->
+                val chosen = saved.customCharacter ?: return@collect
+                val kept = who.characters
+                when {
+                    who.account is AccountState.SignedOut -> userSettingsRepository.setCustomCharacter(null)
+                    // Not heard from the server: the copy stands for now.
+                    kept == null -> Unit
+                    else -> kept.find { it.id == chosen.id }.let { now ->
+                        if (now != chosen) userSettingsRepository.setCustomCharacter(now)
+                    }
+                }
+            }
+        }
+    }
+
+    /** Chooses one of the user's own characters to answer. */
+    fun chooseCharacter(character: CustomCharacter) {
+        if (character.id != settings.value?.customCharacter?.id) {
+            usage.track(UsageEvent.StyleChosen(Magic8BallPersonality.CUSTOM))
+        }
+        viewModelScope.launch { userSettingsRepository.setCustomCharacter(character) }
+    }
+
+    /**
+     * Saves a character of the user's own: see [Membership.saveCharacter]. A new one is chosen
+     * at once, since whoever makes a character means to hear it.
+     */
+    suspend fun saveCharacter(
+        id: String?,
+        name: String,
+        description: String,
+        colour: Magic8BallPersonality,
+        emblem: Magic8BallPersonality
+    ): CharacterSave {
+        val outcome = membership.saveCharacter(id, name, description, colour, emblem)
+        if (outcome is CharacterSave.Saved && id == null) {
+            // Chosen once it is among those kept, or the copy would be taken for one that is gone.
+            withTimeoutOrNull(CHARACTER_SEEN_MS) { membership.who.first { outcome.character in it.characters.orEmpty() } }
+            chooseCharacter(outcome.character)
+        }
+        return outcome
+    }
+
+    /** Deletes a character of the user's own, for good. If it was the one chosen, the app's first is again. */
+    suspend fun deleteCharacter(id: String): Boolean {
+        val deleted = membership.deleteCharacter(id)
+        if (deleted && settings.value?.customCharacter?.id == id) userSettingsRepository.setCustomCharacter(null)
+        return deleted
     }
 
     fun setLanguage(language: AppLanguage) {
@@ -309,8 +373,15 @@ class EightBallViewModel @Inject constructor(
         if (verdict.isBlank() || isBusy()) return
         cycleJob?.cancel()
         val style = settings.value?.personality
-        phase.value = BallPhase.Answered(nextAnswerId++, question = "", answer = AnswerText.Plain(verdict), style = style)
-        viewModelScope.launch { history.add("", verdict, clock.millis(), false, style) }
+        val custom = settings.value?.customCharacter
+        phase.value = BallPhase.Answered(
+            nextAnswerId++,
+            question = "",
+            answer = AnswerText.Plain(verdict),
+            style = style,
+            custom = custom
+        )
+        viewModelScope.launch { history.add("", verdict, clock.millis(), false, style, custom?.name) }
         usage.track(UsageEvent.DailyVerdictOpened)
         _effects.trySend(EightBallEffect.AnswerRevealed)
     }
@@ -332,7 +403,11 @@ class EightBallViewModel @Inject constructor(
                 fromAi = entry.fromAi,
                 remark = said.substringAfter('\n', "").takeIf { it.isNotBlank() }
             ),
-            style = entry.style
+            style = entry.style,
+            // The character as it is now, if it is still there: otherwise its name, which is what was kept.
+            custom = entry.customName?.let { name ->
+                state.value?.characters?.find { it.name == name } ?: CustomCharacter(id = "", name = name, description = "")
+            }
         )
         _effects.trySend(EightBallEffect.AnswerRevealed)
     }
@@ -605,7 +680,14 @@ class EightBallViewModel @Inject constructor(
 
         // Classic answers are the toy's own: nobody signs them.
         val style = settings.personality.takeIf { it != Magic8BallPersonality.NEUTRAL }
-        phase.value = BallPhase.Answered(id = nextAnswerId++, question = question, answer = answer, style = style)
+        val custom = settings.customCharacter
+        phase.value = BallPhase.Answered(
+            id = nextAnswerId++,
+            question = question,
+            answer = answer,
+            style = style,
+            custom = custom
+        )
         // An answer given is a turn taken: the next press on the ball is the next player's, whether
         // or not this answer is closed first. Looking at an old answer takes no turn.
         turn.value++
@@ -614,7 +696,7 @@ class EightBallViewModel @Inject constructor(
             val plain = answer as? AnswerText.Plain
             // The remark is kept with its answer, on a line of its own.
             val kept = plain?.let { listOfNotNull(it.value, it.remark).joinToString("\n") }
-            history.add(question, kept, clock.millis(), plain?.fromAi == true, style)
+            history.add(question, kept, clock.millis(), plain?.fromAi == true, style, custom?.name)
         }
         viewModelScope.launch { streaks.recordAnswer(today()) }
         // That the ball answered, and how it was asked: never what was asked or answered.
@@ -652,7 +734,10 @@ class EightBallViewModel @Inject constructor(
                     // Under the ball there is room for a second line, unless it is switched off from afar.
                     wantsRemark = appConfig.config.value.aiRemarkEnabled,
                     detailed = settings.detailedAnswers,
-                    asker = asker
+                    asker = asker,
+                    // Only while it is theirs to use: signed out, or with accounts switched
+                    // off from afar, nothing the user wrote is sent.
+                    custom = state.value?.answeringCustom
                 )
             }
         } catch (e: CancellationException) {
@@ -739,6 +824,9 @@ class EightBallViewModel @Inject constructor(
     companion object {
         /** The fixed trigger the watch app sends as well. */
         const val ASK_TRIGGER = "shake"
+
+        /** How long a character just saved is waited for among those kept, before it is chosen anyway. */
+        const val CHARACTER_SEEN_MS = 5_000L
 
         /** How long a notice replaces the hint. */
         const val NOTICE_DURATION_MS = 6_000L
