@@ -1,6 +1,6 @@
 # Excluir a sua conta do Magic AI Ball
 
-Esta página é para quem fez login com o Google no Magic AI Ball, o app para Android de Lorenzo Suarez. Se você nunca fez login, o app não tem nenhuma conta sua e não há nada para excluir aqui. O mesmo vale se você fez login e depois escolheu "Agora não" no perfil, ou informou uma data de nascimento de alguém com menos de 18 anos: o app excluiu essa conta na hora.
+Esta página é para quem fez login com o Google no Magic AI Ball, o app para Android de Lorenzo Suarez. Se você nunca fez login, o app não tem nenhuma conta sua e não há nada para excluir aqui. O mesmo vale se você fez login e depois escolheu "Continuar sem conta" no perfil, ou informou uma data de nascimento de alguém com menos de 18 anos: o app excluiu essa conta na hora, a não ser que tenha avisado que não conseguiu. Nesse caso, tente de novo no app com conexão, ou escreva para o endereço indicado abaixo.
 
 ## No app
 1. Abra o Magic AI Ball no seu celular ou tablet, com o login feito na conta que você quer excluir.

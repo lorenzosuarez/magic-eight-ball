@@ -1,6 +1,6 @@
 # Eliminar tu cuenta de Magic AI Ball
 
-Esta página es para quienes iniciaron sesión con Google en Magic AI Ball, la app para Android de Lorenzo Suarez. Si nunca iniciaste sesión, la app no tiene ninguna cuenta tuya y aquí no hay nada que eliminar. Lo mismo ocurre si iniciaste sesión y luego elegiste "Ahora no" en el perfil, o ingresaste una fecha de nacimiento de alguien menor de 18 años: la app eliminó esa cuenta en el momento.
+Esta página es para quienes iniciaron sesión con Google en Magic AI Ball, la app para Android de Lorenzo Suarez. Si nunca iniciaste sesión, la app no tiene ninguna cuenta tuya y aquí no hay nada que eliminar. Lo mismo ocurre si iniciaste sesión y luego elegiste "Continuar sin cuenta" en el perfil, o ingresaste una fecha de nacimiento de alguien menor de 18 años: la app eliminó esa cuenta en el momento, salvo que te haya dicho que no pudo. En ese caso, vuelve a intentarlo en la app con conexión, o escribe a la dirección que figura más abajo.
 
 ## En la app
 1. Abre Magic AI Ball en tu teléfono o tableta, con la sesión iniciada en la cuenta que quieres eliminar.

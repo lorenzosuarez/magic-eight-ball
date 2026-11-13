@@ -1,6 +1,6 @@
 # Delete your Magic AI Ball account
 
-This page is for people who signed in with Google to Magic AI Ball, the Android app by Lorenzo Suarez. If you never signed in, the app has no account for you and there is nothing to delete here. The same is true if you signed in and then chose "Not now" on the profile, or entered a date of birth of someone under 18: the app deleted that account at once.
+This page is for people who signed in with Google to Magic AI Ball, the Android app by Lorenzo Suarez. If you never signed in, the app has no account for you and there is nothing to delete here. The same is true if you signed in and then chose "Continue without an account" on the profile, or entered a date of birth of someone under 18: the app deleted that account at once, unless it told you that it could not. In that case, try again in the app with a connection, or write to the address below.
 
 ## In the app
 1. Open Magic AI Ball on your phone or tablet, signed in to the account you want to delete.
@@ -20,7 +20,7 @@ Write to the developer at [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez.dev
 The developer keeps no copy of any of it. Google, which keeps this data for the developer, then removes it from its own systems and backups; for what it gave the app when you signed in, this takes up to 180 days.
 
 ## What is not deleted
-- **What is on your device.** The "Recents" list of your latest questions and answers, including the names of your characters on the answers they gave, and your choices in the app. They are kept only on your device. Delete them with "Clear all" in the list, by clearing the app's data or by uninstalling the app.
+- **What is on your device.** The "Recents" list of your latest questions and answers, including the names of your characters on the answers they gave, and your choices in the app. They are kept only on your device. Delete them with "Delete all" in the list, by clearing the app's data or by uninstalling the app.
 - **What was already sent to the AI service.** Google logs requests for a limited time under its own terms, and the developer cannot delete them from there.
 - **Crash reports and usage counts.** They are not tied to your account. Google keeps crash reports, and any answer you reported, for 90 days, and usage counts for at most 14 months.
 - **Google's record of sign-ins.** The IP addresses used to sign in, which Google keeps for a few weeks.

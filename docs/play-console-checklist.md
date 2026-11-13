@@ -12,7 +12,7 @@ This is not legal advice. Google's forms are the developer's own declarations: r
 On that day, in this order:
 
 1. Replace `RELEASE-DATE` with the date in `docs/PRIVACY_POLICY.md`, `docs/PRIVACY_POLICY.es.md` and `docs/PRIVACY_POLICY.pt.md`. The site does not build until this is done.
-2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out", "Not now" and their Spanish and Portuguese forms (the Portuguese ones, "Conta", "Excluir conta", "Sair" and "Agora não", are a guess).
+2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out", "Continue without an account", "Delete all", the six characters the policy names ("Therapist", "Grandma", "Coach", "Lovestruck", "Horoscope", "Mystical") and their Spanish and Portuguese forms. They were read from the app's strings on the profile branch on 13 November.
 3. `firebase deploy --only hosting`, then open `/privacy` and `/delete-account` in the three languages.
 4. Send the Play Console changes below.
 5. Roll the build out.
@@ -92,7 +92,7 @@ What Google asks of the page behind that address, and how the page answers ([Acc
 - [ ] **Restrict Minor Access:** a box on the same screen, offered when 18 and over is the only group. People Google takes to be under 18, from "the age provided in their Google Account" or its own signals, can then not find, download or buy the app; those who already have it keep using it. Google requires the box only for gambling, dating, random chat with strangers and anonymous messaging ([Age-Restricted Content and Functionality](https://support.google.com/googleplay/android-developer/answer/16302250)), so for this app it is a choice. It fits the reason for 18 and over: the Gemini terms forbid an app "directed towards or is likely to be accessed by individuals under the age of 18" ([Gemini API terms](https://ai.google.dev/gemini-api/terms), "Age Requirements"). The cost is fewer installs.
 - [ ] **The listing must not look made for children.** If the store listing has elements that "may appeal to children", such as young characters or youthful animation, "Google Play may reject your app". Look at the screenshots and the icon with that in mind: the drawn characters are the risk.
 - The page does not ask an adults-only app for an age screen. The date of birth the app asks is the developer's own check. Where Google describes a neutral age screen, it is one where the user types the date freely and nothing is filled in beforehand.
-- What the app does with the answer, as the owner decided on 13 November: there is no account without a profile ("Not now" signs out and deletes the account sign-in had just created), and a date under 18 deletes the account and leaves that device with the built-in answers only, sending nothing to the AI service.
+- What the app does with the answer, as the owner decided on 13 November: there is no account without a profile ("Continue without an account" signs out and deletes the account sign-in had just created; where it cannot be deleted then, the user stays signed in and is told), and a date under 18 deletes the account and leaves that device with the built-in answers only, sending nothing to the AI service. Where the account cannot be reached then, the device is marked all the same and the app tries again each time it is opened.
 
 ## 4. Content rating
 
@@ -114,7 +114,7 @@ The questionnaire has to be filled in again for "All app updates where there has
 
 "If your entire app or parts of your app are restricted based on login credentials, sign in details, memberships, location, or other forms of authentication, you must provide all required details to enable access to your app." Creating a character needs an account, so part of the app is behind a sign-in.
 
-- [ ] Add instructions: sign in with any Google Account from Options → Account; enter a date of birth of an adult and complete the profile; "Create" is in the Characters sheet. Say plainly what not to do: "Not now" deletes the account, and a date under 18 deletes it and switches AI answers off on that device for good. If Google asks for an account of its own, make a test Google Account for it and keep its password out of the repository.
+- [ ] Add instructions: sign in with any Google Account from Options → Account; enter a date of birth of an adult and complete the profile; "Create" is in the Characters sheet. Say plainly what not to do: "Continue without an account" deletes the account, and a date under 18 deletes it and switches AI answers off on that device for good. If Google asks for an account of its own, make a test Google Account for it and keep its password out of the repository.
 
 ## 6. AI-generated content
 
@@ -145,6 +145,8 @@ The delete page promises an answer to the same address and deletion within 30 da
 3. Firestore: delete `users/{UID}`, and make sure its `characters` collection goes with it.
 4. Authentication → Users: delete the user.
 5. Reply that it is done.
+
+The policy also says that the developer deletes by hand the accounts left without a profile, which is what remains when the app is closed on the profile screen and never opened again. Now and then: Authentication → Users, and delete the users created more than a day ago that have no `users/{UID}` document in Firestore.
 
 ## 10. Age laws: not settled here
 
