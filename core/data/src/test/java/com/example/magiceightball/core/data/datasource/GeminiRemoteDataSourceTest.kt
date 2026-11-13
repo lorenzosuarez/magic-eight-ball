@@ -1,7 +1,9 @@
 package com.example.magiceightball.core.data.datasource
 
 import com.example.magiceightball.core.common.GeminiConfig
+import com.example.magiceightball.core.data.config.GeminiSettings
 import com.example.magiceightball.core.data.gateway.GeminiApiClient
+import com.example.magiceightball.core.data.gateway.GeminiReply
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.policy.AnswerBrief
@@ -9,11 +11,6 @@ import com.example.magiceightball.core.domain.policy.Verdict
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.policy.DefaultPromptPolicy
-import com.example.magiceightball.core.network.model.Candidate
-import com.example.magiceightball.core.network.model.Content
-import com.example.magiceightball.core.network.model.GeminiRequest
-import com.example.magiceightball.core.network.model.GeminiResponse
-import com.example.magiceightball.core.network.model.Part
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -26,7 +23,7 @@ class GeminiRemoteDataSourceTest {
     private val brief = AnswerBrief(Verdict.NO, motif = "the parrot")
     private val dataSource = GeminiRemoteDataSource(apiClient, GeminiConfig(), promptPolicy).apply {
         // What the app draws for an answer is drawn at random: here it is always the same.
-        drawBrief = { request -> brief.copy(withRemark = request.wantsRemark) }
+        drawBrief = { request -> brief.copy(withRemark = request.wantsRemark, detailed = request.detailed) }
     }
 
     @Test
@@ -59,8 +56,15 @@ class GeminiRemoteDataSourceTest {
 
         val sent = apiClient.requests.single()
         assertEquals("Will it rain tomorrow?", sent.userText)
-        assertEquals(1, sent.contents.size)
-        assertEquals(1, sent.contents.single().parts.size)
+    }
+
+    @Test
+    fun `the model asked and the room it is given to answer are the app's own`() = runTest {
+        fetch(Magic8BallRequest(userTrigger = "shake"))
+
+        val sent = apiClient.requests.single()
+        assertEquals(SETTINGS, sent.settings)
+        assertEquals(GeminiConfig().maxOutputTokens, sent.maxOutputTokens)
     }
 
     @Test
@@ -167,6 +171,67 @@ class GeminiRemoteDataSourceTest {
     }
 
     @Test
+    fun `a few sentences fit under the answer when the user asked for them, and no more than that`() = runTest {
+        val reading = "word ".repeat(40).trim()
+        apiClient.answer = "Nay.\n$reading"
+        assertEquals(
+            Magic8BallResult.Success("Nay.", fromAi = true, remark = reading),
+            fetch(Magic8BallRequest(wantsRemark = true, detailed = true))
+        )
+
+        apiClient.answer = "Nay.\n" + "word ".repeat(60)
+        assertEquals(
+            Magic8BallResult.Success("Nay.", fromAi = true),
+            fetch(Magic8BallRequest(wantsRemark = true, detailed = true))
+        )
+    }
+
+    @Test
+    fun `what the service would not answer is passed on as that, and not asked again`() = runTest {
+        apiClient.reply = GeminiReply.Blocked
+
+        assertEquals(
+            Magic8BallResult.Failure(LlmError.SafetyBlocked),
+            fetch(Magic8BallRequest(question = "Should I hurt someone?"))
+        )
+        assertEquals(1, apiClient.requests.size)
+    }
+
+    @Test
+    fun `a request that failed is passed on with its reason, and not asked again`() = runTest {
+        for (error in listOf(LlmError.Network, LlmError.RateLimited, LlmError.Unauthorized, LlmError.Server)) {
+            apiClient.requests.clear()
+            apiClient.reply = GeminiReply.Failed(error)
+
+            assertEquals(Magic8BallResult.Failure(error), fetch(Magic8BallRequest(question = "Will it rain?")))
+            assertEquals(1, apiClient.requests.size)
+        }
+    }
+
+    @Test
+    fun `a reply with nothing written in it is no answer`() = runTest {
+        for (parts in listOf(emptyList(), listOf(""), listOf("  \n ", ""))) {
+            apiClient.parts = parts
+
+            assertEquals(
+                Magic8BallResult.Failure(LlmError.Serialization),
+                fetch(Magic8BallRequest(question = "Will it rain?"))
+            )
+        }
+    }
+
+    @Test
+    fun `an answer within six words on the second try is kept`() = runTest {
+        apiClient.answers = ArrayDeque(listOf("This answer is clearly longer than six words", "Nay, matey."))
+
+        assertEquals(
+            Magic8BallResult.Success("Nay, matey.", fromAi = true),
+            fetch(Magic8BallRequest(question = "Say a lot, please"))
+        )
+        assertEquals(2, apiClient.requests.size)
+    }
+
+    @Test
     fun `a reply sent in several parts is read whole`() = runTest {
         apiClient.parts = listOf("\u00a1NO! \u00a1Toma bat", "ido!\nTu gemelo malvado ", "rob\u00f3 las respuestas.")
 
@@ -181,35 +246,44 @@ class GeminiRemoteDataSourceTest {
     }
 
     private suspend fun fetch(request: Magic8BallRequest): Magic8BallResult =
-        dataSource.fetchMagic8BallMessage(request, apiKey = "key", modelId = "model")
+        dataSource.fetchMagic8BallMessage(request, SETTINGS)
 
-    private val GeminiRequest.userText: String get() = contents.single().parts.single().text.orEmpty()
-
-    private val GeminiRequest.systemText: String
-        get() = systemInstruction?.parts?.single()?.text.orEmpty()
+    private class Sent(
+        val settings: GeminiSettings,
+        val systemText: String,
+        val userText: String,
+        val maxOutputTokens: Int
+    )
 
     private class RecordingGeminiApiClient : GeminiApiClient {
-        val requests = mutableListOf<GeminiRequest>()
+        val requests = mutableListOf<Sent>()
         var answer = ANSWER
 
         /** When set, the reply comes cut into these parts instead of whole. */
         var parts: List<String>? = null
 
+        /** When set, each request takes the next of these as its answer. */
+        var answers: ArrayDeque<String>? = null
+
+        /** When set, the service did not write anything: this is what came instead. */
+        var reply: GeminiReply? = null
+
         override suspend fun generateContent(
-            apiKey: String,
-            modelId: String,
-            request: GeminiRequest
-        ): GeminiResponse {
-            requests += request
-            return GeminiResponse(
-                candidates = listOf(
-                    Candidate(content = Content(parts = (parts ?: listOf(answer)).map { Part(text = it) }))
-                )
-            )
+            settings: GeminiSettings,
+            systemInstruction: String,
+            userText: String,
+            maxOutputTokens: Int
+        ): GeminiReply {
+            requests += Sent(settings, systemInstruction, userText, maxOutputTokens)
+            return reply ?: GeminiReply.Written(parts ?: listOf(answers?.removeFirst() ?: answer))
         }
 
         companion object {
             const val ANSWER = "Outlook not so good"
         }
+    }
+
+    private companion object {
+        val SETTINGS = GeminiSettings(enabled = true, modelId = "model")
     }
 }

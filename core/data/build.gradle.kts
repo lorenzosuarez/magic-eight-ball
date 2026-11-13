@@ -31,12 +31,18 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.javax.inject)
-    implementation(libs.retrofit)
     implementation(libs.kotlinx.serialization.json)
 
-    // Remote Config: Gemini kill switch and API key
+    // Remote Config: the switch for AI answers and the model they are asked of
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)
+    // AI answers, asked through Firebase so that no key for them travels with the app, and the
+    // proof that a request comes from this app: Google Play's in a release, a debug token otherwise.
+    implementation(libs.firebase.ai)
+    releaseImplementation(libs.firebase.appcheck.playintegrity)
+    debugImplementation(libs.firebase.appcheck.debug)
+    // Whether the app is on screen: the proof is made ahead only then.
+    implementation(libs.lifecycle.process)
 
     // User settings
     implementation(libs.datastore.preferences)
@@ -48,7 +54,6 @@ dependencies {
     // Internal
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
-    implementation(project(":core:network"))
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

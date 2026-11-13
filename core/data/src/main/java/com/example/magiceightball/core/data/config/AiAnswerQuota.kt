@@ -28,7 +28,7 @@ interface AiAnswerQuota {
  * with each new day on the device's own calendar.
  *
  * It keeps an honest user from running up the bill by accident; it is not a defence against a
- * dishonest one, who can clear the app's data. The hard ceiling is the quota set on the API key.
+ * dishonest one, who can clear the app's data. The hard ceiling is the quota set on the project.
  */
 @Singleton
 class DeviceAiAnswerQuota(

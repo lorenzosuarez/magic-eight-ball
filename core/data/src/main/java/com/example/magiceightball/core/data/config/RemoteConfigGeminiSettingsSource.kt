@@ -10,28 +10,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 /**
- * Reads the Gemini switch and API key from Firebase Remote Config.
+ * Reads the Gemini switch and what goes with it from Firebase Remote Config.
  *
- * Remote Config parameters (both default to "off" when absent):
- * - [KEY_ENABLED] (Boolean): turns Gemini answers on or off from the Firebase console.
- * - [KEY_API_KEY] (String): the Gemini API key; when blank, the build-time key is used instead.
+ * Remote Config parameters:
+ * - [KEY_ENABLED] (Boolean): turns Gemini answers on or off from the Firebase console. Off when
+ *   absent.
  * - [KEY_MODEL] (String, optional): the Gemini model ID; when blank, [GeminiConfig.defaultModelId].
  *   Lets a retired model be replaced from the console without a new release.
  * - [KEY_DAILY_LIMIT] (Number, optional): how many AI answers one device may ask for per day;
  *   when absent or not positive, [GeminiSettings.DEFAULT_DAILY_LIMIT].
- * - [KEY_USE_PAID_KEY] (Boolean, optional) and [KEY_PAID_API_KEY] (String, optional): when the
- *   switch is on and the paid key is not blank, requests use the paid key instead of
- *   [KEY_API_KEY]. Off by default, so the app runs on the free key until the developer says so.
+ * - [KEY_BACKEND] (String, optional): `agent_platform` or `vertex` when the project is set up for
+ *   the Agent Platform Gemini API; anything else, or absent, is the Gemini Developer API.
+ * - [KEY_LIMITED_USE_TOKENS] (Boolean, optional): `true` has each request carry a proof of the
+ *   app made for it alone, instead of the one that is kept for a while. Off when absent: see
+ *   [GeminiSettings.limitedUseTokens] for what it costs.
  * - [KEY_ANSWERS] (JSON, optional): answers that replace the bundled ones; see [RemoteAnswers].
  * - [KEY_CHARACTERS] (JSON, optional): changes to who the characters are and how an answer is
  *   asked for; see [RemoteCharacterBook].
  *
- * When the app is built without `google-services.json`, Firebase is not initialised and the
- * build-time key alone decides: Gemini is used only if that key is present.
+ * No key for the AI service is among them: requests go through Firebase AI Logic, which holds it.
+ *
+ * When the app is built without `google-services.json`, Firebase is not initialised, there is no
+ * project to ask, and Gemini stays off.
  *
  * [isAvailable] starts as false and is published by [refresh]: first from the values cached on
  * the device, then again once the fetch has finished.
@@ -39,7 +42,6 @@ import javax.inject.Singleton
 @Singleton
 class RemoteConfigGeminiSettingsSource @Inject constructor(
     @ApplicationContext private val context: Context,
-    @Named("BuildGeminiApiKey") private val buildApiKey: String,
     private val geminiConfig: GeminiConfig
 ) : GeminiSettingsSource, RemoteAnswers, RemoteCharacters {
 
@@ -64,25 +66,20 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
 
     override fun current(): GeminiSettings {
         val config = remoteConfig
-            ?: return GeminiSettings(
-                enabled = buildApiKey.isNotBlank(),
-                apiKey = buildApiKey,
-                modelId = geminiConfig.defaultModelId
-            )
+            ?: return GeminiSettings(enabled = false, modelId = geminiConfig.defaultModelId)
         return GeminiSettings(
             enabled = config.getBoolean(KEY_ENABLED),
-            apiKey = paidKey(config) ?: config.getString(KEY_API_KEY).trim().ifBlank { buildApiKey },
             modelId = config.getString(KEY_MODEL).trim().ifBlank { geminiConfig.defaultModelId },
             // Absent or not a positive number: the built-in limit.
             dailyLimit = config.getLong(KEY_DAILY_LIMIT).toInt().takeIf { it > 0 }
-                ?: GeminiSettings.DEFAULT_DAILY_LIMIT
+                ?: GeminiSettings.DEFAULT_DAILY_LIMIT,
+            backend = when (config.getString(KEY_BACKEND).trim().lowercase()) {
+                "agent_platform", "vertex" -> GeminiSettings.Backend.AGENT_PLATFORM
+                else -> GeminiSettings.Backend.DEVELOPER_API
+            },
+            limitedUseTokens = config.getBoolean(KEY_LIMITED_USE_TOKENS)
         )
     }
-
-    /** The paid key, only when the developer has switched to it and it is there to use. */
-    private fun paidKey(config: FirebaseRemoteConfig): String? =
-        config.getString(KEY_PAID_API_KEY).trim()
-            .takeIf { config.getBoolean(KEY_USE_PAID_KEY) && it.isNotBlank() }
 
     override fun json(): String = remoteConfig?.getString(KEY_ANSWERS).orEmpty()
 
@@ -107,11 +104,10 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
 
     private companion object {
         const val KEY_ENABLED = "gemini_enabled"
-        const val KEY_API_KEY = "gemini_api_key"
         const val KEY_MODEL = "gemini_model"
         const val KEY_DAILY_LIMIT = "gemini_daily_limit"
-        const val KEY_USE_PAID_KEY = "gemini_use_paid_key"
-        const val KEY_PAID_API_KEY = "gemini_paid_api_key"
+        const val KEY_BACKEND = "gemini_backend"
+        const val KEY_LIMITED_USE_TOKENS = "gemini_limited_use_tokens"
         const val KEY_ANSWERS = "answers_json"
         const val KEY_CHARACTERS = "characters_json"
         const val MIN_FETCH_INTERVAL_SECONDS = 3600L

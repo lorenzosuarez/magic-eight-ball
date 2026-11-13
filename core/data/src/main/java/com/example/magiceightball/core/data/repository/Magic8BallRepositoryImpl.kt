@@ -16,9 +16,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 /**
- * Answers come from Gemini only while the user allows it, it is switched on remotely and a key
- * is available and the device still has some of its daily allowance; in every other case (turned
- * off by the user, switched off remotely, no key, allowance used up, offline, any API error) a
+ * Answers come from Gemini only while the user allows it, it is switched on remotely and the
+ * device still has some of its daily allowance; in every other case (turned off by the user,
+ * switched off remotely, built without Firebase, allowance used up, offline, any API error) a
  * bundled answer is used, and no request is sent to Gemini when it is
  * off. A question in the request goes to Gemini only; a bundled answer never depends on it.
  * The classic style always answers from its bundled list, whatever else is switched on.
@@ -39,7 +39,7 @@ class Magic8BallRepositoryImpl(
         aiAnswerQuota: AiAnswerQuota
     ) : this(remoteDataSource, localDataSource, geminiSettings, aiAnswerQuota, SystemClock::elapsedRealtime)
 
-    /** Until when the AI service is left alone, after it said the key's allowance is used up. */
+    /** Until when the AI service is left alone, after it said the project's allowance is used up. */
     @Volatile
     private var restingUntilMillis = 0L
 
@@ -51,14 +51,14 @@ class Magic8BallRepositoryImpl(
             // Remote Config may touch disk the first time it is read.
             val settings = withContext(Dispatchers.IO) { geminiSettings.current() }
             // Past the day's allowance the ball goes on answering, from its own list.
-            // While the key's own allowance is used up, asking again only costs the user time.
+            // While the project's own allowance is used up, asking again only costs the user time.
             val resting = nowMillis() < restingUntilMillis
             val mayAsk = settings.isUsable && !resting
             val taken = mayAsk && aiAnswerQuota.tryTake(settings.dailyLimit)
             allowanceSpent = mayAsk && !taken
             if (taken) {
                 val remote = withTimeoutOrNull(REMOTE_BUDGET_MS) {
-                    remoteDataSource.fetchMagic8BallMessage(request, settings.apiKey, settings.modelId)
+                    remoteDataSource.fetchMagic8BallMessage(request, settings)
                 }
                 if (remote is Magic8BallResult.Success) return remote
                 // What the service would not answer is not answered by chance either: a yes drawn
@@ -89,7 +89,7 @@ class Magic8BallRepositoryImpl(
         /** Below the UI's maximum thinking time, so a slow network still ends in a bundled answer. */
         const val REMOTE_BUDGET_MS = 4_500L
 
-        /** Long enough to spare a drained key, short enough to notice a per-minute limit lifting. */
+        /** Long enough to spare a drained allowance, short enough to notice a per-minute limit lifting. */
         const val RATE_LIMIT_REST_MS = 5 * 60_000L
     }
 }

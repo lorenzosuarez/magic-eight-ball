@@ -7,8 +7,7 @@ plugins {
 }
 
 // Firebase is optional: without app-wear/google-services.json the app builds and runs offline-only
-// (Remote Config is unavailable, so Gemini stays off unless a local GEMINI_API_KEY is provided, and
-// crashes are not reported).
+// (there is no project to ask, so Gemini stays off, and crashes are not reported).
 if (file("google-services.json").isFile) {
     apply(plugin = libs.plugins.google.services.get().pluginId)
     apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
@@ -78,7 +77,6 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
-    implementation(project(":core:network"))
     implementation(project(":core:motion"))
     implementation(project(":core:designsystem"))
     implementation(project(":feature:chat"))

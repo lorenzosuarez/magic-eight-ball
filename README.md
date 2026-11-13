@@ -28,7 +28,7 @@ Experience the complete journey from startup to prediction.
 *   **🧠 Hybrid AI Engine**:
     *   **Local Fallback**: Instant, zero-latency responses using a local database when offline.
     *   **Cloud Intelligence**: Taps into the Gemini API for unique, witty, and varied predictions when connected.
-    *   **Your Call**: An "AI answers" page lets the user switch AI answers off (or back on) at any time. Gemini is asked only when the user's choice is on, the developer's remote switch is on and a key is available; when AI answers are not available the page says so instead of offering a toggle that does nothing.
+    *   **Your Call**: An "AI answers" page lets the user switch AI answers off (or back on) at any time. Gemini is asked only when the user's choice is on and the developer's remote switch is on; when AI answers are not available the page says so instead of offering a toggle that does nothing.
     *   **Smart Retry Policies**: Robust network handling with exponential backoff and strict safety filters.
 
 *   **🎨 Premium Wear OS Experience**:
@@ -56,8 +56,7 @@ Built with modern Android development standards and best practices:
 *   **UI Framework**: [Compose for Wear OS](https://developer.android.com/training/wearables/compose) (Material 3)
 *   **Architecture**: Clean Architecture + Multi-Module (Modularization by Layer & Feature)
 *   **Dependency Injection**: [Hilt](https://dagger.dev/hilt/)
-*   **Networking**: [Retrofit](https://square.github.io/retrofit/) + [OkHttp](https://square.github.io/okhttp/)
-*   **AI Integration**: [Google Gemini API](https://ai.google.dev/)
+*   **AI Integration**: Gemini through [Firebase AI Logic](https://firebase.google.com/docs/ai-logic), with [App Check](https://firebase.google.com/docs/app-check) vouching for the app: no key for the AI service is in the app
 *   **Concurrency**: Kotlin Coroutines & Flow
 *   **Persistence**: [Jetpack DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (Preferences)
 *   **Serialization**: Kotlinx Serialization
@@ -72,13 +71,12 @@ The project follows a strict **Clean Architecture** pattern, modularized to sepa
 :app-phone          # Phone/tablet application: one Compose (Material 3) screen, its ViewModel & speech recognition
 ├── :core:domain    # Business logic (UseCases, Repository Interfaces, Policies)
 ├── :core:data      # Data implementation (Repositories, DataSources, API)
-├── :core:network   # Network infrastructure (Retrofit, OkHttp, API Keys)
 ├── :core:motion    # Sensor logic & Shake detection strategy
 ├── :core:common    # Shared utilities & configurations
 └── :core:designsystem # Wear theming, Color, Type
 ```
 
-Both applications share `:core:domain`, `:core:data`, `:core:network`, `:core:motion` and `:core:common`, so the bundled answers, the Gemini layer and the shake detection are the same code on the watch and on the phone.
+Both applications share `:core:domain`, `:core:data`, `:core:motion` and `:core:common`, so the bundled answers, the Gemini layer and the shake detection are the same code on the watch and on the phone.
 
 ### Phone & tablet app
 
@@ -123,24 +121,21 @@ The app builds and runs with no setup at all: without Firebase it answers from t
     *   Create a Firebase project and add an Android app with the package `com.lorenzosuarez.magiceightball`.
     *   Download `google-services.json` into `app-wear/` and `app-phone/` (git-ignored; the same file, since both apps share the package).
     *   With that file in place both apps also report crashes to **Firebase Crashlytics**; there is nothing else to set up, and without the file nothing is reported.
-    *   In **Remote Config**, add and publish two parameters:
+    *   In **AI Logic**, click *Get started* and choose the Gemini API provider. In **App Check**, register the app with the Play Integrity provider and enforce App Check for Firebase AI Logic; for a debug build, add the debug token the app writes to the log when it starts (the line that begins `Firebase App Check debug token:`) under *Manage debug tokens*.
+    *   In **Remote Config**, add and publish the switch; the rest is optional:
 
         | Parameter | Type | Meaning |
         |:---|:---|:---|
         | `gemini_enabled` | Boolean | Turns Gemini answers on or off for everyone. Off when missing. Each user can still switch AI answers off in the app. |
-        | `gemini_api_key` | String | The Gemini API key from [Google AI Studio](https://aistudio.google.com/). |
         | `gemini_model` | String | Optional Gemini model ID. Defaults to `gemini-3.5-flash-lite`; change it here when Google retires a model. |
         | `gemini_daily_limit` | Number | Optional. AI answers one device may ask for per day; 40 when absent. |
-        | `gemini_use_paid_key` | Boolean | Optional, off by default. When true and `gemini_paid_api_key` is set, requests use that key instead of `gemini_api_key`. |
-        | `gemini_paid_api_key` | String | Optional. The key of a billed project, used only while `gemini_use_paid_key` is true. |
+        | `gemini_backend` | String | Optional. `agent_platform` (or `vertex`) when the project is set up for the Agent Platform Gemini API; otherwise the Gemini Developer API. It must match what was chosen in the console. |
+        | `gemini_limited_use_tokens` | Boolean | Optional, off when absent. When true each request carries an App Check token made for it alone, which is what replay protection needs; it costs a Play Integrity check per answer. |
         | `answers_json` | JSON | Optional. Answers in the format of `magic_8_ball_responses.json`; every list it fills replaces the bundled one. Kept on the device, so it works offline. Entries over 6 words or 40 characters are ignored. |
 
-    The app checks Remote Config at launch and at most once an hour, so a change can take up to an hour to reach a watch. Values in Remote Config can be read by anyone with the app, so restrict the key to the Generative Language API and set a quota.
+    The app checks Remote Config at launch and at most once an hour, so a change can take up to an hour to reach a watch. Values in Remote Config can be read by anyone with the app: no key belongs there, and none is needed.
 
-3.  **Local key for debug builds (optional)**:
-    `GEMINI_API_KEY=...` in the git-ignored `local.properties` is compiled into **debug** builds only and is used when Remote Config provides no key. Release builds never embed a key.
-
-4.  **Build & Run**:
+3.  **Build & Run**:
     Open the project in Android Studio (Koala or later recommended) and deploy `app-wear` to a Wear OS emulator or watch, or `app-phone` to a phone or tablet (`./gradlew :app-wear:assembleDebug` / `./gradlew :app-phone:assembleDebug`).
 
 ## License 📄

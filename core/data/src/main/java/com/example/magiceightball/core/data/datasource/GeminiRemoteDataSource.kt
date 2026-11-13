@@ -1,7 +1,9 @@
 package com.example.magiceightball.core.data.datasource
 
 import com.example.magiceightball.core.common.GeminiConfig
+import com.example.magiceightball.core.data.config.GeminiSettings
 import com.example.magiceightball.core.data.gateway.GeminiApiClient
+import com.example.magiceightball.core.data.gateway.GeminiReply
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
 import com.example.magiceightball.core.domain.model.Magic8BallResult
@@ -9,15 +11,8 @@ import com.example.magiceightball.core.domain.policy.AppCharacters
 import com.example.magiceightball.core.domain.policy.CharacterBook
 import com.example.magiceightball.core.domain.policy.PromptPolicy
 import com.example.magiceightball.core.domain.policy.AnswerBrief
-import com.example.magiceightball.core.network.model.Content
-import com.example.magiceightball.core.network.model.GeminiRequest
-import com.example.magiceightball.core.network.model.GenerationConfig
-import com.example.magiceightball.core.network.model.Part
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
 import javax.inject.Inject
 
 class GeminiRemoteDataSource @Inject constructor(
@@ -46,11 +41,12 @@ class GeminiRemoteDataSource @Inject constructor(
      * nothing of the user's. The user content is the user's question
      * when the request carries one (capped by [Magic8BallRequest.questionForAi]), and the fixed
      * trigger otherwise. Nothing else about the user is sent.
+     *
+     * A request that fails comes back as a failure with its reason, never as an exception.
      */
     suspend fun fetchMagic8BallMessage(
         request: Magic8BallRequest,
-        apiKey: String,
-        modelId: String
+        settings: GeminiSettings
     ): Magic8BallResult {
         return withContext(Dispatchers.IO) {
             val question = request.questionForAi
@@ -63,88 +59,47 @@ class GeminiRemoteDataSource @Inject constructor(
                 // It is also all that tells one request from the next when nothing was asked.
                 brief = brief
             )
+            val userText = question ?: request.userTrigger ?: "What is my fortune?"
 
-            val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
-            val userContent = Content(
-                parts = listOf(Part(text = question ?: request.userTrigger ?: "What is my fortune?"))
-            )
-
-            // Sampling parameters are left to the model defaults: Gemini 3.x deprecates temperature/topP.
-            val genConfig = GenerationConfig(maxOutputTokens = config.maxOutputTokens)
-
-            val apiRequest = GeminiRequest(
-                contents = listOf(userContent),
-                systemInstruction = systemInstruction,
-                generationConfig = genConfig
-            )
-
-            executeWithRetry(apiKey, modelId, apiRequest, systemPromptText, brief.detailed)
+            executeWithRetry(settings, systemPromptText, userText, brief.detailed)
         }
     }
 
     private suspend fun executeWithRetry(
-        apiKey: String,
-        modelId: String,
-        initialRequest: GeminiRequest,
+        settings: GeminiSettings,
         systemPromptText: String,
+        userText: String,
         detailed: Boolean,
         attempt: Int = 1
     ): Magic8BallResult {
-        try {
-            val response = apiClient.generateContent(apiKey, modelId, initialRequest)
+        val instruction =
+            if (attempt == 1) systemPromptText else "$systemPromptText Line 1 MUST use 6 words or less."
+        val parts = when (
+            val reply = apiClient.generateContent(settings, instruction, userText, config.maxOutputTokens)
+        ) {
+            GeminiReply.Blocked -> return Magic8BallResult.Failure(LlmError.SafetyBlocked)
+            is GeminiReply.Failed -> return Magic8BallResult.Failure(reply.error)
+            is GeminiReply.Written -> reply.parts
+        }
 
-            if (response.promptFeedback?.blockReason != null) {
-                return Magic8BallResult.Failure(LlmError.SafetyBlocked)
-            }
-            if (!response.candidates.isNullOrEmpty() && response.candidates?.get(0)?.finishReason == "SAFETY") {
-                return Magic8BallResult.Failure(LlmError.SafetyBlocked)
-            }
+        // The service may send one reply cut into several parts, even in the middle of a
+        // word: they are one text, and reading only the first shows an answer cut short.
+        val written = parts.joinToString(separator = "").trim().takeIf { it.isNotEmpty() }
+            ?: return Magic8BallResult.Failure(LlmError.Serialization)
+        // The first line is the answer; what follows it, when there is anything, is the remark.
+        val lines = written.lines().map { it.tidied() }.filter { it.isNotEmpty() }
+        val text = lines.firstOrNull() ?: return Magic8BallResult.Failure(LlmError.Serialization)
+        val remark = lines.drop(1).joinToString(" ").takeIf { it.isUsableRemark(text, detailed) }
 
-            // The service may send one reply cut into several parts, even in the middle of a
-            // word: they are one text, and reading only the first shows an answer cut short.
-            val written =
-                response.candidates?.firstOrNull()?.content?.parts
-                    ?.joinToString(separator = "") { part -> part.text.orEmpty() }
-                    ?.trim()?.takeIf { it.isNotEmpty() }
-                    ?: return Magic8BallResult.Failure(LlmError.Serialization)
-            // The first line is the answer; what follows it, when there is anything, is the remark.
-            val lines = written.lines().map { it.tidied() }.filter { it.isNotEmpty() }
-            val text = lines.firstOrNull() ?: return Magic8BallResult.Failure(LlmError.Serialization)
-            val remark = lines.drop(1).joinToString(" ").takeIf { it.isUsableRemark(text, detailed) }
-
-            if (!validateWordCount(text)) {
-                if (attempt <= config.maxRetries) {
-                    val stricterInstruction = Content(
-                        parts = listOf(Part(text = "$systemPromptText Line 1 MUST use 6 words or less."))
-                    )
-                    val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(apiKey, modelId, retryRequest, systemPromptText, detailed, attempt + 1)
-                } else {
-                    return Magic8BallResult.Failure(LlmError.ValidationFailed)
-                }
-            }
-
-            return Magic8BallResult.Success(text, fromAi = true, remark = remark)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            return when (e) {
-                is IOException -> Magic8BallResult.Failure(LlmError.Network)
-                is HttpException -> {
-                    when (e.code()) {
-                        401 -> Magic8BallResult.Failure(LlmError.Unauthorized)
-                        429 -> {
-                            Magic8BallResult.Failure(LlmError.RateLimited)
-                        }
-
-                        in 500..599 -> Magic8BallResult.Failure(LlmError.Server)
-                        else -> Magic8BallResult.Failure(LlmError.Unknown(e))
-                    }
-                }
-
-                else -> Magic8BallResult.Failure(LlmError.Unknown(e))
+        if (!validateWordCount(text)) {
+            return if (attempt <= config.maxRetries) {
+                executeWithRetry(settings, systemPromptText, userText, detailed, attempt + 1)
+            } else {
+                Magic8BallResult.Failure(LlmError.ValidationFailed)
             }
         }
+
+        return Magic8BallResult.Success(text, fromAi = true, remark = remark)
     }
 
     /** A line as it was meant, without what a model sometimes wraps it in: a label, quotes, a bullet. */

@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
 import android.app.Application
+import com.example.magiceightball.core.data.appcheck.AppCheck
 import com.example.magiceightball.core.data.config.GeminiSettingsSource
 import com.lorenzosuarez.magiceightball.phone.push.Notifications
 import com.example.magiceightball.core.domain.repository.UserSettingsRepository
@@ -20,6 +21,9 @@ import javax.inject.Inject
 class MagicEightBallPhoneApp : Application() {
 
     @Inject
+    lateinit var appCheck: AppCheck
+
+    @Inject
     lateinit var geminiSettings: GeminiSettingsSource
 
     @Inject
@@ -33,6 +37,8 @@ class MagicEightBallPhoneApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Before anything is asked of Firebase: what is asked carries the proof that it is this app.
+        appCheck.install()
         // Fetch the remote Gemini switch early so the first answer already honours it.
         geminiSettings.refresh()
         Notifications.createChannel(this)

@@ -26,7 +26,6 @@ include(":core:common")
 include(":core:designsystem")
 include(":core:domain")
 include(":core:data")
-include(":core:network")
 include(":core:motion")
 include(":feature:chat")
  
