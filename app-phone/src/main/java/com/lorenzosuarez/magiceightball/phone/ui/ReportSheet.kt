@@ -44,7 +44,7 @@ internal fun ReportSheet(onReason: (ReportReason) -> Unit, onClose: () -> Unit) 
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.sheetGround,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp
     ) {
@@ -79,14 +79,14 @@ internal fun ReportContent(onReason: (ReportReason) -> Unit, modifier: Modifier 
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
                 .clip(CardShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.colorScheme.sheetCard)
         ) {
             ReportReason.entries.forEachIndexed { index, reason ->
                 if (index > 0) {
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
+                        color = MaterialTheme.colorScheme.hairline
                     )
                 }
                 Row(

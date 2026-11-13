@@ -661,7 +661,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         ProfileContent(
                             draft = draft,
                             firstTime = firstTime,
@@ -712,7 +712,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(AppLanguage.SPANISH) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         AccountSheetContent(
                             account = account,
                             profile = PROFILE,
@@ -742,7 +742,7 @@ class EightBallScreenshotTest {
     fun report_reasons_spanish() = captureRoboImage(filePath = path("phone_45_report_reasons_spanish")) {
         MagicEightBallPhoneTheme(dark = false) {
             ProvideAppLanguage(AppLanguage.SPANISH) {
-                Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Surface(color = MaterialTheme.colorScheme.sheetGround) {
                     ReportContent(onReason = {}, modifier = Modifier.padding(top = 24.dp))
                 }
             }
@@ -895,7 +895,7 @@ class EightBallScreenshotTest {
             WithFontScale(fontScale) {
                 MagicEightBallPhoneTheme(dark = dark) {
                     ProvideAppLanguage(language) {
-                        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        Surface(color = MaterialTheme.colorScheme.sheetGround) {
                             StylesContent(
                                 // With characters of the user's own, the first of them is the one that answers.
                                 selected = if (yours.isEmpty()) Magic8BallPersonality.LOVESTRUCK else Magic8BallPersonality.CUSTOM,
@@ -1000,7 +1000,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         CharacterEditorContent(
                             draft = draft,
                             isNew = isNew,
@@ -1158,7 +1158,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         PremiumContent(
                             price = price,
                             terms = stringResource(R.string.premium_terms),

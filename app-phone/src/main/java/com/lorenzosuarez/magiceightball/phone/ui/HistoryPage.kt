@@ -216,7 +216,7 @@ private fun HistoryRow(
         HorizontalDivider(
             modifier = Modifier.padding(start = 16.dp),
             thickness = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant
+            color = MaterialTheme.colorScheme.hairline
         )
     }
     }

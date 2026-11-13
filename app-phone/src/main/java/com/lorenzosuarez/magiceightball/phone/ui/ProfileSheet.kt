@@ -163,7 +163,7 @@ internal fun ProfileSheet(
     ModalBottomSheet(
         onDismissRequest = { if (!firstTime) onClose() },
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.sheetGround,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp,
         // No handle on a sheet that a pull does not move.
@@ -381,7 +381,7 @@ internal fun ProfileContent(
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp)
                 .fillMaxWidth()
                 .clip(CardShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.colorScheme.sheetCard)
         ) {
             Text(
                 text = stringResource(R.string.profile_sent_title),

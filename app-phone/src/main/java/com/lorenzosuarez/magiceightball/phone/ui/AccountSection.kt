@@ -341,7 +341,7 @@ private fun AccountSheet(
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.sheetGround,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp
     ) {
@@ -448,7 +448,7 @@ internal fun AccountSheetContent(
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp)
                 .fillMaxWidth()
                 .clip(CardShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.colorScheme.sheetCard)
                 .alpha(if (busy) BUSY_ALPHA else 1f)
         ) {
             if (profile != null) {

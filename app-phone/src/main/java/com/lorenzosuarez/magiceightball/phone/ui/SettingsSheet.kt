@@ -559,7 +559,7 @@ internal fun RowDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = ROW_TEXT_START),
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
+        color = MaterialTheme.colorScheme.hairline
     )
 }
 

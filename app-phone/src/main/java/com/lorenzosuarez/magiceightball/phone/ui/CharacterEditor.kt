@@ -142,7 +142,7 @@ internal fun CharacterEditorSheet(
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.sheetGround,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp
     ) {
@@ -516,7 +516,7 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState(start))
+                .fadingRow(rememberScrollState(start))
                 .padding(start = PICK_EDGE)
                 .selectableGroup()
         ) {
@@ -582,7 +582,7 @@ private fun EmblemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState(start))
+                .fadingRow(rememberScrollState(start))
                 .padding(horizontal = PICK_EDGE)
                 .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(EMBLEM_GAP)

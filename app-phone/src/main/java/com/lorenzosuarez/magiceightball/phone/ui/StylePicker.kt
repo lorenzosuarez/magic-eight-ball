@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -187,7 +191,7 @@ internal fun StyleRow(
         Row(
             modifier = Modifier
                 .padding(top = 12.dp)
-                .horizontalScroll(scroll)
+                .fadingRow(scroll)
                 .padding(horizontal = ROW_EDGE)
                 .height(IntrinsicSize.Min)
                 .selectableGroup(),
@@ -201,6 +205,8 @@ internal fun StyleRow(
                     title = own?.name ?: stringResource(style.labelRes()),
                     // What the user wrote of it is theirs and long: a line of the app's says whose words it speaks in.
                     sample = stringResource(style.sampleRes()),
+                    colour = own?.colour ?: style,
+                    emblem = own?.emblem ?: style,
                     chosen = style == touched,
                     onClick = {
                         touched = style
@@ -221,7 +227,7 @@ internal fun StyleRow(
                     .padding(start = 8.dp)
                     .width(1.dp)
                     .height(32.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
+                    .background(MaterialTheme.colorScheme.hairline)
             )
             Box(
                 modifier = Modifier
@@ -274,7 +280,7 @@ internal fun StylesSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = corner, topEnd = corner),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.sheetGround,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp,
         // The sheet draws its own handle and keeps clear of the system bars itself: see [StylesContent].
@@ -347,8 +353,12 @@ internal fun StylesContent(
     val handleAlpha by animateFloatAsState(if (full) 0f else 1f, label = "sheet handle")
     val scroll = rememberScrollState()
     val density = LocalDensity.current
-    // Wider with larger text, up to where two cards no longer fit side by side.
-    val cardWidth = STYLE_CARD_WIDTH * density.fontScale.coerceIn(1f, MAX_CARD_GROWTH)
+    // A card and most of the next across the sheet, whatever its width: the one that is cut
+    // off, fading at the edge, is what says the row goes on. Wider with larger text, and never
+    // so wide that nothing of the next shows.
+    val across = LocalConfiguration.current.screenWidthDp.dp.coerceAtMost(SHEET_WIDEST)
+    val cardWidth = ((across * STYLE_CARD_SHARE).coerceIn(STYLE_CARD_WIDTH, STYLE_CARD_WIDEST) *
+        density.fontScale.coerceIn(1f, MAX_CARD_GROWTH)).coerceAtMost(across - STYLE_CARD_PEEK)
     Column(modifier = modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -381,7 +391,7 @@ internal fun StylesContent(
         // Only once something has scrolled under the header is there an edge worth drawing.
         HorizontalDivider(
             thickness = 1.dp,
-            color = if (scroll.value > 0) MaterialTheme.colorScheme.outlineVariant else Color.Transparent
+            color = if (scroll.value > 0) MaterialTheme.colorScheme.hairline else Color.Transparent
         )
         Column(
             modifier = Modifier
@@ -421,7 +431,7 @@ internal fun StylesContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
+                        .fadingRow(rememberScrollState())
                         .padding(horizontal = 16.dp)
                         .clearAndSetSemantics { contentDescription = waiting },
                     horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
@@ -442,7 +452,7 @@ internal fun StylesContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
+                        .fadingRow(rememberScrollState())
                         .padding(horizontal = 16.dp)
                         .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
@@ -451,6 +461,8 @@ internal fun StylesContent(
                         StyleCard(
                             title = character.name,
                             sample = stringResource(R.string.style_custom_sample),
+                            colour = character.colour,
+                            emblem = character.emblem,
                             chosen = touched == Magic8BallPersonality.CUSTOM to character.id,
                             onClick = {
                                 touched = Magic8BallPersonality.CUSTOM to character.id
@@ -480,7 +492,7 @@ internal fun StylesContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState(start))
+                        .fadingRow(rememberScrollState(start))
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
                 ) {
@@ -493,6 +505,8 @@ internal fun StylesContent(
                                 StyleCard(
                                     title = stringResource(style.labelRes()),
                                     sample = stringResource(style.sampleRes()),
+                                    colour = style,
+                                    emblem = style,
                                     chosen = touched == style to null,
                                     onClick = {
                                         touched = style to null
@@ -510,108 +524,143 @@ internal fun StylesContent(
 }
 
 /**
- * A style: its name, and something it would say. The chosen one is filled with the text's own colour.
- *
- * A name over one line, both starting from the top: cards side by side then have their names on
- * one line and their sayings on the next. The sayings are picked short enough to fit, see the
- * `style_*_sample` strings; one that does not is cut rather than let it push the card taller.
- */
-/**
- * The place of a card that is not known yet: a card's own ground, as tall as a card is at this
- * type size, with a bar where its name will be and one where its line will.
+ * The place of a card that is not known yet: a card's own shape, as tall as a card is at this
+ * type size, with a bar where its face will be, one where its name will and one where its line will.
  */
 @Composable
 private fun StyleCardPlace(modifier: Modifier = Modifier) {
-    Column(
+    Row(
         modifier = modifier
-            .clip(ButtonShape)
+            .clip(CardShape)
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA))
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(start = CARD_INSET, top = CARD_INSET, end = CARD_END, bottom = CARD_INSET),
+        horizontalArrangement = Arrangement.spacedBy(CARD_INSET),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Each line holds its room with words that are not drawn, and its bar lies along it.
-        listOf(MaterialTheme.typography.titleSmall to PLACE_NAME_WIDTH, MaterialTheme.typography.bodySmall to PLACE_LINE_WIDTH)
-            .forEach { (style, width) ->
-                Box(contentAlignment = Alignment.CenterStart) {
-                    Text(text = " ", style = style, maxLines = 1)
-                    Box(modifier = Modifier.fillMaxWidth(width).height(PLACE_BAR_HEIGHT).waitingBar())
+        Box(modifier = Modifier.size(CARD_FACE).clip(ButtonShape).waitingBar())
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // Each line holds its room with words that are not drawn, and its bar lies along it.
+            listOf(MaterialTheme.typography.titleSmall to PLACE_NAME_WIDTH, MaterialTheme.typography.bodySmall to PLACE_LINE_WIDTH)
+                .forEach { (style, width) ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        Text(text = " ", style = style, maxLines = 1)
+                        Box(modifier = Modifier.fillMaxWidth(width).height(PLACE_BAR_HEIGHT).waitingBar())
+                    }
                 }
-            }
+        }
     }
 }
 
+/**
+ * A character: who it is, as the card it signs shows it, with its name and something it would
+ * say. The face is the ball wearing what is theirs, on their colour.
+ *
+ * Not chosen, the card has a breath of that colour in it; chosen, it is that colour through and
+ * through, with the ink the shared card is written in, so the one that answers is told from the
+ * rest by how much colour it has and not by which. The colours are light in both themes.
+ *
+ * A name over one line: cards side by side then have their names on one line and their sayings
+ * on the next. The sayings are picked short enough to fit, see the `style_*_sample` strings; one
+ * that does not is cut rather than let it push the card wider.
+ *
+ * @param colour whose colour the card has, and [emblem] what its ball wears: for one of the
+ * app's own both are the character itself, and for one the user made, what they picked.
+ */
 @Composable
 private fun StyleCard(
     title: String,
     sample: String,
+    colour: Magic8BallPersonality,
+    emblem: Magic8BallPersonality,
     chosen: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onEdit: (() -> Unit)? = null
 ) {
+    val scheme = MaterialTheme.colorScheme
+    val own = shareColor(colour)
     // The choice arrives on one card as it leaves another: ground and ink pass into each other,
-    // and nothing of either card moves.
+    // and nothing of either card moves but the face, which comes forward a little.
     val ground by animateColorAsState(
-        targetValue = if (chosen) {
-            MaterialTheme.colorScheme.onSurface
-        } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
-        },
+        targetValue = if (chosen) own else own.copy(alpha = if (scheme.isDark) CARD_TINT_DARK else CARD_TINT_LIGHT),
         animationSpec = choiceTween(),
         label = "card ground"
     )
     val ink by animateColorAsState(
-        targetValue = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
+        targetValue = if (chosen) ShareInk else scheme.onSurface,
         animationSpec = choiceTween(),
         label = "card ink"
     )
-    Box(
-        modifier = modifier
-            .clip(ButtonShape)
-            .background(ground)
-            .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+    val arrived by animateFloatAsState(if (chosen) 1f else 0f, choiceTween(), label = "card chosen")
+    // The light of a touch is the ink's: on a card in its own colour the sheet's would not show.
+    CompositionLocalProvider(LocalContentColor provides ink) {
+        Box(
+            modifier = modifier
+                .clip(CardShape)
+                // Under the colour, the tile every choice in the app stands on: the palest of the
+                // colours would otherwise leave a card with no edge on a pale sheet.
+                .background(scheme.onSurface.copy(alpha = CARD_BASE_ALPHA * (1f - arrived)))
+                .background(ground)
+                .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = ink,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = sample,
-                // Clear of the pencil, where there is one.
-                modifier = Modifier.padding(end = if (onEdit == null) 0.dp else EDIT_GLYPH + 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = ink.copy(alpha = SAMPLE_ALPHA),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        // On a character of the user's own: the way to correct it, a touch of its own, at the
-        // end of the second line. The card stays as wide and as tall as the app's.
-        if (onEdit != null) {
-            val edit = stringResource(R.string.character_edit, title)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(EDIT_TARGET)
-                    .clip(CircleShape)
-                    .clickable(onClickLabel = edit, role = Role.Button, onClick = onEdit)
-                    .semantics { contentDescription = edit },
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.padding(start = CARD_INSET, top = CARD_INSET, end = CARD_END, bottom = CARD_INSET),
+                horizontalArrangement = Arrangement.spacedBy(CARD_INSET),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_edit),
-                    contentDescription = null,
-                    modifier = Modifier.size(EDIT_GLYPH),
-                    tint = ink
-                )
+                Box(
+                    modifier = Modifier
+                        .size(CARD_FACE)
+                        .graphicsLayer {
+                            val grown = 1f + FACE_GROWTH * arrived
+                            scaleX = grown
+                            scaleY = grown
+                        }
+                        .clip(ButtonShape)
+                        .background(own)
+                ) {
+                    CharacterBall(emblem = emblem, size = CARD_FACE)
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ink,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = sample,
+                        // Clear of the pencil, where there is one.
+                        modifier = Modifier.padding(end = if (onEdit == null) 0.dp else EDIT_GLYPH + 4.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ink.copy(alpha = SAMPLE_ALPHA + (CHOSEN_SAMPLE_ALPHA - SAMPLE_ALPHA) * arrived),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            // On a character of the user's own: the way to correct it, a touch of its own, at the
+            // end of the second line. The card stays as wide and as tall as the app's.
+            if (onEdit != null) {
+                val edit = stringResource(R.string.character_edit, title)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(EDIT_TARGET)
+                        .clip(CircleShape)
+                        .clickable(onClickLabel = edit, role = Role.Button, onClick = onEdit)
+                        .semantics { contentDescription = edit },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_edit),
+                        contentDescription = null,
+                        modifier = Modifier.size(EDIT_GLYPH),
+                        tint = ink
+                    )
+                }
             }
         }
     }
@@ -667,7 +716,7 @@ internal fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.CUSTOM -> R.string.style_custom_sample
 }
 
-private val STYLE_CARD_MIN_WIDTH = 132.dp
+private val STYLE_CARD_MIN_WIDTH = 168.dp
 private val ROW_EDGE = 16.dp
 
 /** How much quieter than its name a style's line is. */
@@ -678,7 +727,15 @@ private val SHEET_CORNER = 28.dp
 private const val HANDLE_ALPHA = 0.3f
 
 /** Two cards and the start of a third across a phone: what tells that a line goes on. */
-private val STYLE_CARD_WIDTH = 152.dp
+private val STYLE_CARD_WIDTH = 196.dp
+
+/** How much of the sheet's width a card takes, the widest it gets, and the least of the next one that shows. */
+private const val STYLE_CARD_SHARE = 0.54f
+private val STYLE_CARD_WIDEST = 260.dp
+private val STYLE_CARD_PEEK = 88.dp
+
+/** As wide as a sheet gets on a large screen. */
+private val SHEET_WIDEST = 640.dp
 private val STYLE_CARD_GAP = 8.dp
 
 /** The bars on the place kept for a card: how thick, and how much of the card's width its name and its line take. */
@@ -690,4 +747,22 @@ private const val STYLE_ROWS = 2
 /** The pencil on a card of the user's own, and the room round it that takes the touch. */
 private val EDIT_GLYPH = 18.dp
 private val EDIT_TARGET = 44.dp
-private const val MAX_CARD_GROWTH = 1.6f
+private const val MAX_CARD_GROWTH = 1.5f
+
+/** The face on a card, the room between it and the card's edge, and the room after the words. */
+private val CARD_FACE = 44.dp
+private val CARD_INSET = 8.dp
+private val CARD_END = 14.dp
+
+/** How much of its own colour a card that is not chosen has in it, on a dark ground and on a light one. */
+private const val CARD_TINT_DARK = 0.16f
+private const val CARD_TINT_LIGHT = 0.3f
+
+/** How much of the text's colour lies under a card's own, while it is not chosen. */
+private const val CARD_BASE_ALPHA = 0.05f
+
+/** What a chosen card's second line keeps of its ink: more than elsewhere, to read on the strongest colours. */
+private const val CHOSEN_SAMPLE_ALPHA = 0.8f
+
+/** How much the face of the chosen card grows: just enough to be seen arriving. */
+private const val FACE_GROWTH = 0.06f
