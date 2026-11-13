@@ -1,6 +1,6 @@
 # Eliminar tu cuenta de Magic AI Ball
 
-Esta página es para quienes iniciaron sesión con Google en Magic AI Ball, la app para Android de Lorenzo Suarez. Si nunca iniciaste sesión, la app no tiene ninguna cuenta tuya y aquí no hay nada que eliminar.
+Esta página es para quienes iniciaron sesión con Google en Magic AI Ball, la app para Android de Lorenzo Suarez. Si nunca iniciaste sesión, la app no tiene ninguna cuenta tuya y aquí no hay nada que eliminar. Lo mismo ocurre si iniciaste sesión y luego elegiste "Ahora no" en el perfil, o ingresaste una fecha de nacimiento de alguien menor de 18 años: la app eliminó esa cuenta en el momento.
 
 ## En la app
 1. Abre Magic AI Ball en tu teléfono o tableta, con la sesión iniciada en la cuenta que quieres eliminar.
@@ -10,7 +10,7 @@ Esta página es para quienes iniciaron sesión con Google en Magic AI Ball, la a
 Es posible que antes la app te pida iniciar sesión con Google una vez más, para asegurarse de que eres tú. La cuenta se elimina en cuanto confirmas, y esto no se puede deshacer.
 
 ## Sin la app
-Escríbele al desarrollador a la dirección de correo electrónico que aparece en [la ficha de la app en Google Play](https://play.google.com/store/apps/details?id=com.lorenzosuarez.magiceightball). Envía el mensaje desde la dirección de correo de la cuenta de Google con la que iniciaste sesión, y di que quieres que se elimine tu cuenta de Magic AI Ball. El desarrollador responde a esa misma dirección para asegurarse de que la solicitud es tuya, y elimina la cuenta en un plazo de 30 días desde tu mensaje. No necesitas la app, y no se te pide nada más.
+Escríbele al desarrollador a [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez.dev@gmail.com). Envía el mensaje desde la dirección de correo de la cuenta de Google con la que iniciaste sesión, y di que quieres que se elimine tu cuenta de Magic AI Ball. El desarrollador responde a esa misma dirección para asegurarse de que la solicitud es tuya, y elimina la cuenta en un plazo de 30 días desde tu mensaje. No necesitas la app, y no se te pide nada más.
 
 ## Qué se elimina
 - **Tu cuenta:** lo que Google le entregó a la app cuando iniciaste sesión, es decir, tu nombre, tu dirección de correo electrónico, la dirección de tu foto de perfil y el identificador de la cuenta.

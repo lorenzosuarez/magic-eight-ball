@@ -1,6 +1,6 @@
 # Excluir a sua conta do Magic AI Ball
 
-Esta página é para quem fez login com o Google no Magic AI Ball, o app para Android de Lorenzo Suarez. Se você nunca fez login, o app não tem nenhuma conta sua e não há nada para excluir aqui.
+Esta página é para quem fez login com o Google no Magic AI Ball, o app para Android de Lorenzo Suarez. Se você nunca fez login, o app não tem nenhuma conta sua e não há nada para excluir aqui. O mesmo vale se você fez login e depois escolheu "Agora não" no perfil, ou informou uma data de nascimento de alguém com menos de 18 anos: o app excluiu essa conta na hora.
 
 ## No app
 1. Abra o Magic AI Ball no seu celular ou tablet, com o login feito na conta que você quer excluir.
@@ -10,7 +10,7 @@ Esta página é para quem fez login com o Google no Magic AI Ball, o app para An
 Antes disso, o app pode pedir que você faça login com o Google mais uma vez, para ter certeza de que é você. A conta é excluída assim que você confirma, e isso não pode ser desfeito.
 
 ## Sem o app
-Escreva ao desenvolvedor no endereço de e-mail que aparece na [página do app no Google Play](https://play.google.com/store/apps/details?id=com.lorenzosuarez.magiceightball). Envie a mensagem a partir do endereço de e-mail da Conta do Google com a qual você fez login, e diga que quer que a sua conta do Magic AI Ball seja excluída. O desenvolvedor responde a esse mesmo endereço para ter certeza de que o pedido é seu, e exclui a conta em até 30 dias a partir da sua mensagem. Você não precisa do app, e nada mais é pedido a você.
+Escreva ao desenvolvedor em [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez.dev@gmail.com). Envie a mensagem a partir do endereço de e-mail da Conta do Google com a qual você fez login, e diga que quer que a sua conta do Magic AI Ball seja excluída. O desenvolvedor responde a esse mesmo endereço para ter certeza de que o pedido é seu, e exclui a conta em até 30 dias a partir da sua mensagem. Você não precisa do app, e nada mais é pedido a você.
 
 ## O que é excluído
 - **A sua conta:** o que o Google entregou ao app quando você fez login, ou seja, o seu nome, o seu endereço de e-mail, o endereço da sua foto de perfil e o identificador da conta.

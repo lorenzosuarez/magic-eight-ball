@@ -12,7 +12,7 @@ This is not legal advice. Google's forms are the developer's own declarations: r
 On that day, in this order:
 
 1. Replace `RELEASE-DATE` with the date in `docs/PRIVACY_POLICY.md`, `docs/PRIVACY_POLICY.es.md` and `docs/PRIVACY_POLICY.pt.md`. The site does not build until this is done.
-2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out" and their Spanish and Portuguese forms (the Portuguese ones, "Conta", "Excluir conta" and "Sair", are a guess).
+2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out", "Not now" and their Spanish and Portuguese forms (the Portuguese ones, "Conta", "Excluir conta", "Sair" and "Agora não", are a guess).
 3. `firebase deploy --only hosting`, then open `/privacy` and `/delete-account` in the three languages.
 4. Send the Play Console changes below.
 5. Roll the build out.
@@ -23,7 +23,7 @@ On that day, in this order:
 
 The User Data policy lists what a privacy policy must have: developer information and "a privacy point of contact or a mechanism to submit inquiries", the data collected and who receives it, how it is kept safe, the "data retention and deletion policy", and a title that says it is a privacy policy. ([User Data](https://support.google.com/googleplay/android-developer/answer/10144311), "Privacy Policy")
 
-- [ ] **Weak point: the contact.** The policy and the delete page send people to "the contact details on the app's Google Play listing". A page for people who no longer have the app should print an address. Decide which address, and put it in the three policies and the three delete pages.
+- [ ] **The contact.** The policy and the delete page print `lorenzosuarez.dev@gmail.com`. Check that it is the address on the store listing too, and that mail sent to it is read: the delete page promises an answer from it.
 
 ## 2. Data safety
 
@@ -80,7 +80,7 @@ What Google asks of the page behind that address, and how the page answers ([Acc
 |---|---|
 | Loads without error, and the way to delete is easy to find | Its only subject |
 | Names the app or the developer "as it appears on your store listing" | Says "Magic AI Ball" and "Lorenzo Suarez": check both against the listing |
-| Lets the user ask without going back to the app; an email address is accepted | "Without the app": write to the developer. See the weak point in section 1 |
+| Lets the user ask without going back to the app; an email address is accepted | "Without the app": write to `lorenzosuarez.dev@gmail.com` |
 | Data kept after deletion is disclosed | "What is not deleted" |
 | Deletion is real: "Temporary account deactivation, disabling, or 'freezing' the app account does not qualify as account deletion." ([User Data](https://support.google.com/googleplay/android-developer/answer/10144311), "Account Deletion Requirement") | The app must delete the Firebase Authentication user and the Firestore documents, not mark them |
 
@@ -92,6 +92,7 @@ What Google asks of the page behind that address, and how the page answers ([Acc
 - [ ] **Restrict Minor Access:** a box on the same screen, offered when 18 and over is the only group. People Google takes to be under 18, from "the age provided in their Google Account" or its own signals, can then not find, download or buy the app; those who already have it keep using it. Google requires the box only for gambling, dating, random chat with strangers and anonymous messaging ([Age-Restricted Content and Functionality](https://support.google.com/googleplay/android-developer/answer/16302250)), so for this app it is a choice. It fits the reason for 18 and over: the Gemini terms forbid an app "directed towards or is likely to be accessed by individuals under the age of 18" ([Gemini API terms](https://ai.google.dev/gemini-api/terms), "Age Requirements"). The cost is fewer installs.
 - [ ] **The listing must not look made for children.** If the store listing has elements that "may appeal to children", such as young characters or youthful animation, "Google Play may reject your app". Look at the screenshots and the icon with that in mind: the drawn characters are the risk.
 - The page does not ask an adults-only app for an age screen. The date of birth the app asks is the developer's own check. Where Google describes a neutral age screen, it is one where the user types the date freely and nothing is filled in beforehand.
+- What the app does with the answer, as the owner decided on 13 November: there is no account without a profile ("Not now" signs out and deletes the account sign-in had just created), and a date under 18 deletes the account and leaves that device with the built-in answers only, sending nothing to the AI service.
 
 ## 4. Content rating
 
@@ -113,7 +114,7 @@ The questionnaire has to be filled in again for "All app updates where there has
 
 "If your entire app or parts of your app are restricted based on login credentials, sign in details, memberships, location, or other forms of authentication, you must provide all required details to enable access to your app." Creating a character needs an account, so part of the app is behind a sign-in.
 
-- [ ] Add instructions: sign in with any Google Account from Options → Account; enter any date of birth of an adult; "Create" is in the Characters sheet. If Google asks for an account of its own, make a test Google Account for it and keep its password out of the repository.
+- [ ] Add instructions: sign in with any Google Account from Options → Account; enter a date of birth of an adult and complete the profile; "Create" is in the Characters sheet. Say plainly what not to do: "Not now" deletes the account, and a date under 18 deletes it and switches AI answers off on that device for good. If Google asks for an account of its own, make a test Google Account for it and keep its password out of the repository.
 
 ## 6. AI-generated content
 

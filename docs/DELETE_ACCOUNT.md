@@ -1,6 +1,6 @@
 # Delete your Magic AI Ball account
 
-This page is for people who signed in with Google to Magic AI Ball, the Android app by Lorenzo Suarez. If you never signed in, the app has no account for you and there is nothing to delete here.
+This page is for people who signed in with Google to Magic AI Ball, the Android app by Lorenzo Suarez. If you never signed in, the app has no account for you and there is nothing to delete here. The same is true if you signed in and then chose "Not now" on the profile, or entered a date of birth of someone under 18: the app deleted that account at once.
 
 ## In the app
 1. Open Magic AI Ball on your phone or tablet, signed in to the account you want to delete.
@@ -10,7 +10,7 @@ This page is for people who signed in with Google to Magic AI Ball, the Android 
 The app may first ask you to sign in with Google once more, to make sure it is you. The account is deleted as soon as you confirm, and this cannot be undone.
 
 ## Without the app
-Write to the developer at the email address shown on [the app's Google Play listing](https://play.google.com/store/apps/details?id=com.lorenzosuarez.magiceightball). Send the message from the email address of the Google Account you signed in with, and say that you want your Magic AI Ball account deleted. The developer answers to that same address to make sure the request is yours, and deletes the account within 30 days of your message. You do not need the app, and you are asked for nothing else.
+Write to the developer at [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez.dev@gmail.com). Send the message from the email address of the Google Account you signed in with, and say that you want your Magic AI Ball account deleted. The developer answers to that same address to make sure the request is yours, and deletes the account within 30 days of your message. You do not need the app, and you are asked for nothing else.
 
 ## What is deleted
 - **Your account:** what Google gave the app when you signed in, which is your name, your email address, the address of your profile photo and the account's identifier.
