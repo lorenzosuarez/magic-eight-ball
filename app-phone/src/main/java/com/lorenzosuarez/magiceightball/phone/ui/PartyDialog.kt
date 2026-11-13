@@ -151,6 +151,8 @@ internal fun PartyFields(draft: PartyDraft, focusOnOpen: Boolean, modifier: Modi
             onValueChange = draft::type,
             modifier = Modifier.fillMaxWidth().focusRequester(field),
             enabled = !draft.full,
+            // The corners every field and button in the app has.
+            shape = ButtonShape,
             singleLine = true,
             // A label, which stays in sight once something is typed, where a placeholder would not.
             label = { Text(stringResource(R.string.party_name_hint)) },

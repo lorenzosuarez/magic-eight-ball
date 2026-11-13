@@ -36,6 +36,8 @@ sealed interface LlmError {
  * nothing was asked: the user's choice.
  * @property wantsRemark whether a second line may come with the answer: only where there is
  * room to show one.
+ * @property asker what the character may be told about whoever is asking: see [AskerFacts].
+ * Null wherever nobody is signed in, which is everywhere but a phone with an account.
  */
 data class Magic8BallRequest(
     val userTrigger: String? = null,
@@ -44,7 +46,8 @@ data class Magic8BallRequest(
     val useAi: Boolean = true,
     val question: String? = null,
     val wantsRemark: Boolean = false,
-    val detailed: Boolean = false
+    val detailed: Boolean = false,
+    val asker: AskerFacts? = null
 ) {
     /**
      * The only form in which [question] may leave the device: one line, without control

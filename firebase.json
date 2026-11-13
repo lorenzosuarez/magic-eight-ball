@@ -1,4 +1,6 @@
 {
+  "firestore": { "rules": "firestore/firestore.rules" },
+  "emulators": { "firestore": { "port": 8080 }, "ui": { "enabled": false }, "singleProjectMode": true },
   "hosting": {
     "public": "site/public",
     "predeploy": ["python3 site/build.py"],

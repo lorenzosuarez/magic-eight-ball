@@ -5,7 +5,9 @@ import com.example.magiceightball.core.data.config.GeminiSettings
 import com.example.magiceightball.core.data.gateway.GeminiApiClient
 import com.example.magiceightball.core.data.gateway.GeminiReply
 import com.example.magiceightball.core.domain.model.LlmError
+import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
+import com.example.magiceightball.core.domain.model.Zodiac
 import com.example.magiceightball.core.domain.policy.AnswerBrief
 import com.example.magiceightball.core.domain.policy.Verdict
 import com.example.magiceightball.core.domain.model.Magic8BallRequest
@@ -13,6 +15,7 @@ import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.policy.DefaultPromptPolicy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -39,6 +42,21 @@ class GeminiRemoteDataSourceTest {
         // What tells this request from the last one: drawn by the app, with nothing of the user's.
         assertTrue("the answer is NO" in sent.systemText)
         assertTrue("the parrot" in sent.systemText)
+    }
+
+    @Test
+    fun `what is known of the asker goes in the instruction, and only what the character makes use of`() = runTest {
+        val asker = AskerFacts(firstName = "Lorena", zodiac = Zodiac.LEO)
+        fetch(Magic8BallRequest(userTrigger = "shake", personality = Magic8BallPersonality.GRANDMA, asker = asker))
+        fetch(Magic8BallRequest(userTrigger = "shake", personality = Magic8BallPersonality.PIRATE, asker = asker))
+
+        val (grandma, pirate) = apiClient.requests
+        assertTrue("\"Lorena\"" in grandma.systemText)
+        assertFalse("Leo" in grandma.systemText)
+        assertFalse("Lorena" in pirate.systemText)
+        assertFalse("Leo" in pirate.systemText)
+        // Never in what is sent as the user's own words.
+        assertEquals("shake", grandma.userText)
     }
 
     @Test

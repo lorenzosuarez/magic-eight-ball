@@ -8,7 +8,6 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
-import com.google.android.gms.tasks.Task
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseApp
@@ -18,13 +17,10 @@ import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * The account, kept by Firebase Authentication and signed in to with the user's Google account
@@ -80,14 +76,24 @@ class FirebaseAccount @Inject constructor(
         forgetPickedAccount()
     }
 
-    override suspend fun delete(host: Context): AccountOutcome {
+    override suspend fun confirmIdentity(host: Context): AccountOutcome {
+        val user = auth?.currentUser ?: return AccountOutcome.FAILED
+        val signedInAt = user.metadata?.lastSignInTimestamp ?: 0L
+        if (System.currentTimeMillis() - signedInAt in 0 until RECENT_SIGN_IN_MS) return AccountOutcome.DONE
+        return attempt {
+            user.reauthenticate(GoogleAuthProvider.getCredential(googleIdToken(host), null)).await()
+        }
+    }
+
+    override suspend fun delete(host: Context?): AccountOutcome {
         val user = auth?.currentUser ?: return AccountOutcome.DONE
         val outcome = attempt {
             try {
                 user.delete().await()
-            } catch (_: FirebaseAuthRecentLoginRequiredException) {
+            } catch (e: FirebaseAuthRecentLoginRequiredException) {
                 // Deleting is only allowed soon after signing in: the user picks the account
-                // once more, and then it goes.
+                // once more, and then it goes. With nobody to ask, it stays for another time.
+                if (host == null) throw e
                 user.reauthenticate(GoogleAuthProvider.getCredential(googleIdToken(host), null)).await()
                 user.delete().await()
             }
@@ -136,18 +142,10 @@ class FirebaseAccount @Inject constructor(
         }
     }
 
-    private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
-        addOnCompleteListener { task ->
-            val failure = task.exception
-            when {
-                failure != null -> continuation.resumeWithException(failure)
-                task.isCanceled -> continuation.cancel()
-                else -> continuation.resume(task.result)
-            }
-        }
-    }
-
     private companion object {
         const val CLIENT_ID_RESOURCE = "default_web_client_id"
+
+        /** The service takes a sign-in for recent for five minutes: a little less is asked of it here. */
+        const val RECENT_SIGN_IN_MS = 4 * 60 * 1000L
     }
 }

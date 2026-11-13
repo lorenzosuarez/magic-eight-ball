@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// What the app keeps in Cloud Firestore: one document to an account, its profile, at
+// users/{the account's id}. Whoever is signed in reads and writes their own and nothing else;
+// what is not allowed here is refused. Checked by firestore/rules_test.py.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Rules have no padding of their own.
+    function twoDigits(n) {
+      return n < 10 ? '0' + string(n) : string(n);
+    }
+
+    // The latest date of birth an adult can have, written as dates are kept. Counted from
+    // tomorrow by the server's clock, so that nobody who is 18 where they are is refused for
+    // living ahead of it. The app checks the same on the device, to the day.
+    function latestAdultBirthDate() {
+      let limit = request.time + duration.value(1, 'd');
+      return string(limit.year() - 18) + '-' + twoDigits(limit.month()) + '-' + twoDigits(limit.day());
+    }
+
+    // A profile is these three fields and no other: nothing the app does not ask for can be
+    // kept here, and nothing else can be slipped in beside it.
+    function isProfile(data) {
+      return data.keys().hasOnly(['firstName', 'birthDate', 'consent'])
+        && data.keys().hasAll(['firstName', 'birthDate', 'consent'])
+        && data.firstName is string
+        && data.firstName.size() >= 1
+        && data.firstName.size() <= 20
+        && data.birthDate is string
+        // A year of the last two centuries, a month and a day that can be one.
+        && data.birthDate.matches('^(19|20)[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+        && data.birthDate <= latestAdultBirthDate()
+        // The record of the user's agreement: which wording, and when.
+        && data.consent is map
+        && data.consent.keys().hasOnly(['version', 'at'])
+        && data.consent.keys().hasAll(['version', 'at'])
+        && data.consent.version is int
+        && data.consent.version >= 1
+        && data.consent.at is timestamp;
+    }
+
+    // An agreement is dated by the server's clock, as it is made: the app cannot set it to a
+    // time of its choosing.
+    function isAgreedNow(data) {
+      return data.consent.at == request.time;
+    }
+
+    match /users/{uid} {
+      allow get, delete: if isOwner(uid);
+      allow create: if isOwner(uid) && isProfile(request.resource.data) && isAgreedNow(request.resource.data);
+      // A correction leaves the agreement as it was made, or makes it anew: never anything else.
+      allow update: if isOwner(uid) && isProfile(request.resource.data)
+        && (request.resource.data.consent == resource.data.consent || isAgreedNow(request.resource.data));
+    }
+  }
+}

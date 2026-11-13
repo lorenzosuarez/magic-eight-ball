@@ -1,9 +1,12 @@
 package com.lorenzosuarez.magiceightball.phone
 
 import android.content.Context
-import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
-import com.lorenzosuarez.magiceightball.phone.account.Account
+import com.lorenzosuarez.magiceightball.phone.account.Membership
+import com.lorenzosuarez.magiceightball.phone.account.Who
+import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
+import com.example.magiceightball.core.domain.model.AskerFacts
+import java.time.LocalDate
 import com.example.magiceightball.core.domain.gateway.ReportReason
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -70,7 +73,7 @@ class EightBallViewModel @Inject constructor(
     private val aiAllowance: AiAllowance,
     private val appConfig: AppConfigSource,
     private val reports: AnswerReports = AnswerReports.None,
-    private val account: Account = Account.None
+    private val membership: Membership = Membership()
 ) : ViewModel() {
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
@@ -89,7 +92,7 @@ class EightBallViewModel @Inject constructor(
         val aiSpent: Boolean,
         val streak: Streak,
         val config: AppConfig,
-        val account: AccountState
+        val who: Who
     )
 
     /** Whether the last answer was a bundled one for want of the day's AI answers. */
@@ -111,22 +114,27 @@ class EightBallViewModel @Inject constructor(
             aiAllowanceSpent,
             streaks.streak,
             appConfig.config,
-            account.state,
+            membership.who,
             ::Remote
         ),
         voiceInputs,
         noticeAndHistory
-    ) { phase, saved, (aiAvailable, aiSpent, streak, config, account), (speech, microphone), (notice, history, turn) ->
+    ) { phase, saved, (aiAvailable, aiSpent, streak, config, who), (speech, microphone), (notice, history, turn) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
                 settings = it,
-                aiAnswersAvailable = aiAvailable,
+                // A device that was given an under-age date of birth asks the AI service for nothing.
+                aiAnswersAvailable = aiAvailable && !who.underAge,
                 aiAllowanceSpent = aiSpent,
                 streakDays = streak.daysOn(today()),
                 streakBest = streak.best,
                 config = config,
-                account = account,
+                account = who.account,
+                profile = who.profile,
+                underAge = who.underAge,
+                ageNotice = who.ageNotice,
+                removingAccount = who.removing,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -161,6 +169,8 @@ class EightBallViewModel @Inject constructor(
 
     init {
         observeShakes()
+        // An account that an under-age date could not take away then is taken away now.
+        viewModelScope.launch { membership.enforceAge() }
     }
 
     fun setLanguage(language: AppLanguage) {
@@ -186,14 +196,23 @@ class EightBallViewModel @Inject constructor(
      * Signs in with the Google account the user picks. Suspends for as long as the system's
      * picker is up, in the caller's scope, so the activity it opens over is never kept.
      */
-    suspend fun signIn(host: Context): AccountOutcome = account.signIn(host)
+    suspend fun signIn(host: Context): AccountOutcome = membership.signIn(host)
 
     fun signOut() {
-        viewModelScope.launch { account.signOut() }
+        viewModelScope.launch { membership.signOut() }
     }
 
-    /** Deletes the account for good; see [Account.delete]. */
-    suspend fun deleteAccount(host: Context): AccountOutcome = account.delete(host)
+    /** Deletes the account and what is kept with it, for good; see [Membership.deleteAccount]. */
+    suspend fun deleteAccount(host: Context): AccountOutcome = membership.deleteAccount(host)
+
+    /** See [Membership.saveProfile]. */
+    suspend fun saveProfile(firstName: String, birthDate: LocalDate, host: Context): ProfileOutcome =
+        membership.saveProfile(firstName, birthDate, LocalDate.ofEpochDay(today()), host)
+
+    /** See [Membership.declineProfile]. */
+    suspend fun declineProfile(host: Context): AccountOutcome = membership.declineProfile(host)
+
+    fun ageNoticeSeen() = membership.ageNoticeSeen()
 
     fun setDetailedAnswers(enabled: Boolean) {
         viewModelScope.launch { userSettingsRepository.setDetailedAnswers(enabled) }
@@ -617,17 +636,23 @@ class EightBallViewModel @Inject constructor(
      * A tap or a shake carries no question, and then only the fixed [ASK_TRIGGER] is sent.
      */
     private suspend fun requestAnswer(settings: UserSettings, question: String): AnswerText {
+        val today = LocalDate.ofEpochDay(today())
+        // Only while an account is offered: switched off from afar, nothing of the user's is sent.
+        val asker = if (state.value?.offersAccount == true) membership.asker(today) else null
         val result = try {
             withTimeoutOrNull(queryConfig.maxThinkingMs) {
                 sendMessageUseCase(
                     trigger = ASK_TRIGGER,
                     languageCode = settings.language.code,
                     personality = settings.personality,
-                    useAi = settings.aiAnswersEnabled,
+                    // Never from a device that was given an under-age date of birth: read where
+                    // it is kept, since at the very start the screen's state is not there yet.
+                    useAi = settings.aiAnswersEnabled && !membership.isUnderAge(),
                     question = question.takeIf { it.isNotBlank() },
                     // Under the ball there is room for a second line, unless it is switched off from afar.
                     wantsRemark = appConfig.config.value.aiRemarkEnabled,
-                    detailed = settings.detailedAnswers
+                    detailed = settings.detailedAnswers,
+                    asker = asker
                 )
             }
         } catch (e: CancellationException) {
@@ -636,6 +661,10 @@ class EightBallViewModel @Inject constructor(
             null
         }
         (result as? Magic8BallResult.Success)?.let { aiAllowanceSpent.value = it.aiAllowanceSpent }
+        // Wished once: the next answers of the day are told nothing of it.
+        if (asker?.birthdayToday == true && (result as? Magic8BallResult.Success)?.fromAi == true) {
+            membership.birthdayWished(today)
+        }
         return when (result) {
             is Magic8BallResult.Success ->
                 result.message.takeIf { it.isNotBlank() }?.let {

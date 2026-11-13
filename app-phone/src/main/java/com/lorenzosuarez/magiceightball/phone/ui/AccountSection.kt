@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -67,6 +68,11 @@ import androidx.compose.ui.unit.sp
 import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.Profile
+import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlin.math.ceil
 import kotlinx.coroutines.launch
 
@@ -81,12 +87,16 @@ internal fun AccountSection(
     account: AccountState,
     onSignIn: suspend () -> AccountOutcome,
     onSignOut: () -> Unit,
-    onDeleteAccount: suspend () -> AccountOutcome
+    onDeleteAccount: suspend () -> AccountOutcome,
+    profile: Profile? = null,
+    onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
+    onOpenPrivacyPolicy: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var failure by rememberSaveable { mutableStateOf<AccountOutcome?>(null) }
     var managing by rememberSaveable { mutableStateOf(false) }
+    var editingProfile by rememberSaveable { mutableStateOf(false) }
     // Whose sheet is open, kept so that it can close gently over an account that has just gone.
     var managed by remember { mutableStateOf<AccountState.SignedIn?>(null) }
     val snackbars = LocalSnackbars.current
@@ -159,8 +169,14 @@ internal fun AccountSection(
         AccountSheet(
             account = shown,
             gone = account !is AccountState.SignedIn,
+            profile = profile,
             failed = failure != null,
             busy = busy,
+            // One sheet at a time: the account's gives way to the profile's.
+            onEditProfile = {
+                managing = false
+                editingProfile = true
+            },
             onSignOut = {
                 managing = false
                 onSignOut()
@@ -174,8 +190,24 @@ internal fun AccountSection(
             onClose = { managing = false }
         )
     }
-    // Brought back by the system with the sheet open and nobody signed in: there is no sheet.
-    LaunchedEffect(Unit) { if (account !is AccountState.SignedIn) managing = false }
+    if (editingProfile && profile != null) {
+        ProfileSheet(
+            profile = profile,
+            suggestedName = "",
+            gone = account !is AccountState.SignedIn,
+            onSave = onSaveProfile,
+            onDecline = null,
+            onOpenPrivacyPolicy = onOpenPrivacyPolicy,
+            onClose = { editingProfile = false }
+        )
+    }
+    // Brought back by the system with a sheet open and nobody signed in: there is no sheet.
+    LaunchedEffect(Unit) {
+        if (account !is AccountState.SignedIn) {
+            managing = false
+            editingProfile = false
+        }
+    }
 }
 
 /** Where the page of options can say, for a moment, that something is done; none in a preview. */
@@ -261,8 +293,10 @@ private fun AccountIdentity(account: AccountState.SignedIn, onClick: () -> Unit)
 private fun AccountSheet(
     account: AccountState.SignedIn,
     gone: Boolean,
+    profile: Profile?,
     failed: Boolean,
     busy: Boolean,
+    onEditProfile: () -> Unit,
     onSignOut: () -> Unit,
     onDelete: () -> Unit,
     onClose: () -> Unit
@@ -289,8 +323,10 @@ private fun AccountSheet(
         InAppLanguage(language) {
             AccountSheetContent(
                 account = account,
+                profile = profile,
                 failed = failed,
                 busy = busy,
+                onEditProfile = { scope.launch { sheetState.hide() }.invokeOnCompletion { onEditProfile() } },
                 onSignOut = { scope.launch { sheetState.hide() }.invokeOnCompletion { onSignOut() } },
                 onDelete = { confirmingDelete = true }
             )
@@ -330,17 +366,22 @@ private fun AccountSheet(
 @Composable
 internal fun AccountSheetContent(
     account: AccountState.SignedIn,
+    profile: Profile?,
     failed: Boolean,
     busy: Boolean,
+    onEditProfile: () -> Unit,
     onSignOut: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val name = account.name.ifBlank { account.email }
+    val scroll = rememberScrollState()
+    // What failed is said under the rows: brought into sight if they have pushed it out of it.
+    LaunchedEffect(failed) { if (failed) scroll.animateScrollTo(scroll.maxValue) }
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scroll)
             .navigationBarsPadding()
             .padding(bottom = 16.dp)
     ) {
@@ -367,6 +408,17 @@ internal fun AccountSheetContent(
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .alpha(if (busy) BUSY_ALPHA else 1f)
         ) {
+            if (profile != null) {
+                // Who the characters take the user for, and the way to correct it.
+                ActionRow(
+                    title = stringResource(R.string.account_profile),
+                    // The date is one thing: it goes to the next line whole or not at all.
+                    supporting = profile.firstName + " · " + profile.birthDate.spelledOut().replace(' ', '\u00A0'),
+                    onClick = onEditProfile,
+                    enabled = !busy
+                )
+                RowDivider()
+            }
             ActionRow(
                 title = stringResource(R.string.account_sign_out),
                 supporting = stringResource(R.string.account_sign_out_hint),
@@ -393,13 +445,20 @@ internal fun AccountSheetContent(
     }
 }
 
+/** The date as it is written out in the app's language: "12 de marzo de 1990". */
+@Composable
+internal fun LocalDate.spelledOut(): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(this, locale) { format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale)) }
+}
+
 /** What did not work, said in the colour of a warning and heard by whoever cannot see it. */
 @Composable
 private fun AccountFailure(message: String, modifier: Modifier = Modifier) {
     Text(
         text = message,
         modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
         color = MaterialTheme.colorScheme.error
     )
 }

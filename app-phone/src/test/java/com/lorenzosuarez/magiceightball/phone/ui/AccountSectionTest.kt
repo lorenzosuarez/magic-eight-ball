@@ -170,7 +170,7 @@ class AccountSectionTest {
         compose.waitForIdle()
 
         assertEquals(1, deleted)
-        compose.onNodeWithText("No se pudo eliminar la cuenta. Inténtalo de nuevo.").assertIsDisplayed()
+        compose.onNodeWithText("No se pudo eliminar la cuenta. Inténtalo de nuevo").assertIsDisplayed()
         assertEquals(null, snackbars.currentSnackbarData)
     }
 

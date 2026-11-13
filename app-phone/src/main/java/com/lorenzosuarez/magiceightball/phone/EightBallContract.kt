@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.UserSettings
@@ -20,6 +21,12 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * @property config what the developer has set from afar: see [AppConfig].
  * @property streakDays how many days in a row the ball has been asked, as it stands today.
  * @property account who is signed in, if anyone: see [AccountState].
+ * @property profile what whoever is signed in has told the app about themselves: see [ProfileState].
+ * @property underAge whether this device was given the date of birth of someone under 18. It
+ * then offers no account, and [aiAnswersAvailable] is false for good.
+ * @property ageNotice true from the moment that date was given until the user has been told
+ * that there is no account for them.
+ * @property removingAccount true while an account is being taken away, profile first.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
 data class EightBallUiState(
@@ -34,14 +41,22 @@ data class EightBallUiState(
     val streakDays: Int = 0,
     val streakBest: Int = 0,
     val config: AppConfig = AppConfig(),
-    val account: AccountState = AccountState.Unavailable
+    val account: AccountState = AccountState.Unavailable,
+    val profile: ProfileState = ProfileState.Unknown,
+    val underAge: Boolean = false,
+    val ageNotice: Boolean = false,
+    val removingAccount: Boolean = false
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?
         get() = settings.partyNames.takeIf { settings.isParty }?.let { it[turn % it.size] }
 
     /** Whether the page of options has an account on it: off until the developer turns it on, and only where it can work. */
-    val offersAccount: Boolean get() = config.accountEnabled && account != AccountState.Unavailable
+    val offersAccount: Boolean get() = config.accountEnabled && account != AccountState.Unavailable && !underAge
+
+    /** Whether whoever has just signed in is still to be asked who they are: no account is kept without. */
+    val needsProfile: Boolean
+        get() = offersAccount && account is AccountState.SignedIn && profile == ProfileState.Missing && !removingAccount
 
     /** Whether a question the app hears is sent to the AI service to be answered. */
     val usesAiAnswers: Boolean get() = settings.aiAnswersEnabled && aiAnswersAvailable
