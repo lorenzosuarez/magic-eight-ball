@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The ball as it is drawn at rest, for the launch screen: within the 2/3 circle the system keeps for the icon. -->
+<!-- The "8" on its white disc, alone and as large as it is on the ball at rest: the launch screen's own dark is the ball, and the app's first frame draws the ball around it. Within the 2/3 circle the system keeps for the icon. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#14171C"
-        android:pathData="M54,54m-36,0a36,36 0,1 1,72 0a36,36 0,1 1,-72 0" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,54m-16.6,0a16.6,16.6 0,1 1,33.2 0a16.6,16.6 0,1 1,-33.2 0" />
-    <group
-        android:pivotX="18"
-        android:pivotY="18"
-        android:scaleX="1.36"
-        android:scaleY="1.36"
-        android:translateX="36"
-        android:translateY="36.3">
+    <!-- A little below the middle, where the ball sits under the top bar. -->
+    <group android:translateY="5.06">
         <path
-            android:fillColor="#14171C"
-            android:pathData="M13.703,20.203c0,-1.406 0.773,-2.443 1.881,-3.041c-0.826,-0.598 -1.336,-1.406 -1.336,-2.514c0,-2.057 1.705,-3.375 3.797,-3.375c2.039,0 3.814,1.301 3.814,3.375c0,0.984 -0.492,1.969 -1.354,2.514c1.195,0.598 1.881,1.688 1.881,3.041c0,2.443 -1.986,4.008 -4.342,4.008c-2.425,0 -4.341,-1.652 -4.341,-4.008zM16.445,20.027c0,0.896 0.527,1.758 1.6,1.758c1.002,0 1.6,-0.861 1.6,-1.758c0,-1.107 -0.633,-1.758 -1.6,-1.758c-1.02,0.001 -1.6,0.774 -1.6,1.758zM16.779,14.93c0,0.791 0.457,1.336 1.266,1.336c0.809,0 1.283,-0.545 1.283,-1.336c0,-0.756 -0.457,-1.336 -1.283,-1.336c-0.826,0 -1.266,0.58 -1.266,1.336z" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,54m-22.4,0a22.4,22.4 0,1 1,44.8 0a22.4,22.4 0,1 1,-44.8 0" />
+        <group
+            android:pivotX="18"
+            android:pivotY="18"
+            android:scaleX="1.835"
+            android:scaleY="1.835"
+            android:translateX="36"
+            android:translateY="36.3">
+            <path
+                android:fillColor="#14171C"
+                android:pathData="M13.703,20.203c0,-1.406 0.773,-2.443 1.881,-3.041c-0.826,-0.598 -1.336,-1.406 -1.336,-2.514c0,-2.057 1.705,-3.375 3.797,-3.375c2.039,0 3.814,1.301 3.814,3.375c0,0.984 -0.492,1.969 -1.354,2.514c1.195,0.598 1.881,1.688 1.881,3.041c0,2.443 -1.986,4.008 -4.342,4.008c-2.425,0 -4.341,-1.652 -4.341,-4.008zM16.445,20.027c0,0.896 0.527,1.758 1.6,1.758c1.002,0 1.6,-0.861 1.6,-1.758c0,-1.107 -0.633,-1.758 -1.6,-1.758c-1.02,0.001 -1.6,0.774 -1.6,1.758zM16.779,14.93c0,0.791 0.457,1.336 1.266,1.336c0.809,0 1.283,-0.545 1.283,-1.336c0,-0.756 -0.457,-1.336 -1.283,-1.336c-0.826,0 -1.266,0.58 -1.266,1.336z" />
+        </group>
     </group>
 </vector>

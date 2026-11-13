@@ -259,6 +259,14 @@ internal fun SettingsContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        // What the app is built on: a name, so always in English.
+        Text(
+            text = stringResource(R.string.footer_powered_by),
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
