@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -268,7 +269,10 @@ class CharacterEditorTest {
 
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
         compose.onNodeWithText("Tus propios personajes, con Premium").assertIsDisplayed()
-        compose.onNodeWithText("Los personajes de la app siguen siendo gratis").assertIsDisplayed()
+        // Said before the button: what saying no costs, which is nothing.
+        compose.onNodeWithText("Los personajes de la app siguen siendo gratis.").assertIsDisplayed()
+        // No price and no terms yet: the button is there, and buys nothing.
+        compose.onNodeWithText("Obtener Premium").assertIsDisplayed().assertIsNotEnabled()
         assertEquals(0, count("Nuevo personaje"))
 
         compose.onNodeWithText("Ahora no").performClick()

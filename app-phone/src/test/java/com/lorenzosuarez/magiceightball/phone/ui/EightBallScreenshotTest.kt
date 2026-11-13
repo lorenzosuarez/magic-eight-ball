@@ -1018,30 +1018,50 @@ class EightBallScreenshotTest {
 
     @Test
     @Config(qualifiers = "+night")
-    fun phone_premium_priced_dark() = capturePremium("phone_78_premium_priced_dark", AppLanguage.SPANISH, dark = true, price = "2,99 €")
+    fun phone_premium_priced_dark() = capturePremium(
+        "phone_78_premium_priced_dark",
+        AppLanguage.SPANISH,
+        dark = true,
+        price = "2,99 €",
+        terms = "Un solo pago."
+    )
 
+    /** The longest it gets: a price paid every month, and the two sentences that go with one. */
     @Test
     @Config(qualifiers = SMALL_PHONE_TALL)
     fun small_phone_premium_portuguese_large_font() = capturePremium(
         "phone_79_small_phone_premium_portuguese_large_font",
         AppLanguage.PORTUGUESE,
         dark = false,
-        price = "R$ 14,90 por mês",
+        price = "R$ 14,90/mês",
+        terms = "Renova todo mês. Cancele quando quiser no Google Play.",
         fontScale = 1.5f
     )
 
-    private fun capturePremium(name: String, language: AppLanguage, dark: Boolean, price: String? = null, fontScale: Float = 1f) =
-        captureRoboImage(filePath = path(name)) {
-            WithFontScale(fontScale) {
-                MagicEightBallPhoneTheme(dark = dark) {
-                    ProvideAppLanguage(language) {
-                        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                            PremiumContent(price = price, onUpgrade = {}, onNotNow = {}, modifier = Modifier.padding(top = 24.dp))
-                        }
+    private fun capturePremium(
+        name: String,
+        language: AppLanguage,
+        dark: Boolean,
+        price: String? = null,
+        terms: String? = null,
+        fontScale: Float = 1f
+    ) = captureRoboImage(filePath = path(name)) {
+        WithFontScale(fontScale) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                ProvideAppLanguage(language) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        PremiumContent(
+                            price = price,
+                            terms = terms,
+                            onUpgrade = {},
+                            onNotNow = {},
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
                     }
                 }
             }
         }
+    }
 
     /** Chosen: first in the row of the options, under its own name; and signing its answers. */
     @Test

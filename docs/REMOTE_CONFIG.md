@@ -22,7 +22,7 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 | `streak_min_days_shown` | Number | The shortest run of days the app mentions. |
 | `ball_sway_enabled` | Boolean | Whether the ball leans with the phone. |
 | `account_enabled` | Boolean | Whether Options offers signing in with Google, and with it the profile, answers made for whoever is signed in, and "Create" on the sheet of characters, for characters of their own. Off when absent. It also stays hidden in a build that has no Google sign-in set up, whatever this says. Turn it on only once the three things under "Before the account is turned on" are true. Turning it off again sends nothing more of anyone's profile to the AI service, and deletes nothing. |
-| `premium_enabled` | Boolean | Whether making characters of one's own is kept for those who paid: anyone else who touches "Create" is shown what paying brings. Off when absent, and to be left off: nothing is sold yet and nobody can pay. Characters already made go on answering either way. |
+| `premium_enabled` | Boolean | Whether making characters of one's own is kept for those who paid: anyone else who touches "Create" is shown what paying brings. Off when absent, and to be left off: nothing is sold yet and nobody can pay, so the button on that sheet names no price and does not answer. Before it is ever turned on, the store has to give the price and the terms of payment the sheet shows, and it has to be decided whether paying lifts the day's limit of AI answers: a character of one's own answers in its voice only through the AI, and the sheet has to say so if the limit stays. Characters already made go on answering either way. |
 
 ## Before the account is turned on
 
