@@ -46,7 +46,7 @@
     <!-- Settings -->
     <string name="settings_title">Opções</string>
     <string name="settings_language">Idioma</string>
-    <string name="settings_style">Estilo de resposta</string>
+    <string name="settings_style">Personagem</string>
     <string name="style_sarcastic">Sarcástico</string>
     <string name="style_mystical">Místico</string>
     <string name="style_neutral">Clássico</string>
@@ -85,7 +85,7 @@
     <string name="style_astro_sample">Sinal verde cósmico.</string>
     <string name="style_therapist_sample">O que você acha?</string>
     <string name="style_dog_sample">Au! Ou seja, sim.</string>
-    <string name="styles_title">Estilos</string>
+    <string name="styles_title">Personagens</string>
     <string name="styles_subtitle">Escolha quem responde</string>
     <string name="styles_see_all">Ver todos</string>
     <string name="styles_group_classics">Os de sempre</string>
@@ -95,7 +95,7 @@
     <string name="settings_ai">Respostas com IA</string>
     <string name="settings_ai_on">Escritas na hora</string>
     <string name="settings_ai_unavailable">Indisponível por enquanto</string>
-    <string name="settings_ai_classic">O estilo Clássico não usa IA</string>
+    <string name="settings_ai_classic">Clássico não usa IA</string>
     <string name="settings_ai_spent">Você já usou as de hoje. Voltam amanhã</string>
     <string name="settings_ai_more">Ganhe mais respostas com IA hoje</string>
     <string name="settings_ai_more_hint">Assista a um anúncio curto para continuar</string>
@@ -140,7 +140,7 @@
     <string name="notifications_channel">Novidades e lembretes</string>
     <string name="daily_verdict_title">Veredito do dia</string>
     <string name="settings_daily">Veredito do dia</string>
-    <string name="settings_daily_on">Uma notificação por dia, no estilo escolhido</string>
+    <string name="settings_daily_on">Uma notificação por dia, do seu personagem</string>
     <string name="settings_daily_blocked">As notificações estão desativadas para este app</string>
     <string name="settings_daily_allow">Permitir notificações</string>
     <string name="settings_daily_allow_hint">Abre as configurações de notificações do app</string>
@@ -166,4 +166,6 @@
     <string name="report_reason_other">Outra coisa</string>
     <string name="report_hint">Escolha uma opção e ela é enviada.</string>
     <string name="settings_voice_allow_hint">Para perguntar em voz alta</string>
+    <string name="action_create">Criar</string>
+    <string name="characters_create">Criar um personagem</string>
 </resources>

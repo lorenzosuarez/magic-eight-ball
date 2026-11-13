@@ -75,13 +75,13 @@ class StylesSheetTest {
     @Test
     fun `the close button puts the sheet away`() {
         show()
-        compose.onNodeWithText("Styles").assertIsDisplayed()
+        compose.onNodeWithText("Characters").assertIsDisplayed()
 
         compose.onNodeWithContentDescription("Close").performClick()
         compose.waitForIdle()
 
         assertEquals(1, closes)
-        compose.onNodeWithText("Styles").assertDoesNotExist()
+        compose.onNodeWithText("Characters").assertDoesNotExist()
     }
 
     @Test
@@ -94,7 +94,7 @@ class StylesSheetTest {
 
         assertEquals(Magic8BallPersonality.CAT, selected)
         assertEquals(1, closes)
-        compose.onNodeWithText("Styles").assertDoesNotExist()
+        compose.onNodeWithText("Characters").assertDoesNotExist()
     }
 
     @Test

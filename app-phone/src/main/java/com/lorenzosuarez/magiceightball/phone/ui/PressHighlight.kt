@@ -1,5 +1,13 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.background
@@ -147,6 +155,51 @@ internal fun BarIconButton(
         enabled = enabled,
         modifier = modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA), CircleShape)
     )
+}
+
+/**
+ * A top button that needs a word, as "Create" does: the disc of [BarIconButton] drawn out to
+ * hold its name, so the two read as the same kind of thing.
+ *
+ * @param description what the button does when its name alone does not say it.
+ */
+@Composable
+internal fun BarTextButton(
+    @DrawableRes icon: Int,
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .heightIn(min = ICON_BUTTON_SIZE)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
+            .clickable(
+                interactionSource = null,
+                indication = PressHighlight,
+                role = Role.Button,
+                onClick = onClick
+            )
+            .semantics { contentDescription = description }
+            .padding(start = 12.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 }
 
 /** How much of the ink the disc behind a top button, or behind a word, takes. */

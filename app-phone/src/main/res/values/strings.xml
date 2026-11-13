@@ -51,7 +51,7 @@
     <string name="language_english" translatable="false">English</string>
     <string name="language_spanish" translatable="false">Español</string>
     <string name="language_portuguese" translatable="false">Português</string>
-    <string name="settings_style">Answer style</string>
+    <string name="settings_style">Character</string>
     <string name="style_sarcastic">Sarcastic</string>
     <string name="style_mystical">Mystical</string>
     <string name="style_neutral">Classic</string>
@@ -90,7 +90,7 @@
     <string name="style_astro_sample">Cosmic green light.</string>
     <string name="style_therapist_sample">What do you think?</string>
     <string name="style_dog_sample">Woof! That means yes.</string>
-    <string name="styles_title">Styles</string>
+    <string name="styles_title">Characters</string>
     <string name="styles_subtitle">Pick who answers</string>
     <string name="styles_see_all">See all</string>
     <string name="styles_group_classics">Old favorites</string>
@@ -100,7 +100,7 @@
     <string name="settings_ai">AI answers</string>
     <string name="settings_ai_on">Written on the spot</string>
     <string name="settings_ai_unavailable">Not available right now</string>
-    <string name="settings_ai_classic">The Classic style doesn\'t use AI</string>
+    <string name="settings_ai_classic">Classic doesn\'t use AI</string>
     <string name="settings_ai_spent">You\'ve used today\'s AI answers. More tomorrow</string>
     <string name="settings_ai_more">Get more AI answers today</string>
     <string name="settings_ai_more_hint">Watch a short ad to keep going</string>
@@ -146,7 +146,7 @@
     <string name="notifications_channel">News and reminders</string>
     <string name="daily_verdict_title">Today\'s verdict</string>
     <string name="settings_daily">Daily verdict</string>
-    <string name="settings_daily_on">One notification a day, in your chosen style</string>
+    <string name="settings_daily_on">One notification a day, from your character</string>
     <string name="settings_daily_blocked">Notifications are off for this app</string>
     <string name="settings_daily_allow">Allow notifications</string>
     <string name="settings_daily_allow_hint">Opens this app\'s notification settings</string>
@@ -174,4 +174,6 @@
     <string name="report_reason_other">Something else</string>
     <string name="report_hint">Pick one and it\'s sent.</string>
     <string name="settings_voice_allow_hint">So you can ask out loud</string>
+    <string name="action_create">Create</string>
+    <string name="characters_create">Create a character</string>
 </resources>
