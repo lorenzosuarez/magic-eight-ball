@@ -211,6 +211,14 @@
     <string name="characters_full_text">Delete one to make another.</string>
     <string name="action_not_now">Not now</string>
     <string name="action_delete">Delete</string>
+    <string name="premium_title">Characters of your own, with Premium</string>
+    <string name="premium_hint">With the name, the voice and the look you choose</string>
+    <string name="premium_point_count">Up to five characters of your own</string>
+    <string name="premium_point_voice">They answer in your words</string>
+    <string name="premium_point_card">They sign their answers and their card</string>
+    <string name="premium_upgrade">Get Premium</string>
+    <string name="premium_upgrade_priced">Get Premium · %1$s</string>
+    <string name="premium_free_note">The app\'s own characters stay free</string>
     <string name="options_account">Account</string>
     <string name="account_title">Answers made for you</string>
     <string name="account_hint">Sign in so the characters know who\'s asking</string>

@@ -10,6 +10,7 @@ import com.example.magiceightball.core.domain.model.Zodiac
 import com.lorenzosuarez.magiceightball.phone.account.CustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
 import com.lorenzosuarez.magiceightball.phone.account.DeviceMarks
+import com.lorenzosuarez.magiceightball.phone.account.Entitlements
 import com.lorenzosuarez.magiceightball.phone.account.FakeAccount
 import com.lorenzosuarez.magiceightball.phone.account.FakeCustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.FakeDeviceMarks
@@ -1531,6 +1532,38 @@ class EightBallViewModelTest {
     }
 
     @Test
+    fun `making a character is to be paid for only once something is sold, and only by who has not paid`() = runTest {
+        val premium = MutableStateFlow(false)
+        val viewModel = createViewModel(
+            entitlements = object : Entitlements {
+                override val premium: StateFlow<Boolean> = premium
+            }
+        )
+        advanceUntilIdle()
+        // Nothing is sold: nobody is asked for anything, whatever they have.
+        assertEquals(false, viewModel.state.value?.mustPayToCreate)
+
+        appConfig.config.value = AppConfig(premiumEnabled = true)
+        advanceUntilIdle()
+        assertEquals(true, viewModel.state.value?.mustPayToCreate)
+
+        premium.value = true
+        advanceUntilIdle()
+        assertEquals(false, viewModel.state.value?.mustPayToCreate)
+        assertEquals(true, viewModel.state.value?.premium)
+    }
+
+    @Test
+    fun `while nothing is sold everyone has everything, whatever the switch says`() = runTest {
+        appConfig.config.value = AppConfig(premiumEnabled = true)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.state.value?.premium)
+        assertEquals(false, viewModel.state.value?.mustPayToCreate)
+    }
+
+    @Test
     fun `deleting the character that is chosen goes back to the app's first, and deleting another changes nothing`() = runTest {
         appConfig.config.value = AppConfig(accountEnabled = true)
         val rosa = CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.")
@@ -1577,7 +1610,8 @@ class EightBallViewModelTest {
         account: Account = Account.None,
         profiles: Profiles = Profiles.None,
         marks: DeviceMarks = DeviceMarks.None,
-        characters: CustomCharacters = CustomCharacters.None
+        characters: CustomCharacters = CustomCharacters.None,
+        entitlements: Entitlements = Entitlements.Everyone
     ): EightBallViewModel {
         val viewModel = EightBallViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
@@ -1593,7 +1627,7 @@ class EightBallViewModelTest {
             aiAllowance = aiAllowance,
             appConfig = appConfig,
             reports = reports,
-            membership = Membership(account, profiles, marks, characters)
+            membership = Membership(account, profiles, marks, characters, entitlements)
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

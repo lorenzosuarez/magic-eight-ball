@@ -46,7 +46,8 @@ data class AppConfig(
     val ballSwayEnabled: Boolean = true,
     val dailyVerdictEnabled: Boolean = true,
     val dailyVerdictHour: Int = 10,
-    val accountEnabled: Boolean = false
+    val accountEnabled: Boolean = false,
+    val premiumEnabled: Boolean = false
 ) {
     companion object {
         const val KEY_ADS_MIN_ANSWERS = "ads_min_answers"
@@ -60,6 +61,12 @@ data class AppConfig(
         const val KEY_DAILY_VERDICT_ENABLED = "daily_verdict_enabled"
         const val KEY_DAILY_VERDICT_HOUR = "daily_verdict_hour"
         const val KEY_ACCOUNT_ENABLED = "account_enabled"
+        
+        /**
+         * Whether making characters of one's own is kept for those who paid. Off until something
+         * is sold: nobody can pay yet, and turned on it would ask for what cannot be given.
+         */
+        const val KEY_PREMIUM_ENABLED = "premium_enabled"
 
         val KEYS = listOf(
             KEY_ADS_MIN_ANSWERS,
@@ -72,7 +79,8 @@ data class AppConfig(
             KEY_BALL_SWAY_ENABLED,
             KEY_DAILY_VERDICT_ENABLED,
             KEY_DAILY_VERDICT_HOUR,
-            KEY_ACCOUNT_ENABLED
+            KEY_ACCOUNT_ENABLED,
+            KEY_PREMIUM_ENABLED
         )
 
         /** One of each kind of character, the liveliest first, with the plain one always at hand. */
@@ -121,7 +129,8 @@ data class AppConfig(
                 ballSwayEnabled = flag(KEY_BALL_SWAY_ENABLED, defaults.ballSwayEnabled),
                 dailyVerdictEnabled = flag(KEY_DAILY_VERDICT_ENABLED, defaults.dailyVerdictEnabled),
                 dailyVerdictHour = number(KEY_DAILY_VERDICT_HOUR, defaults.dailyVerdictHour, 0..23),
-                accountEnabled = flag(KEY_ACCOUNT_ENABLED, defaults.accountEnabled)
+                accountEnabled = flag(KEY_ACCOUNT_ENABLED, defaults.accountEnabled),
+                premiumEnabled = flag(KEY_PREMIUM_ENABLED, defaults.premiumEnabled)
             )
         }
 

@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
  * @property removing true while an account is being taken away: between its profile going and
  * the account itself, it is not an account that still needs a profile.
  * @property characters the characters they made up; null while those are not known.
+ * @property premium whether they have what is sold: see [Entitlements].
  */
 data class Who(
     val account: AccountState = AccountState.Unavailable,
@@ -30,7 +31,8 @@ data class Who(
     val underAge: Boolean = false,
     val ageNotice: Boolean = false,
     val removing: Boolean = false,
-    val characters: List<CustomCharacter>? = null
+    val characters: List<CustomCharacter>? = null,
+    val premium: Boolean = true
 )
 
 /**
@@ -45,10 +47,16 @@ class Membership @Inject constructor(
     private val account: Account,
     private val profiles: Profiles,
     private val marks: DeviceMarks,
-    private val characters: CustomCharacters
+    private val characters: CustomCharacters,
+    entitlements: Entitlements
 ) {
-    /** With nothing to sign in to: for tests, and for whatever has no account at all. */
-    constructor(account: Account = Account.None) : this(account, Profiles.None, DeviceMarks.None, CustomCharacters.None)
+    /** With nothing to sign in to, and nothing sold: for tests, and for whatever has no account at all. */
+    constructor(
+        account: Account = Account.None,
+        profiles: Profiles = Profiles.None,
+        marks: DeviceMarks = DeviceMarks.None,
+        characters: CustomCharacters = CustomCharacters.None
+    ) : this(account, profiles, marks, characters, Entitlements.Everyone)
 
     private val ageNotice = MutableStateFlow(false)
     private val removing = MutableStateFlow(false)
@@ -61,9 +69,10 @@ class Membership @Inject constructor(
         combine(account.state, profiles.state, characters.state, ::Triple),
         underAge,
         ageNotice,
-        removing
-    ) { (account, profile, characters), underAge, ageNotice, removing ->
-        Who(account, profile, underAge, ageNotice, removing, characters)
+        removing,
+        entitlements.premium
+    ) { (account, profile, characters), underAge, ageNotice, removing, premium ->
+        Who(account, profile, underAge, ageNotice, removing, characters, premium)
     }
 
     /** Whether this device may ask the AI service for nothing: read where it is kept, never guessed. */
