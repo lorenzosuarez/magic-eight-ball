@@ -1,15 +1,15 @@
 # What can be changed from Firebase
 
-Everything here is a Remote Config parameter of the project. A change reaches a phone that has the app open within moments, and any other the next time it fetches (at most about an hour). Nothing here needs a release. Whatever is missing or wrong falls back to what the app ships with: a slip in the console cannot break the app.
+Everything here is a Remote Config parameter of the project. No key for the AI service is among them, and none must be put here: requests go through Firebase AI Logic, which holds it. Versions of the app from before that change still read `gemini_api_key`, `gemini_use_paid_key` and `gemini_paid_api_key`: deleting them turns AI answers off in those versions, so they stay until those versions are no longer in use, and then they go and the keys are revoked. A change reaches a phone that has the app open within moments, and any other the next time it fetches (at most about an hour). Nothing here needs a release. Whatever is missing or wrong falls back to what the app ships with: a slip in the console cannot break the app.
 
 ## Switches and numbers
 
 | Parameter | Type | What it does |
 |---|---|---|
 | `gemini_enabled` | Boolean | AI answers on or off for everyone. |
-| `gemini_api_key` | String | The key AI answers are asked with. |
-| `gemini_use_paid_key`, `gemini_paid_api_key` | Boolean, String | When the switch is on and the paid key is there, it is used instead. |
 | `gemini_model` | String | The model asked. Blank or absent: the app's own choice. |
+| `gemini_backend` | String | Which of Google's two services Firebase passes a request on to: `agent_platform` (or `vertex`) for the Agent Platform Gemini API, anything else or absent for the Gemini Developer API. It must be the one the project is set up for in the console, under AI Logic. |
+| `gemini_limited_use_tokens` | Boolean | Whether each request carries an App Check token made for it alone, which is what replay protection in App Check needs. Off when absent: each such token costs a Play Integrity check, which takes a few seconds of the 4.5 an answer is waited for and counts against Play Integrity's daily allowance for the whole app. Turn it on, see that answers still come, and only then enforce replay protection. |
 | `gemini_daily_limit` | Number | AI answers one device may ask for in a day. |
 | `ai_remark_enabled` | Boolean | Whether a second line may come under an answer to a spoken question. |
 | `styles_featured` | String | Styles shown first in Options, by name in lower case, comma separated. |

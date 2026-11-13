@@ -3,21 +3,34 @@ package com.example.magiceightball.core.data.config
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 
 /**
- * Whether answers may come from Gemini, with which key and which model, and how many of them a
- * device may ask for in one day.
+ * Whether answers may come from Gemini, from which model and by which of Google's two services,
+ * and how many of them a device may ask for in one day.
+ *
+ * @property limitedUseTokens whether each request carries a proof of the app made for it alone,
+ * which Firebase can then refuse to take twice. Off unless switched on from afar: making one
+ * takes Google Play a few seconds, every time, out of the few an answer is waited for, and Google
+ * Play makes only so many a day for the whole app. See AppCheck.
  */
 data class GeminiSettings(
     val enabled: Boolean,
-    val apiKey: String,
     val modelId: String,
-    val dailyLimit: Int = DEFAULT_DAILY_LIMIT
+    val dailyLimit: Int = DEFAULT_DAILY_LIMIT,
+    val backend: Backend = Backend.DEVELOPER_API,
+    val limitedUseTokens: Boolean = false
 ) {
-    val isUsable: Boolean get() = enabled && apiKey.isNotBlank() && modelId.isNotBlank()
+    val isUsable: Boolean get() = enabled && modelId.isNotBlank()
 
-    /** Keeps the key out of logs and crash reports. */
-    override fun toString(): String =
-        "GeminiSettings(enabled=$enabled, apiKey=${if (apiKey.isBlank()) "<none>" else "<set>"}, " +
-            "modelId=$modelId, dailyLimit=$dailyLimit)"
+    /**
+     * The service Firebase passes a request on to. Which one the project is set up for is
+     * chosen in the Firebase console, and the app has to ask for the same one.
+     */
+    enum class Backend {
+        /** The Gemini Developer API. */
+        DEVELOPER_API,
+
+        /** The Agent Platform Gemini API of Google Cloud, which was Vertex AI. */
+        AGENT_PLATFORM
+    }
 
     companion object {
         /** Generous for a toy that is asked a few questions at a time, and a ceiling on its cost. */

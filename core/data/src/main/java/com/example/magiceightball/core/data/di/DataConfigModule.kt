@@ -16,7 +16,7 @@ import com.example.magiceightball.core.data.config.RemoteConfigGeminiSettingsSou
 import com.example.magiceightball.core.data.datasource.JsonLocalDataSource
 import com.example.magiceightball.core.data.datasource.LocalDataSource
 import com.example.magiceightball.core.data.gateway.GeminiApiClient
-import com.example.magiceightball.core.data.gateway.RetrofitGeminiApiClient
+import com.example.magiceightball.core.data.gateway.FirebaseAiGeminiClient
 import com.example.magiceightball.core.data.repository.Magic8BallRepositoryImpl
 import com.example.magiceightball.core.data.settings.DataStoreUserSettingsRepository
 import com.example.magiceightball.core.data.speech.AndroidSpeechListener
@@ -38,6 +38,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.util.Locale
 import javax.inject.Singleton
+import kotlinx.serialization.json.Json
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -48,6 +49,10 @@ object DataConfigModule {
     fun provideQueryConfig(): QueryConfig {
         return QueryConfig()
     }
+
+    @Provides
+    @Singleton
+    fun provideJson(): Json = Json { ignoreUnknownKeys = true }
 
     @Provides
     @Singleton
@@ -90,7 +95,7 @@ abstract class GatewayModule {
 
     @Binds
     @Singleton
-    abstract fun bindGeminiApiClient(impl: RetrofitGeminiApiClient): GeminiApiClient
+    abstract fun bindGeminiApiClient(impl: FirebaseAiGeminiClient): GeminiApiClient
 
     @Binds
     @Singleton
