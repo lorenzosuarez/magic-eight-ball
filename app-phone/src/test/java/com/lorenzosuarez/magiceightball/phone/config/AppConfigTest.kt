@@ -48,6 +48,13 @@ class AppConfigTest {
     }
 
     @Test
+    fun `nothing is kept for those who paid until the developer says something is sold`() {
+        assertEquals(false, AppConfig.from { null }.premiumEnabled)
+        assertEquals(true, AppConfig.from { if (it == AppConfig.KEY_PREMIUM_ENABLED) " TRUE " else null }.premiumEnabled)
+        assertEquals(false, AppConfig.from { if (it == AppConfig.KEY_PREMIUM_ENABLED) "yes" else null }.premiumEnabled)
+    }
+
+    @Test
     fun `a slip in the console falls back to the default, value by value`() {
         val config = from(
             AppConfig.KEY_ADS_MIN_ANSWERS to "0",

@@ -115,6 +115,7 @@ internal fun SettingsContent(
     // Which character of the user's own is open in the editor: its slot, or [NEW] for one being made.
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     var notice by rememberSaveable { mutableStateOf<CharactersNotice?>(null) }
+    var paying by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val signedIn = state.account is AccountState.SignedIn
     if (browsingStyles) {
@@ -131,6 +132,8 @@ internal fun SettingsContent(
                         !signedIn -> notice = CharactersNotice.ACCOUNT
                         !state.canMakeCharacters || kept == null -> notice = CharactersNotice.UNKNOWN
                         kept.size >= CustomCharacter.MAX_COUNT -> notice = CharactersNotice.FULL
+                        // Last: nobody is asked to pay for what they could not have made anyway.
+                        state.mustPayToCreate -> paying = true
                         else -> editing = NEW
                     }
                 }
@@ -140,6 +143,10 @@ internal fun SettingsContent(
             onYoursSelected = onChooseCharacter,
             onEditYours = { editing = it.id }
         )
+    }
+    if (paying) {
+        // Nothing is sold yet, so there is nothing for the button to start: see [Entitlements].
+        PremiumSheet(onUpgrade = { paying = false }, onClose = { paying = false })
     }
     // The character the editor was opened on: kept while those of the account are for a moment
     // not known, so that what is being typed is not lost to a connection that blinked.

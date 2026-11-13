@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -164,13 +165,20 @@ class CharacterEditorTest {
     private val saved = mutableListOf<CustomCharacter?>()
     private var signIns = 0
 
-    private fun showOptions(account: AccountState, characters: List<CustomCharacter>?, profile: ProfileState = ProfileState.Present(LORENA)) {
+    private fun showOptions(
+        account: AccountState,
+        characters: List<CustomCharacter>?,
+        profile: ProfileState = ProfileState.Present(LORENA),
+        sold: Boolean = false,
+        premium: Boolean = true
+    ) {
         state = EightBallUiState(
             settings = UserSettings(language = AppLanguage.SPANISH),
-            config = AppConfig(accountEnabled = true),
+            config = AppConfig(accountEnabled = true, premiumEnabled = sold),
             account = account,
             profile = profile,
-            characters = characters
+            characters = characters,
+            premium = premium
         )
         compose.setContent {
             MagicEightBallPhoneTheme {
@@ -253,6 +261,44 @@ class CharacterEditorTest {
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
         compose.onNodeWithText("No se pudo conectar con tu cuenta").assertIsDisplayed()
         assertEquals(0, count("Nuevo personaje"))
+    }
+
+    @Test
+    fun `once it is sold, whoever has not paid is shown what paying brings, and the way back`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false)
+
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText("Tus propios personajes, con Premium").assertIsDisplayed()
+        // Said before the button: what saying no costs, which is nothing.
+        compose.onNodeWithText("Los personajes de la app siguen siendo gratis.").assertIsDisplayed()
+        // No price and no terms yet: the button is there, and buys nothing.
+        compose.onNodeWithText("Obtener Premium").assertIsDisplayed().assertIsNotEnabled()
+        assertEquals(0, count("Nuevo personaje"))
+
+        compose.onNodeWithText("Ahora no").performClick()
+        compose.waitForIdle()
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+        // What was made before is still theirs to choose and to correct.
+        compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
+        compose.onNodeWithText("Tu personaje").assertIsDisplayed()
+    }
+
+    @Test
+    fun `whoever has paid makes one as before, and nobody is asked to pay for a sixth`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = true)
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText("Nuevo personaje").assertIsDisplayed()
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+    }
+
+    @Test
+    fun `with five already, it is the five that is said, not the price`() {
+        showOptions(SIGNED_IN, characters = (1..5).map { NEMO.copy(id = it.toString(), name = "Nemo $it") }, sold = true, premium = false)
+
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+
+        compose.onNodeWithText("Ya tienes cinco personajes").assertIsDisplayed()
+        assertEquals(0, count("Tus propios personajes, con Premium"))
     }
 
     @Test

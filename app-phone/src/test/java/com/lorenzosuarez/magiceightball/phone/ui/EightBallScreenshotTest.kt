@@ -1012,6 +1012,57 @@ class EightBallScreenshotTest {
         }
     }
 
+    /** What is shown to whoever wants to make a character and has not paid, once that is asked for. */
+    @Test
+    fun phone_premium_spanish() = capturePremium("phone_77_premium_spanish", AppLanguage.SPANISH, dark = false)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_premium_priced_dark() = capturePremium(
+        "phone_78_premium_priced_dark",
+        AppLanguage.SPANISH,
+        dark = true,
+        price = "2,99 €",
+        terms = "Un solo pago."
+    )
+
+    /** The longest it gets: a price paid every month, and the two sentences that go with one. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_premium_portuguese_large_font() = capturePremium(
+        "phone_79_small_phone_premium_portuguese_large_font",
+        AppLanguage.PORTUGUESE,
+        dark = false,
+        price = "R$ 14,90/mês",
+        terms = "Renova todo mês. Cancele quando quiser no Google Play.",
+        fontScale = 1.5f
+    )
+
+    private fun capturePremium(
+        name: String,
+        language: AppLanguage,
+        dark: Boolean,
+        price: String? = null,
+        terms: String? = null,
+        fontScale: Float = 1f
+    ) = captureRoboImage(filePath = path(name)) {
+        WithFontScale(fontScale) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                ProvideAppLanguage(language) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        PremiumContent(
+                            price = price,
+                            terms = terms,
+                            onUpgrade = {},
+                            onNotNow = {},
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     /** Chosen: first in the row of the options, under its own name; and signing its answers. */
     @Test
     fun phone_settings_with_a_character_of_the_user_s_own() = captureWithSettings(
