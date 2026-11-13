@@ -168,18 +168,28 @@ internal fun SettingsContent(
         }
 
         Section(stringResource(R.string.options_asking)) {
-            if (state.voice == VoiceStatus.PermissionDenied) {
-                MicrophoneRow(onAllowMicrophone)
-            } else {
-                SwitchRow(
-                    title = stringResource(R.string.settings_voice),
-                    supporting = stringResource(R.string.settings_voice_on),
-                    note = if (state.voice == VoiceStatus.Unsupported) {
-                        stringResource(R.string.settings_voice_unsupported)
-                    } else null,
-                    checked = state.voice.isReady,
-                    enabled = state.voice != VoiceStatus.Unsupported,
-                    onCheckedChange = onVoiceQuestionsChange
+            // Refused, the switch is still the switch and still off: what stands in its way is
+            // said under it, and the way out is a row of its own, as for notifications.
+            val denied = state.voice == VoiceStatus.PermissionDenied
+            SwitchRow(
+                title = stringResource(R.string.settings_voice),
+                supporting = stringResource(R.string.settings_voice_on),
+                note = when (state.voice) {
+                    VoiceStatus.Unsupported -> stringResource(R.string.settings_voice_unsupported)
+                    VoiceStatus.PermissionDenied -> stringResource(R.string.settings_voice_denied)
+                    else -> null
+                },
+                checked = state.voice.isReady,
+                enabled = state.voice != VoiceStatus.Unsupported,
+                onCheckedChange = { if (denied) onAllowMicrophone() else onVoiceQuestionsChange(it) },
+                alert = denied
+            )
+            if (denied) {
+                RowDivider()
+                ActionRow(
+                    title = stringResource(R.string.settings_voice_allow_microphone),
+                    supporting = stringResource(R.string.settings_voice_allow_hint),
+                    onClick = onAllowMicrophone
                 )
             }
             RowDivider()
@@ -381,13 +391,15 @@ private fun SwitchRow(
             )
             .heightIn(min = 72.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+        // By the title, wherever the row ends: a third line under it does not move the switch.
+        verticalAlignment = Alignment.Top
     ) {
         SettingText(title, supporting, enabled, Modifier.weight(1f), alert, note)
         Spacer(Modifier.width(16.dp))
         Switch(
             checked = checked,
             onCheckedChange = null,
+            modifier = Modifier.padding(top = 6.dp),
             enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
@@ -418,34 +430,6 @@ private fun ActionRow(title: String, supporting: String, onClick: () -> Unit) {
     }
 }
 
-/** Voice questions while the microphone permission is missing: the way to grant it. */
-@Composable
-private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SettingText(
-            title = stringResource(R.string.settings_voice),
-            supporting = stringResource(R.string.settings_voice_on),
-            enabled = true,
-            modifier = Modifier.weight(1f),
-            note = stringResource(R.string.settings_voice_denied)
-        )
-        Spacer(Modifier.width(16.dp))
-        FilledTonalButton(
-            onClick = onAllowMicrophone,
-            modifier = Modifier.heightIn(min = 48.dp),
-            shape = ButtonShape
-        ) {
-            Text(stringResource(R.string.settings_voice_allow))
-        }
-    }
-}
-
 @Composable
 private fun SettingText(
     title: String,
@@ -455,12 +439,13 @@ private fun SettingText(
     alert: Boolean = false,
     note: String? = null
 ) {
-    val alpha = if (enabled) 1f else DISABLED_TITLE_ALPHA
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
+            // Always in full: a row that cannot be changed just now is still to be read, and
+            // its switch and the line under it say that it cannot.
+            color = MaterialTheme.colorScheme.onSurface
         )
         // What the setting does: said once, and the same whichever way the switch is.
         Text(
@@ -473,6 +458,7 @@ private fun SettingText(
         if (note != null) {
             Text(
                 text = note,
+                modifier = Modifier.padding(top = 4.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (alert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
             )
@@ -509,8 +495,6 @@ private val ROW_TEXT_START = 16.dp
 
 /** Material's emphasis for disabled content. */
 private const val DISABLED_ALPHA = 0.38f
-/** A dimmed row's name is still to be read: 4.5:1 on its card, where the switch may fade further. */
-private const val DISABLED_TITLE_ALPHA = 0.6f
 
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
 internal const val TILE_ALPHA = 0.08f

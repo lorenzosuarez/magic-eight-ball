@@ -94,8 +94,8 @@
     <string name="styles_group_attitude">Com atitude</string>
     <string name="settings_ai">Respostas com IA</string>
     <string name="settings_ai_on">Escritas na hora</string>
-    <string name="settings_ai_unavailable">Indisponível por enquanto. A bola continua respondendo</string>
-    <string name="settings_ai_classic">O estilo Clássico não usa IA. Escolha outro para ativar</string>
+    <string name="settings_ai_unavailable">Indisponível por enquanto</string>
+    <string name="settings_ai_classic">O estilo Clássico não usa IA</string>
     <string name="settings_ai_spent">Você já usou as de hoje. Voltam amanhã</string>
     <string name="settings_ai_more">Ganhe mais respostas com IA hoje</string>
     <string name="settings_ai_more_hint">Assista a um anúncio curto para continuar</string>
@@ -103,7 +103,6 @@
     <string name="settings_voice_on">Segure a bola e pergunte em voz alta</string>
     <string name="settings_voice_denied">Precisa de acesso ao microfone</string>
     <string name="settings_voice_unsupported">Indisponível neste dispositivo</string>
-    <string name="settings_voice_allow">Permitir</string>
     <string name="party_turn">%1$s, é sua vez</string>
     <string name="party_who">Quem de vocês…?</string>
     <string name="widget_description">Magic AI Ball. Toque para ver uma resposta</string>
@@ -153,7 +152,7 @@
     <string name="privacy_none">As respostas vêm do próprio app. O app não escuta e nenhuma pergunta é enviada. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
     <string name="action_back_to_ball">Voltar à bola</string>
     <string name="report_state_done">Resposta denunciada</string>
-    <string name="settings_detailed_needs_ai">Só com respostas com IA</string>
+    <string name="settings_detailed_needs_ai">Requer Respostas com IA</string>
     <string name="settings_voice_allow_microphone">Permitir microfone</string>
     <plurals name="streak_days">
         <item quantity="one">%1$d dia seguido</item>
@@ -165,4 +164,6 @@
     <string name="report_reason_harmful">Pode causar dano</string>
     <string name="report_reason_nonsense">Não faz sentido</string>
     <string name="report_reason_other">Outra coisa</string>
+    <string name="report_hint">Escolha uma opção e ela é enviada.</string>
+    <string name="settings_voice_allow_hint">Para perguntar em voz alta</string>
 </resources>

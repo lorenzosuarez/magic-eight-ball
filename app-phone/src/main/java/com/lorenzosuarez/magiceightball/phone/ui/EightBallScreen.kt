@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.CompositingStrategy
 import com.example.magiceightball.core.domain.gateway.ReportReason
 import kotlin.math.roundToInt
 import androidx.compose.foundation.rememberScrollState
@@ -890,7 +893,7 @@ private fun Stage(
                     onShareAnswer = onShareAnswer,
                     onRateAnswer = onRateAnswer,
                     onAskWho = onAskWho,
-                    modifier = band.padding(top = 8.dp, bottom = 16.dp).heightIn(min = 48.dp)
+                    modifier = band.padding(top = 24.dp, bottom = 16.dp).heightIn(min = 48.dp)
                 )
             }
         ) { measurables, constraints ->
@@ -921,7 +924,11 @@ private fun Stage(
             val highest = (title.height + breath).toFloat()
             val middle = (height - seen) / 2f - TOP_BAR_HEIGHT.toPx() / 2f
             val lowest = height - actions.height - caption.height - breath - seen
-            val top = minOf(maxOf(middle, highest), lowest).coerceAtLeast(highest)
+            // With more to read than fits under a ball in the middle, what room there is goes
+            // half over the question and half under the signature, not all to one end.
+            val top = if (lowest < middle) {
+                highest + (lowest - highest).coerceAtLeast(0f) / 2f
+            } else maxOf(middle, highest)
             layout(width, height) {
                 status.place((width - status.width) / 2, 0)
                 title.place((width - title.width) / 2, (top - breath - title.height).roundToInt())
@@ -1098,7 +1105,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
     ) { phase ->
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
             when (phase) {
-                is BallPhase.Answered -> QuietText(phase.question.quoted(), maxLines = 2)
+                is BallPhase.Answered -> QuietText(phase.question.quoted(), maxLines = 3)
                 // At rest the ball stands alone: how to ask is said at the bottom edge.
                 else -> if (phase !is BallPhase.Idle || turnName != null) Text(
                     text = when {
@@ -1130,6 +1137,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
 @Composable
 private fun Caption(state: EightBallUiState, answerSmall: Boolean, modifier: Modifier = Modifier) {
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+    val captionScroll = rememberScrollState()
 
     AnimatedContent(
         targetState = state.phase,
@@ -1155,15 +1163,36 @@ private fun Caption(state: EightBallUiState, answerSmall: Boolean, modifier: Mod
             )
             is BallPhase.Thinking -> QuietText(phase.question.quoted())
             is BallPhase.Answered -> Column(
-                // Where there is more to read than room for it, it scrolls in its own place.
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                // Where there is more to read than room for it, it scrolls in its own place, and
+                // what is still below fades out rather than being cut through a line.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        if (captionScroll.canScrollForward) {
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    0f to Color.Black,
+                                    1f to Color.Transparent,
+                                    startY = size.height - CAPTION_FADE.toPx(),
+                                    endY = size.height
+                                ),
+                                blendMode = BlendMode.DstIn
+                            )
+                        }
+                    }
+                    .verticalScroll(captionScroll),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (largeFont || answerSmall) {
+                    // The answer itself: heavier than what is said about it, and a little apart.
                     Text(
                         text = phase.answer.text(),
+                        modifier = Modifier.padding(bottom = 4.dp),
                         style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
@@ -1535,8 +1564,10 @@ private val BALL_MIN_SIZE = 160.dp
 private val BALL_GAP = 56.dp
 /** The air between the ball and what stands over and under it. */
 private val BALL_BREATHING = 24.dp
+/** How much of the text under the ball fades out at the bottom when there is more of it below. */
+private val CAPTION_FADE = 32.dp
 /** As small as the ball is ever seen, however much there is to read under it. */
-private val BALL_MIN_SEEN = 132.dp
+private val BALL_MIN_SEEN = 112.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
 
@@ -1553,7 +1584,7 @@ private val CAPTION_HEIGHT = 104.dp
 /** Room kept over the ball for the one or two lines that say where things stand. */
 private val TITLE_ROOM = 48.dp
 /** Under this size on the die, the answer is written under the ball as well. */
-private val ANSWER_READABLE = 14.dp
+private val ANSWER_READABLE = 12.dp
 /** The light behind the ball on a dark screen, and how far past the ball it reaches. */
 private val BallGlow = Color(0xFF3550C8).copy(alpha = 0.3f)
 private const val BALL_GLOW_REACH = 1.8f

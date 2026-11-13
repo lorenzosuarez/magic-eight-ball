@@ -99,8 +99,8 @@
     <string name="styles_group_attitude">With attitude</string>
     <string name="settings_ai">AI answers</string>
     <string name="settings_ai_on">Written on the spot</string>
-    <string name="settings_ai_unavailable">Not available right now. The ball still answers</string>
-    <string name="settings_ai_classic">The Classic style doesn\'t use AI. Pick another style to turn it on</string>
+    <string name="settings_ai_unavailable">Not available right now</string>
+    <string name="settings_ai_classic">The Classic style doesn\'t use AI</string>
     <string name="settings_ai_spent">You\'ve used today\'s AI answers. More tomorrow</string>
     <string name="settings_ai_more">Get more AI answers today</string>
     <string name="settings_ai_more_hint">Watch a short ad to keep going</string>
@@ -108,7 +108,6 @@
     <string name="settings_voice_on">Hold the ball and ask out loud</string>
     <string name="settings_voice_denied">Needs access to the microphone</string>
     <string name="settings_voice_unsupported">Not available on this device</string>
-    <string name="settings_voice_allow">Allow</string>
     <string name="party_turn">%1$s, your turn</string>
     <string name="party_who">Which of you…?</string>
     <string name="widget_description">Magic AI Ball. Tap for an answer</string>
@@ -161,7 +160,7 @@
     <string name="footer_version" translatable="false">v%1$s</string>
     <string name="action_back_to_ball">Back to the ball</string>
     <string name="report_state_done">Answer reported</string>
-    <string name="settings_detailed_needs_ai">Only with AI answers</string>
+    <string name="settings_detailed_needs_ai">Needs AI answers</string>
     <string name="settings_voice_allow_microphone">Allow microphone</string>
     <plurals name="streak_days">
         <item quantity="one">%1$d-day streak</item>
@@ -173,4 +172,6 @@
     <string name="report_reason_harmful">It could cause harm</string>
     <string name="report_reason_nonsense">It makes no sense</string>
     <string name="report_reason_other">Something else</string>
+    <string name="report_hint">Pick one and it\'s sent.</string>
+    <string name="settings_voice_allow_hint">So you can ask out loud</string>
 </resources>

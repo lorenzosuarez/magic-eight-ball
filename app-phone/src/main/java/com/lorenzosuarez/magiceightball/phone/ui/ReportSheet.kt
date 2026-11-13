@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,20 +62,43 @@ internal fun ReportContent(onReason: (ReportReason) -> Unit, modifier: Modifier 
     Column(modifier = modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
         Text(
             text = stringResource(R.string.report_title),
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp).semantics { heading() },
+            modifier = Modifier.padding(horizontal = 32.dp).semantics { heading() },
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.SemiBold
         )
-        ReportReason.entries.forEach { reason ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(role = Role.Button) { onReason(reason) }
-                    .heightIn(min = 56.dp)
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = stringResource(reason.labelRes()), style = MaterialTheme.typography.bodyLarge)
+        // Said before the first touch: choosing is sending.
+        Text(
+            text = stringResource(R.string.report_hint),
+            modifier = Modifier.padding(start = 32.dp, top = 2.dp, end = 32.dp, bottom = 16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        // One card of rows, as on the options page.
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .clip(CardShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        ) {
+            ReportReason.entries.forEachIndexed { index, reason ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(role = Role.Button) { onReason(reason) }
+                        .heightIn(min = 56.dp)
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = stringResource(reason.labelRes()), style = MaterialTheme.typography.titleMedium)
+                }
             }
         }
     }
