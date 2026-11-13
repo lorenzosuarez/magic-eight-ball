@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Builds the app's public site into site/public.
 
-The site is the privacy policy in the three languages the app speaks, and a front page for each.
-The policy has one source: the Markdown files under docs/. This turns them into pages, so that
-what is published can never drift from what is in the repository. It runs before every deploy
-(see firebase.json) and needs nothing but Python.
+The site is the privacy policy and the page for deleting an account, in the three languages the
+app speaks, and a front page for each. Their one source is the Markdown files under docs/. This
+turns them into pages, so that what is published can never drift from what is in the repository.
+It runs before every deploy (see firebase.json) and needs nothing but Python.
+
+A text whose effective date has not been set is not published: the build stops. To look at one
+before its day, build with --draft.
 """
 
 import html
 import re
 import shutil
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,17 +22,25 @@ STATIC = ROOT / "site" / "static"
 BASE_URL = "https://magic-ai-8-ball.web.app"
 PLAY_URL = "https://play.google.com/store/apps/details?id=com.lorenzosuarez.magiceightball"
 
+# The pages written as Markdown under docs/: where each is served, and its file in LANGUAGES.
+TEXTS = {"privacy": "policy", "delete-account": "deletion"}
+# Stands where a date belongs until the day the text takes effect.
+PENDING_DATE = "RELEASE-DATE"
+DRAFT = "--draft" in sys.argv
+
 # English is at the root; the other languages each have a folder of their own.
 LANGUAGES = {
     "en": {
         "html_lang": "en",
         "prefix": "",
         "policy": "PRIVACY_POLICY.md",
+        "deletion": "DELETE_ACCOUNT.md",
         "name": "English",
         "tagline": "A Magic 8 Ball with character. Tap, shake or ask out loud.",
         "description": "Magic AI Ball: a Magic 8 Ball with character, for Android phones and Wear OS.",
         "get": "Get it on Google Play",
         "privacy": "Privacy policy",
+        "delete": "Delete your account",
         "home": "Home",
         "language": "Language",
     },
@@ -36,11 +48,13 @@ LANGUAGES = {
         "html_lang": "es",
         "prefix": "es/",
         "policy": "PRIVACY_POLICY.es.md",
+        "deletion": "DELETE_ACCOUNT.es.md",
         "name": "Español",
         "tagline": "Una bola 8 mágica con carácter. Toca, agita o pregunta en voz alta.",
         "description": "Magic AI Ball: una bola 8 mágica con carácter, para teléfonos Android y Wear OS.",
         "get": "Disponible en Google Play",
         "privacy": "Política de privacidad",
+        "delete": "Eliminar tu cuenta",
         "home": "Inicio",
         "language": "Idioma",
     },
@@ -48,11 +62,13 @@ LANGUAGES = {
         "html_lang": "pt-BR",
         "prefix": "pt/",
         "policy": "PRIVACY_POLICY.pt.md",
+        "deletion": "DELETE_ACCOUNT.pt.md",
         "name": "Português",
         "tagline": "Uma bola 8 mágica com personalidade. Toque, agite ou pergunte em voz alta.",
         "description": "Magic AI Ball: uma bola 8 mágica com personalidade, para celulares Android e Wear OS.",
         "get": "Disponível no Google Play",
         "privacy": "Política de privacidade",
+        "delete": "Excluir a sua conta",
         "home": "Início",
         "language": "Idioma",
     },
@@ -60,29 +76,39 @@ LANGUAGES = {
 
 
 def inline(text: str) -> str:
-    """The marks the policy uses inside a line: code, bold and links. Everything else is text."""
+    """The marks the texts use inside a line: code, bold and links. Everything else is text.
+
+    A link to the site itself is written whole in the Markdown, so that it also works where the
+    file is read as it is, and is published without the host, so that it works wherever the site
+    is served.
+    """
     text = html.escape(text, quote=False)
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     return re.sub(
         r"\[([^\]]+)\]\(([^)\s]+)\)",
-        lambda link: f'<a href="{html.escape(link.group(2))}" rel="noopener">{link.group(1)}</a>',
+        lambda link: f'<a href="{html.escape(link.group(2).removeprefix(BASE_URL))}" rel="noopener">{link.group(1)}</a>',
         text,
     )
 
 
 def markdown(source: str) -> tuple[str, str]:
-    """The policy's title and its body as HTML. It knows the few kinds of line the policy has."""
-    title, body, items = "", [], []
+    """A text's title and its body as HTML. It knows the few kinds of line the texts have."""
+    title, body, items, steps = "", [], [], []
 
     def close_list() -> None:
-        if items:
-            body.append("<ul>\n" + "\n".join(f"<li>{item}</li>" for item in items) + "\n</ul>")
-            items.clear()
+        for tag, lines in (("ul", items), ("ol", steps)):
+            if lines:
+                body.append(f"<{tag}>\n" + "\n".join(f"<li>{item}</li>" for item in lines) + f"\n</{tag}>")
+                lines.clear()
 
     for line in source.splitlines():
-        if line.startswith("- "):
-            items.append(inline(line[2:]))
+        step = re.match(r"\d+\. ", line)
+        if step or line.startswith("- "):
+            # A list of the other kind ends where this one begins.
+            if steps if not step else items:
+                close_list()
+            (steps if step else items).append(inline(line[step.end():] if step else line[2:]))
             continue
         close_list()
         if line.startswith("# "):
@@ -90,12 +116,12 @@ def markdown(source: str) -> tuple[str, str]:
         elif line.startswith("## "):
             body.append(f"<h2>{inline(line[3:].strip())}</h2>")
         elif line.strip():
-            if line.startswith(("#", "|", ">", "    ")) or re.match(r"\d+\. ", line):
+            if line.startswith(("#", "|", ">", "    ")):
                 raise ValueError(f"A kind of line this does not know how to publish: {line[:60]!r}")
             body.append(f"<p>{inline(line.strip())}</p>")
     close_list()
     if not title:
-        raise ValueError("The policy has no title")
+        raise ValueError("The text has no title")
     return title, "\n".join(body)
 
 
@@ -144,6 +170,7 @@ def page(code: str, name: str, title: str, description: str, main: str, main_cla
 </main>
 <footer>
 <a href="{url(code, "privacy")}">{html.escape(words["privacy"])}</a>
+<a href="{url(code, "delete-account")}">{html.escape(words["delete"])}</a>
 <a href="{PLAY_URL}" rel="noopener">Google Play</a>
 </footer>
 </body>
@@ -158,16 +185,23 @@ def write(path: str, content: str) -> None:
 
 
 def build() -> None:
+    # Checked before anything is written, so that a build that stops leaves the last one whole.
+    for words in LANGUAGES.values():
+        for text in TEXTS.values():
+            if PENDING_DATE in (ROOT / "docs" / words[text]).read_text(encoding="utf-8") and not DRAFT:
+                raise ValueError(f"docs/{words[text]} has no effective date yet: set it, or build with --draft")
+
     if OUT.exists():
         shutil.rmtree(OUT)
     shutil.copytree(STATIC, OUT)
 
     for code, words in LANGUAGES.items():
-        title, body = markdown((ROOT / "docs" / words["policy"]).read_text(encoding="utf-8"))
-        write(
-            words["prefix"] + "privacy.html",
-            page(code, "privacy", title, title, f"<h1>{inline(title)}</h1>\n{body}", "text"),
-        )
+        for name, text in TEXTS.items():
+            title, body = markdown((ROOT / "docs" / words[text]).read_text(encoding="utf-8"))
+            write(
+                words["prefix"] + name + ".html",
+                page(code, name, title, title, f"<h1>{inline(title)}</h1>\n{body}", "text"),
+            )
         front = (
             '<img class="ball" src="/icon.svg" alt="" width="144" height="144">\n'
             "<h1>Magic AI Ball</h1>\n"
@@ -186,7 +220,7 @@ def build() -> None:
     )
     write("404.html", page("en", "index", "Magic AI Ball", "Page not found", f"<h1>404</h1>\n{missing}", "front"))
 
-    pages = [url(code, name) for code in LANGUAGES for name in ("index", "privacy")]
+    pages = [url(code, name) for code in LANGUAGES for name in ("index", *TEXTS)]
     write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml\n")
     write(
         "sitemap.xml",
