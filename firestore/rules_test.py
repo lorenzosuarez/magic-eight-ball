@@ -252,5 +252,14 @@ check("nor lists", call("GET", f"{BASE}/state", "pia"), REFUSED)
 check("nor moves", save("voidedPurchases", "pia", {}, server_time="at", collection="state"), REFUSED)
 check("nor deletes", call("DELETE", f"{BASE}/state/voidedPurchases", "pia"), REFUSED)
 
+COUNT = {"day": "2026-11-13", "used": 20}
+check("the server counts an account's answers for the day",
+      save("pia/usage/ai", SERVER, COUNT, server_time="at"), OK)
+check("which the account itself cannot read", call("GET", f"{BASE}/users/pia/usage/ai", "pia"), REFUSED)
+check("nor list", call("GET", f"{BASE}/users/pia/usage", "pia"), REFUSED)
+check("nor set back", save("pia/usage/ai", "pia", {"day": "2026-11-13", "used": 0}, server_time="at"), REFUSED)
+check("nor delete", call("DELETE", f"{BASE}/users/pia/usage/ai", "pia"), REFUSED)
+check("nor start for itself", save("eve/usage/ai", "eve", COUNT, server_time="at"), REFUSED)
+
 print(f"\n{len(failures)} failed" if failures else "\nall as the rules say")
 sys.exit(1 if failures else 0)

@@ -2,14 +2,20 @@
 // purchase is real before granting it to an account, takes it back when Play does, and forgets
 // it with the account. Nothing is granted on the app's word: the app reads its own grant, at
 // users/{the account's id}/grants/premium, and can write none. See firestore/firestore.rules.
+//
+// And what it does for an account's answers: it asks the model for them itself, and keeps the
+// count of the day's where the app cannot reach, at users/{the account's id}/usage/ai.
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { getRemoteConfig } from "firebase-admin/remote-config";
 import { logger, setGlobalOptions } from "firebase-functions";
 import { HttpsError, onCall } from "firebase-functions/https";
 import { onSchedule } from "firebase-functions/scheduler";
 import { region } from "firebase-functions/v1";
+import { type Answer, type Parameters, allowance, asked, dayFor, limitsFrom, modelFrom, spend } from "./ask";
 import { type Outcome, owesAcknowledgement, purchaseId, settle, standing } from "./claim";
+import { model } from "./model";
 import { play, voidedFrom, voidedSince } from "./play";
 
 initializeApp();
@@ -103,6 +109,72 @@ export const claimPremium = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async
   } catch (error) {
     logger.error("claimPremium: Play or Firestore could not be reached", kindOf(error));
     throw new HttpsError("unavailable", "The purchase could not be checked. Try again later.");
+  }
+});
+
+// What the project's Remote Config says of answers: how many an account may have in a day, and
+// which model is asked. Read here from where the app reads the same, so that both are set in
+// one place, and at most every ten minutes.
+const SETTINGS_FOR_MS = 10 * 60 * 1000;
+let settings: { parameters: Parameters | undefined; until: number } | undefined;
+
+async function settingsNow(): Promise<Parameters | undefined> {
+  if (settings && Date.now() < settings.until) return settings.parameters;
+  let parameters: Parameters | undefined;
+  try {
+    parameters = (await getRemoteConfig().getTemplate()).parameters as Parameters;
+  } catch (error) {
+    // Out of reach, what was last read stands, and failing that the defaults.
+    logger.warn("askBall: the settings could not be read", kindOf(error));
+    parameters = settings?.parameters;
+  }
+  settings = { parameters, until: Date.now() + SETTINGS_FOR_MS };
+  return parameters;
+}
+
+const countOf = (uid: string) => db.doc(`users/${uid}/usage/ai`);
+
+// An answer written by the model, for an account. It is counted against the account's day here
+// and not on the phone, so that the day's allowance holds whatever the app on the phone says;
+// and it is asked for only by the app itself, which App Check vouches for: this function was
+// never called by a version that sent no such proof, so it is asked of every request.
+export const askBall = onCall({ enforceAppCheck: true, timeoutSeconds: 15 }, async (request): Promise<Answer> => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Sign in to ask through the server.");
+  const wanted = asked(request.data);
+  if (!wanted) throw new HttpsError("invalid-argument", "Not a question for the ball.");
+
+  const parameters = await settingsNow();
+  const limits = limitsFrom(parameters);
+  const day = dayFor(request.data?.day, Date.now());
+  let allowed: boolean;
+  try {
+    // The count and whether the account has paid are read together, and the count is written
+    // with them: two answers asked for at once cannot both be the day's last.
+    allowed = await db.runTransaction(async (transaction) => {
+      const [count, grant] = await transaction.getAll(countOf(uid), grantOf(uid));
+      const spent = spend(count.data(), day, allowance(limits, grant.exists));
+      if (spent.allowed) transaction.set(countOf(uid), spent.next);
+      return spent.allowed;
+    });
+  } catch (error) {
+    logger.error("askBall: the count could not be kept", kindOf(error));
+    throw new HttpsError("unavailable", "The answer could not be asked for. Try again later.");
+  }
+  if (!allowed) return { outcome: "spent" };
+
+  try {
+    const answer = await model.write(modelFrom(parameters), wanted);
+    // How it ended, and nothing of what was asked or answered.
+    logger.info("askBall", { outcome: answer.outcome });
+    return answer;
+  } catch (error) {
+    // An answer that never came is not one of the day's.
+    await countOf(uid)
+      .update({ used: FieldValue.increment(-1) })
+      .catch(() => undefined);
+    logger.warn("askBall: the model did not answer", kindOf(error));
+    throw new HttpsError("unavailable", "The model did not answer. Try again later.");
   }
 });
 

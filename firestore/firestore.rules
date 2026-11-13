@@ -91,6 +91,10 @@ service cloud.firestore {
       match /grants/{grant} {
         allow read: if isOwner(uid);
       }
+
+      // How many answers this account has had from the AI today, which the server counts at
+      // usage/ai so that the day's allowance does not rest on the app's word. Not even its owner
+      // reads it or writes it: no rule names it, and what no rule allows is refused.
     }
 
     // A character is these four fields and no other: a name, how it answers, and whose colour
