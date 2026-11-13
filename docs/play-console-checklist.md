@@ -42,7 +42,7 @@ How the page defines the words, since the answers depend on them:
 |---|---|---|---|---|---|
 | Personal info → **Name** | The name Google gives at sign-in (Firebase Authentication). The first name in the profile (Firestore), sent to Gemini when the user agreed | Yes | No | Optional | Account management, App functionality, Personalization |
 | Personal info → **Email address** | From the Google sign-in (Firebase Authentication) | Yes | No | Optional | Account management |
-| Personal info → **User IDs** | The Firebase account identifier. Firebase attaches it to Firestore and AI requests while signed in ([Firebase disclosure](https://firebase.google.com/docs/android/play-data-disclosure)) | Yes | No | Optional | Account management, App functionality |
+| Personal info → **User IDs** | The Firebase account identifier. Firebase attaches the signed-in account's token to Firestore and AI requests ([Firebase disclosure](https://firebase.google.com/docs/android/play-data-disclosure)) | Yes | No | Optional | Account management, App functionality |
 | Personal info → **Other info** | Date of birth (the page's own example for this type). Kept in Firestore; the zodiac sign and "today is the birthday" worked out from it go to Gemini when the user agreed | Yes | No | Optional | App functionality, Personalization |
 | App activity → **Other user-generated content** | The name and description of a character the user wrote (Firestore, and Gemini when it answers) | Yes | No | Optional | App functionality, Personalization |
 | Device or other IDs → **Device or other IDs** | Add a purpose to the existing row: the Play Integrity token that App Check sends | Yes | (as today) | Required | add: Fraud prevention, security, and compliance |
