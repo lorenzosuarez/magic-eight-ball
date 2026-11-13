@@ -1,6 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
+import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
+import com.lorenzosuarez.magiceightball.phone.account.ProfileState
+import java.time.LocalDate
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Icon
@@ -81,7 +84,8 @@ internal fun SettingsContent(
     onOpenPrivacyPolicy: () -> Unit = {},
     onSignIn: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onSignOut: () -> Unit = {},
-    onDeleteAccount: suspend () -> AccountOutcome = { AccountOutcome.FAILED }
+    onDeleteAccount: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
+    onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED }
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -115,7 +119,10 @@ internal fun SettingsContent(
                 account = state.account,
                 onSignIn = onSignIn,
                 onSignOut = onSignOut,
-                onDeleteAccount = onDeleteAccount
+                onDeleteAccount = onDeleteAccount,
+                profile = (state.profile as? ProfileState.Present)?.profile,
+                onSaveProfile = onSaveProfile,
+                onOpenPrivacyPolicy = onOpenPrivacyPolicy
             )
         }
         Section(stringResource(R.string.options_answers)) {
@@ -265,7 +272,9 @@ internal fun SettingsContent(
         }
 
         Text(
-            text = stringResource(state.privacyNoteRes()),
+            // With a profile, what the AI service is told of it is said here too.
+            text = stringResource(state.privacyNoteRes()) +
+                if (state.sendsProfile) " " + stringResource(R.string.privacy_account) else "",
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -488,6 +497,11 @@ internal fun SettingText(
         }
     }
 }
+
+/** Whether answers are being made for whoever is signed in: the AI service is asked, and they have a profile. */
+private val EightBallUiState.sendsProfile: Boolean
+    get() = offersAccount && profile is ProfileState.Present && usesAiAnswers &&
+        settings.personality != Magic8BallPersonality.NEUTRAL
 
 /** What is said about the user's data depends on what the app is doing with it right now. */
 @StringRes

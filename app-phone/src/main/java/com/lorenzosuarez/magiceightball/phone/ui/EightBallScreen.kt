@@ -283,6 +283,24 @@ fun EightBallScreen(
         // Nothing but the window's own background until the saved choices are known.
         val current = state ?: return@Box
         ProvideAppLanguage(current.settings.language) {
+            val openPrivacyPolicy: () -> Unit = {
+                try {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl(current.settings.language)))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (_: ActivityNotFoundException) {
+                    // No browser on the device: there is nothing to open it with.
+                }
+            }
+            // Over whichever page is in front: an account is not kept without its profile.
+            AccountPrompts(
+                state = current,
+                onSaveProfile = { name, birthDate -> viewModel.saveProfile(name, birthDate, context) },
+                onDeclineProfile = { viewModel.declineProfile(context) },
+                onOpenPrivacyPolicy = openPrivacyPolicy,
+                onAgeNoticeSeen = viewModel::ageNoticeSeen
+            )
             // Said once, as the die comes up with it; never again for the same answer.
             val voice = rememberAnswerVoice()
             val answered = current.phase as? BallPhase.Answered
@@ -399,19 +417,11 @@ fun EightBallScreen(
                             context.shareText(shareAppText)
                             viewModel.onAppShared()
                         },
-                        onOpenPrivacyPolicy = {
-                            try {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl(current.settings.language)))
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            } catch (_: ActivityNotFoundException) {
-                                // No browser on the device: there is nothing to open it with.
-                            }
-                        },
+                        onOpenPrivacyPolicy = openPrivacyPolicy,
                         onSignIn = { viewModel.signIn(context) },
                         onSignOut = viewModel::signOut,
                         onDeleteAccount = { viewModel.deleteAccount(context) },
+                        onSaveProfile = { name, birthDate -> viewModel.saveProfile(name, birthDate, context) },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )

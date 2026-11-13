@@ -2,6 +2,8 @@ package com.lorenzosuarez.magiceightball.phone.ui
 
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.Profile
+import java.time.LocalDate
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import android.app.Application
@@ -561,6 +563,95 @@ class EightBallScreenshotTest {
         fontScale = 1.5f
     )
 
+    /** Asked of whoever has just signed in: who they are, and what is sent of it. */
+    @Test
+    fun phone_profile_new_spanish() = captureProfile(
+        "phone_59_profile_new_spanish",
+        ProfileDraft("Lorena"),
+        AppLanguage.SPANISH,
+        dark = false
+    )
+
+    /** Filled in, in the dark theme. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_profile_filled_dark() = captureProfile(
+        "phone_60_profile_filled_dark",
+        ProfileDraft("Lorena", PROFILE.birthDate),
+        AppLanguage.SPANISH,
+        dark = true
+    )
+
+    /** Corrected later, from the account: the same sheet, with what it holds. */
+    @Test
+    fun phone_profile_edit_spanish() = captureProfile(
+        "phone_61_profile_edit_spanish",
+        ProfileDraft("Lorena", PROFILE.birthDate),
+        AppLanguage.SPANISH,
+        dark = false,
+        firstTime = false
+    )
+
+    /**
+     * The worst case, on a window tall enough to show all of what scrolls: a small phone's
+     * width, a large font, the longest words, a date that does not exist.
+     */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_profile_portuguese_large_font() = captureProfile(
+        "phone_62_small_phone_profile_portuguese_large_font",
+        ProfileDraft("Maria Fernanda").apply {
+            typeDay("31")
+            typeMonth("2")
+            typeYear("1990")
+        },
+        AppLanguage.PORTUGUESE,
+        dark = false,
+        fontScale = 1.5f
+    )
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_profile_edit_failed_large_font() = captureProfile(
+        "phone_63_small_phone_profile_edit_failed_large_font",
+        ProfileDraft("Lorena", PROFILE.birthDate),
+        AppLanguage.SPANISH,
+        dark = false,
+        firstTime = false,
+        failed = true,
+        fontScale = 1.5f
+    )
+
+    private fun captureProfile(
+        name: String,
+        draft: ProfileDraft,
+        language: AppLanguage,
+        dark: Boolean,
+        firstTime: Boolean = true,
+        failed: Boolean = false,
+        fontScale: Float = 1f
+    ) = captureRoboImage(filePath = path(name)) {
+        WithFontScale(fontScale) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                ProvideAppLanguage(language) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        ProfileContent(
+                            draft = draft,
+                            firstTime = firstTime,
+                            today = LocalDate.of(2026, 11, 13),
+                            busy = false,
+                            failed = failed,
+                            onSave = { _, _ -> },
+                            onSecondary = {},
+                            onOpenPrivacyPolicy = {},
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     /** The options page on its own, from its top, where the account is. */
     private fun captureAccountOptions(name: String, state: EightBallUiState, fontScale: Float) =
         captureRoboImage(filePath = path(name)) {
@@ -596,8 +687,10 @@ class EightBallScreenshotTest {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
                         AccountSheetContent(
                             account = account,
+                            profile = PROFILE,
                             failed = failed,
                             busy = false,
+                            onEditProfile = {},
                             onSignOut = {},
                             onDelete = {},
                             modifier = Modifier.padding(top = 24.dp)
@@ -831,6 +924,9 @@ private const val PHONE = "w432dp-h768dp-400dpi"
 /** 720 x 1280 px, a small phone. */
 private const val SMALL_PHONE = "w360dp-h640dp-xhdpi"
 
+/** As wide as a small phone and as tall as it takes to see the whole of something that scrolls. */
+private const val SMALL_PHONE_TALL = "w360dp-h1500dp-xhdpi"
+
 /** 1200 x 1920 px, a 7-inch tablet. */
 private const val TABLET = "w600dp-h960dp-xhdpi"
 
@@ -856,6 +952,8 @@ private val ANSWERED = EightBallUiState(
 )
 
 private const val LONG_READING = "Cuatro tazas vacías y un mensaje a medio escribir no son un plan, corazón. Guarda el teléfono en el cajón de las bufandas, cena algo caliente y mañana, con la cabeza fresca, decides si de verdad vale tu desvelo."
+
+private val PROFILE = Profile("Lorena", LocalDate.of(1990, 3, 12))
 
 private val LONG_ACCOUNT = AccountState.SignedIn(
     id = "1",
