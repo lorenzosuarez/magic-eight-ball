@@ -47,6 +47,34 @@ class MembershipTest {
     }
 
     @Test
+    fun `buying is for whoever could use it, and what the store and the server say is passed on`() = runTest {
+        val held = FakeEntitlements()
+        val shop = FakeShop(price = "2,99 €")
+        val membership = Membership(account, profiles, marks, characters, held, shop)
+
+        // Signed in, and not yet said who they are: nothing is sold to an account that may not stay.
+        assertEquals(Bought.FAILED, membership.buyPremium(host))
+        assertEquals(0, shop.asked)
+
+        profiles.state.value = ProfileState.Present(Profile("Ana", ADULT))
+        shop.sells = Bought.PENDING
+        assertEquals(Bought.PENDING, membership.buyPremium(host))
+        assertEquals(1, shop.asked)
+        assertEquals(Offer("2,99 €"), membership.who.first().offer)
+        assertFalse(membership.who.first().premium)
+
+        held.premium.value = true
+        assertTrue(membership.who.first().premium)
+
+        marks.underAge.value = true
+        assertEquals(Bought.FAILED, membership.buyPremium(host))
+        account.state.value = AccountState.SignedOut
+        marks.underAge.value = false
+        assertEquals(Bought.FAILED, membership.buyPremium(host))
+        assertEquals(1, shop.asked)
+    }
+
+    @Test
     fun `eighteen today is an adult, and eighteen tomorrow is not`() = runTest {
         assertEquals(ProfileOutcome.SAVED, membership.saveProfile("Ana", TODAY.minusYears(18), TODAY, host))
         assertEquals(ProfileOutcome.UNDER_AGE, membership.saveProfile("Ana", TODAY.minusYears(18).plusDays(1), TODAY, host))

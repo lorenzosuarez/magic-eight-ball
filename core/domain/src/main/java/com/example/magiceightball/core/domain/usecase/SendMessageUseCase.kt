@@ -28,7 +28,8 @@ class SendMessageUseCase @Inject constructor(
         wantsRemark: Boolean = false,
         detailed: Boolean = false,
         asker: AskerFacts? = null,
-        custom: CustomCharacter? = null
+        custom: CustomCharacter? = null,
+        premium: Boolean = false
     ): Magic8BallResult {
         return llmGateway.generateMagic8BallMessage(
             Magic8BallRequest(
@@ -40,7 +41,8 @@ class SendMessageUseCase @Inject constructor(
                 wantsRemark = wantsRemark,
                 detailed = detailed,
                 asker = asker,
-                custom = custom
+                custom = custom,
+                premium = premium
             )
         )
     }

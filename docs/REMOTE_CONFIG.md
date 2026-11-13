@@ -11,6 +11,7 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 | `gemini_backend` | String | Which of Google's two services Firebase passes a request on to: `agent_platform` (or `vertex`) for the Agent Platform Gemini API, anything else or absent for the Gemini Developer API. It must be the one the project is set up for in the console, under AI Logic. |
 | `gemini_limited_use_tokens` | Boolean | Whether each request carries an App Check token made for it alone, which is what replay protection in App Check needs. Off when absent: each such token costs a Play Integrity check, which takes a few seconds of the 4.5 an answer is waited for and counts against Play Integrity's daily allowance for the whole app. Turn it on, see that answers still come, and only then enforce replay protection. |
 | `gemini_daily_limit` | Number | AI answers one device may ask for in a day. |
+| `gemini_daily_limit_premium` | Number | The same for whoever has paid for Premium: 120 when absent, and never less than `gemini_daily_limit`, whatever is set here. The sheet that sells Premium promises more answers a day, so this stays above the other. |
 | `ai_remark_enabled` | Boolean | Whether a second line may come under an answer to a spoken question. |
 | `styles_featured` | String | Styles shown first in Options, by name in lower case, comma separated. |
 | `styles_hidden` | String | Styles not offered at all, same format. |
@@ -22,7 +23,7 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 | `streak_min_days_shown` | Number | The shortest run of days the app mentions. |
 | `ball_sway_enabled` | Boolean | Whether the ball leans with the phone. |
 | `account_enabled` | Boolean | Whether Options offers signing in with Google, and with it the profile, answers made for whoever is signed in, and "Create" on the sheet of characters, for characters of their own. Off when absent. It also stays hidden in a build that has no Google sign-in set up, whatever this says. Turn it on only once the three things under "Before the account is turned on" are true. Turning it off again sends nothing more of anyone's profile to the AI service, and deletes nothing. |
-| `premium_enabled` | Boolean | Whether making characters of one's own is kept for those who paid: anyone else who touches "Create" is shown what paying brings. Off when absent, and to be left off: nothing is sold yet and nobody can pay, so the button on that sheet names no price and does not answer. Before it is ever turned on, the store has to give the price and the terms of payment the sheet shows, and it has to be decided whether paying lifts the day's limit of AI answers: a character of one's own answers in its voice only through the AI, and the sheet has to say so if the limit stays. Characters already made go on answering either way. |
+| `premium_enabled` | Boolean | Whether making characters of one's own is kept for those who paid: anyone else who touches "Create" is shown what paying brings. Off when absent. Turn it on only once everything under "Before Premium is turned on" is true: until Google Play has a price for it, the button on that sheet names none and does not answer. Whoever has paid keeps what they paid for with this off, and characters already made go on answering either way. |
 
 ## Before the account is turned on
 
@@ -33,6 +34,25 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 3. **The privacy policy says so.** The one published has to be the one that describes the account, the profile and what is sent of it.
 
 One thing the app cannot do by itself, and someone has to: **an account that was never given a profile, and could not be deleted, stays in Authentication.** It happens when the app is closed on the screen that asks for a profile and never opened again, or when the account could not be reached to be deleted and the sign-in had gone stale by the next start. Such an account holds what Google gave at sign-in and nothing else. Any user in Authentication with no document under `users/` a day after it was created is one of these, and is to be deleted there.
+
+## Before Premium is turned on
+
+`premium_enabled` keeps making characters of one's own for whoever has bought Premium: one product in Google Play, `premium`, paid for once. The app never takes its own word for a purchase. It hands the token Google Play gives it to the project's own server, in `functions/`, which asks Google whether it is paid for and writes down which account holds it, at `users/{id}/grants/premium`; the app reads that and can write none of it. A purchase belongs to the first account that claims it for as long as that account is there, and is free again once the account is deleted. What Google Play takes back, refunded or charged back, the server takes back within a day.
+
+All of this has to be true first, in this order:
+
+1. **Accounts are on.** Everything under "Before the account is turned on": a purchase is held by an account, and nobody is shown the price without one.
+2. **The project pays as it goes.** Cloud Functions need the Blaze plan.
+3. **The server may ask Google Play.** In the project's Google Cloud console, enable "Google Play Android Developer API". In Play Console, under Users and permissions, invite the account the functions run as, `PROJECT_NUMBER-compute@developer.gserviceaccount.com`, with "View financial data, orders, and cancellation survey responses" and "Manage orders and subscriptions". It can take a day for Google Play to honour it.
+4. **The server and the rules are in the project.** With Node 22 or later: `cd functions && npm ci && npm test`, then `firebase deploy --only functions,firestore:rules`. Three functions, all in `europe-west1`: `claimPremium`, which the app calls; `revokeVoided`, once a day; `forgetAccount`, when an account is deleted, which also clears whatever that account left behind.
+5. **The product is in Google Play.** A one-time product with the id `premium`, active, with its price. A version of the app that has the billing library has to be in a testing track before Google Play will name a price to it. Buy it once with a licence tester's account, see `grants/premium` appear under that account, and refund it to see it go the next day.
+6. **The policy and the store listing say so.** The privacy policy and the Data safety form have to tell of purchases: the server keeps, with the account, the order number and a fingerprint of the purchase, never the token itself, and deletes both with the account.
+
+Then turn `premium_enabled` on. Once the version that sends App Check tokens is the one in people's hands and App Check shows the claims arriving verified, set `ENFORCE_APP_CHECK` in `functions/src/index.ts` and deploy again.
+
+Turning `premium_enabled` off again stops the sale and takes nothing from anyone: who has paid keeps the larger allowance of AI answers, and everyone can make characters as before.
+
+Two things to know. It is the app that asks for payment before a character is made, not the rules: they cannot see `premium_enabled`, so an app that was tampered with could still make one. Once Premium is on for good, a rule that asks for `grants/premium` before a character is created closes that. And a purchase goes to the first account that claims it: on a phone shared by two accounts of the app, a payment that was pending for one and comes through while the other is signed in is granted to the other.
 
 ## `answers_json`: the answers the app keeps
 

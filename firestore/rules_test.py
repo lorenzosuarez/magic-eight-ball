@@ -2,8 +2,9 @@
 
     firebase emulators:exec --only firestore --project demo-magic-ball "python3 firestore/rules_test.py"
 
-Every request is made as the app's would be: signed in as someone, or as nobody, never as the
-owner of the project, to whom no rule applies.
+Every request is made as the app's would be: signed in as someone, or as nobody. Only what the
+server keeps is put there as the server puts it: as the owner of the project, to whom no rule
+applies.
 """
 import base64
 import datetime
@@ -32,11 +33,15 @@ def token(uid):
     return part({"alg": "none", "typ": "JWT"}) + "." + part(claims) + "."
 
 
+SERVER = object()
+
+
 def call(method, url, uid=None, body=None):
     request = urllib.request.Request(url, method=method, data=json.dumps(body).encode() if body is not None else None)
     request.add_header("Content-Type", "application/json")
     if uid:
-        request.add_header("Authorization", "Bearer " + token(uid))
+        # "owner" is what the emulator takes for the owner of the project.
+        request.add_header("Authorization", "Bearer " + ("owner" if uid is SERVER else token(uid)))
     try:
         with urllib.request.urlopen(request) as response:
             return response.status
@@ -95,6 +100,17 @@ def remove(uid, as_uid, slots=("1", "2", "3", "4", "5"), with_profile=True):
     return call("POST", f"http://{HOST}/v1/{ROOT}:commit", as_uid, {"writes": [{"delete": name} for name in names]})
 
 
+def grant(uid, as_uid, name="premium"):
+    """What the server writes for an account once Google Play has confirmed its purchase."""
+    fields = {"purchase": PURCHASE, "order": "GPA.0000-0000-0000-00000"}
+    return save(f"{uid}/grants/{name}", as_uid, fields, server_time="since")
+
+
+def bind(purchase, uid, as_uid):
+    """A purchase bound to an account, as the server binds one: by the hash of its token."""
+    return save(purchase, as_uid, {"uid": uid}, server_time="at", collection="purchases")
+
+
 def profile(**changed):
     whole = {"firstName": "Lorena", "birthDate": "1990-03-12", "consent": {"version": 1}}
     whole.update(changed)
@@ -110,6 +126,7 @@ def years_ago(years, days=0):
 
 
 OK, REFUSED = 200, 403
+PURCHASE = "0" * 64
 failures = []
 
 
@@ -203,6 +220,37 @@ check("as it could before there were any", call("DELETE", f"{BASE}/users/uma", "
 check("someone else cannot delete a profile", save("ivo", "ivo", profile()), OK)
 check("not theirs", call("DELETE", f"{BASE}/users/ivo", "eve"), REFUSED)
 check("the owner deletes it", call("DELETE", f"{BASE}/users/ivo", "ivo"), OK)
+
+check("the server grants Premium to an account", grant("pia", SERVER), OK)
+check("the owner reads the grant", call("GET", f"{BASE}/users/pia/grants/premium", "pia"), OK)
+check("and lists what the account was granted", call("GET", f"{BASE}/users/pia/grants", "pia"), OK)
+check("someone else cannot read it", call("GET", f"{BASE}/users/pia/grants/premium", "eve"), REFUSED)
+check("nor list it", call("GET", f"{BASE}/users/pia/grants", "eve"), REFUSED)
+check("nobody signed in cannot read it", call("GET", f"{BASE}/users/pia/grants/premium"), REFUSED)
+check("nobody grants themselves Premium", grant("eve", "eve"), REFUSED)
+check("nor anything by another name", grant("eve", "eve", name="gold"), REFUSED)
+check("the owner cannot change the grant", grant("pia", "pia"), REFUSED)
+check("nor delete it", call("DELETE", f"{BASE}/users/pia/grants/premium", "pia"), REFUSED)
+check("someone else cannot write it", grant("pia", "eve"), REFUSED)
+check("nobody signed in cannot write it", grant("pia", None), REFUSED)
+check("an account with a grant saves its profile", save("pia", "pia", profile()), OK)
+check("and keeps a character", keep("pia", "pia", "1"), OK)
+check("the grant does not stand in the way of deleting them", remove("pia", "pia"), OK)
+check("and is still there, for the server to take away", call("GET", f"{BASE}/users/pia/grants/premium", "pia"), OK)
+
+check("the server binds a purchase to an account", bind(PURCHASE, "pia", SERVER), OK)
+check("which that account cannot read", call("GET", f"{BASE}/purchases/{PURCHASE}", "pia"), REFUSED)
+check("nor anyone list", call("GET", f"{BASE}/purchases", "pia"), REFUSED)
+check("nor nobody signed in read", call("GET", f"{BASE}/purchases/{PURCHASE}"), REFUSED)
+check("nobody binds a purchase to themselves", bind("1" * 64, "eve", "eve"), REFUSED)
+check("nor takes over one that is bound", bind(PURCHASE, "eve", "eve"), REFUSED)
+check("nor unbinds their own", call("DELETE", f"{BASE}/purchases/{PURCHASE}", "pia"), REFUSED)
+check("the server keeps its place in the list of purchases taken back",
+      save("voidedPurchases", SERVER, {}, server_time="at", collection="state"), OK)
+check("which nobody else reads", call("GET", f"{BASE}/state/voidedPurchases", "pia"), REFUSED)
+check("nor lists", call("GET", f"{BASE}/state", "pia"), REFUSED)
+check("nor moves", save("voidedPurchases", "pia", {}, server_time="at", collection="state"), REFUSED)
+check("nor deletes", call("DELETE", f"{BASE}/state/voidedPurchases", "pia"), REFUSED)
 
 print(f"\n{len(failures)} failed" if failures else "\nall as the rules say")
 sys.exit(1 if failures else 0)

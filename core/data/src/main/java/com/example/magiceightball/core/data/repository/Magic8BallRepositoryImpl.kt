@@ -60,7 +60,7 @@ class Magic8BallRepositoryImpl(
             // While the project's own allowance is used up, asking again only costs the user time.
             val resting = nowMillis() < restingUntilMillis
             val mayAsk = settings.isUsable && !resting
-            val taken = mayAsk && aiAnswerQuota.tryTake(settings.dailyLimit)
+            val taken = mayAsk && aiAnswerQuota.tryTake(settings.dailyLimitFor(request.premium))
             allowanceSpent = mayAsk && !taken
             if (taken) {
                 val remote = withTimeoutOrNull(REMOTE_BUDGET_MS) {

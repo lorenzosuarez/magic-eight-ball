@@ -208,9 +208,19 @@
     <string name="premium_point_count">Até cinco por vez</string>
     <string name="premium_point_voice">Respondem no tom que você descrever</string>
     <string name="premium_point_card">O nome deles aparece ao compartilhar</string>
+    <string name="premium_point_ai">Mais respostas com IA todo dia</string>
     <string name="premium_upgrade">Obter o Premium</string>
     <string name="premium_upgrade_priced">Obter o Premium por&#160;%1$s</string>
     <string name="premium_free_note">Os personagens do&#160;app continuam grátis.</string>
+    <string name="premium_terms">Um único pagamento, sem assinatura.\nFica na sua conta do&#160;app.</string>
+    <string name="premium_no_price">Buscando o preço no Google&#160;Play…</string>
+    <string name="premium_pending">O Google&#160;Play está aguardando o pagamento. O Premium é ativado automaticamente quando for&#160;aprovado</string>
+    <string name="premium_taken">O Premium já foi comprado com esta conta do Google&#160;Play, em outra conta do app. Não houve nova cobrança. Saia e entre com essa&#160;conta</string>
+    <string name="premium_unconfirmed">O pagamento foi feito, mas não conseguimos confirmar. Verifique de novo: não haverá nova&#160;cobrança</string>
+    <string name="premium_failed">Não foi possível concluir a compra. Tente de novo</string>
+    <string name="premium_busy">Só um instante…</string>
+    <string name="premium_price_failed">Não foi possível obter o preço. Verifique sua conexão</string>
+    <string name="premium_check_again">Verificar de novo</string>
     <string name="options_account">Conta</string>
     <string name="account_title">Respostas com a sua cara</string>
     <string name="account_hint">Entre e os personagens vão saber quem pergunta</string>
@@ -227,6 +237,7 @@
     <string name="account_delete_text">Sua conta e tudo o que ela guarda são apagados. Não dá para desfazer. Suas respostas recentes continuam neste dispositivo. O Google pode pedir que você escolha sua conta para confirmar.</string>
     <string name="account_delete_failed">Não foi possível excluir a conta. Tente de novo</string>
     <string name="account_deleted">Conta excluída.</string>
+    <string name="account_premium">Você tem o Premium</string>
     <string name="account_profile">Seu perfil</string>
     <string name="profile_title_new">Quem pergunta?</string>
     <string name="profile_title_edit">Seu perfil</string>

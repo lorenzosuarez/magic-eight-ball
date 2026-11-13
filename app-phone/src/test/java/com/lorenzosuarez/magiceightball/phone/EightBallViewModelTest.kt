@@ -14,11 +14,14 @@ import com.lorenzosuarez.magiceightball.phone.account.Entitlements
 import com.lorenzosuarez.magiceightball.phone.account.FakeAccount
 import com.lorenzosuarez.magiceightball.phone.account.FakeCustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.FakeDeviceMarks
+import com.lorenzosuarez.magiceightball.phone.account.FakeEntitlements
 import com.lorenzosuarez.magiceightball.phone.account.FakeProfiles
+import com.lorenzosuarez.magiceightball.phone.account.FakeShop
 import com.lorenzosuarez.magiceightball.phone.account.Membership
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import com.lorenzosuarez.magiceightball.phone.account.Profiles
+import com.lorenzosuarez.magiceightball.phone.account.Shop
 import com.lorenzosuarez.magiceightball.phone.account.Account
 import com.example.magiceightball.core.domain.gateway.ReportReason
 import com.example.magiceightball.core.domain.gateway.AnswerReports
@@ -1554,13 +1557,23 @@ class EightBallViewModelTest {
     }
 
     @Test
-    fun `while nothing is sold everyone has everything, whatever the switch says`() = runTest {
-        appConfig.config.value = AppConfig(premiumEnabled = true)
-        val viewModel = createViewModel()
+    fun `what the store asks is shown, and whoever has paid asks with the larger allowance`() = runTest {
+        val held = FakeEntitlements()
+        val viewModel = createViewModel(entitlements = held, shop = FakeShop(price = "2,99 €"))
+        advanceUntilIdle()
+        assertEquals("2,99 €", viewModel.state.value?.offer?.price)
+
+        viewModel.ask()
+        advanceUntilIdle()
+        assertEquals(false, llmGateway.requests.last().premium)
+        viewModel.dismiss()
         advanceUntilIdle()
 
-        assertEquals(true, viewModel.state.value?.premium)
-        assertEquals(false, viewModel.state.value?.mustPayToCreate)
+        held.premium.value = true
+        advanceUntilIdle()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertEquals(true, llmGateway.requests.last().premium)
     }
 
     @Test
@@ -1611,7 +1624,8 @@ class EightBallViewModelTest {
         profiles: Profiles = Profiles.None,
         marks: DeviceMarks = DeviceMarks.None,
         characters: CustomCharacters = CustomCharacters.None,
-        entitlements: Entitlements = Entitlements.Everyone
+        entitlements: Entitlements = Entitlements.Nobody,
+        shop: Shop = Shop.None
     ): EightBallViewModel {
         val viewModel = EightBallViewModel(
             sendMessageUseCase = SendMessageUseCase(llmGateway),
@@ -1627,7 +1641,7 @@ class EightBallViewModelTest {
             aiAllowance = aiAllowance,
             appConfig = appConfig,
             reports = reports,
-            membership = Membership(account, profiles, marks, characters, entitlements)
+            membership = Membership(account, profiles, marks, characters, entitlements, shop)
         )
         viewModel.onMicrophonePermissionChecked(microphoneGranted)
         viewModel.setResumed(resumed)

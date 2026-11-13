@@ -6,6 +6,8 @@ import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
  * Whether answers may come from Gemini, from which model and by which of Google's two services,
  * and how many of them a device may ask for in one day.
  *
+ * @property premiumDailyLimit how many a day for whoever has paid for what is sold: more, and
+ * still a ceiling on what one device can cost.
  * @property limitedUseTokens whether each request carries a proof of the app made for it alone,
  * which Firebase can then refuse to take twice. Off unless switched on from afar: making one
  * takes Google Play a few seconds, every time, out of the few an answer is waited for, and Google
@@ -15,10 +17,14 @@ data class GeminiSettings(
     val enabled: Boolean,
     val modelId: String,
     val dailyLimit: Int = DEFAULT_DAILY_LIMIT,
+    val premiumDailyLimit: Int = DEFAULT_PREMIUM_DAILY_LIMIT,
     val backend: Backend = Backend.DEVELOPER_API,
     val limitedUseTokens: Boolean = false
 ) {
     val isUsable: Boolean get() = enabled && modelId.isNotBlank()
+
+    /** The day's allowance of whoever asks: never less for having paid, whatever was set from afar. */
+    fun dailyLimitFor(premium: Boolean): Int = if (premium) maxOf(premiumDailyLimit, dailyLimit) else dailyLimit
 
     /**
      * The service Firebase passes a request on to. Which one the project is set up for is
@@ -35,6 +41,9 @@ data class GeminiSettings(
     companion object {
         /** Generous for a toy that is asked a few questions at a time, and a ceiling on its cost. */
         const val DEFAULT_DAILY_LIMIT = 40
+
+        /** Three times as many for whoever paid. */
+        const val DEFAULT_PREMIUM_DAILY_LIMIT = 120
     }
 }
 

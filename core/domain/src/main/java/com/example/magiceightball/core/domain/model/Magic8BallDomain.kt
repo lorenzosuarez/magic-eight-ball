@@ -40,6 +40,8 @@ sealed interface LlmError {
  * Null wherever nobody is signed in, which is everywhere but a phone with an account.
  * @property custom who answers when [personality] is [Magic8BallPersonality.CUSTOM]. Without
  * it such a request is answered as the classic style is, from the app's own answers.
+ * @property premium whether whoever asks has paid for what is sold, which gives them more
+ * answers from the AI in a day.
  */
 data class Magic8BallRequest(
     val userTrigger: String? = null,
@@ -50,7 +52,8 @@ data class Magic8BallRequest(
     val wantsRemark: Boolean = false,
     val detailed: Boolean = false,
     val asker: AskerFacts? = null,
-    val custom: CustomCharacter? = null
+    val custom: CustomCharacter? = null,
+    val premium: Boolean = false
 ) {
     /**
      * The only form in which [question] may leave the device: one line, without control
