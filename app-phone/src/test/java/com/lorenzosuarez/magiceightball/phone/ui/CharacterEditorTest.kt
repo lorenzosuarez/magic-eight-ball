@@ -10,16 +10,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.input.ImeAction
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -58,6 +65,8 @@ class CharacterEditorTest {
         .outerRule(
             object : ExternalResource() {
                 override fun before() {
+                    // Used by touch, as a phone is: used by keys, something on the screen always has the focus.
+                    InstrumentationRegistry.getInstrumentation().setInTouchMode(true)
                     val context = ApplicationProvider.getApplicationContext<Application>()
                     shadowOf(context.packageManager).addOrUpdateActivity(
                         ActivityInfo().apply {
@@ -159,6 +168,42 @@ class CharacterEditorTest {
         assertEquals(0, count("Eliminar personaje"))
     }
 
+    @Test
+    fun `the key at the end of the name moves on to the description, and the description's says done and leaves the field`() {
+        showEditor(CharacterDraft())
+        val name = compose.onNodeWithText("Nombre")
+        // The one field whose key says done: found by it, since its example goes once something is typed.
+        val description = compose.onNode(hasImeAction(ImeAction.Done))
+
+        name.performImeAction()
+        name.assertIsNotFocused()
+        description.assertIsFocused()
+
+        // Done is the last of the typing: no field is left holding the keyboard up.
+        description.performImeAction()
+        description.assertIsNotFocused()
+        name.assertIsNotFocused()
+    }
+
+    @Test
+    fun `a description is one paragraph, and a line break pasted into it is saved as a space`() {
+        val draft = CharacterDraft()
+        val saved = mutableListOf<Pair<String, String>>()
+        showEditor(draft, onSave = { name, description -> saved += name to description })
+
+        compose.onNodeWithText("Nombre").performTextInput("Capitán Nemo")
+        // As a paste arrives: all at once, with the line ends of wherever it was copied from.
+        compose.onNode(hasImeAction(ImeAction.Done)).performTextInput("Gruñón como el mar,\r\ny más en invierno.\n")
+
+        // Shown as it will be kept, and counted as shown: each break is the one space it became.
+        assertEquals("Gruñón como el mar, y más en invierno. ", draft.description)
+        compose.onNodeWithText("39/${CustomCharacter.MAX_DESCRIPTION_LENGTH}").assertExists()
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+        assertEquals(listOf("Capitán Nemo" to "Gruñón como el mar, y más en invierno."), saved)
+        // One kept with a break in it, from before or from elsewhere, opens as one paragraph too.
+        assertEquals("uno dos", CharacterDraft(NEMO.copy(description = "uno\ndos")).description)
+    }
+
     // ---- from the page of options
 
     private var state by mutableStateOf(EightBallUiState())
@@ -173,10 +218,11 @@ class CharacterEditorTest {
         sold: Boolean = false,
         premium: Boolean = true,
         price: String? = null,
+        answering: CustomCharacter? = null,
         onBuyPremium: suspend () -> Bought = { Bought.FAILED }
     ) {
         state = EightBallUiState(
-            settings = UserSettings(language = AppLanguage.SPANISH),
+            settings = UserSettings(language = AppLanguage.SPANISH, customCharacter = answering),
             config = AppConfig(accountEnabled = true, premiumEnabled = sold),
             account = account,
             profile = profile,
@@ -256,14 +302,58 @@ class CharacterEditorTest {
     }
 
     @Test
-    fun `with five there is no room for another, and with the account unheard of nothing is made on a guess`() {
+    fun `with five there is no room for another`() {
         showOptions(SIGNED_IN, characters = (1..5).map { NEMO.copy(id = it.toString(), name = "Nemo $it") })
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
         compose.onNodeWithText("Ya tienes cinco personajes").assertIsDisplayed()
-        compose.onNodeWithText("Entendido").performClick()
+        assertEquals(0, count("Nuevo personaje"))
+    }
 
-        state = state.copy(characters = null)
+    @Test
+    fun `create touched while the account is on its way goes on by itself when it arrives`() {
+        // One of their own is the character chosen, so there is at least that one to wait for.
+        showOptions(SIGNED_IN, characters = null, answering = NEMO)
+        // Its place is kept, and said to be.
+        compose.onNodeWithContentDescription("Cargando tus personajes").assertIsDisplayed()
+
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.mainClock.advanceTimeBy(2_000)
+        // It heard, and takes no second touch meanwhile.
+        compose.onNodeWithContentDescription("Crear un personaje").assertIsNotEnabled()
+        // Nothing is made on a guess, and nothing is called a failure that is only on its way.
+        assertEquals(0, count("No se pudo conectar con tu cuenta"))
+        assertEquals(0, count("Nuevo personaje"))
+
+        state = state.copy(characters = listOf(NEMO))
+        compose.waitForIdle()
+        compose.onNodeWithText("Nuevo personaje").assertIsDisplayed()
+        assertEquals(0, compose.onAllNodesWithContentDescription("Cargando tus personajes").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `a wait for the account does not outlive the sheet it was asked on`() {
+        showOptions(SIGNED_IN, characters = null)
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithContentDescription("Cerrar").performClick()
+        compose.waitForIdle()
+
+        // The account arrives, and the time runs out: nothing opens that nobody is waiting for.
+        state = state.copy(characters = listOf(NEMO))
+        compose.mainClock.advanceTimeBy(7_000)
+        assertEquals(0, count("Nuevo personaje"))
+        assertEquals(0, count("No se pudo conectar con tu cuenta"))
+    }
+
+    @Test
+    fun `an account that has plainly not come is said so, and nothing is made`() {
+        showOptions(SIGNED_IN, characters = null)
+        // With no reason to think they have any, no place is kept for one.
+        assertEquals(0, compose.onAllNodesWithContentDescription("Cargando tus personajes").fetchSemanticsNodes().size)
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+
+        compose.mainClock.advanceTimeBy(5_000)
+        assertEquals(0, count("No se pudo conectar con tu cuenta"))
+        compose.mainClock.advanceTimeBy(1_500)
         compose.onNodeWithText("No se pudo conectar con tu cuenta").assertIsDisplayed()
         assertEquals(0, count("Nuevo personaje"))
     }

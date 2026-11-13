@@ -175,4 +175,30 @@ data class Magic8BallDataDto(
     }
 }
 
+/**
+ * What the characters say to whoever is asking, in one language. The root of
+ * `assets/magic_8_ball_personal.json` holds one of these for each language code.
+ *
+ * @property signs the twelve signs as the language writes them, each under the name of its
+ * [com.example.magiceightball.core.domain.model.Zodiac] in lower case.
+ * @property styles the lines of each character, under the name of its personality in lower case.
+ */
+@Serializable
+data class PersonalAnswersDto(
+    val signs: Map<String, String> = emptyMap(),
+    val styles: Map<String, PersonalLinesDto> = emptyMap()
+)
+
+/**
+ * @property name lines that call the asker by `{name}`.
+ * @property sign lines that speak of the asker's `{sign}`.
+ * @property birthday lines said on the asker's birthday.
+ */
+@Serializable
+data class PersonalLinesDto(
+    val name: List<String> = emptyList(),
+    val sign: List<String> = emptyList(),
+    val birthday: List<String> = emptyList()
+)
+
 private val WHITESPACE = Regex("\\s+")

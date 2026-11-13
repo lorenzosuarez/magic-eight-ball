@@ -257,6 +257,7 @@ internal fun PremiumContent(
                     contentColor = Color(BrandPalette.ON_ACCENT)
                 )
             ) {
+                BusyRing(busy)
                 Text(
                     text = when {
                         waiting -> stringResource(R.string.action_understood)

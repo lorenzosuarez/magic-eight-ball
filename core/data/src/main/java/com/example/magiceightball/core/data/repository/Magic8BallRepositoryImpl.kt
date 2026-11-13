@@ -79,10 +79,9 @@ class Magic8BallRepositoryImpl(
                 }
             }
         }
-        return Magic8BallResult.Success(
-            localDataSource.getRandomMessage(request.languageCode, request.personality),
-            aiAllowanceSpent = allowanceSpent
-        )
+        // What is known of the asker goes no further than the lines that come with the app.
+        return localDataSource.getRandomMessage(request.languageCode, request.personality, request.asker)
+            .copy(aiAllowanceSpent = allowanceSpent)
     }
 
     /** Whether the service wrote something, even if it could not be used. Null is a wait that ran out. */

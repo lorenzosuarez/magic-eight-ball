@@ -861,12 +861,34 @@ class EightBallScreenshotTest {
     }
 
     /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */
+    /** The user's own are on their way: their places are kept under their heading. */
+    @Test
+    fun phone_characters_yours_loading_spanish() = captureStyles(
+        "phone_86_characters_yours_loading_spanish",
+        AppLanguage.SPANISH,
+        dark = false,
+        withCreate = true,
+        yoursPlaces = 2
+    )
+
+    @Test
+    @Config(qualifiers = "w360dp-h640dp-night-xhdpi")
+    fun small_phone_characters_yours_loading_dark_large_font() = captureStyles(
+        "phone_87_small_phone_characters_yours_loading_dark_large_font",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        yoursPlaces = 2,
+        fontScale = 1.5f
+    )
+
     private fun captureStyles(
         name: String,
         language: AppLanguage,
         dark: Boolean,
         withCreate: Boolean = false,
         yours: List<CustomCharacter> = emptyList(),
+        yoursPlaces: Int = 0,
         fontScale: Float = 1f
     ) {
         captureRoboImage(filePath = path(name)) {
@@ -881,7 +903,8 @@ class EightBallScreenshotTest {
                                 onClose = {},
                                 onCreate = if (withCreate) ({}) else null,
                                 yours = yours,
-                                chosenOfYours = yours.firstOrNull()?.id
+                                chosenOfYours = yours.firstOrNull()?.id,
+                                yoursPlaces = yoursPlaces
                             )
                         }
                     }

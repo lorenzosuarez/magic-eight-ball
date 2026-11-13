@@ -436,6 +436,7 @@ internal fun ProfileContent(
                 contentColor = Color(BrandPalette.ON_ACCENT)
             )
         ) {
+            BusyRing(busy)
             Text(
                 text = stringResource(if (firstTime) R.string.profile_accept else R.string.action_save),
                 fontWeight = FontWeight.SemiBold,

@@ -12,7 +12,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -27,6 +33,7 @@ import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -130,6 +137,75 @@ class AccountSectionTest {
     }
 
     @Test
+    fun `while signing in the button says so and takes no second touch`() {
+        val answer = CompletableDeferred<AccountOutcome>()
+        var asked = 0
+        show(
+            fontScale = 1.5f,
+            onSignIn = {
+                asked++
+                answer.await()
+            }
+        )
+        compose.onNodeWithText("Continuar con Google").performClick()
+        compose.waitForIdle()
+
+        // In words, where the touch was: not only for whoever has it read out.
+        compose.onNodeWithText("Entrando…").assertIsDisplayed()
+        assertEquals(0, count("Continuar con Google"))
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/phone_84_small_phone_account_signing_in_large_font.png")
+        compose.onNodeWithText("Entrando…").performClick()
+        assertEquals(1, asked)
+
+        answer.complete(AccountOutcome.CANCELLED)
+        compose.waitForIdle()
+        compose.onNodeWithText("Continuar con Google").assertIsDisplayed()
+        assertEquals(0, count("Entrando…"))
+    }
+
+    @Test
+    fun `an account whose profile is on its way says so on its row, until it has plainly not come`() {
+        account = LORENA
+        show()
+        compose.onNodeWithText("Lorena Suárez").assert(LOADING)
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/phone_85_small_phone_account_loading.png")
+
+        // The row leads where it always did, and there the profile's row holds its place.
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        compose.onNodeWithText("Cerrar sesión").assertIsDisplayed()
+        compose.onNodeWithText("Tu perfil").assertIsDisplayed()
+        compose.onNodeWithText("Cargando tu cuenta").assertIsDisplayed()
+
+        compose.mainClock.advanceTimeBy(8_500)
+        assertEquals(0, count("Cargando tu cuenta"))
+        compose.onNodeWithText("Cerrar sesión").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the wait for a profile starts when someone signs in, however long the page was open before`() {
+        show()
+        // Read at leisure, signed out: there is no profile to wait for, and no wait to run out.
+        compose.mainClock.advanceTimeBy(20_000)
+
+        account = LORENA
+        compose.waitForIdle()
+        compose.onNodeWithText("Lorena Suárez").assert(LOADING)
+    }
+
+    @Test
+    fun `a choice shows where it was touched at once, before it has been saved`() {
+        // Nothing here saves anything: what is chosen stays as it was, however long one waits.
+        show()
+        compose.onNodeWithText("Clásico").performScrollTo().performClick()
+        compose.onNodeWithText("Clásico").assertIsSelected()
+        compose.onNodeWithText("Sarcástico").assertIsNotSelected()
+
+        compose.onNodeWithText("English").performScrollTo().performClick()
+        compose.onNodeWithText("English").assertIsSelected()
+        compose.onNodeWithText("Español").assertIsNotSelected()
+    }
+
+    @Test
     fun `a sign-in that fails says so, and one the user backs out of says nothing`() {
         var outcome = AccountOutcome.FAILED
         show(onSignIn = { outcome })
@@ -220,5 +296,6 @@ class AccountSectionTest {
     private companion object {
         val LORENA = AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com")
         const val SIGN_IN_FAILED = "No se pudo entrar. Revisa tu conexión e inténtalo de nuevo"
+        val LOADING = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Cargando tu cuenta")
     }
 }

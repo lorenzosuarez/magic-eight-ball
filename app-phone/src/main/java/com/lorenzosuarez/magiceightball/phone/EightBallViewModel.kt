@@ -772,8 +772,10 @@ class EightBallViewModel @Inject constructor(
             null
         }
         (result as? Magic8BallResult.Success)?.let { aiAllowanceSpent.value = it.aiAllowanceSpent }
-        // Wished once: the next answers of the day are told nothing of it.
-        if (asker?.birthdayToday == true && (result as? Magic8BallResult.Success)?.fromAi == true) {
+        // Wished once, by the AI service that was told of it or in a line the app keeps for the
+        // day: the next answers of the day are told nothing of it.
+        val wished = (result as? Magic8BallResult.Success)?.let { it.fromAi || it.birthdayLine } == true
+        if (asker?.birthdayToday == true && wished) {
             membership.birthdayWished(today)
         }
         return when (result) {

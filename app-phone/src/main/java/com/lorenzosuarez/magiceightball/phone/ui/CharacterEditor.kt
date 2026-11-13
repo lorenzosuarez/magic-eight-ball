@@ -1,9 +1,27 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,12 +39,14 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -34,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -48,6 +69,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -188,7 +210,7 @@ internal enum class CharacterTrouble(val message: Int) {
 internal class CharacterDraft(character: CustomCharacter? = null) {
     var name by mutableStateOf(AskerFacts.cut(character?.name.orEmpty(), CustomCharacter.MAX_NAME_LENGTH))
         private set
-    var description by mutableStateOf(AskerFacts.cut(character?.description.orEmpty(), CustomCharacter.MAX_DESCRIPTION_LENGTH))
+    var description by mutableStateOf(paragraph(character?.description.orEmpty()))
         private set
     var colour by mutableStateOf(character?.colour ?: FIRST_COLOUR)
     var emblem by mutableStateOf(character?.emblem ?: Magic8BallPersonality.NEUTRAL)
@@ -198,8 +220,9 @@ internal class CharacterDraft(character: CustomCharacter? = null) {
         name = AskerFacts.cut(typed.replace('\n', ' '), CustomCharacter.MAX_NAME_LENGTH)
     }
 
+    /** A description is one paragraph: the key for a new line says it is done instead. */
     fun typeDescription(typed: String) {
-        description = AskerFacts.cut(typed, CustomCharacter.MAX_DESCRIPTION_LENGTH)
+        description = paragraph(typed)
     }
 
     val nameToSave: String? get() = CustomCharacter.nameOrNull(name)
@@ -212,6 +235,13 @@ internal class CharacterDraft(character: CustomCharacter? = null) {
     companion object {
         /** What a new character's card is before a colour is picked: the app's own first. */
         private val FIRST_COLOUR = Magic8BallPersonality.SARCASTIC
+
+        /** Whatever breaks a line: the pair of them that ends one on some systems is one break. */
+        private val LINE_BREAK = Regex("\\r\\n|[\\n\\u000B\\u000C\\r\\u0085\\u2028\\u2029]")
+
+        /** [text] as the one paragraph a description is: a line break in it, pasted or kept from before, becomes a space and is counted as one. */
+        private fun paragraph(text: String) =
+            AskerFacts.cut(text.replace(LINE_BREAK, " "), CustomCharacter.MAX_DESCRIPTION_LENGTH)
 
         val Saver = listSaver<CharacterDraft, String>(
             save = { listOf(it.name, it.description, it.colour.name, it.emblem.name) },
@@ -249,6 +279,7 @@ internal fun CharacterEditorContent(
     val name = draft.nameToSave
     val description = draft.descriptionToSave
     val scroll = rememberScrollState()
+    val focus = LocalFocusManager.current
     // What a button could not do is said by the buttons: brought into sight if it is not.
     LaunchedEffect(trouble) { if (trouble != null) scroll.animateScrollTo(scroll.maxValue) }
     Column(
@@ -286,20 +317,42 @@ internal fun CharacterEditorContent(
             ),
             shape = ButtonShape
         )
+        // On a keyboard with keys, in the description: the key that would break the line is
+        // done, as on the screen's, and the key that would type a gap goes on to the picks.
+        val keys = Modifier.onPreviewKeyEvent { pressed ->
+            when {
+                pressed.type != KeyEventType.KeyDown -> false
+                pressed.key == Key.Enter || pressed.key == Key.NumPadEnter -> {
+                    focus.clearFocus()
+                    true
+                }
+                pressed.key == Key.Tab -> {
+                    focus.moveFocus(if (pressed.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                    true
+                }
+                else -> false
+            }
+        }
         // Named over the field and not inside it, so that the example of what to write shows
         // for as long as nothing is written.
         PickerLabel(stringResource(R.string.character_description), top = 4.dp)
         OutlinedTextField(
             value = draft.description,
             onValueChange = draft::typeDescription,
-            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().then(keys),
             enabled = !busy,
             minLines = DESCRIPTION_MIN_LINES,
             // No taller than this: more is scrolled inside it, not the whole sheet with it.
             maxLines = DESCRIPTION_MAX_LINES,
             placeholder = { Text(stringResource(R.string.character_description_example)) },
             supportingText = { Counter(draft.descriptionLength, CustomCharacter.MAX_DESCRIPTION_LENGTH) },
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            // One paragraph, and the last thing typed: the key that would break the line says done
+            // instead, and done leaves the field, which takes the keyboard from over the picks.
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),
             shape = ButtonShape
         )
         PickerLabel(stringResource(R.string.character_colour), top = 4.dp)
@@ -318,21 +371,29 @@ internal fun CharacterEditorContent(
         val ready = name != null && description != null
         // Why the button waits, said while it does: a button that will not be touched says nothing.
         val waiting = stringResource(R.string.character_incomplete).takeIf { !ready && trouble == null }
-        (trouble ?: waiting)?.let { said ->
-            Text(
-                text = said,
-                modifier = Modifier
-                    .padding(start = 32.dp, top = 12.dp, end = 32.dp)
-                    .fillMaxWidth()
-                    .semantics { liveRegion = LiveRegionMode.Polite },
-                style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
-                color = if (trouble != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        val said = trouble ?: waiting
+        // Its room is kept when there is nothing to say, so that the buttons under it stay where
+        // they are as the last letter makes the draft whole: unseen then, and unheard.
+        Text(
+            text = said ?: stringResource(R.string.character_incomplete),
+            modifier = Modifier
+                .padding(start = 32.dp, top = 12.dp, end = 32.dp)
+                .fillMaxWidth()
+                .alpha(if (said == null) 0f else 1f)
+                .then(
+                    if (said == null) {
+                        Modifier.clearAndSetSemantics {}
+                    } else {
+                        Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    }
+                ),
+            style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
+            color = if (trouble != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Button(
             onClick = { if (name != null && description != null) onSave(name, description) },
             modifier = Modifier
-                .padding(start = 16.dp, top = if (trouble != null || waiting != null) 8.dp else 16.dp, end = 16.dp)
+                .padding(start = 16.dp, top = 8.dp, end = 16.dp)
                 .fillMaxWidth()
                 .heightIn(min = 48.dp),
             enabled = !busy && ready,
@@ -342,6 +403,7 @@ internal fun CharacterEditorContent(
                 contentColor = Color(BrandPalette.ON_ACCENT)
             )
         ) {
+            BusyRing(busy)
             Text(stringResource(R.string.action_save), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         }
         TextButton(
@@ -385,19 +447,35 @@ private fun Counter(length: Int, most: Int) {
 @Composable
 private fun CharacterPreview(draft: CharacterDraft) {
     // A ball that wears nothing sits in the middle; one that does leaves the room over it.
-    val lift by animateDpAsState(if (draft.emblem == Magic8BallPersonality.NEUTRAL) PREVIEW_BARE_LIFT else 0.dp, label = "preview ball")
+    val lift by animateDpAsState(
+        targetValue = if (draft.emblem == Magic8BallPersonality.NEUTRAL) PREVIEW_BARE_LIFT else 0.dp,
+        // In step with the cross-fade of what it wears: neither is still going when the other is done.
+        animationSpec = choiceTween(),
+        label = "preview ball"
+    )
+    // The card follows a pick as the mark of the pick arrives: one colour passes into the next.
+    val ground by animateColorAsState(shareColor(draft.colour), choiceTween(), label = "preview colour")
     Row(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(CardShape)
-            .background(shareColor(draft.colour))
+            .background(ground)
             .padding(start = 8.dp, end = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Moved where it is drawn, not where it is measured: the card keeps its height as the ball rises.
-        CharacterBall(emblem = draft.emblem, size = PREVIEW_BALL, modifier = Modifier.offset { IntOffset(0, -lift.roundToPx()) })
+        // So does what the ball wears. What was picked comes over what was worn, which only then
+        // goes: fading both at once would let the card show through the ball between the two.
+        AnimatedContent(
+            targetState = draft.emblem,
+            // Moved where it is drawn, not where it is measured: the card keeps its height as the ball rises.
+            modifier = Modifier.offset { IntOffset(0, -lift.roundToPx()) },
+            transitionSpec = { fadeIn(tween(CHOICE_MS / 2)) togetherWith fadeOut(tween(CHOICE_MS / 2, delayMillis = CHOICE_MS / 2)) },
+            label = "preview emblem"
+        ) { worn ->
+            CharacterBall(emblem = worn, size = PREVIEW_BALL)
+        }
         // Clear of the card's edges when a long name and large type make it four lines.
         Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             // In the card's ink, which is the same in both themes: the card is always light.
@@ -442,32 +520,39 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
                 .padding(start = PICK_EDGE)
                 .selectableGroup()
         ) {
-            COLOURS.forEach { look ->
-                val picked = look == chosen
-                val label = stringResource(look.labelRes())
-                // The touch takes the dot and the gap after it: the dots stay where the edge is.
-                Box(
-                    modifier = Modifier
-                        .size(width = step, height = 48.dp)
-                        .selectable(selected = picked, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
-                        .semantics { contentDescription = label },
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    // The same size picked or not: picked, it is a ring with the colour inside it.
+            OnCardColours {
+                COLOURS.forEach { look ->
+                    val picked = look == chosen
+                    val label = stringResource(look.labelRes())
+                    val touch = remember { MutableInteractionSource() }
+                    val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "colour picked")
+                    // The touch takes the dot and the gap after it: the dots stay where the edge is.
+                    // The light of the touch is the dot's alone: to the eye, it is what was touched.
                     Box(
                         modifier = Modifier
-                            .size(SWATCH)
-                            .then(if (picked) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier),
-                        contentAlignment = Alignment.Center
+                            .size(width = step, height = 48.dp)
+                            .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
+                            .semantics { contentDescription = label },
+                        contentAlignment = Alignment.CenterStart
                     ) {
+                        // The same size picked or not: picked, it is a ring with the colour inside it.
+                        // The ring comes as the colour draws in from it, and goes as it fills out again.
                         Box(
-                            Modifier
-                                .size(if (picked) SWATCH - 12.dp else SWATCH)
-                                .clip(CircleShape)
-                                .background(shareColor(look))
-                                // The palest of them would be lost on a pale sheet without an edge.
-                                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = SWATCH_EDGE_ALPHA), CircleShape)
-                        )
+                            modifier = Modifier
+                                .size(SWATCH)
+                                .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(SWATCH - 12.dp * mark)
+                                    .clip(CircleShape)
+                                    .background(shareColor(look))
+                                    .indication(touch, PressHighlight)
+                                    // The palest of them would be lost on a pale sheet without an edge.
+                                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = SWATCH_EDGE_ALPHA), CircleShape)
+                            )
+                        }
                     }
                 }
             }
@@ -492,6 +577,8 @@ private fun EmblemRow(
         val tile = (maxWidth - PICK_EDGE - EMBLEM_GAP * whole) / (whole + 0.5f)
         val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
         val start = with(LocalDensity.current) { ((tile + EMBLEM_GAP) * (at - 1).coerceAtLeast(0)).roundToPx() }
+        // The tiles take the colour picked as the card over them does, and with it.
+        val ground by animateColorAsState(shareColor(colour), choiceTween(), label = "emblem ground")
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -500,32 +587,46 @@ private fun EmblemRow(
                 .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(EMBLEM_GAP)
         ) {
-            EMBLEMS.forEach { look ->
-                val picked = look == chosen
-                val label = stringResource(if (look == Magic8BallPersonality.NEUTRAL) R.string.character_no_emblem else look.labelRes())
-                // Picked: a ring at the tile's own edge, in the text's colour, and the tile a little
-                // inside it. A ring drawn on the tile would be lost on the lighter colours.
-                Box(
-                    modifier = Modifier
-                        .size(tile)
-                        .then(if (picked) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, EmblemRing) else Modifier)
-                        .clip(EmblemRing)
-                        .selectable(selected = picked, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
-                        .semantics { contentDescription = label },
-                    contentAlignment = Alignment.Center
-                ) {
-                    val inside = if (picked) tile - 10.dp else tile
+            OnCardColours {
+                EMBLEMS.forEach { look ->
+                    val picked = look == chosen
+                    val label = stringResource(if (look == Magic8BallPersonality.NEUTRAL) R.string.character_no_emblem else look.labelRes())
+                    val touch = remember { MutableInteractionSource() }
+                    val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
+                    // Picked: a ring at the tile's own edge, in the text's colour, and the tile a little
+                    // inside it. A ring drawn on the tile would be lost on the lighter colours. The
+                    // ring comes as the tile draws in from it, and goes as the tile fills out again.
                     Box(
-                        modifier = Modifier.size(inside).clip(ButtonShape).background(shareColor(colour)),
+                        modifier = Modifier
+                            .size(tile)
+                            .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), EmblemRing)
+                            .clip(EmblemRing)
+                            .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
+                            .semantics { contentDescription = label },
                         contentAlignment = Alignment.Center
                     ) {
-                        CharacterBall(emblem = look, size = inside)
+                        val inside = tile - 10.dp * mark
+                        // The light of the touch is drawn here, over the tile's colour: behind it, it would not show.
+                        Box(
+                            modifier = Modifier.size(inside).clip(ButtonShape).background(ground).indication(touch, PressHighlight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CharacterBall(emblem = look, size = inside)
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * What is picked among is drawn on the card's colours, which are light in both themes: the
+ * light of a touch on them is the card's ink, where the sheet's own would not show in the dark.
+ */
+@Composable
+private fun OnCardColours(content: @Composable () -> Unit) =
+    CompositionLocalProvider(LocalContentColor provides ShareInk, content = content)
 
 /** What the row of picks, or the field, under it is for: named as the date is on the profile. */
 @Composable

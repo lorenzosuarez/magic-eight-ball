@@ -1350,6 +1350,37 @@ class EightBallViewModelTest {
     }
 
     @Test
+    fun `a birthday line of the app's own is the day's wish, and an ordinary line is not`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        val today = Instant.ofEpochMilli(NOW).atZone(ZoneId.systemDefault()).toLocalDate()
+        val profiles = FakeProfiles(ProfileState.Present(Profile("Lorena", today.minusYears(30))))
+        val marks = FakeDeviceMarks()
+        val viewModel = createViewModel(account = FakeAccount(initial = FakeAccount.ANA), profiles = profiles, marks = marks)
+        advanceUntilIdle()
+
+        // The classic style, say, which knows nobody: its answer wished nothing.
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER) }
+        viewModel.ask()
+        advanceUntilIdle()
+        assertNull(marks.birthdayWishedIn.value)
+        viewModel.dismiss()
+        advanceUntilIdle()
+
+        // With the AI off or away the wish is made all the same, and counts as made.
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, birthdayLine = true) }
+        viewModel.ask()
+        advanceUntilIdle()
+        assertEquals(true, llmGateway.requests.last().asker?.birthdayToday)
+        assertEquals(today.year, marks.birthdayWishedIn.value)
+        viewModel.dismiss()
+        advanceUntilIdle()
+
+        viewModel.ask()
+        advanceUntilIdle()
+        assertEquals(false, llmGateway.requests.last().asker?.birthdayToday)
+    }
+
+    @Test
     fun `a marked device asks the AI service for nothing from its very first answer`() = runTest {
         // Before the screen's state is there to be read: the mark is read where it is kept.
         val marks = FakeDeviceMarks().apply { underAge.value = true }

@@ -136,6 +136,7 @@
     <string name="options_asking">Preguntas</string>
     <string name="options_general">General</string>
     <string name="share_answer_text">Mira lo que me dijo Magic AI Ball. Hazle tu pregunta: %1$s</string>
+    <string name="share_failed">No se pudo preparar la imagen. Inténtalo de nuevo</string>
     <string name="settings_privacy_policy">Política de privacidad</string>
     <string name="settings_privacy_policy_hint">Qué hace la app con tus datos</string>
     <string name="settings_ad_privacy">Privacidad de anuncios</string>
@@ -237,6 +238,9 @@
     <string name="account_delete_text">Se borran tu cuenta y todo lo que guarda. No se puede deshacer. Tus respuestas recientes siguen en este dispositivo. Google puede pedirte que elijas tu cuenta para confirmarlo.</string>
     <string name="account_delete_failed">No se pudo eliminar la cuenta. Inténtalo de nuevo</string>
     <string name="account_deleted">Cuenta eliminada.</string>
+    <string name="account_signing_in">Entrando…</string>
+    <string name="account_loading">Cargando tu cuenta</string>
+    <string name="characters_loading">Cargando tus personajes</string>
     <string name="account_premium">Tienes Premium</string>
     <string name="account_profile">Tu perfil</string>
     <string name="profile_title_new">¿Quién pregunta?</string>

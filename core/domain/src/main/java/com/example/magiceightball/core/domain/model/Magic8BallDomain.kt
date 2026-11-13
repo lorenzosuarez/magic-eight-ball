@@ -6,12 +6,15 @@ sealed interface Magic8BallResult {
      * @property remark what the character adds under its answer, when one was asked for and written.
      * @property aiAllowanceSpent true when this answer is a bundled one only because the day's
      * answers from the AI service are used up: something the user can be told.
+     * @property birthdayLine true when [message] is one of the app's own lines for the asker's
+     * birthday: the day's wish has then been made, as when the AI service was told of it.
      */
     data class Success(
         val message: String,
         val fromAi: Boolean = false,
         val remark: String? = null,
-        val aiAllowanceSpent: Boolean = false
+        val aiAllowanceSpent: Boolean = false,
+        val birthdayLine: Boolean = false
     ) : Magic8BallResult
     data class Failure(val error: LlmError) : Magic8BallResult
 }
