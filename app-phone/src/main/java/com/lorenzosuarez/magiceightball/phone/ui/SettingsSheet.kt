@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.runtime.mutableIntStateOf
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
@@ -7,11 +8,14 @@ import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import java.time.LocalDate
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Icon
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +46,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -120,27 +125,77 @@ internal fun SettingsContent(
     var paying by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val signedIn = state.account is AccountState.SignedIn
+    // Whether what is kept with the account, its profile and its characters, has been heard of.
+    val accountKnown = state.profile != ProfileState.Unknown && state.characters != null
+    // What "Create" does once that is known: said here once, for a touch now or one that waited.
+    val create = {
+        val kept = state.characters
+        when {
+            !state.canMakeCharacters || kept == null -> notice = CharactersNotice.UNKNOWN
+            kept.size >= CustomCharacter.MAX_COUNT -> notice = CharactersNotice.FULL
+            // Last: nobody is asked to pay for what they could not have made anyway.
+            state.mustPayToCreate -> paying = true
+            else -> editing = NEW
+        }
+    }
+    // "Create" touched while the account was still on its way: it goes on by itself when it
+    // arrives, and says that it could not only once it has plainly not come.
+    var waitingToCreate by remember { mutableStateOf(false) }
+    // The places kept for their characters while those are on their way: as many as there were
+    // when last heard of, one when one of them is the character chosen, and none when there is
+    // no reason to think there are any. Kept for a while only: after that it is a connection
+    // that is not there, which a touch on "Create" says in words.
+    val yoursOnTheirWay = state.offersAccount && signedIn && state.characters == null
+    // Of this account: what another one had says nothing of it.
+    var lastHeardOf by rememberSaveable((state.account as? AccountState.SignedIn)?.id) { mutableIntStateOf(UNHEARD_OF) }
+    LaunchedEffect(state.characters) { state.characters?.let { lastHeardOf = it.size } }
+    var patient by remember(yoursOnTheirWay) { mutableStateOf(true) }
+    LaunchedEffect(yoursOnTheirWay) {
+        if (yoursOnTheirWay) {
+            delay(ACCOUNT_PATIENCE_MS)
+            patient = false
+        }
+    }
+    val yoursPlaces = when {
+        !yoursOnTheirWay || !patient -> 0
+        lastHeardOf != UNHEARD_OF -> lastHeardOf
+        state.settings.customCharacter != null -> 1
+        else -> 0
+    }
+    // As things stand when the wait ends, not as they stood when it began.
+    val createNow by rememberUpdatedState(create)
+    LaunchedEffect(waitingToCreate, accountKnown) {
+        if (waitingToCreate) {
+            if (!accountKnown) delay(ACCOUNT_PATIENCE_MS)
+            waitingToCreate = false
+            // Unless something else was opened meanwhile, or the profile is being asked for:
+            // what waited does not land on top of that.
+            if (editing == null && !paying && state.profile != ProfileState.Missing) createNow()
+        }
+    }
     if (browsingStyles) {
         StylesSheet(
             selected = state.settings.personality,
             hidden = state.config.hiddenStyles,
             onSelected = onPersonalitySelected,
-            onClose = { browsingStyles = false },
+            onClose = {
+                browsingStyles = false
+                // A wait that outlived the sheet it was asked on would open something unasked.
+                waitingToCreate = false
+            },
             // Offered wherever an account is: whoever has none yet is shown the way to one.
             onCreate = if (state.offersAccount) {
                 {
-                    val kept = state.characters
                     when {
                         !signedIn -> notice = CharactersNotice.ACCOUNT
-                        !state.canMakeCharacters || kept == null -> notice = CharactersNotice.UNKNOWN
-                        kept.size >= CustomCharacter.MAX_COUNT -> notice = CharactersNotice.FULL
-                        // Last: nobody is asked to pay for what they could not have made anyway.
-                        state.mustPayToCreate -> paying = true
-                        else -> editing = NEW
+                        accountKnown -> create()
+                        else -> waitingToCreate = true
                     }
                 }
             } else null,
             yours = state.characters.orEmpty().takeIf { state.offersAccount && signedIn }.orEmpty(),
+            yoursPlaces = yoursPlaces,
+            creating = waitingToCreate,
             chosenOfYours = state.settings.customCharacter?.id,
             onYoursSelected = onChooseCharacter,
             onEditYours = { editing = it.id }
@@ -235,7 +290,10 @@ internal fun SettingsContent(
                 profile = (state.profile as? ProfileState.Present)?.profile,
                 onSaveProfile = onSaveProfile,
                 onOpenPrivacyPolicy = onOpenPrivacyPolicy,
-                premium = state.premium
+                premium = state.premium,
+                // Only of someone signed in: signed out there is no profile to wait for, and
+                // the wait would be over before it began.
+                loading = signedIn && state.profile == ProfileState.Unknown
             )
         }
         Section(stringResource(R.string.options_answers)) {
@@ -477,16 +535,26 @@ private fun <T> ChoiceRow(
         ) {
             options.forEach { option ->
                 val chosen = option == selected
+                // As on the cards of the characters, right above: the choice passes from one
+                // tile to another, and nothing of either moves.
+                val ground by animateColorAsState(
+                    targetValue = if (chosen) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
+                    },
+                    animationSpec = tween(CHOICE_MS),
+                    label = "tile ground"
+                )
+                val ink by animateColorAsState(
+                    targetValue = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
+                    animationSpec = tween(CHOICE_MS),
+                    label = "tile ink"
+                )
                 Box(
                     modifier = Modifier
                         .clip(ButtonShape)
-                        .background(
-                            if (chosen) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
-                            }
-                        )
+                        .background(ground)
                         .selectable(selected = chosen, role = Role.RadioButton, onClick = { onSelected(option) })
                         .heightIn(min = 48.dp)
                         .padding(horizontal = 16.dp),
@@ -495,8 +563,10 @@ private fun <T> ChoiceRow(
                     Text(
                         text = stringResource(label(option)),
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Medium,
-                        color = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
+                        // One weight, chosen or not, as on the cards: a tile that changed its
+                        // weight would change its width, and push the others.
+                        fontWeight = FontWeight.SemiBold,
+                        color = ink
                     )
                 }
             }
@@ -671,3 +741,9 @@ private const val DISABLED_ALPHA = 0.38f
 
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
 internal const val TILE_ALPHA = 0.08f
+
+/** How long a touch on "Create" waits for an account that is on its way before saying it has not come. */
+private const val ACCOUNT_PATIENCE_MS = 6_000L
+
+/** Before the characters of the account have been heard of once: how many there are is not known. */
+private const val UNHEARD_OF = -1

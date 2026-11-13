@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,11 +44,16 @@ import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -63,6 +69,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.CancellationException
 import com.lorenzosuarez.magiceightball.phone.R
 import java.io.File
 
@@ -75,12 +82,14 @@ import java.io.File
  *
  * Always the same size and colours, whatever the phone and its settings, so it looks the same
  * wherever it ends up. It is laid out but drawn only into [layer], never on the screen:
- * [GraphicsLayer.toImageBitmap] then gives the picture.
+ * [SharePicture.take] then gives the picture.
  *
  * @param personality the style that answered: it gives the colour and what the ball wears.
  * @param styleLabel the name of that style, which signs the answer.
  * @param remark what the character added under its answer.
  * @param visible true to draw it on the screen as well, for previews and screenshot tests.
+ * @param asked read while drawing, so that whatever changes it has the card drawn afresh: see
+ * [SharePicture].
  */
 @Composable
 internal fun ShareCard(
@@ -92,7 +101,8 @@ internal fun ShareCard(
     remark: String? = null,
     styleLabel: String? = null,
     personality: Magic8BallPersonality = Magic8BallPersonality.NEUTRAL,
-    look: CustomCharacter? = null
+    look: CustomCharacter? = null,
+    asked: () -> Int = { 0 }
 ) {
     // A character of the user's own has the colour and wears the accessory it borrowed.
     val colour = look?.colour ?: personality
@@ -104,6 +114,9 @@ internal fun ShareCard(
                     .requiredSize(SHARE_WIDTH, SHARE_HEIGHT)
                     .clearAndSetSemantics {}
                     .drawWithContent {
+                        // Read here and for nothing else: a picture being asked for is what has
+                        // this drawn, and so recorded, again.
+                        asked()
                         layer.record { this@drawWithContent.drawContent() }
                         if (visible) drawLayer(layer)
                     }
@@ -522,14 +535,90 @@ internal fun shareColor(personality: Magic8BallPersonality): Color = Color(
     }
 )
 
-/** Saves [picture] where other apps may read it and hands it, with [text], to whichever app the user picks. */
-internal fun Context.shareAnswer(picture: ImageBitmap, text: String) {
-    val file = File(cacheDir, SHARE_DIRECTORY).apply { mkdirs() }.resolve(SHARE_FILE)
+/**
+ * The picture an answer is shared as, taken when it is asked for and not kept from before.
+ *
+ * The card is drawn into [layer] and never on the screen, and what a layer holds that the
+ * screen does not show can be thrown away under it: when memory runs short, and by the taking
+ * of a picture itself, which lets go of a layer nothing else is showing. The second picture of
+ * the same answer was then of nothing, see-through from edge to edge, which wherever it is sent
+ * shows as a black rectangle. So the card is drawn again for every picture, the picture is
+ * looked at before it is handed on, and one that came out empty is taken again. If it still
+ * does, there is none: nothing is better shared than that.
+ */
+@Stable
+internal class SharePicture(val layer: GraphicsLayer) {
+
+    /** How many times a picture was asked for. The card reads it while drawing: see [ShareCard]. */
+    var asked by mutableIntStateOf(0)
+        private set
+
+    /** The picture, as pixels of its own that no longer depend on the layer; null when it could not be drawn. */
+    suspend fun take(): Bitmap? {
+        repeat(SHARE_TRIES) { attempt ->
+            asked++
+            // Two frames: the one that hears it was asked for, and the one after that has drawn it.
+            withFrameNanos {}
+            withFrameNanos {}
+            val picture = try {
+                layer.toImageBitmap().asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(SHARE_TAG, "The picture could not be taken: ${e.javaClass.simpleName}")
+                null
+            }
+            if (picture != null && !picture.isBlank()) return picture
+            Log.w(SHARE_TAG, "The picture came out empty, try ${attempt + 1} of $SHARE_TRIES")
+        }
+        return null
+    }
+}
+
+/** A [SharePicture] with a layer of its own, for as long as the screen that shares is there. */
+@Composable
+internal fun rememberSharePicture(): SharePicture {
+    val layer = rememberGraphicsLayer()
+    return remember(layer) { SharePicture(layer) }
+}
+
+/**
+ * Whether nothing was drawn. The card covers the whole picture in a colour that is never black,
+ * so a see-through point anywhere says so, and so does black at every point looked at.
+ */
+internal fun Bitmap.isBlank(): Boolean {
+    if (width < 3 || height < 3) return true
+    val points = listOf(1, width / 2, width - 2).flatMap { x -> listOf(1, height / 2, height - 2).map { y -> getPixel(x, y) } }
+    return points.any { it ushr 24 != 0xFF } || points.all { it == BLACK }
+}
+
+/**
+ * Where the next picture is saved in [directory]. Each has a name of its own, by [now], so that
+ * an app still reading the last one is not handed another under it, and so that nothing shows
+ * a picture it kept for a name it has seen before. All but the latest few are deleted.
+ */
+internal fun shareFile(directory: File, now: Long): File {
+    directory.mkdirs()
+    directory.listFiles().orEmpty()
+        .filter { it.isFile }
+        .sortedByDescending { it.lastModified() }
+        .drop(SHARE_KEPT)
+        .forEach { it.delete() }
+    return directory.resolve("$SHARE_FILE-$now.png")
+}
+
+/**
+ * Saves [picture] where other apps may read it and hands it, with [text], to whichever app the
+ * user picks. False when it could not be saved or there is no app to hand it to.
+ */
+internal fun Context.shareAnswer(picture: Bitmap, text: String): Boolean {
+    val file = shareFile(File(cacheDir, SHARE_DIRECTORY), System.currentTimeMillis())
     try {
-        file.outputStream().use { picture.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val saved = file.outputStream().use { picture.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        if (!saved) return false
     } catch (_: java.io.IOException) {
         // No room to save it: there is nothing to share.
-        return
+        return false
     }
     val uri = FileProvider.getUriForFile(this, "$packageName.share", file)
     val send = Intent(Intent.ACTION_SEND)
@@ -539,10 +628,11 @@ internal fun Context.shareAnswer(picture: ImageBitmap, text: String) {
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     // What lets the chooser show the picture, and read it.
     send.clipData = ClipData.newRawUri(null, uri)
-    try {
+    return try {
         startActivity(Intent.createChooser(send, null))
+        true
     } catch (_: ActivityNotFoundException) {
-        // No app to share with: nothing to do.
+        false
     }
 }
 
@@ -608,4 +698,12 @@ private const val BESIDE_SOFTEN = 1f
 private const val WORN_SEAT = 2f
 
 private const val SHARE_DIRECTORY = "share"
-private const val SHARE_FILE = "magic-8-ball.png"
+private const val SHARE_FILE = "magic-8-ball"
+
+/** The pictures left where they were saved: the one being shared and the two before it. */
+private const val SHARE_KEPT = 2
+
+/** How many times a picture is taken before giving up on it. */
+private const val SHARE_TRIES = 3
+private const val SHARE_TAG = "ShareCard"
+private const val BLACK = 0xFF000000.toInt()

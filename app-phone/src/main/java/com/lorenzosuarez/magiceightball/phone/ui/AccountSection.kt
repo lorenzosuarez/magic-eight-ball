@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -74,6 +75,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.ceil
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -91,9 +93,19 @@ internal fun AccountSection(
     profile: Profile? = null,
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
     onOpenPrivacyPolicy: () -> Unit = {},
-    premium: Boolean = false
+    premium: Boolean = false,
+    loading: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
+    // What is kept with the account is on its way for a moment, and said to be: past that it is
+    // a connection that is not there, and the row is itself again.
+    var patient by remember(loading) { mutableStateOf(true) }
+    LaunchedEffect(loading) {
+        if (loading) {
+            delay(LOADING_PATIENCE_MS)
+            patient = false
+        }
+    }
     var busy by remember { mutableStateOf(false) }
     var failure by rememberSaveable { mutableStateOf<AccountOutcome?>(null) }
     var managing by rememberSaveable { mutableStateOf(false) }
@@ -123,6 +135,7 @@ internal fun AccountSection(
         if (account is AccountState.SignedIn) {
             AccountIdentity(
                 account = account,
+                loading = loading && patient,
                 onClick = {
                     failure = null
                     managed = account
@@ -139,7 +152,7 @@ internal fun AccountSection(
                     supporting = stringResource(R.string.account_hint),
                     enabled = true
                 )
-                GoogleButton(enabled = !busy, onClick = { attempt(onSignIn) })
+                GoogleButton(busy = busy, onClick = { attempt(onSignIn) })
             }
             when (failure) {
                 null -> Unit
@@ -171,6 +184,7 @@ internal fun AccountSection(
             account = shown,
             gone = account !is AccountState.SignedIn,
             profile = profile,
+            profileLoading = loading && patient,
             premium = premium,
             failed = failure != null,
             busy = busy,
@@ -228,14 +242,19 @@ private fun Context.addGoogleAccount() {
 /**
  * Who is signed in, as the row that opens the account: a letter for a face, the name, and the
  * address that tells one account from another.
+ *
+ * @param loading while what is kept with the account has not been heard of yet: a ring turns
+ * beside the arrow, and the row says so to whoever cannot see it.
  */
 @Composable
-private fun AccountIdentity(account: AccountState.SignedIn, onClick: () -> Unit) {
+private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, onClick: () -> Unit) {
     val name = account.name.ifBlank { account.email }
+    val waiting = stringResource(R.string.account_loading)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick)
+            .semantics { if (loading) stateDescription = waiting }
             .heightIn(min = 72.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -276,6 +295,8 @@ private fun AccountIdentity(account: AccountState.SignedIn, onClick: () -> Unit)
                 )
             }
         }
+        // The row is whole and opens as ever: the ring is beside its arrow, not in its place.
+        if (loading) WaitingRing(color = MaterialTheme.colorScheme.onSurfaceVariant)
         Icon(
             painter = painterResource(R.drawable.ic_chevron_right),
             contentDescription = null,
@@ -296,6 +317,7 @@ private fun AccountSheet(
     account: AccountState.SignedIn,
     gone: Boolean,
     profile: Profile?,
+    profileLoading: Boolean,
     premium: Boolean,
     failed: Boolean,
     busy: Boolean,
@@ -327,6 +349,7 @@ private fun AccountSheet(
             AccountSheetContent(
                 account = account,
                 profile = profile,
+                profileLoading = profileLoading,
                 premium = premium,
                 failed = failed,
                 busy = busy,
@@ -369,6 +392,8 @@ private fun AccountSheet(
  *
  * @param premium whether this account holds what is sold: said under whose it is, so that
  * whoever paid can see that it is here, and on which of their accounts.
+ * @param profileLoading while the profile has not been heard of yet: its row holds its place,
+ * so that the rows under it do not move when it comes.
  */
 @Composable
 internal fun AccountSheetContent(
@@ -380,7 +405,8 @@ internal fun AccountSheetContent(
     onSignOut: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    premium: Boolean = false
+    premium: Boolean = false,
+    profileLoading: Boolean = false
 ) {
     val name = account.name.ifBlank { account.email }
     val scroll = rememberScrollState()
@@ -435,6 +461,25 @@ internal fun AccountSheetContent(
                     enabled = !busy
                 )
                 RowDivider()
+            } else if (profileLoading) {
+                // The same row, not yet to be touched: what it will say is on its way.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 72.dp)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SettingText(
+                        title = stringResource(R.string.account_profile),
+                        supporting = stringResource(R.string.account_loading),
+                        enabled = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    WaitingRing(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                RowDivider()
             }
             ActionRow(
                 title = stringResource(R.string.account_sign_out),
@@ -487,40 +532,46 @@ private fun AccountFailure(message: String, modifier: Modifier = Modifier) {
  * line takes a second, and the button grows to hold it.
  */
 @Composable
-private fun GoogleButton(enabled: Boolean, onClick: () -> Unit) {
+private fun GoogleButton(busy: Boolean, onClick: () -> Unit) {
     val dark = MaterialTheme.colorScheme.onSurface.luminance() > 0.5f
+    val ink = if (dark) GoogleDarkInk else GoogleLightInk
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(if (enabled) 1f else BUSY_ALPHA)
             .heightIn(min = 48.dp)
             .clip(GoogleButtonShape)
             .background(if (dark) GoogleDarkGround else GoogleLightGround)
             .border(1.dp, if (dark) GoogleDarkOutline else GoogleLightOutline, GoogleButtonShape)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickable(enabled = !busy, role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_google),
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = Color.Unspecified
-        )
+        // While Google and then the app's own server are answering, a ring turns where the mark
+        // is and the words say what is happening: the button keeps its width, and has heard.
+        if (busy) {
+            WaitingRing(color = ink)
+        } else {
+            Icon(
+                painter = painterResource(R.drawable.ic_google),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = Color.Unspecified
+            )
+        }
         // A label on two lines says it is as wide as the room it was given, which would leave
         // the mark alone at the button's edge: it is held to its longest line instead, so that
         // mark and words stay together in the middle.
         var longestLine by remember { mutableStateOf<Int?>(null) }
         Text(
-            text = stringResource(R.string.account_continue_google),
+            text = stringResource(if (busy) R.string.account_signing_in else R.string.account_continue_google),
             modifier = Modifier.layout { measurable, constraints ->
                 val label = measurable.measure(constraints)
                 val width = longestLine?.coerceAtMost(label.width) ?: label.width
                 layout(width, label.height) { label.place((width - label.width) / 2, 0) }
             },
             style = GoogleLabel,
-            color = if (dark) GoogleDarkInk else GoogleLightInk,
+            color = ink,
             textAlign = TextAlign.Center,
             onTextLayout = { result ->
                 longestLine = (0 until result.lineCount).maxOf { line ->
@@ -552,3 +603,6 @@ private val GoogleButtonShape = RoundedCornerShape(24.dp)
 
 /** How faint a control is while the system is still answering the last touch on it. */
 private const val BUSY_ALPHA = 0.6f
+
+/** How long what is kept with an account is said to be on its way before it is taken to be out of reach. */
+private const val LOADING_PATIENCE_MS = 8_000L

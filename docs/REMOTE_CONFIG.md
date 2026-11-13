@@ -62,7 +62,7 @@ The lines used when the AI is off, away or used up. Same shape as `core/data/src
 { "es": { "pirate": ["Sí. La mitad es mía.", "No. A fregar la cubierta."] } }
 ```
 
-Each line: at most 28 characters and 6 words, so it fits the ball. The Classic style's twenty answers are never replaced.
+Each line: at most 28 characters and 6 words, so it fits the ball. The Classic style's twenty answers are never replaced. Nor are the lines that speak to whoever is asking, by name, by sign or on their birthday: those come only with the app, in `magic_8_ball_personal.json`, and a list given here takes the place of the ordinary lines alone.
 
 ## `characters_json`: who the characters are
 

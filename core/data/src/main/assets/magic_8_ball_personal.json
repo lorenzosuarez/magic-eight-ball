@@ -1,0 +1,620 @@
+{
+  "en": {
+    "signs": {
+      "aries": "Aries",
+      "taurus": "Taurus",
+      "gemini": "Gemini",
+      "cancer": "Cancer",
+      "leo": "Leo",
+      "virgo": "Virgo",
+      "libra": "Libra",
+      "scorpio": "Scorpio",
+      "sagittarius": "Sagittarius",
+      "capricorn": "Capricorn",
+      "aquarius": "Aquarius",
+      "pisces": "Pisces"
+    },
+    "styles": {
+      "sarcastic": {
+        "birthday": [
+          "Happy birthday. Still no.",
+          "Birthday yes. No refunds.",
+          "A year older. Still asking."
+        ]
+      },
+      "mystical": {
+        "sign": [
+          "Yes, {sign}. Buy salt.",
+          "Yes, {sign}. Wear blue.",
+          "For {sign}: yes, at 9.",
+          "{sign} may. Bring tea.",
+          "No, {sign}. Find a pin.",
+          "No, {sign}. Mop first.",
+          "Not for {sign}. Nap.",
+          "No, {sign}. Lock up.",
+          "Hazy, {sign}. Dust me.",
+          "Ask at 7:07, {sign}."
+        ],
+        "birthday": [
+          "Yes. Count candles twice.",
+          "Happy birthday. Yes at 3:33.",
+          "Birthday fog. Save a candle."
+        ]
+      },
+      "grandma": {
+        "name": [
+          "Yes, {name}. Now eat.",
+          "{name}, my angel, yes.",
+          "Yes. Wear a coat, {name}.",
+          "Bless you, {name}. Yes.",
+          "No, {name}. Soup first.",
+          "Oh, {name}. No, sweetie.",
+          "No. Call me more, {name}.",
+          "{name}, no. You look tired.",
+          "Maybe, {name}. Did you eat?",
+          "{name}! You never call.",
+          "Ask after my nap, {name}."
+        ],
+        "birthday": [
+          "Yes, {name}. Cake's ready.",
+          "No. But I baked your cake.",
+          "Birthday yes. More cake?"
+        ]
+      },
+      "pirate": {
+        "birthday": [
+          "Aye! Birthday rum for all!",
+          "Nay. Birthday grog instead."
+        ]
+      },
+      "philosopher": {
+        "birthday": [
+          "Another year. Absurd. Yes.",
+          "Happy birthday. Time lies."
+        ]
+      },
+      "coach": {
+        "name": [
+          "YES, {name}! Go get it!",
+          "{name}! Born for this!",
+          "Crush it, {name}!",
+          "Victory lap, {name}!",
+          "No, {name}! Train harder!",
+          "Not today, {name}! Reps!",
+          "Benched, {name}!",
+          "Shake it off, {name}!",
+          "Maybe, {name}! Earn it!",
+          "Overtime, {name}! Dig deep!",
+          "Stretch, {name}! Then ask!"
+        ],
+        "birthday": [
+          "Birthday reps, {name}! YES!",
+          "Happy birthday, champ! Yes!",
+          "No! Birthday burpees first!"
+        ]
+      },
+      "lovestruck": {
+        "name": [
+          "For you, {name}? Yes.",
+          "{name}... what a name. Yes.",
+          "Anything, {name}. Yes.",
+          "{name}, yes. Always yes.",
+          "No, {name}. Forgive me.",
+          "No, {name}. Their loss.",
+          "{name}, no. Come here.",
+          "Say it again, {name}.",
+          "{name}. I love saying it.",
+          "Lost in your eyes, {name}."
+        ],
+        "birthday": [
+          "Yes, {name}. It's your day.",
+          "Yes. Today you were born.",
+          "Birthday wish? Granted."
+        ]
+      },
+      "drama": {
+        "birthday": [
+          "It's your birthday?! Yes!",
+          "A birthday! And I said no!"
+        ]
+      },
+      "robot": {
+        "birthday": [
+          "Birthday detected. Yes.",
+          "Age +1. Result: no. Beep."
+        ]
+      },
+      "detective": {
+        "birthday": [
+          "Candles. A birthday. Yes.",
+          "Born today. Still a no."
+        ]
+      },
+      "conspiracy": {
+        "birthday": [
+          "Birthday? They know. Yes.",
+          "Born today? No coincidence."
+        ]
+      },
+      "cat": {
+        "birthday": [
+          "Birthday? Tuna for me. Yes.",
+          "No. I sat on your cake."
+        ]
+      },
+      "zoomer": {
+        "birthday": [
+          "Birthday era. It's a yes.",
+          "HBD bestie. Still no tho."
+        ]
+      },
+      "villain": {
+        "birthday": [
+          "A birthday! Mwahaha! Yes!",
+          "No. Birthday or not."
+        ]
+      },
+      "poet": {
+        "birthday": [
+          "Your birthday. Yes. I weep.",
+          "No. Happy birthday. Sigh."
+        ]
+      },
+      "astro": {
+        "sign": [
+          "Yes. Lucky you, {sign}.",
+          "Go for it, {sign}.",
+          "Obviously, {sign}.",
+          "Yes, {sign}. I checked.",
+          "No. Typical, {sign}.",
+          "No, {sign}. Blame Mars.",
+          "Not this month, {sign}.",
+          "No, {sign}. Ask Saturn.",
+          "Birth time, {sign}?",
+          "Fifty-fifty, {sign}.",
+          "Hmm. Ask later, {sign}."
+        ],
+        "birthday": [
+          "Happy solar return! Yes.",
+          "Birthday chart says no."
+        ]
+      },
+      "therapist": {
+        "name": [
+          "Yes, {name}. Breathe.",
+          "{name}, I hear a yes.",
+          "Proud of you, {name}. Yes.",
+          "Yes, {name}. No guilt.",
+          "No, {name}. That's okay.",
+          "No. Let it go, {name}.",
+          "A pattern, {name}. No.",
+          "{name}, what do you think?",
+          "Sit with that, {name}.",
+          "Time's up, {name}."
+        ],
+        "birthday": [
+          "Yes, {name}. A year wiser.",
+          "Yes. Honor your birthday.",
+          "Birthday. How does it feel?"
+        ]
+      },
+      "dog": {
+        "birthday": [
+          "BIRTHDAY! YES! YES! CAKE?",
+          "Your birthday! Park? Yes!"
+        ]
+      }
+    }
+  },
+  "es": {
+    "signs": {
+      "aries": "Aries",
+      "taurus": "Tauro",
+      "gemini": "Géminis",
+      "cancer": "Cáncer",
+      "leo": "Leo",
+      "virgo": "Virgo",
+      "libra": "Libra",
+      "scorpio": "Escorpio",
+      "sagittarius": "Sagitario",
+      "capricorn": "Capricornio",
+      "aquarius": "Acuario",
+      "pisces": "Piscis"
+    },
+    "styles": {
+      "sarcastic": {
+        "birthday": [
+          "Feliz cumple. Aun así, no.",
+          "Sí. Es tu regalo de cumple.",
+          "Un año más. Y aún preguntas."
+        ]
+      },
+      "mystical": {
+        "sign": [
+          "Sí, {sign}. Lleva sal.",
+          "Sí, {sign}. Ve de azul.",
+          "Sí, {sign}. A las 9.",
+          "{sign} puede. Trae té.",
+          "No, {sign}. Barre ya.",
+          "No, {sign}. Riega algo.",
+          "Hoy no, {sign}. Duerme.",
+          "Jamás, {sign}. Ventila.",
+          "Niebla, {sign}. Sopla.",
+          "Vuelve a las 7, {sign}."
+        ],
+        "birthday": [
+          "Sí. Cuenta bien las velas.",
+          "Feliz cumple. Sí, a las 5.",
+          "Hoy no. Guarda una vela."
+        ]
+      },
+      "grandma": {
+        "name": [
+          "Sí, {name}. Pero come algo.",
+          "Sí, {name}. Abrígate.",
+          "{name}, mi cielo, sí.",
+          "Sí, {name}. Ya recé.",
+          "No, {name}. Toma sopita.",
+          "Ay, {name}, no. ¿Comiste?",
+          "No, {name}. Y llámame.",
+          "{name}, eso no. Siéntate.",
+          "Ya veremos, {name}. Come.",
+          "Luego, {name}. Mi novela."
+        ],
+        "birthday": [
+          "Feliz cumple, {name}. Y sí.",
+          "Sí. Sopla las velas, tesoro.",
+          "No. Pero feliz cumpleaños."
+        ]
+      },
+      "pirate": {
+        "birthday": [
+          "¡Sí! ¡Ron de cumpleaños!",
+          "No. Feliz cumple, grumete."
+        ]
+      },
+      "philosopher": {
+        "birthday": [
+          "Otro año. Absurdo. Sí.",
+          "Cumples años. ¿O ellos a ti?"
+        ]
+      },
+      "coach": {
+        "name": [
+          "¡Sí, {name}! ¡A ganar!",
+          "¡Vamos, {name}! ¡Es tuyo!",
+          "¡Naciste para esto, {name}!",
+          "¡A romperla, {name}!",
+          "¡No, {name}! ¡Entrena más!",
+          "¡Hoy no, {name}! ¡Sigue!",
+          "¡A la banca, {name}!",
+          "¡Sin excusas, {name}! ¡No!",
+          "¡Empate, {name}! ¡Gánatelo!",
+          "¡Calienta y vuelve, {name}!",
+          "¡Tiempo extra, {name}!"
+        ],
+        "birthday": [
+          "¡Feliz cumple, {name}! ¡Sí!",
+          "¡Sí! ¡Cumpleaños de crack!",
+          "¡No! ¡Ni en tu cumpleaños!"
+        ]
+      },
+      "lovestruck": {
+        "name": [
+          "Por ti, {name}, sí.",
+          "Sí, {name}. Mil veces sí.",
+          "{name}... qué nombre. Sí.",
+          "Lo que pidas, {name}.",
+          "No, {name}. Perdóname.",
+          "No, {name}. Mereces más.",
+          "{name}, no. Ven aquí.",
+          "Se lo pierden, {name}.",
+          "Repítelo, {name}.",
+          "{name}. Me encanta decirlo.",
+          "Me perdí en ti, {name}."
+        ],
+        "birthday": [
+          "Sí, {name}. Hoy es tu día.",
+          "Sí. Qué suerte que naciste.",
+          "Feliz cumpleaños. Concedido."
+        ]
+      },
+      "drama": {
+        "birthday": [
+          "¡¿Tu cumpleaños?! ¡Sí!",
+          "¡Naciste hoy! ¡Y es un no!"
+        ]
+      },
+      "robot": {
+        "birthday": [
+          "Cumpleaños detectado. Sí.",
+          "Edad +1. Resultado: no. Bip."
+        ]
+      },
+      "detective": {
+        "birthday": [
+          "Velas. Un cumpleaños. Sí.",
+          "Naciste hoy. Mantengo el no."
+        ]
+      },
+      "conspiracy": {
+        "birthday": [
+          "¿Tu cumple? Ya lo saben. Sí.",
+          "¿Naciste hoy? No es casual."
+        ]
+      },
+      "cat": {
+        "birthday": [
+          "Sí. Feliz cumple. Trae atún.",
+          "No. Tiré tu regalo al suelo."
+        ]
+      },
+      "zoomer": {
+        "birthday": [
+          "Feliz cumple, bestie. Sí.",
+          "Feliz cumple. Pero es no."
+        ]
+      },
+      "villain": {
+        "birthday": [
+          "Cumpleaños... según el plan.",
+          "No. Y feliz cumpleaños."
+        ]
+      },
+      "poet": {
+        "birthday": [
+          "Tu cumpleaños. Sí. Y lloro.",
+          "No. Feliz cumpleaños. Ay."
+        ]
+      },
+      "astro": {
+        "sign": [
+          "Sí. Qué suerte, {sign}.",
+          "Obvio, {sign}.",
+          "Sí. Te toca, {sign}.",
+          "Sí, {sign}. Lo sabía.",
+          "No. Típico de {sign}.",
+          "Hoy no toca, {sign}.",
+          "Este mes no, {sign}.",
+          "No, {sign}. Es Saturno.",
+          "¿Y tu hora, {sign}?",
+          "Dudo. Cosas de {sign}."
+        ],
+        "birthday": [
+          "¡Feliz vuelta al Sol! Sí.",
+          "Tu revolución solar dice no."
+        ]
+      },
+      "therapist": {
+        "name": [
+          "Sí, {name}. Respira hondo.",
+          "Sí, {name}. Sin culpa.",
+          "{name}, te lo mereces.",
+          "Qué avance, {name}. Sí.",
+          "No, {name}. Y está bien.",
+          "Suelta eso, {name}. No.",
+          "Eso es un patrón, {name}.",
+          "{name}, ¿tú qué crees?",
+          "Se acabó la hora, {name}.",
+          "Te escucho, {name}. Sigue."
+        ],
+        "birthday": [
+          "Feliz cumple, {name}. Sí.",
+          "Cumples años. ¿Qué sientes?",
+          "Sí. Honra tu cumpleaños."
+        ]
+      },
+      "dog": {
+        "birthday": [
+          "¡CUMPLEAÑOS! ¡SÍ! ¡SÍ!",
+          "¡Tu cumple! ¿Parque? ¡Sí!"
+        ]
+      }
+    }
+  },
+  "pt": {
+    "signs": {
+      "aries": "Áries",
+      "taurus": "Touro",
+      "gemini": "Gêmeos",
+      "cancer": "Câncer",
+      "leo": "Leão",
+      "virgo": "Virgem",
+      "libra": "Libra",
+      "scorpio": "Escorpião",
+      "sagittarius": "Sagitário",
+      "capricorn": "Capricórnio",
+      "aquarius": "Aquário",
+      "pisces": "Peixes"
+    },
+    "styles": {
+      "sarcastic": {
+        "birthday": [
+          "Feliz aniversário. E é não.",
+          "Sim. Vale como presente.",
+          "Mais um ano. Ainda pergunta."
+        ]
+      },
+      "mystical": {
+        "sign": [
+          "Sim, {sign}. Leve sal.",
+          "Sim, {sign}. De azul.",
+          "Sim, {sign}. Às 9h.",
+          "{sign} pode. Traga chá.",
+          "Não, {sign}. Varra já.",
+          "Não, {sign}. Tire o pó.",
+          "Jamais, {sign}. Durma.",
+          "Névoa, {sign}. Sopre.",
+          "Turvo, {sign}. Pisque.",
+          "Volte às 7h, {sign}."
+        ],
+        "birthday": [
+          "Sim. Conte as velas de novo.",
+          "Parabéns. Sim, às 15h33.",
+          "Hoje não. Guarde uma vela."
+        ]
+      },
+      "grandma": {
+        "name": [
+          "Sim, {name}. Mas come mais.",
+          "Claro, {name}. Se agasalha.",
+          "{name}, meu anjo, sim.",
+          "Sim, {name}. Já rezei.",
+          "Não, {name}. Toma sopa.",
+          "Ai, {name}, não. Já comeu?",
+          "Não, {name}. E me liga.",
+          "{name}, isso não. Senta.",
+          "Vamos ver, {name}. Come.",
+          "Depois da novela, {name}."
+        ],
+        "birthday": [
+          "Parabéns, {name}. E sim.",
+          "Sim. Fiz seu bolo, benzinho.",
+          "Não. Mas tem bolo, meu bem."
+        ]
+      },
+      "pirate": {
+        "birthday": [
+          "Sim! Rum de aniversário!",
+          "Não. Parabéns, grumete."
+        ]
+      },
+      "philosopher": {
+        "birthday": [
+          "Mais um ano. Absurdo. Sim.",
+          "O tempo passa. Ou é você?"
+        ]
+      },
+      "coach": {
+        "name": [
+          "Sim, {name}! Pra cima!",
+          "Vai, {name}! Já é seu!",
+          "Nasceu pra isso, {name}!",
+          "Arrebenta, {name}!",
+          "Não, {name}! Treina mais!",
+          "Hoje não, {name}! Segue!",
+          "Pro banco, {name}!",
+          "Sem desculpa, {name}! Não!",
+          "Empate, {name}! Vai buscar!",
+          "Aquece e volta, {name}!",
+          "Prorrogação, {name}!"
+        ],
+        "birthday": [
+          "Parabéns, {name}! É sim!",
+          "Sim! Aniversário de craque!",
+          "Não! Parabéns e dez flexões!"
+        ]
+      },
+      "lovestruck": {
+        "name": [
+          "Por você, {name}, sim.",
+          "Sim, {name}. Mil vezes sim.",
+          "{name}... que nome. Sim.",
+          "Tudo por você, {name}.",
+          "Não, {name}. Me perdoa.",
+          "Não, {name}. Azar o deles.",
+          "{name}, não. Vem cá.",
+          "Repete, {name}. Amo ouvir.",
+          "{name}. Adoro dizer isso.",
+          "Me perdi em você, {name}."
+        ],
+        "birthday": [
+          "Sim, {name}. O dia é seu.",
+          "Sim. Ainda bem que nasceu.",
+          "Parabéns. Tá concedido."
+        ]
+      },
+      "drama": {
+        "birthday": [
+          "Seu aniversário?! Sim!",
+          "Nasceu hoje! E é um não!"
+        ]
+      },
+      "robot": {
+        "birthday": [
+          "Aniversário detectado. Sim.",
+          "Idade +1. Saída: não. Bip."
+        ]
+      },
+      "detective": {
+        "birthday": [
+          "Velas. Um aniversário. Sim.",
+          "Nasceu hoje. Ainda é não."
+        ]
+      },
+      "conspiracy": {
+        "birthday": [
+          "Seu aniversário? Eles sabem.",
+          "Nasceu hoje? Não é acaso."
+        ]
+      },
+      "cat": {
+        "birthday": [
+          "Sim. Parabéns. Traz atum.",
+          "Não. Derrubei seu bolo."
+        ]
+      },
+      "zoomer": {
+        "birthday": [
+          "Feliz niver, bestie. Sim.",
+          "Parabéns. Mas é não, tá?"
+        ]
+      },
+      "villain": {
+        "birthday": [
+          "Parabéns... tudo no plano.",
+          "Não. Nem no seu aniversário."
+        ]
+      },
+      "poet": {
+        "birthday": [
+          "Parabéns. Sim. Ai de mim.",
+          "Não. Feliz aniversário. Ai."
+        ]
+      },
+      "astro": {
+        "sign": [
+          "Sim. Coisa de {sign}.",
+          "Óbvio, {sign}.",
+          "Sim, {sign}. Eu sabia.",
+          "Vai dar, {sign}.",
+          "Não. Típico de {sign}.",
+          "Hoje não rola, {sign}.",
+          "Este mês não, {sign}.",
+          "Não, {sign}. É Saturno.",
+          "Me diz a hora, {sign}.",
+          "Cadê seu mapa, {sign}?"
+        ],
+        "birthday": [
+          "Feliz retorno solar! Sim.",
+          "Mapa de aniversário: não."
+        ]
+      },
+      "therapist": {
+        "name": [
+          "Sim, {name}. Respire fundo.",
+          "Sim, {name}. Sem culpa.",
+          "{name}, você merece.",
+          "Que avanço, {name}. Sim.",
+          "Não, {name}. E tudo bem.",
+          "Não, {name}. Solte.",
+          "É um padrão, {name}. Não.",
+          "{name}, o que você acha?",
+          "Deu a hora, {name}.",
+          "Estou ouvindo, {name}."
+        ],
+        "birthday": [
+          "Parabéns, {name}. Sim.",
+          "Aniversário. Como se sente?",
+          "Sim. Honre seu aniversário."
+        ]
+      },
+      "dog": {
+        "birthday": [
+          "ANIVERSÁRIO! SIM! SIM!",
+          "Parabéns! Passeio? Sim!"
+        ]
+      }
+    }
+  }
+}

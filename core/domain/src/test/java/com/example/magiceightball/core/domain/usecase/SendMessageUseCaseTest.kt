@@ -63,6 +63,15 @@ class SendMessageUseCaseTest {
     }
 
     @Test
+    fun `an answer said for the asker's birthday is handed on as one, and no other is`() = runTest {
+        // Unless it is said, no answer counts as the day's wish: not one the AI wrote, not one on the watch.
+        assertEquals(false, (ask() as Magic8BallResult.Success).birthdayLine)
+
+        gateway.result = Magic8BallResult.Success("Happy birthday. Still no.", birthdayLine = true)
+        assertEquals(true, (ask() as Magic8BallResult.Success).birthdayLine)
+    }
+
+    @Test
     fun `the gateway's failure is returned as it is`() = runTest {
         gateway.result = Magic8BallResult.Failure(LlmError.Network)
 

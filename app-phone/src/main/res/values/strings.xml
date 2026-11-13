@@ -142,6 +142,7 @@
     <string name="options_asking">Questions</string>
     <string name="options_general">General</string>
     <string name="share_answer_text">Look what Magic AI Ball told me. Ask your own question: %1$s</string>
+    <string name="share_failed">Couldn\'t prepare the picture. Try again</string>
     <string name="settings_privacy_policy">Privacy policy</string>
     <string name="settings_privacy_policy_hint">What the app does with your data</string>
     <string name="settings_ad_privacy">Ad privacy choices</string>
@@ -245,6 +246,9 @@
     <string name="account_delete_text">Your account and everything in it are erased. This can\'t be undone. Your recent answers stay on this device. Google may ask you to pick your account to confirm.</string>
     <string name="account_delete_failed">Couldn\'t delete the account. Try again</string>
     <string name="account_deleted">Account deleted.</string>
+    <string name="account_signing_in">Signing in…</string>
+    <string name="account_loading">Loading your account</string>
+    <string name="characters_loading">Loading your characters</string>
     <string name="account_premium">You have Premium</string>
     <string name="account_profile">Your profile</string>
     <string name="profile_title_new">Who\'s asking?</string>

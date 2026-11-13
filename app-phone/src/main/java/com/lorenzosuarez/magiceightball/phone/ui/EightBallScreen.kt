@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import android.graphics.Bitmap
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -44,8 +45,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.runtime.key
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.focusable
@@ -162,6 +161,7 @@ import kotlinx.coroutines.delay
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The screen wired to its [viewModel] and to the platform: the microphone permission, the
@@ -434,8 +434,8 @@ fun EightBallScreen(
                 onAskWho = viewModel::askWho,
                 onShareAnswer = { picture ->
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
-                    context.shareAnswer(picture, shareAnswerText)
-                    viewModel.onAnswerShared()
+                    // Counted as shared only when it was handed on.
+                    context.shareAnswer(picture, shareAnswerText).also { shared -> if (shared) viewModel.onAnswerShared() }
                 },
                 onReportAnswer = { reason ->
                     tick(HapticFeedbackConstantsCompat.CONFIRM)
@@ -485,7 +485,7 @@ internal fun EightBallContent(
     modifier: Modifier = Modifier,
     onShowHistoryEntry: (HistoryEntry) -> Unit = {},
     onAllowMicrophone: () -> Unit = {},
-    onShareAnswer: (ImageBitmap) -> Unit = {},
+    onShareAnswer: (Bitmap) -> Boolean = { true },
     onReportAnswer: (ReportReason) -> Unit = {},
     onRateAnswer: (Boolean) -> Unit = {},
     onAskWho: (String) -> Unit = {},
@@ -499,7 +499,10 @@ internal fun EightBallContent(
     val pagerState = rememberPagerState(initialPage = initialPage) { PAGE_COUNT }
     val onBallPage = pagerState.currentPage == BALL_PAGE
     val scope = rememberCoroutineScope()
-    val shareLayer = rememberGraphicsLayer()
+    val sharePicture = rememberSharePicture()
+    // One picture at a time: a second touch while the first is being taken does nothing.
+    var sharing by remember { mutableStateOf(false) }
+    val shareFailedMessage = stringResource(R.string.share_failed)
 
     // Deleting needs no confirmation because it can be taken back for a moment.
     val snackbars = remember { SnackbarHostState() }
@@ -563,11 +566,12 @@ internal fun EightBallContent(
                 ShareCard(
                     question = answered.question,
                     answer = answered.answer.text(),
-                    layer = shareLayer,
+                    layer = sharePicture.layer,
                     remark = answered.answer.remark(),
                     styleLabel = answered.custom?.name ?: answered.style?.let { stringResource(it.labelRes()) },
                     personality = answered.style ?: Magic8BallPersonality.NEUTRAL,
-                    look = answered.custom
+                    look = answered.custom,
+                    asked = { sharePicture.asked }
                 )
             }
         }
@@ -673,7 +677,29 @@ internal fun EightBallContent(
                             onHoldCancel = onHoldCancel,
                             onToggleVoiceQuestion = onToggleVoiceQuestion,
                             onAllowMicrophone = onAllowMicrophone,
-                            onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
+                            onShareAnswer = {
+                                if (!sharing) {
+                                    sharing = true
+                                    scope.launch {
+                                        try {
+                                            // Within a moment or not at all: a picture that never
+                                            // comes must not leave sharing waiting for it.
+                                            val picture = withTimeoutOrNull(SHARE_PATIENCE_MS) { sharePicture.take() }
+                                            // Said, and nothing sent: a picture of nothing is not
+                                            // shared, and one that could not be handed on is not
+                                            // passed over in silence.
+                                            if (picture == null || !onShareAnswer(picture)) {
+                                                // Free to be tried again while it is being said.
+                                                sharing = false
+                                                snackbars.currentSnackbarData?.dismiss()
+                                                snackbars.showSnackbar(shareFailedMessage, duration = SnackbarDuration.Short)
+                                            }
+                                        } finally {
+                                            sharing = false
+                                        }
+                                    }
+                                }
+                            },
                             onRateAnswer = onRateAnswer,
                             onAskWho = onAskWho
                         )
@@ -1653,3 +1679,6 @@ private fun EightBallContentPreview() {
         )
     }
 }
+
+/** How long the picture of an answer is waited for before sharing says it could not be made. */
+private const val SHARE_PATIENCE_MS = 3_000L

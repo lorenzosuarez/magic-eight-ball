@@ -1,8 +1,10 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -58,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -249,7 +252,9 @@ internal fun StylesSheet(
     yours: List<CustomCharacter> = emptyList(),
     chosenOfYours: String? = null,
     onYoursSelected: (CustomCharacter) -> Unit = {},
-    onEditYours: (CustomCharacter) -> Unit = {}
+    onEditYours: (CustomCharacter) -> Unit = {},
+    yoursPlaces: Int = 0,
+    creating: Boolean = false
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
@@ -280,6 +285,8 @@ internal fun StylesSheet(
                 full = full,
                 hidden = hidden,
                 onCreate = onCreate,
+                yoursPlaces = yoursPlaces,
+                creating = creating,
                 yours = yours,
                 chosenOfYours = chosenOfYours,
                 onYoursSelected = {
@@ -302,6 +309,9 @@ internal fun StylesSheet(
  * then nothing is shown for it.
  * @param yours the characters the user made up, shown first, each with the way to correct it.
  * @param chosenOfYours the slot of the one that answers, when one of them does.
+ * @param yoursPlaces how many places to keep for the user's own while they are on their way:
+ * as many as there were, or none when there is no reason to think there are any.
+ * @param creating while "Create" waits for the account to be heard of: it says it heard.
  */
 @Composable
 internal fun StylesContent(
@@ -315,7 +325,9 @@ internal fun StylesContent(
     yours: List<CustomCharacter> = emptyList(),
     chosenOfYours: String? = null,
     onYoursSelected: (CustomCharacter) -> Unit = {},
-    onEditYours: (CustomCharacter) -> Unit = {}
+    onEditYours: (CustomCharacter) -> Unit = {},
+    yoursPlaces: Int = 0,
+    creating: Boolean = false
 ) {
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val headerTop by animateDpAsState(if (full) statusBar else 0.dp, label = "sheet header")
@@ -348,7 +360,8 @@ internal fun StylesContent(
                     label = stringResource(R.string.action_create),
                     description = stringResource(R.string.characters_create),
                     onClick = onCreate,
-                    modifier = Modifier.align(Alignment.CenterEnd)
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    busy = creating
                 )
             }
         }
@@ -381,6 +394,28 @@ internal fun StylesContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
+            if (yours.isEmpty() && yoursPlaces > 0) {
+                val waiting = stringResource(R.string.characters_loading)
+                Text(
+                    text = stringResource(R.string.styles_group_yours),
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
+                        .semantics { heading() },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // Their places kept, in the shape of the cards that are coming: said once, as one thing.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .clearAndSetSemantics { contentDescription = waiting },
+                    horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
+                ) {
+                    repeat(yoursPlaces) { StyleCardPlace(Modifier.width(cardWidth)) }
+                }
+            }
             if (yours.isNotEmpty()) {
                 Text(
                     text = stringResource(R.string.styles_group_yours),
@@ -462,6 +497,30 @@ internal fun StylesContent(
  * one line and their sayings on the next. The sayings are picked short enough to fit, see the
  * `style_*_sample` strings; one that does not is cut rather than let it push the card taller.
  */
+/**
+ * The place of a card that is not known yet: a card's own ground, as tall as a card is at this
+ * type size, with a bar where its name will be and one where its line will.
+ */
+@Composable
+private fun StyleCardPlace(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(ButtonShape)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA))
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // Each line holds its room with words that are not drawn, and its bar lies along it.
+        listOf(MaterialTheme.typography.titleSmall to PLACE_NAME_WIDTH, MaterialTheme.typography.bodySmall to PLACE_LINE_WIDTH)
+            .forEach { (style, width) ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    Text(text = " ", style = style, maxLines = 1)
+                    Box(modifier = Modifier.fillMaxWidth(width).height(PLACE_BAR_HEIGHT).waitingBar())
+                }
+            }
+    }
+}
+
 @Composable
 private fun StyleCard(
     title: String,
@@ -471,17 +530,26 @@ private fun StyleCard(
     modifier: Modifier = Modifier,
     onEdit: (() -> Unit)? = null
 ) {
-    val ink = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
+    // The choice arrives on one card as it leaves another: ground and ink pass into each other,
+    // and nothing of either card moves.
+    val ground by animateColorAsState(
+        targetValue = if (chosen) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
+        },
+        animationSpec = tween(CHOICE_MS),
+        label = "card ground"
+    )
+    val ink by animateColorAsState(
+        targetValue = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
+        animationSpec = tween(CHOICE_MS),
+        label = "card ink"
+    )
     Box(
         modifier = modifier
             .clip(ButtonShape)
-            .background(
-                if (chosen) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
-                }
-            )
+            .background(ground)
             .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
     ) {
         Column(
@@ -593,6 +661,11 @@ private const val HANDLE_ALPHA = 0.3f
 /** Two cards and the start of a third across a phone: what tells that a line goes on. */
 private val STYLE_CARD_WIDTH = 152.dp
 private val STYLE_CARD_GAP = 8.dp
+
+/** The bars on the place kept for a card: how thick, and how much of the card's width its name and its line take. */
+private val PLACE_BAR_HEIGHT = 8.dp
+private const val PLACE_NAME_WIDTH = 0.55f
+private const val PLACE_LINE_WIDTH = 0.8f
 private const val STYLE_ROWS = 2
 
 /** The pencil on a card of the user's own, and the room round it that takes the touch. */

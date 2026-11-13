@@ -169,7 +169,8 @@ internal fun BarTextButton(
     label: String,
     description: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    busy: Boolean = false
 ) {
     Row(
         modifier = modifier
@@ -177,6 +178,7 @@ internal fun BarTextButton(
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
             .clickable(
+                enabled = !busy,
                 interactionSource = null,
                 indication = PressHighlight,
                 role = Role.Button,
@@ -187,12 +189,17 @@ internal fun BarTextButton(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurface
-        )
+        // While what it started is on its way, a ring turns where its mark is: it has heard.
+        if (busy) {
+            WaitingRing(color = MaterialTheme.colorScheme.onSurface)
+        } else {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
@@ -204,3 +211,9 @@ internal fun BarTextButton(
 
 /** How much of the ink the disc behind a top button, or behind a word, takes. */
 internal const val BAR_DISC_ALPHA = 0.1f
+
+/**
+ * How long a choice takes to show where it was made, and to leave where it was, instead of
+ * jumping: it has arrived before the light of the touch that made it has gone.
+ */
+internal const val CHOICE_MS = 200

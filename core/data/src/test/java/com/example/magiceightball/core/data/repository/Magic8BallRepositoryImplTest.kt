@@ -5,6 +5,7 @@ import com.example.magiceightball.core.data.config.GeminiSettings
 import com.example.magiceightball.core.data.config.GeminiSettingsSource
 import com.example.magiceightball.core.data.datasource.GeminiRemoteDataSource
 import com.example.magiceightball.core.data.datasource.LocalDataSource
+import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.CustomCharacter
@@ -29,11 +30,17 @@ class Magic8BallRepositoryImplTest {
     private val remoteDataSource = mockk<GeminiRemoteDataSource> {
         coEvery { fetchMagic8BallMessage(any(), any()) } returns Magic8BallResult.Success(REMOTE_ANSWER)
     }
+    private var localAnswer = Magic8BallResult.Success(LOCAL_ANSWER)
+    private val askers = mutableListOf<AskerFacts?>()
     private val localDataSource = object : LocalDataSource {
         override suspend fun getRandomMessage(
             languageCode: String,
-            personality: Magic8BallPersonality
-        ): String = LOCAL_ANSWER
+            personality: Magic8BallPersonality,
+            asker: AskerFacts?
+        ): Magic8BallResult.Success {
+            askers += asker
+            return localAnswer
+        }
     }
     private val geminiSettings = FakeGeminiSettingsSource()
     private val quota = DeviceAiAnswerQuota(MemoryStore(), today = { today })
@@ -244,6 +251,24 @@ class Magic8BallRepositoryImplTest {
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
 
         assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), result)
+    }
+
+    @Test
+    fun `a bundled answer is drawn for whoever asks, and one said for their birthday is passed on as such`() = runTest {
+        geminiSettings.settings = geminiSettings.settings.copy(dailyLimit = 0)
+        val lorena = AskerFacts(firstName = "Lorena", birthdayToday = true)
+
+        // Nobody signed in, as on the watch: nobody to speak to.
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(Magic8BallRequest(useAi = false)))
+        assertEquals(listOf<AskerFacts?>(null), askers)
+
+        localAnswer = Magic8BallResult.Success(LOCAL_ANSWER, birthdayLine = true)
+        // With the day's allowance gone as well: one thing told to the caller does not hide the other.
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true, birthdayLine = true),
+            repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, asker = lorena))
+        )
+        assertEquals(lorena, askers.last())
     }
 
     @Test
