@@ -105,11 +105,13 @@ h2 {
 }
 
 p,
-ul {
+ul,
+ol {
   margin: 0 0 16px;
 }
 
-ul {
+ul,
+ol {
   padding-left: 22px;
 }
 
@@ -163,7 +165,8 @@ code {
 
 footer {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 8px 24px;
   padding-block: 24px 40px;
   border-top: 1px solid var(--line);
   font-size: 15px;

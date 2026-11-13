@@ -153,7 +153,7 @@ Switches, limits, the answers the app keeps and who each character is are Remote
 
 ## The public site
 
-The privacy policy is published at https://magic-ai-8-ball.web.app in English, Spanish (`/es/privacy`) and Portuguese (`/pt/privacy`), with a front page in each. Its one source is the Markdown under `docs/`: `site/build.py` turns it into pages before every deploy, so what is published cannot drift from the repository.
+The privacy policy is published at https://magic-ai-8-ball.web.app in English, Spanish (`/es/privacy`) and Portuguese (`/pt/privacy`), with a front page in each, and so is the page for deleting an account (`/delete-account`, `/es/delete-account`, `/pt/delete-account`). Their one source is the Markdown under `docs/`: `site/build.py` turns it into pages before every deploy, so what is published cannot drift from the repository. A text whose effective date is still to be set stops the build; `python3 site/build.py --draft` builds it anyway, to look at it.
 
     firebase deploy --only hosting
 
