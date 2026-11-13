@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Icon
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
@@ -122,9 +123,22 @@ internal fun SettingsContent(
     // Which character of the user's own is open in the editor: its slot, or [NEW] for one being made.
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     var notice by rememberSaveable { mutableStateOf<CharactersNotice?>(null) }
-    var paying by rememberSaveable { mutableStateOf(false) }
+    // What is sold is being shown, and what for: null while it is not.
+    var paying by rememberSaveable { mutableStateOf<PremiumFor?>(null) }
     val scope = rememberCoroutineScope()
     val signedIn = state.account is AccountState.SignedIn
+    val snackbars = LocalSnackbars.current
+    val premiumMessage = stringResource(R.string.account_premium)
+    // What is sold was asked for with nobody signed in, and they signed in for it: it is shown
+    // once the account is whole and known not to hold it, and forgotten if they sign out first.
+    var wantsPremium by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(signedIn) { if (!signedIn) wantsPremium = false }
+    LaunchedEffect(wantsPremium, signedIn, state.profile, state.premiumKnown) {
+        if (wantsPremium && signedIn && state.profile is ProfileState.Present && state.premiumKnown) {
+            wantsPremium = false
+            if (state.offersPremium && paying == null && editing == null) paying = PremiumFor.EVERYTHING
+        }
+    }
     // Whether what is kept with the account, its profile and its characters, has been heard of.
     val accountKnown = state.profile != ProfileState.Unknown && state.characters != null
     // What "Create" does once that is known: said here once, for a touch now or one that waited.
@@ -134,7 +148,7 @@ internal fun SettingsContent(
             !state.canMakeCharacters || kept == null -> notice = CharactersNotice.UNKNOWN
             kept.size >= CustomCharacter.MAX_COUNT -> notice = CharactersNotice.FULL
             // Last: nobody is asked to pay for what they could not have made anyway.
-            state.mustPayToCreate -> paying = true
+            state.mustPayToCreate -> paying = PremiumFor.CHARACTERS
             else -> editing = NEW
         }
     }
@@ -170,7 +184,7 @@ internal fun SettingsContent(
             waitingToCreate = false
             // Unless something else was opened meanwhile, or the profile is being asked for:
             // what waited does not land on top of that.
-            if (editing == null && !paying && state.profile != ProfileState.Missing) createNow()
+            if (editing == null && paying == null && state.profile != ProfileState.Missing) createNow()
         }
     }
     if (browsingStyles) {
@@ -201,17 +215,35 @@ internal fun SettingsContent(
             onEditYours = { editing = it.id }
         )
     }
-    if (paying) {
-        // Bought, here or wherever a payment that was pending came through: on to what they wanted.
+    paying?.let { wanted ->
+        // Bought, here or wherever a payment that was pending came through: on to what they
+        // wanted, which for whoever only asked what is sold is the page they were on.
         val goOn = {
-            paying = false
-            editing = NEW
+            // Once, though it may be told both by the purchase and by the account.
+            if (paying != null) {
+                paying = null
+                if (wanted == PremiumFor.CHARACTERS) {
+                    editing = NEW
+                } else {
+                    // Back on the page with nothing opened for them: they are told it is theirs.
+                    scope.launch {
+                        snackbars?.currentSnackbarData?.dismiss()
+                        snackbars?.showSnackbar(premiumMessage, duration = SnackbarDuration.Short)
+                    }
+                }
+            }
         }
-        LaunchedEffect(state.premium) { if (state.premium) goOn() }
         // No longer sold, or not yet known to be, as when the app has just come back: the sheet
         // goes, and nothing opens that was not paid for. Whoever wants to make one asks again.
-        LaunchedEffect(state.config.premiumEnabled) { if (!state.config.premiumEnabled) paying = false }
-        PremiumSheet(offer = state.offer, onBuy = onBuyPremium, onBought = goOn, onClose = { paying = false })
+        LaunchedEffect(state.config.premiumEnabled) { if (!state.config.premiumEnabled) paying = null }
+        PremiumSheet(
+            offer = state.offer,
+            wanted = wanted,
+            held = state.premium,
+            onBuy = onBuyPremium,
+            onBought = goOn,
+            onClose = { paying = null }
+        )
     }
     // The character the editor was opened on: kept while those of the account are for a moment
     // not known, so that what is being typed is not lost to a connection that blinked.
@@ -247,20 +279,25 @@ internal fun SettingsContent(
         val go = stringResource(R.string.account_continue_google)
         val later = stringResource(R.string.action_not_now)
         val understood = stringResource(R.string.action_understood)
+        // What stands in the way is that nobody is signed in: the way there is offered.
+        val signsIn = what == CharactersNotice.ACCOUNT || what == CharactersNotice.PREMIUM_ACCOUNT
         AlertDialog(
             onDismissRequest = { notice = null },
             title = { Text(title) },
             text = { Text(text) },
             confirmButton = {
-                if (what == CharactersNotice.ACCOUNT) {
+                if (signsIn) {
                     TextButton(
                         onClick = {
                             notice = null
                             scope.launch {
-                                val outcome = onSignIn()
-                                // Backing out of Google's own question needs no telling.
-                                if (outcome != AccountOutcome.DONE && outcome != AccountOutcome.CANCELLED) {
-                                    notice = CharactersNotice.NO_SIGN_IN
+                                when (onSignIn()) {
+                                    // What they signed in for is not forgotten on the way.
+                                    AccountOutcome.DONE -> if (what == CharactersNotice.PREMIUM_ACCOUNT) wantsPremium = true
+                                    // Backing out of Google's own question needs no telling.
+                                    AccountOutcome.CANCELLED -> Unit
+                                    AccountOutcome.NO_GOOGLE_ACCOUNT -> notice = CharactersNotice.NO_GOOGLE
+                                    else -> notice = CharactersNotice.NO_SIGN_IN
                                 }
                             }
                         }
@@ -269,7 +306,7 @@ internal fun SettingsContent(
                     TextButton(onClick = { notice = null }) { Text(understood) }
                 }
             },
-            dismissButton = if (what == CharactersNotice.ACCOUNT) {
+            dismissButton = if (signsIn) {
                 { TextButton(onClick = { notice = null }) { Text(later) } }
             } else null
         )
@@ -295,6 +332,19 @@ internal fun SettingsContent(
                 // the wait would be over before it began.
                 loading = signedIn && state.profile == ProfileState.Unknown
             )
+        }
+        // What is sold, said once on the page and only to whoever does not have it. It is kept
+        // with an account: whoever has none is first shown the way to one.
+        if (state.offersPremium) {
+            Section(stringResource(R.string.options_premium)) {
+                ActionRow(
+                    title = stringResource(R.string.premium_row_title),
+                    supporting = stringResource(R.string.premium_row_hint),
+                    onClick = {
+                        if (signedIn) paying = PremiumFor.EVERYTHING else notice = CharactersNotice.PREMIUM_ACCOUNT
+                    }
+                )
+            }
         }
         Section(stringResource(R.string.options_answers)) {
             StyleRow(
@@ -328,8 +378,9 @@ internal fun SettingsContent(
                 // The one thing on this page that is not as the user set it: today's are used up.
                 alert = state.usesAiAnswers && !classic && state.aiAllowanceSpent
             )
-            // The day's AI answers are used up and there is an ad to watch for more: the user's choice.
-            if (state.usesAiAnswers && !classic && state.aiAllowanceSpent && onGetMoreAiAnswers != null) {
+            // The day's AI answers are used up and there is an ad to watch for more: the user's
+            // choice. Not offered to whoever has paid to see no ads.
+            if (state.usesAiAnswers && !classic && state.aiAllowanceSpent && !state.premium && onGetMoreAiAnswers != null) {
                 RowDivider()
                 ActionRow(
                     title = stringResource(R.string.settings_ai_more),
@@ -434,9 +485,15 @@ internal fun SettingsContent(
             )
             if (onShowAdPrivacyOptions != null) {
                 RowDivider()
+                // The same choices also decide whether the app's use is measured, so whoever has
+                // paid to see no ads still has the way back to them: under a name without ads in it.
                 ActionRow(
-                    title = stringResource(R.string.settings_ad_privacy),
-                    supporting = stringResource(R.string.settings_ad_privacy_hint),
+                    title = stringResource(
+                        if (state.premium) R.string.settings_privacy_choices else R.string.settings_ad_privacy
+                    ),
+                    supporting = stringResource(
+                        if (state.premium) R.string.settings_privacy_choices_hint else R.string.settings_ad_privacy_hint
+                    ),
                     onClick = onShowAdPrivacyOptions
                 )
             }
@@ -697,7 +754,7 @@ internal fun SettingText(
     }
 }
 
-/** What making a character can run into before the editor opens, and how each is said. */
+/** What making a character, or buying what is sold, can run into before its sheet opens, and how each is said. */
 internal enum class CharactersNotice(@StringRes val title: Int, @StringRes val text: Int) {
     /** Nobody is signed in: the way to an account. */
     ACCOUNT(R.string.characters_account_title, R.string.characters_account_text),
@@ -709,7 +766,13 @@ internal enum class CharactersNotice(@StringRes val title: Int, @StringRes val t
     FULL(R.string.characters_full_title, R.string.characters_full_text),
 
     /** The way to an account was taken, and led nowhere. */
-    NO_SIGN_IN(R.string.characters_no_sign_in_title, R.string.characters_unknown_text)
+    NO_SIGN_IN(R.string.characters_no_sign_in_title, R.string.characters_unknown_text),
+
+    /** It led nowhere because the device has no Google account to sign in with. */
+    NO_GOOGLE(R.string.characters_no_sign_in_title, R.string.characters_no_google_text),
+
+    /** What is sold was asked for with nobody signed in: it is kept with an account. */
+    PREMIUM_ACCOUNT(R.string.premium_account_title, R.string.premium_account_text)
 }
 
 /** What [SettingsContent] calls the editor open on nobody yet. */

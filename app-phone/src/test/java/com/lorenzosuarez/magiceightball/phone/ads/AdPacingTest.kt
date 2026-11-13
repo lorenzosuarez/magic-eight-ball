@@ -29,4 +29,16 @@ class AdPacingTest {
 
         assertEquals(true, pacing.answerClosed(0L))
     }
+
+    @Test
+    fun `whoever has paid is never due an ad, and is not owed one the moment that ends`() {
+        var paid = true
+        val pacing = AdPacing(minAnswers = { 3 }, minIntervalMillis = { 1_000L }, adFree = { paid })
+
+        assertEquals(List(10) { false }, List(10) { pacing.answerClosed(0L) })
+
+        // As for anyone who has just opened the app: the answers closed before do not count.
+        paid = false
+        assertEquals(listOf(false, false, true), List(3) { pacing.answerClosed(0L) })
+    }
 }

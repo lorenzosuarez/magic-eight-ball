@@ -1085,6 +1085,66 @@ class EightBallScreenshotTest {
     fun phone_premium_busy_spanish() =
         capturePremium("phone_83_premium_busy_spanish", AppLanguage.SPANISH, dark = false, price = "2,99 €", busy = true)
 
+    /** Asked for from the page of options: all of it, with what the page promised said first. */
+    @Test
+    fun phone_premium_everything_spanish() = capturePremium(
+        "phone_88_premium_everything_spanish",
+        AppLanguage.SPANISH,
+        dark = false,
+        price = "0,99 €",
+        wanted = PremiumFor.EVERYTHING
+    )
+
+    /** The same at its longest: a small phone, a large font, the longest of the three languages. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_premium_everything_portuguese_large_font() = capturePremium(
+        "phone_89_small_phone_premium_everything_portuguese_large_font",
+        AppLanguage.PORTUGUESE,
+        dark = false,
+        price = "R$ 5,49",
+        fontScale = 1.5f,
+        wanted = PremiumFor.EVERYTHING
+    )
+
+    /** What is sold, on the page: under the account, with nobody signed in, at its worst. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_options_premium_large_font() = captureAccountOptions(
+        "phone_90_small_phone_options_premium_large_font",
+        accountState(AccountState.SignedOut).let { it.copy(config = it.config.copy(premiumEnabled = true)) },
+        1.5f
+    )
+
+    /** The longest of the three languages, where the row's second line has most to carry. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_options_premium_portuguese_large_font() = captureAccountOptions(
+        "phone_92_small_phone_options_premium_portuguese_large_font",
+        accountState(AccountState.SignedOut, AppLanguage.PORTUGUESE)
+            .let { it.copy(config = it.config.copy(premiumEnabled = true)) },
+        1.5f
+    )
+
+    /** In English, and in the dark. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_options_premium_english_dark() = captureAccountOptions(
+        "phone_93_options_premium_english_dark",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"), AppLanguage.ENGLISH)
+            .let { it.copy(config = it.config.copy(premiumEnabled = true)) },
+        1f
+    )
+
+    /** And under whoever is signed in and does not have it. */
+    @Test
+    fun phone_options_premium_signed_in_spanish() = captureAccountOptions(
+        "phone_91_options_premium_signed_in_spanish",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"))
+            .let { it.copy(config = it.config.copy(premiumEnabled = true)) },
+        1f
+    )
+
     private fun capturePremium(
         name: String,
         language: AppLanguage,
@@ -1092,7 +1152,8 @@ class EightBallScreenshotTest {
         price: String? = null,
         ended: Bought? = null,
         busy: Boolean = false,
-        fontScale: Float = 1f
+        fontScale: Float = 1f,
+        wanted: PremiumFor = PremiumFor.CHARACTERS
     ) = captureRoboImage(filePath = path(name)) {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
@@ -1103,6 +1164,7 @@ class EightBallScreenshotTest {
                             terms = stringResource(R.string.premium_terms),
                             ended = ended,
                             busy = busy,
+                            wanted = wanted,
                             onUpgrade = {},
                             onNotNow = {},
                             modifier = Modifier.padding(top = 24.dp)

@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -51,10 +52,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * What is shown to someone who wants to make a character and has not paid for it: what paying
- * brings, what it costs and how it is paid, the way to it, and the way back. It is never shown
- * while nothing is sold.
+ * What is shown to someone who wants what is sold and has not paid for it: what paying brings,
+ * what it costs and how it is paid, the way to it, and the way back. It is never shown while
+ * nothing is sold.
  *
+ * @param wanted what brought them here, which is said first.
+ * @param held whether it has become theirs meanwhile, here or wherever a payment that was
+ * pending came through: the sheet then goes as if it had just been bought.
  * @param offer what it costs, as the store has it; null while the store has not said, and then
  * nothing can be bought.
  * @param onBuy the user wants it: shows Google Play's own screen, and tells how that ended.
@@ -62,7 +66,14 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PremiumSheet(offer: Offer?, onBuy: suspend () -> Bought, onBought: () -> Unit, onClose: () -> Unit) {
+internal fun PremiumSheet(
+    offer: Offer?,
+    onBuy: suspend () -> Bought,
+    onBought: () -> Unit,
+    onClose: () -> Unit,
+    wanted: PremiumFor = PremiumFor.CHARACTERS,
+    held: Boolean = false
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     // The sheet is a window of its own: the app's language is carried into it.
@@ -79,6 +90,13 @@ internal fun PremiumSheet(offer: Offer?, onBuy: suspend () -> Bought, onBought: 
             priceLate = true
         }
     }
+    // Theirs now: the sheet goes down as it does when closed, and then what they came for goes on.
+    LaunchedEffect(held) {
+        if (held) {
+            sheetState.hide()
+            onBought()
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
@@ -89,6 +107,7 @@ internal fun PremiumSheet(offer: Offer?, onBuy: suspend () -> Bought, onBought: 
         InAppLanguage(language) {
             PremiumContent(
                 price = offer?.price,
+                wanted = wanted,
                 terms = stringResource(R.string.premium_terms),
                 busy = busy,
                 ended = ended,
@@ -106,7 +125,10 @@ internal fun PremiumSheet(offer: Offer?, onBuy: suspend () -> Bought, onBought: 
                                 busy = false
                             }
                             when (outcome) {
-                                Bought.DONE -> onBought()
+                                Bought.DONE -> {
+                                    sheetState.hide()
+                                    onBought()
+                                }
                                 // Backing out of Google Play's own screen needs no telling.
                                 Bought.CANCELLED -> Unit
                                 else -> ended = outcome
@@ -135,6 +157,7 @@ internal fun PremiumSheet(offer: Offer?, onBuy: suspend () -> Bought, onBought: 
  * @param busy while a purchase is being made or checked: nothing here answers meanwhile.
  * @param ended how the last try ended, when there is something to say of it.
  * @param priceLate whether the store has been asked its price for long enough to say so.
+ * @param wanted what brought them here: its title, and the order of what paying brings.
  */
 @Composable
 internal fun PremiumContent(
@@ -145,7 +168,8 @@ internal fun PremiumContent(
     terms: String? = null,
     busy: Boolean = false,
     ended: Bought? = null,
-    priceLate: Boolean = false
+    priceLate: Boolean = false,
+    wanted: PremiumFor = PremiumFor.CHARACTERS
 ) {
     Column(
         modifier = modifier
@@ -155,17 +179,22 @@ internal fun PremiumContent(
             .padding(bottom = 16.dp)
     ) {
         Text(
-            text = stringResource(R.string.premium_title),
-            modifier = Modifier.padding(horizontal = 32.dp).semantics { heading() },
+            text = stringResource(wanted.title),
+            // Without a line under it, the title keeps the list at the same distance by itself.
+            modifier = Modifier
+                .padding(start = 32.dp, end = 32.dp, bottom = if (wanted.hint == null) 16.dp else 0.dp)
+                .semantics { heading() },
             style = MaterialTheme.typography.titleMedium.copy(lineBreak = LineBreak.Heading),
             fontWeight = FontWeight.SemiBold
         )
-        Text(
-            text = stringResource(R.string.premium_hint),
-            modifier = Modifier.padding(start = 32.dp, top = 2.dp, end = 32.dp, bottom = 16.dp),
-            style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (wanted.hint != null) {
+            Text(
+                text = stringResource(wanted.hint),
+                modifier = Modifier.padding(start = 32.dp, top = 2.dp, end = 32.dp, bottom = 16.dp),
+                style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         // The tick grows with the type, so it stays in the middle of the first line of its point.
         val (tickInset, tickSize) = with(LocalDensity.current) { 2.sp.toDp() to 20.sp.toDp() }
         // A list, ticked: these say, and do nothing. Not the rows of the other sheets, which are touched.
@@ -178,7 +207,7 @@ internal fun PremiumContent(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            POINTS.forEach { point ->
+            wanted.points.forEach { point ->
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_check),
@@ -195,7 +224,7 @@ internal fun PremiumContent(
         }
         // Before the button: what saying no costs, which is nothing.
         Text(
-            text = stringResource(R.string.premium_free_note),
+            text = stringResource(wanted.note),
             modifier = Modifier.padding(start = 32.dp, top = 16.dp, end = 32.dp),
             style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -294,13 +323,42 @@ internal fun PremiumContent(
 /** How long the store is waited for before its price is said to be missing. */
 private const val PRICE_LATE_MS = 8_000L
 
-/** What paying brings, in the order it is said. */
-private val POINTS = listOf(
-    R.string.premium_point_count,
-    R.string.premium_point_voice,
-    R.string.premium_point_card,
-    R.string.premium_point_ai
-)
+/**
+ * What brought someone to what is sold, and so what the sheet says first: the character they
+ * were about to make, or all of it, for whoever asked from the page of options. Either way all
+ * that paying brings is said, in four points.
+ */
+internal enum class PremiumFor(
+    @StringRes val title: Int,
+    @StringRes val hint: Int?,
+    val points: List<Int>,
+    /** What saying no costs, which is nothing they have now. */
+    @StringRes val note: Int
+) {
+    CHARACTERS(
+        title = R.string.premium_title,
+        hint = R.string.premium_hint,
+        note = R.string.premium_free_note,
+        points = listOf(
+            R.string.premium_point_count,
+            R.string.premium_point_voice,
+            R.string.premium_point_ai,
+            R.string.premium_point_no_ads
+        )
+    ),
+    EVERYTHING(
+        title = R.string.premium_all_title,
+        hint = null,
+        note = R.string.premium_all_note,
+        points = listOf(
+            R.string.premium_point_no_ads,
+            R.string.premium_point_ai,
+            R.string.premium_point_characters,
+            // Here no title has said whose tone: the point says it itself.
+            R.string.premium_point_tone
+        )
+    )
+}
 
 /** What is said of a try that did not end with it bought. */
 private val Bought.message: Int

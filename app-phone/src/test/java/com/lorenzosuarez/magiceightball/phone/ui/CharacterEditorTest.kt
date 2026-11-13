@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import android.app.Application
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
@@ -210,6 +214,7 @@ class CharacterEditorTest {
     private val chosen = mutableListOf<CustomCharacter>()
     private val saved = mutableListOf<CustomCharacter?>()
     private var signIns = 0
+    private var signInEnds = AccountOutcome.FAILED
 
     private fun showOptions(
         account: AccountState,
@@ -219,6 +224,8 @@ class CharacterEditorTest {
         premium: Boolean = true,
         price: String? = null,
         answering: CustomCharacter? = null,
+        onGetMoreAiAnswers: (() -> Unit)? = null,
+        onShowAdPrivacyOptions: (() -> Unit)? = null,
         onBuyPremium: suspend () -> Bought = { Bought.FAILED }
     ) {
         state = EightBallUiState(
@@ -234,6 +241,9 @@ class CharacterEditorTest {
             MagicEightBallPhoneTheme {
                 ProvideAppLanguage(AppLanguage.SPANISH) {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        // As on the screen itself: what the page has to say in passing is shown over it.
+                        val snackbars = remember { SnackbarHostState() }
+                        CompositionLocalProvider(LocalSnackbars provides snackbars) {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
@@ -242,9 +252,11 @@ class CharacterEditorTest {
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
                             onShareApp = {},
+                            onGetMoreAiAnswers = onGetMoreAiAnswers,
+                            onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                             onSignIn = {
                                 signIns++
-                                AccountOutcome.FAILED
+                                signInEnds
                             },
                             onChooseCharacter = { chosen += it },
                             onSaveCharacter = { replacing, _, _, _, _ ->
@@ -253,6 +265,8 @@ class CharacterEditorTest {
                             },
                             onBuyPremium = onBuyPremium
                         )
+                        }
+                        SnackbarHost(snackbars)
                     }
                 }
             }
@@ -402,6 +416,149 @@ class CharacterEditorTest {
         compose.waitForIdle()
         assertEquals(0, count("Tus propios personajes, con Premium"))
         compose.onNodeWithText("Nuevo personaje").assertIsDisplayed()
+    }
+
+    @Test
+    fun `what is sold is said on the page to whoever does not have it, and to nobody else`() {
+        showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false)
+        compose.onNodeWithText(OFFER).assertIsDisplayed()
+
+        state = state.copy(premium = true)
+        compose.waitForIdle()
+        assertEquals(0, count(OFFER))
+
+        // Nor while nothing is sold.
+        state = state.copy(premium = false, config = AppConfig(accountEnabled = true, premiumEnabled = false))
+        compose.waitForIdle()
+        assertEquals(0, count(OFFER))
+    }
+
+    @Test
+    fun `nobody signed in is offered what they may turn out to have`() {
+        showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false)
+        // Just signed in, or with no connection: what the account holds has not been heard of.
+        state = state.copy(premiumKnown = false)
+        compose.waitForIdle()
+        assertEquals(0, count(OFFER))
+
+        state = state.copy(premiumKnown = true)
+        compose.waitForIdle()
+        compose.onNodeWithText(OFFER).assertIsDisplayed()
+    }
+
+    @Test
+    fun `asked for from the page, all of it is said, and buying it leaves them where they were`() {
+        showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, price = "2,99 €") { Bought.DONE }
+        compose.onNodeWithText(OFFER).performClick()
+
+        compose.onNodeWithText("Magic AI Ball Premium").assertIsDisplayed()
+        compose.onNodeWithText("Sin anuncios").assertIsDisplayed()
+        compose.onNodeWithText("Tus propios personajes, hasta\u00A0cinco").assertIsDisplayed()
+        // Not the words of whoever came to make a character: neither its title nor what
+        // saying no to that costs.
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+        assertEquals(0, count("Los personajes de la\u00A0app siguen siendo gratis."))
+        compose.onNodeWithText("La app sigue siendo gratis, con anuncios.").assertIsDisplayed()
+
+        compose.onNodeWithText(BUY).performClick()
+        compose.waitForIdle()
+        assertEquals(0, count("Magic AI Ball Premium"))
+        // Nothing opens that they did not ask for, and they are told that it is theirs.
+        assertEquals(0, count("Nuevo personaje"))
+        compose.onNodeWithText("Tienes Premium").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a payment that came through elsewhere closes the sheet and says so once`() {
+        showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, price = "2,99 €")
+        compose.onNodeWithText(OFFER).performClick()
+        compose.onNodeWithText("Magic AI Ball Premium").assertIsDisplayed()
+
+        state = state.copy(premium = true)
+        compose.waitForIdle()
+        assertEquals(0, count("Magic AI Ball Premium"))
+        assertEquals(1, count("Tienes Premium"))
+        assertEquals(0, count(OFFER))
+    }
+
+    @Test
+    fun `with nobody signed in, what is sold leads to an account first`() {
+        showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        compose.onNodeWithText(OFFER).performClick()
+
+        compose.onNodeWithText("Para obtener Premium necesitas una cuenta").assertIsDisplayed()
+        assertEquals(0, count("Magic AI Ball Premium"))
+
+        // The page's own button is under the dialog: the dialog's is the later of the two.
+        signInEnds = AccountOutcome.DONE
+        compose.onAllNodesWithText("Continuar con Google")[1].performClick()
+        compose.waitForIdle()
+        assertEquals(1, signIns)
+        // Not before the account is whole, and known not to hold it already.
+        state = state.copy(account = SIGNED_IN, profile = ProfileState.Missing, premiumKnown = false)
+        compose.waitForIdle()
+        assertEquals(0, count("Magic AI Ball Premium"))
+        state = state.copy(profile = ProfileState.Present(LORENA))
+        compose.waitForIdle()
+        assertEquals(0, count("Magic AI Ball Premium"))
+
+        // What they signed in for was not forgotten on the way.
+        state = state.copy(premiumKnown = true)
+        compose.waitForIdle()
+        compose.onNodeWithText("Magic AI Ball Premium").assertIsDisplayed()
+    }
+
+    @Test
+    fun `signing in for it and turning out to have it opens nothing`() {
+        showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        compose.onNodeWithText(OFFER).performClick()
+        signInEnds = AccountOutcome.DONE
+        compose.onAllNodesWithText("Continuar con Google")[1].performClick()
+        compose.waitForIdle()
+
+        state = state.copy(account = SIGNED_IN, profile = ProfileState.Present(LORENA), premium = true)
+        compose.waitForIdle()
+        assertEquals(0, count("Magic AI Ball Premium"))
+        assertEquals(0, count(OFFER))
+    }
+
+    @Test
+    fun `a device with no Google account is told so, and not to check its connection`() {
+        showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        compose.onNodeWithText(OFFER).performClick()
+        signInEnds = AccountOutcome.NO_GOOGLE_ACCOUNT
+        compose.onAllNodesWithText("Continuar con Google")[1].performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText("No se pudo entrar").assertIsDisplayed()
+        compose.onNodeWithText(
+            "No hay ninguna cuenta de Google en este dispositivo. Añade una en los ajustes del dispositivo e inténtalo de nuevo."
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun `whoever has paid to see no ads finds their choices under a name without ads in it`() {
+        showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, onShowAdPrivacyOptions = {})
+        assertEquals(1, count("Privacidad de anuncios"))
+        assertEquals(0, count("Opciones de privacidad"))
+
+        state = state.copy(premium = true)
+        compose.waitForIdle()
+        assertEquals(0, count("Privacidad de anuncios"))
+        assertEquals(1, count("Opciones de privacidad"))
+        assertEquals(1, count("Revisa lo que permitiste"))
+    }
+
+    @Test
+    fun `the ad for more answers is not offered to whoever has paid to see none`() {
+        showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, onGetMoreAiAnswers = {})
+        state = state.copy(aiAnswersAvailable = true, aiAllowanceSpent = true)
+        compose.waitForIdle()
+        assertEquals(1, count("Consigue más respuestas con IA hoy"))
+
+        state = state.copy(premium = true)
+        compose.waitForIdle()
+        assertEquals(0, count("Consigue más respuestas con IA hoy"))
     }
 
     @Test
@@ -560,6 +717,9 @@ class CharacterEditorTest {
             colour = Magic8BallPersonality.PIRATE,
             emblem = Magic8BallPersonality.CAT
         )
+
+        /** What the page of options says of what is sold. */
+        const val OFFER = "Sin anuncios y más respuestas con IA"
 
         /** The button once the store has named its price: the price never breaks off its line. */
         const val BUY = "Obtener Premium por\u00A02,99\u00A0€"

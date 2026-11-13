@@ -10,12 +10,12 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 | `gemini_model` | String | The model asked. Blank or absent: the app's own choice. |
 | `gemini_backend` | String | Which of Google's two services Firebase passes a request on to: `agent_platform` (or `vertex`) for the Agent Platform Gemini API, anything else or absent for the Gemini Developer API. It must be the one the project is set up for in the console, under AI Logic. |
 | `gemini_limited_use_tokens` | Boolean | Whether each request carries an App Check token made for it alone, which is what replay protection in App Check needs. Off when absent: each such token costs a Play Integrity check, which takes a few seconds of the 4.5 an answer is waited for and counts against Play Integrity's daily allowance for the whole app. Turn it on, see that answers still come, and only then enforce replay protection. |
-| `gemini_daily_limit` | Number | AI answers one device may ask for in a day. |
-| `gemini_daily_limit_premium` | Number | The same for whoever has paid for Premium: 120 when absent, and never less than `gemini_daily_limit`, whatever is set here. The sheet that sells Premium promises more answers a day, so this stays above the other. |
+| `gemini_daily_limit` | Number | AI answers one device may ask for in a day: 20 when absent. |
+| `gemini_daily_limit_premium` | Number | The same for whoever has paid for Premium: 40 when absent, and never less than `gemini_daily_limit`, whatever is set here. The sheet that sells Premium promises more answers a day, so this stays above the other. |
 | `ai_remark_enabled` | Boolean | Whether a second line may come under an answer to a spoken question. |
 | `styles_featured` | String | Styles shown first in Options, by name in lower case, comma separated. |
 | `styles_hidden` | String | Styles not offered at all, same format. |
-| `ads_enabled` | Boolean | Ads on or off. |
+| `ads_enabled` | Boolean | Ads on or off. Whoever has Premium is shown none either way, and is not offered the one for more answers. |
 | `ads_min_answers`, `ads_min_interval_seconds` | Number | How many answers and how much time between two ads. |
 | `rewarded_ai_enabled`, `rewarded_ai_answers` | Boolean, Number | Whether an ad can be watched for more AI answers, and how many it gives. |
 | `daily_verdict_enabled`, `daily_verdict_hour` | Boolean, Number | The day's verdict notification, and the hour it comes at (0 to 23, device time). |

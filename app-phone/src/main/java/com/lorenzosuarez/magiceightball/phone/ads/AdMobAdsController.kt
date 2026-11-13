@@ -17,6 +17,7 @@ import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.FirebaseApp
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
+import com.lorenzosuarez.magiceightball.phone.account.Entitlements
 import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,19 +38,26 @@ import javax.inject.Singleton
  * Besides the ad shown now and then, there is one the user may choose to watch for more answers
  * from the AI service: Remote Config parameters [KEY_REWARDED_ENABLED] and [KEY_REWARDED_ANSWERS].
  *
+ * Whoever has Premium is shown neither, and for them none is loaded and the ads SDK is not
+ * started. Both are done when an answer is closed and not when the app opens, because only by
+ * then has the account been read and is it known who has paid. The question of consent is
+ * still asked of everyone: it also decides whether the app's use is measured.
+ *
  * Everything here runs on the main thread, as both SDKs require.
  */
 @Singleton
 class AdMobAdsController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val clock: Clock,
-    private val appConfig: AppConfigSource
+    private val appConfig: AppConfigSource,
+    private val entitlements: Entitlements
 ) : AdsController {
 
     private val consent: ConsentInformation by lazy { UserMessagingPlatform.getConsentInformation(context) }
     private val pacing = AdPacing(
         minAnswers = { appConfig.config.value.adsMinAnswers },
-        minIntervalMillis = { appConfig.config.value.adsMinIntervalSeconds * 1_000L }
+        minIntervalMillis = { appConfig.config.value.adsMinIntervalSeconds * 1_000L },
+        adFree = ::adFree
     )
     private var interstitial: InterstitialAd? = null
     private var loading = false
@@ -81,7 +89,12 @@ class AdMobAdsController @Inject constructor(
     override fun onAnswerDismissed(activity: Activity) {
         if (!isEnabled()) return
         val now = clock.millis()
-        if (!pacing.answerClosed(now)) return
+        if (!pacing.answerClosed(now)) {
+            // None is due yet: the next ones are got ready meanwhile.
+            load()
+            loadRewarded()
+            return
+        }
         val ad = interstitial
         if (ad == null) {
             load()
@@ -101,6 +114,7 @@ class AdMobAdsController @Inject constructor(
     }
 
     override fun showRewarded(activity: Activity, onEarned: (answers: Int) -> Unit) {
+        if (adFree()) return
         val ad = rewarded ?: return
         rewarded = null
         _rewardedReady.value = false
@@ -112,21 +126,30 @@ class AdMobAdsController @Inject constructor(
         ad.show(activity) { onEarned(rewardedAnswers()) }
     }
 
-    /** Starts the ads SDK and loads the next ad, once and only if consent allows it. */
+    /** Takes note of what was answered about consent. Ads are asked for later: see [mayLoad]. */
     private fun prepare() {
         _privacyOptionsRequired.value =
             consent.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
-        if (!consent.canRequestAds()) return
+    }
+
+    /** Whoever has paid for Premium: no ad is shown to them, offered to them or loaded for them. */
+    private fun adFree(): Boolean = entitlements.premium.value
+
+    /**
+     * Whether an ad may be asked for now: not for whoever has paid, and not without consent.
+     * The ads SDK is started here, the first time one may.
+     */
+    private fun mayLoad(): Boolean {
+        if (adFree() || !consent.canRequestAds()) return false
         if (!sdkStarted) {
             sdkStarted = true
             MobileAds.initialize(context)
         }
-        load()
-        loadRewarded()
+        return true
     }
 
     private fun loadRewarded() {
-        if (rewarded != null || loadingRewarded || !rewardedEnabled() || !consent.canRequestAds()) return
+        if (rewarded != null || loadingRewarded || !rewardedEnabled() || !mayLoad()) return
         loadingRewarded = true
         RewardedAd.load(
             context,
@@ -148,7 +171,7 @@ class AdMobAdsController @Inject constructor(
     }
 
     private fun load() {
-        if (interstitial != null || loading || !consent.canRequestAds()) return
+        if (interstitial != null || loading || !mayLoad()) return
         loading = true
         InterstitialAd.load(
             context,

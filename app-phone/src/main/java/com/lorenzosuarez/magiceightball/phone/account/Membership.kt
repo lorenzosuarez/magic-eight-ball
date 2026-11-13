@@ -24,6 +24,7 @@ import kotlinx.coroutines.withContext
  * the account itself, it is not an account that still needs a profile.
  * @property characters the characters they made up; null while those are not known.
  * @property premium whether they have what is sold: see [Entitlements].
+ * @property premiumKnown whether that has been heard from the server, and is not only assumed.
  * @property offer what they can buy and for how much; null while the store has not said, or
  * they cannot: see [Shop].
  */
@@ -35,7 +36,8 @@ data class Who(
     val removing: Boolean = false,
     val characters: List<CustomCharacter>? = null,
     val premium: Boolean = false,
-    val offer: Offer? = null
+    val offer: Offer? = null,
+    val premiumKnown: Boolean = true
 )
 
 /**
@@ -75,9 +77,9 @@ class Membership @Inject constructor(
         underAge,
         ageNotice,
         removing,
-        combine(entitlements.premium, shop.offer, ::Pair)
-    ) { (account, profile, characters), underAge, ageNotice, removing, (premium, offer) ->
-        Who(account, profile, underAge, ageNotice, removing, characters, premium, offer)
+        combine(entitlements.premium, entitlements.known, shop.offer, ::Triple)
+    ) { (account, profile, characters), underAge, ageNotice, removing, (premium, known, offer) ->
+        Who(account, profile, underAge, ageNotice, removing, characters, premium, offer, known)
     }
 
     /** Whether this device may ask the AI service for nothing: read where it is kept, never guessed. */

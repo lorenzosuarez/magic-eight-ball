@@ -145,6 +145,7 @@ class EightBallViewModel @Inject constructor(
                 removingAccount = who.removing,
                 characters = who.characters,
                 premium = who.premium,
+                premiumKnown = who.premiumKnown,
                 offer = who.offer,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,

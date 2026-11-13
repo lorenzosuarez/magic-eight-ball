@@ -31,6 +31,8 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * @property removingAccount true while an account is being taken away, profile first.
  * @property characters the characters whoever is signed in made up; null while not known.
  * @property premium whether whoever is using the app has what is sold: paid for, and checked.
+ * @property premiumKnown whether that has been heard from the server; until then [premium] is
+ * false without meaning that they do not have it.
  * @property offer what they can buy and for how much; null while the store has not said, or they cannot.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
@@ -53,6 +55,7 @@ data class EightBallUiState(
     val removingAccount: Boolean = false,
     val characters: List<CustomCharacter>? = null,
     val premium: Boolean = false,
+    val premiumKnown: Boolean = true,
     val offer: Offer? = null
 ) {
     /** At a party, who asks next; null when one person is playing. */
@@ -79,6 +82,15 @@ data class EightBallUiState(
      * made go on answering.
      */
     val mustPayToCreate: Boolean get() = config.premiumEnabled && !premium
+
+    /**
+     * Whether the page of options says what is sold: while it is sold, where there is an account
+     * to hold it, and to whoever does not have it yet. Of someone signed in that has to be known
+     * first: nobody is offered what they may turn out to have.
+     */
+    val offersPremium: Boolean
+        get() = config.premiumEnabled && offersAccount && !premium &&
+            (account !is AccountState.SignedIn || premiumKnown)
 
     /** The character of the user's own that answers in its voice, when one does: chosen, and still theirs to use. */
     val answeringCustom: CustomCharacter?
