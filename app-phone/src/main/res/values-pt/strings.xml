@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
-    <string name="hint_hold">Segure ou agite\npara perguntar</string>
+    <string name="hint_hold">Segure ou agite para perguntar</string>
     <string name="hint_tap">Toque ou agite para perguntar</string>
     <string name="streak_days">%1$d dias seguidos</string>
     <string name="hint_listening">Estou ouvindo…</string>
