@@ -2,10 +2,15 @@ package com.lorenzosuarez.magiceightball.phone.ui
 
 import android.app.Application
 import android.content.pm.ActivityInfo
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -33,7 +38,12 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The account on the page of options, as the user meets it: a touch, and what comes of it. */
+/**
+ * The account on the page of options, as the user meets it: a touch, and what comes of it.
+ *
+ * No picture is taken of the question asked before deleting: on the JVM a dialog over a sheet is
+ * drawn behind it, full width and in the device's type size, none of which is so on a device.
+ */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [33], application = Application::class, qualifiers = "w360dp-h640dp-xhdpi")
@@ -60,8 +70,11 @@ class AccountSectionTest {
         )
         .around(compose)
 
+    /** Who is signed in, which a deletion or a signing out changes under the page. */
+    private var account by mutableStateOf<AccountState>(AccountState.SignedOut)
+    private val snackbars = SnackbarHostState()
+
     private fun show(
-        account: AccountState,
         fontScale: Float = 1f,
         onSignIn: suspend () -> AccountOutcome = { AccountOutcome.DONE },
         onSignOut: () -> Unit = {},
@@ -73,7 +86,10 @@ class AccountSectionTest {
             config = AppConfig(accountEnabled = true),
             account = account
         )
-        CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+        CompositionLocalProvider(
+            LocalDensity provides Density(LocalDensity.current.density, fontScale),
+            LocalSnackbars provides snackbars
+        ) {
             MagicEightBallPhoneTheme {
                 ProvideAppLanguage(state.settings.language) {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
@@ -95,44 +111,52 @@ class AccountSectionTest {
         }
     }
 
+    private fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
+
     @Test
-    fun `a phone with no Google account is told to add one, on the smallest screen in the largest type`() {
-        show(AccountState.SignedOut, fontScale = 1.5f, onSignIn = { AccountOutcome.NO_GOOGLE_ACCOUNT })
+    fun `a device with no Google account is told so, and shown the way to add one`() {
+        show(fontScale = 1.5f, onSignIn = { AccountOutcome.NO_GOOGLE_ACCOUNT })
         compose.onNodeWithText("Continuar con Google").performClick()
-        compose.onNodeWithText(NO_GOOGLE).assertIsDisplayed()
+        compose.onNodeWithText("No hay ninguna cuenta de Google en este dispositivo").assertIsDisplayed()
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/phone_53_small_phone_account_no_google_large_font.png")
+
+        compose.onNodeWithText("Añadir cuenta de Google").performClick()
+        val opened = shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity
+        assertEquals(Settings.ACTION_ADD_ACCOUNT, opened.action)
     }
 
     @Test
     fun `a sign-in that fails says so, and one the user backs out of says nothing`() {
         var outcome = AccountOutcome.FAILED
-        show(AccountState.SignedOut, onSignIn = { outcome })
+        show(onSignIn = { outcome })
         compose.onNodeWithText("Continuar con Google").performClick()
         compose.onNodeWithText(SIGN_IN_FAILED).assertIsDisplayed()
 
         outcome = AccountOutcome.CANCELLED
         compose.onNodeWithText("Continuar con Google").performClick()
-        assertEquals(0, compose.onAllNodesWithText(SIGN_IN_FAILED).fetchSemanticsNodes().size)
+        assertEquals(0, count(SIGN_IN_FAILED))
     }
 
     @Test
     fun `the account opens from its row, and signing out there is one touch`() {
+        account = LORENA
         var signedOut = 0
-        show(LORENA, onSignOut = { signedOut++ })
-        assertEquals(0, compose.onAllNodesWithText("Cerrar sesión").fetchSemanticsNodes().size)
+        show(onSignOut = { signedOut++ })
+        assertEquals(0, count("Cerrar sesión"))
 
         compose.onNodeWithText("Lorena Suárez").performClick()
         compose.onNodeWithText("Cerrar sesión").performClick()
         compose.waitForIdle()
 
         assertEquals(1, signedOut)
-        assertEquals(0, compose.onAllNodesWithText("Cerrar sesión").fetchSemanticsNodes().size)
+        assertEquals(0, count("Cerrar sesión"))
     }
 
     @Test
     fun `deleting the account asks first, and a deletion that fails is said where it was tried`() {
+        account = LORENA
         var deleted = 0
-        show(LORENA, onDeleteAccount = { deleted++; AccountOutcome.FAILED })
+        show(fontScale = 1.5f, onDeleteAccount = { deleted++; AccountOutcome.FAILED })
         compose.onNodeWithText("Lorena Suárez").performClick()
 
         compose.onNodeWithText("Eliminar cuenta").performClick()
@@ -147,12 +171,31 @@ class AccountSectionTest {
 
         assertEquals(1, deleted)
         compose.onNodeWithText("No se pudo eliminar la cuenta. Inténtalo de nuevo.").assertIsDisplayed()
+        assertEquals(null, snackbars.currentSnackbarData)
+    }
+
+    @Test
+    fun `an account that is deleted closes its sheet, and the page says it is done`() {
+        account = LORENA
+        show(
+            onDeleteAccount = {
+                account = AccountState.SignedOut
+                AccountOutcome.DONE
+            }
+        )
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        compose.onNodeWithText("Eliminar cuenta").performClick()
+        compose.onNodeWithText("¿Eliminar tu cuenta?").assertIsDisplayed()
+        compose.onAllNodesWithText("Eliminar cuenta")[1].performClick()
+        compose.waitForIdle()
+
+        assertEquals(0, count("Cerrar sesión"))
+        compose.onNodeWithText("Continuar con Google").assertIsDisplayed()
+        assertEquals("Cuenta eliminada.", snackbars.currentSnackbarData?.visuals?.message)
     }
 
     private companion object {
         val LORENA = AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com")
-        const val NO_GOOGLE =
-            "No hay ninguna cuenta de Google en este dispositivo. Añade una en los ajustes e inténtalo de nuevo."
-        const val SIGN_IN_FAILED = "No se pudo entrar. Revisa tu conexión e inténtalo de nuevo."
+        const val SIGN_IN_FAILED = "No se pudo entrar. Revisa tu conexión e inténtalo de nuevo"
     }
 }

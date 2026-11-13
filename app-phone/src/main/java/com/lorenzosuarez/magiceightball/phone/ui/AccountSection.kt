@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +25,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -32,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -39,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -48,6 +56,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,17 +83,24 @@ internal fun AccountSection(
     var busy by remember { mutableStateOf(false) }
     var failure by rememberSaveable { mutableStateOf<AccountOutcome?>(null) }
     var managing by rememberSaveable { mutableStateOf(false) }
+    // Whose sheet is open, kept so that it can close gently over an account that has just gone.
+    var managed by remember { mutableStateOf<AccountState.SignedIn?>(null) }
+    val snackbars = LocalSnackbars.current
+    val deletedMessage = stringResource(R.string.account_deleted)
+    val host = LocalContext.current
     // One thing at a time: a second touch while the first is still being answered does nothing.
-    fun attempt(work: suspend () -> AccountOutcome) {
+    fun attempt(work: suspend () -> AccountOutcome, onDone: suspend () -> Unit = {}) {
         if (busy) return
         scope.launch {
             busy = true
             failure = null
-            try {
-                failure = work().takeIf { it == AccountOutcome.FAILED || it == AccountOutcome.NO_GOOGLE_ACCOUNT }
+            val outcome = try {
+                work()
             } finally {
                 busy = false
             }
+            failure = outcome.takeIf { it == AccountOutcome.FAILED || it == AccountOutcome.NO_GOOGLE_ACCOUNT }
+            if (outcome == AccountOutcome.DONE) onDone()
         }
     }
 
@@ -94,6 +110,7 @@ internal fun AccountSection(
                 account = account,
                 onClick = {
                     failure = null
+                    managed = account
                     managing = true
                 }
             )
@@ -111,10 +128,20 @@ internal fun AccountSection(
             }
             when (failure) {
                 null -> Unit
-                AccountOutcome.NO_GOOGLE_ACCOUNT -> AccountFailure(
-                    stringResource(R.string.account_no_google),
-                    Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                )
+                // Something the user can put right: said in a line, with the way there under it,
+                // as the page does for a permission that is missing.
+                AccountOutcome.NO_GOOGLE_ACCOUNT -> {
+                    AccountFailure(
+                        stringResource(R.string.account_no_google),
+                        Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    )
+                    RowDivider()
+                    ActionRow(
+                        title = stringResource(R.string.account_add_google),
+                        supporting = stringResource(R.string.account_add_google_hint),
+                        onClick = { host.addGoogleAccount() }
+                    )
+                }
                 else -> AccountFailure(
                     stringResource(R.string.account_sign_in_failed),
                     Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
@@ -123,22 +150,41 @@ internal fun AccountSection(
         }
     }
 
-    // Open only over an account: once it is signed out of or gone, there is nothing to show.
-    if (managing && account is AccountState.SignedIn) {
+    val shown = account as? AccountState.SignedIn ?: managed
+    if (managing && shown != null) {
         AccountSheet(
-            account = account,
+            account = shown,
+            gone = account !is AccountState.SignedIn,
             failed = failure != null,
             busy = busy,
             onSignOut = {
                 managing = false
                 onSignOut()
             },
-            onDelete = { attempt(onDeleteAccount) },
+            onDelete = {
+                attempt(onDeleteAccount) {
+                    snackbars?.currentSnackbarData?.dismiss()
+                    snackbars?.showSnackbar(deletedMessage, duration = SnackbarDuration.Short)
+                }
+            },
             onClose = { managing = false }
         )
     }
-    val signedIn = account is AccountState.SignedIn
-    LaunchedEffect(signedIn) { if (!signedIn) managing = false }
+    // Brought back by the system with the sheet open and nobody signed in: there is no sheet.
+    LaunchedEffect(Unit) { if (account !is AccountState.SignedIn) managing = false }
+}
+
+/** Where the page of options can say, for a moment, that something is done; none in a preview. */
+internal val LocalSnackbars = staticCompositionLocalOf<SnackbarHostState?> { null }
+
+/** The system's own page for adding an account, asked for a Google one. */
+private fun Context.addGoogleAccount() {
+    val intent = Intent(Settings.ACTION_ADD_ACCOUNT).putExtra(Settings.EXTRA_ACCOUNT_TYPES, arrayOf("com.google"))
+    try {
+        startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // A device with no such page has nothing to open; the line above still says what is missing.
+    }
 }
 
 /**
@@ -203,11 +249,14 @@ private fun AccountIdentity(account: AccountState.SignedIn, onClick: () -> Unit)
 /**
  * The account, opened: whose it is and the two ways out of it. Signing out is one touch and can
  * be taken back by signing in again; deleting cannot, so it asks first.
+ *
+ * @param gone whether the account has just been signed out of or deleted: the sheet then closes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountSheet(
     account: AccountState.SignedIn,
+    gone: Boolean,
     failed: Boolean,
     busy: Boolean,
     onSignOut: () -> Unit,
@@ -219,6 +268,13 @@ private fun AccountSheet(
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     // The sheet is a window of its own: the app's language is carried into it.
     val language = rememberAppLanguage()
+    // An account that is no longer there closes its sheet, as gently as a touch would.
+    LaunchedEffect(gone) {
+        if (gone) {
+            sheetState.hide()
+            onClose()
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
@@ -287,7 +343,7 @@ internal fun AccountSheetContent(
         Text(
             text = name,
             modifier = Modifier.padding(horizontal = 32.dp).semantics { heading() },
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(lineBreak = LineBreak.Heading),
             fontWeight = FontWeight.SemiBold
         )
         if (account.name.isNotBlank() && account.email.isNotBlank()) {

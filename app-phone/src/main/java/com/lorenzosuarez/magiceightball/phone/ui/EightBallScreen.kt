@@ -88,6 +88,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -633,7 +634,9 @@ internal fun EightBallContent(
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     if (page == OPTIONS_PAGE) {
-                        options()
+                        // What the page of options has to say once it is done is said by the
+                        // screen, as everything else that has just been done is.
+                        CompositionLocalProvider(LocalSnackbars provides snackbars) { options() }
                     } else if (page == HISTORY_PAGE) {
                         HistoryContent(
                             entries = state.history,

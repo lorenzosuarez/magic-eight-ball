@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.AppLanguage
@@ -462,7 +463,8 @@ internal fun SettingText(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            // Broken as a heading is: no word left alone on the last line.
+            style = MaterialTheme.typography.titleMedium.copy(lineBreak = LineBreak.Heading),
             // Always in full: a row that cannot be changed just now is still to be read, and
             // its switch and the line under it say that it cannot. What cannot be taken back
             // is named in the colour of a warning.
