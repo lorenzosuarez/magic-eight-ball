@@ -90,7 +90,8 @@ internal fun AccountSection(
     onDeleteAccount: suspend () -> AccountOutcome,
     profile: Profile? = null,
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
-    onOpenPrivacyPolicy: () -> Unit = {}
+    onOpenPrivacyPolicy: () -> Unit = {},
+    premium: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -170,6 +171,7 @@ internal fun AccountSection(
             account = shown,
             gone = account !is AccountState.SignedIn,
             profile = profile,
+            premium = premium,
             failed = failure != null,
             busy = busy,
             // One sheet at a time: the account's gives way to the profile's.
@@ -294,6 +296,7 @@ private fun AccountSheet(
     account: AccountState.SignedIn,
     gone: Boolean,
     profile: Profile?,
+    premium: Boolean,
     failed: Boolean,
     busy: Boolean,
     onEditProfile: () -> Unit,
@@ -324,6 +327,7 @@ private fun AccountSheet(
             AccountSheetContent(
                 account = account,
                 profile = profile,
+                premium = premium,
                 failed = failed,
                 busy = busy,
                 onEditProfile = { scope.launch { sheetState.hide() }.invokeOnCompletion { onEditProfile() } },
@@ -362,6 +366,9 @@ private fun AccountSheet(
  * What [AccountSheet] shows: the name and the address in full, however long, and under them one
  * card with the two ways out, the one that cannot be taken back last and in the colour of a
  * warning. A deletion that failed is said under the row that was touched.
+ *
+ * @param premium whether this account holds what is sold: said under whose it is, so that
+ * whoever paid can see that it is here, and on which of their accounts.
  */
 @Composable
 internal fun AccountSheetContent(
@@ -372,7 +379,8 @@ internal fun AccountSheetContent(
     onEditProfile: () -> Unit,
     onSignOut: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    premium: Boolean = false
 ) {
     val name = account.name.ifBlank { account.email }
     val scroll = rememberScrollState()
@@ -397,6 +405,15 @@ internal fun AccountSheetContent(
                 modifier = Modifier.padding(start = 32.dp, top = 2.dp, end = 32.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (premium) {
+            // Apart from the address and heavier than it: something about the account, not a line of it.
+            Text(
+                text = stringResource(R.string.account_premium),
+                modifier = Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
             )
         }
         // One card of rows, as on the options page.

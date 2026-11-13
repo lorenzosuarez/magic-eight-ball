@@ -72,6 +72,9 @@ class AccountSectionTest {
 
     /** Who is signed in, which a deletion or a signing out changes under the page. */
     private var account by mutableStateOf<AccountState>(AccountState.SignedOut)
+
+    /** Whether they hold what is sold. */
+    private var premium = false
     private val snackbars = SnackbarHostState()
 
     private fun show(
@@ -84,7 +87,8 @@ class AccountSectionTest {
             settings = UserSettings(language = AppLanguage.SPANISH),
             aiAnswersAvailable = true,
             config = AppConfig(accountEnabled = true),
-            account = account
+            account = account,
+            premium = premium
         )
         CompositionLocalProvider(
             LocalDensity provides Density(LocalDensity.current.density, fontScale),
@@ -150,6 +154,25 @@ class AccountSectionTest {
 
         assertEquals(1, signedOut)
         assertEquals(0, count("Cerrar sesión"))
+    }
+
+    @Test
+    fun `whoever paid is told so on their account, and nobody else is told anything`() {
+        account = LORENA
+        premium = true
+        show()
+        assertEquals(0, count("Tienes Premium"))
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        compose.onNodeWithText("Tienes Premium").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an account that holds nothing says nothing of it`() {
+        account = LORENA
+        show()
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        compose.onNodeWithText("Cerrar sesión").assertIsDisplayed()
+        assertEquals(0, count("Tienes Premium"))
     }
 
     @Test

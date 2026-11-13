@@ -112,6 +112,10 @@ dependencies {
     implementation(libs.firebase.auth)
     // The profile of whoever is signed in, in a document only they can read.
     implementation(libs.firebase.firestore)
+    // What is sold is bought through Google Play, and a purchase counts once the project's own
+    // server has checked it with Google: see the account package's Shop.
+    implementation(libs.billing.ktx)
+    implementation(libs.firebase.functions)
     implementation(libs.datastore.preferences)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)

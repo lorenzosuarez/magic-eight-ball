@@ -183,6 +183,27 @@ class Magic8BallRepositoryImplTest {
     }
 
     @Test
+    fun `whoever has paid has the larger allowance, which is never less than everyone's`() = runTest {
+        geminiSettings.settings = geminiSettings.settings.copy(dailyLimit = 1, premiumDailyLimit = 3)
+        val paid = Magic8BallRequest(useAi = true, premium = true)
+
+        repeat(3) { assertEquals(Magic8BallResult.Success(REMOTE_ANSWER), repository.generateMagic8BallMessage(paid)) }
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
+            repository.generateMagic8BallMessage(paid)
+        )
+        // The same device, asked by someone who has not: the day was over two answers ago.
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
+            repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
+        )
+
+        // Set lower than everyone's from afar, by mistake: paying takes nothing away.
+        assertEquals(40, GeminiSettings(enabled = true, modelId = "m", dailyLimit = 40, premiumDailyLimit = 5).dailyLimitFor(premium = true))
+        assertEquals(40, GeminiSettings(enabled = true, modelId = "m", dailyLimit = 40, premiumDailyLimit = 5).dailyLimitFor(premium = false))
+    }
+
+    @Test
     fun `an answer that never came does not use up the day, and one that was turned down does`() = runTest {
         geminiSettings.settings = geminiSettings.settings.copy(dailyLimit = 1)
         val request = Magic8BallRequest(useAi = true)

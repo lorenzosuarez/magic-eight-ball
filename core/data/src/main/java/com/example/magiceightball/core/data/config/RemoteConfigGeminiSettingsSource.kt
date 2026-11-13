@@ -73,6 +73,8 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
             // Absent or not a positive number: the built-in limit.
             dailyLimit = config.getLong(KEY_DAILY_LIMIT).toInt().takeIf { it > 0 }
                 ?: GeminiSettings.DEFAULT_DAILY_LIMIT,
+            premiumDailyLimit = config.getLong(KEY_PREMIUM_DAILY_LIMIT).toInt().takeIf { it > 0 }
+                ?: GeminiSettings.DEFAULT_PREMIUM_DAILY_LIMIT,
             backend = when (config.getString(KEY_BACKEND).trim().lowercase()) {
                 "agent_platform", "vertex" -> GeminiSettings.Backend.AGENT_PLATFORM
                 else -> GeminiSettings.Backend.DEVELOPER_API
@@ -106,6 +108,7 @@ class RemoteConfigGeminiSettingsSource @Inject constructor(
         const val KEY_ENABLED = "gemini_enabled"
         const val KEY_MODEL = "gemini_model"
         const val KEY_DAILY_LIMIT = "gemini_daily_limit"
+        const val KEY_PREMIUM_DAILY_LIMIT = "gemini_daily_limit_premium"
         const val KEY_BACKEND = "gemini_backend"
         const val KEY_LIMITED_USE_TOKENS = "gemini_limited_use_tokens"
         const val KEY_ANSWERS = "answers_json"

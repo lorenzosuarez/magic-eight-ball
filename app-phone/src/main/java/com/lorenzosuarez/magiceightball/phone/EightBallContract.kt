@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.Offer
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -29,7 +30,8 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * that there is no account for them.
  * @property removingAccount true while an account is being taken away, profile first.
  * @property characters the characters whoever is signed in made up; null while not known.
- * @property premium whether whoever is using the app has what is sold. True while nothing is.
+ * @property premium whether whoever is using the app has what is sold: paid for, and checked.
+ * @property offer what they can buy and for how much; null while the store has not said, or they cannot.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
 data class EightBallUiState(
@@ -50,7 +52,8 @@ data class EightBallUiState(
     val ageNotice: Boolean = false,
     val removingAccount: Boolean = false,
     val characters: List<CustomCharacter>? = null,
-    val premium: Boolean = true
+    val premium: Boolean = false,
+    val offer: Offer? = null
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?

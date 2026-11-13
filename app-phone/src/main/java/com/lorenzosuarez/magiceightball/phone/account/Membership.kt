@@ -24,6 +24,8 @@ import kotlinx.coroutines.withContext
  * the account itself, it is not an account that still needs a profile.
  * @property characters the characters they made up; null while those are not known.
  * @property premium whether they have what is sold: see [Entitlements].
+ * @property offer what they can buy and for how much; null while the store has not said, or
+ * they cannot: see [Shop].
  */
 data class Who(
     val account: AccountState = AccountState.Unavailable,
@@ -32,7 +34,8 @@ data class Who(
     val ageNotice: Boolean = false,
     val removing: Boolean = false,
     val characters: List<CustomCharacter>? = null,
-    val premium: Boolean = true
+    val premium: Boolean = false,
+    val offer: Offer? = null
 )
 
 /**
@@ -48,15 +51,17 @@ class Membership @Inject constructor(
     private val profiles: Profiles,
     private val marks: DeviceMarks,
     private val characters: CustomCharacters,
-    entitlements: Entitlements
+    entitlements: Entitlements,
+    private val shop: Shop
 ) {
     /** With nothing to sign in to, and nothing sold: for tests, and for whatever has no account at all. */
     constructor(
         account: Account = Account.None,
         profiles: Profiles = Profiles.None,
         marks: DeviceMarks = DeviceMarks.None,
-        characters: CustomCharacters = CustomCharacters.None
-    ) : this(account, profiles, marks, characters, Entitlements.Everyone)
+        characters: CustomCharacters = CustomCharacters.None,
+        entitlements: Entitlements = Entitlements.Nobody
+    ) : this(account, profiles, marks, characters, entitlements, Shop.None)
 
     private val ageNotice = MutableStateFlow(false)
     private val removing = MutableStateFlow(false)
@@ -70,9 +75,9 @@ class Membership @Inject constructor(
         underAge,
         ageNotice,
         removing,
-        entitlements.premium
-    ) { (account, profile, characters), underAge, ageNotice, removing, premium ->
-        Who(account, profile, underAge, ageNotice, removing, characters, premium)
+        combine(entitlements.premium, shop.offer, ::Pair)
+    ) { (account, profile, characters), underAge, ageNotice, removing, (premium, offer) ->
+        Who(account, profile, underAge, ageNotice, removing, characters, premium, offer)
     }
 
     /** Whether this device may ask the AI service for nothing: read where it is kept, never guessed. */
@@ -191,6 +196,17 @@ class Membership @Inject constructor(
 
     /** Deletes the character in slot [id], for good. */
     suspend fun deleteCharacter(id: String): Boolean = characters.delete(id)
+
+    /**
+     * Buys what is sold: see [Shop.buy]. Only for whoever could use it: signed in, with a
+     * profile, and not on a device that was given an under-age date of birth.
+     */
+    suspend fun buyPremium(host: Context): Bought {
+        if (account.state.value !is AccountState.SignedIn || profiles.state.value !is ProfileState.Present || isUnderAge()) {
+            return Bought.FAILED
+        }
+        return shop.buy(host)
+    }
 
     /**
      * What is kept with the account, its profile and its characters at once, then the account:

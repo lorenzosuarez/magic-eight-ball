@@ -3,6 +3,7 @@ package com.lorenzosuarez.magiceightball.phone
 import android.content.Context
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.lorenzosuarez.magiceightball.phone.account.Membership
@@ -144,6 +145,7 @@ class EightBallViewModel @Inject constructor(
                 removingAccount = who.removing,
                 characters = who.characters,
                 premium = who.premium,
+                offer = who.offer,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -297,6 +299,9 @@ class EightBallViewModel @Inject constructor(
     suspend fun declineProfile(host: Context): AccountOutcome = membership.declineProfile(host)
 
     fun ageNoticeSeen() = membership.ageNoticeSeen()
+
+    /** Buys what is sold, over [host]: see [Membership.buyPremium]. */
+    suspend fun buyPremium(host: Context): Bought = membership.buyPremium(host)
 
     fun setDetailedAnswers(enabled: Boolean) {
         viewModelScope.launch { userSettingsRepository.setDetailedAnswers(enabled) }
@@ -757,7 +762,8 @@ class EightBallViewModel @Inject constructor(
                     asker = asker,
                     // Only while it is theirs to use: signed out, or with accounts switched
                     // off from afar, nothing the user wrote is sent.
-                    custom = state.value?.answeringCustom
+                    custom = state.value?.answeringCustom,
+                    premium = state.value?.premium == true
                 )
             }
         } catch (e: CancellationException) {

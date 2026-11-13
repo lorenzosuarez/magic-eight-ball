@@ -216,9 +216,19 @@
     <string name="premium_point_count">Up to five at a time</string>
     <string name="premium_point_voice">They answer in the tone you describe</string>
     <string name="premium_point_card">They sign what you share</string>
+    <string name="premium_point_ai">More AI answers every day</string>
     <string name="premium_upgrade">Get Premium</string>
     <string name="premium_upgrade_priced">Get Premium for&#160;%1$s</string>
     <string name="premium_free_note">The app\'s own characters stay free.</string>
+    <string name="premium_terms">One payment, no subscription.\nIt stays with your app&#160;account.</string>
+    <string name="premium_no_price">Getting the price from Google&#160;Play…</string>
+    <string name="premium_pending">Google&#160;Play is waiting for the payment. Premium turns on automatically once it goes&#160;through</string>
+    <string name="premium_taken">Premium was already bought with this Google&#160;Play account, on another account in this app. You weren\'t charged again. Sign out and sign in with that&#160;one</string>
+    <string name="premium_unconfirmed">Your payment went through, but we couldn\'t confirm it. Check again: you won\'t be charged&#160;again</string>
+    <string name="premium_failed">Couldn\'t complete the purchase. Try again</string>
+    <string name="premium_busy">One moment…</string>
+    <string name="premium_price_failed">Couldn\'t get the price. Check your connection</string>
+    <string name="premium_check_again">Check again</string>
     <string name="options_account">Account</string>
     <string name="account_title">Answers made for you</string>
     <string name="account_hint">Sign in so the characters know who\'s asking</string>
@@ -235,6 +245,7 @@
     <string name="account_delete_text">Your account and everything in it are erased. This can\'t be undone. Your recent answers stay on this device. Google may ask you to pick your account to confirm.</string>
     <string name="account_delete_failed">Couldn\'t delete the account. Try again</string>
     <string name="account_deleted">Account deleted.</string>
+    <string name="account_premium">You have Premium</string>
     <string name="account_profile">Your profile</string>
     <string name="profile_title_new">Who\'s asking?</string>
     <string name="profile_title_edit">Your profile</string>

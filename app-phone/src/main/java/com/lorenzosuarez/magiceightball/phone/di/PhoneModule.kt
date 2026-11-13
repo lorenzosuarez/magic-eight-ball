@@ -25,6 +25,9 @@ import com.lorenzosuarez.magiceightball.phone.account.CustomCharacters
 import com.lorenzosuarez.magiceightball.phone.account.DataStoreDeviceMarks
 import com.lorenzosuarez.magiceightball.phone.account.Entitlements
 import com.lorenzosuarez.magiceightball.phone.account.FirestoreCustomCharacters
+import com.lorenzosuarez.magiceightball.phone.account.FirestoreEntitlements
+import com.lorenzosuarez.magiceightball.phone.account.PlayShop
+import com.lorenzosuarez.magiceightball.phone.account.Shop
 import com.lorenzosuarez.magiceightball.phone.account.DeviceMarks
 import com.lorenzosuarez.magiceightball.phone.account.FirestoreProfiles
 import com.lorenzosuarez.magiceightball.phone.account.Profiles
@@ -76,10 +79,13 @@ object PhoneModule {
     @Singleton
     fun provideCustomCharacters(impl: FirestoreCustomCharacters): CustomCharacters = impl
 
-    /** Nothing is sold yet: see [Entitlements]. */
     @Provides
     @Singleton
-    fun provideEntitlements(): Entitlements = Entitlements.Everyone
+    fun provideEntitlements(impl: FirestoreEntitlements): Entitlements = impl
+
+    @Provides
+    @Singleton
+    fun provideShop(impl: PlayShop): Shop = impl
 
     @Provides
     @Singleton

@@ -425,6 +425,7 @@ fun EightBallScreen(
                         onChooseCharacter = viewModel::chooseCharacter,
                         onSaveCharacter = viewModel::saveCharacter,
                         onDeleteCharacter = viewModel::deleteCharacter,
+                        onBuyPremium = { viewModel.buyPremium(context) },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )

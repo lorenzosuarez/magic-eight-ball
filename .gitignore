@@ -91,3 +91,7 @@ fastlane/readme.md
 # The public site is built from docs/ before each deploy: see site/build.py
 site/public/
 .firebase/
+
+# The server side: what npm installs and what TypeScript builds
+functions/node_modules/
+functions/lib/

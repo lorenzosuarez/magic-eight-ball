@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone.ui
 
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import java.time.LocalDate
 import org.junit.Assert.assertTrue
@@ -546,6 +547,17 @@ class EightBallScreenshotTest {
     fun phone_account_sheet_spanish() =
         captureAccountSheet("phone_56_account_sheet_spanish", LONG_ACCOUNT, dark = false)
 
+    /** The account of someone who paid: said under whose it is. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_account_sheet_premium_large_font() = captureAccountSheet(
+        "phone_80_small_phone_account_sheet_premium_large_font",
+        LONG_ACCOUNT,
+        dark = false,
+        premium = true,
+        fontScale = 1.5f
+    )
+
     /** A deletion that failed, said under the row that was touched. */
     @Test
     @Config(qualifiers = "+night")
@@ -694,6 +706,7 @@ class EightBallScreenshotTest {
         account: AccountState.SignedIn,
         dark: Boolean,
         failed: Boolean = false,
+        premium: Boolean = false,
         fontScale: Float = 1f
     ) = captureRoboImage(filePath = path(name)) {
         WithFontScale(fontScale) {
@@ -708,7 +721,8 @@ class EightBallScreenshotTest {
                             onEditProfile = {},
                             onSignOut = {},
                             onDelete = {},
-                            modifier = Modifier.padding(top = 24.dp)
+                            modifier = Modifier.padding(top = 24.dp),
+                            premium = premium
                         )
                     }
                 }
@@ -1012,38 +1026,49 @@ class EightBallScreenshotTest {
         }
     }
 
-    /** What is shown to whoever wants to make a character and has not paid, once that is asked for. */
+    /** What is shown to whoever wants to make a character and has not paid: here, before the store has named its price. */
     @Test
     fun phone_premium_spanish() = capturePremium("phone_77_premium_spanish", AppLanguage.SPANISH, dark = false)
 
     @Test
     @Config(qualifiers = "+night")
-    fun phone_premium_priced_dark() = capturePremium(
-        "phone_78_premium_priced_dark",
-        AppLanguage.SPANISH,
-        dark = true,
-        price = "2,99 €",
-        terms = "Un solo pago."
-    )
+    fun phone_premium_priced_dark() = capturePremium("phone_78_premium_priced_dark", AppLanguage.SPANISH, dark = true, price = "2,99 €")
 
-    /** The longest it gets: a price paid every month, and the two sentences that go with one. */
+    /** The longest it gets: a long price, and the longest thing there is to say of a purchase. */
     @Test
     @Config(qualifiers = SMALL_PHONE_TALL)
     fun small_phone_premium_portuguese_large_font() = capturePremium(
         "phone_79_small_phone_premium_portuguese_large_font",
         AppLanguage.PORTUGUESE,
         dark = false,
-        price = "R$ 14,90/mês",
-        terms = "Renova todo mês. Cancele quando quiser no Google Play.",
+        price = "R$ 14,90",
+        ended = Bought.TAKEN,
         fontScale = 1.5f
     )
+
+    /** A payment on its way: one button, which closes. */
+    @Test
+    fun phone_premium_pending_spanish() =
+        capturePremium("phone_81_premium_pending_spanish", AppLanguage.SPANISH, dark = false, price = "2,99 €", ended = Bought.PENDING)
+
+    /** Paid and not yet checked: the button checks, and names no price. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_premium_unconfirmed_dark() =
+        capturePremium("phone_82_premium_unconfirmed_dark", AppLanguage.SPANISH, dark = true, price = "2,99 €", ended = Bought.UNCONFIRMED)
+
+    /** While Google Play's own screen is up, or the purchase is being checked. */
+    @Test
+    fun phone_premium_busy_spanish() =
+        capturePremium("phone_83_premium_busy_spanish", AppLanguage.SPANISH, dark = false, price = "2,99 €", busy = true)
 
     private fun capturePremium(
         name: String,
         language: AppLanguage,
         dark: Boolean,
         price: String? = null,
-        terms: String? = null,
+        ended: Bought? = null,
+        busy: Boolean = false,
         fontScale: Float = 1f
     ) = captureRoboImage(filePath = path(name)) {
         WithFontScale(fontScale) {
@@ -1052,7 +1077,9 @@ class EightBallScreenshotTest {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
                         PremiumContent(
                             price = price,
-                            terms = terms,
+                            terms = stringResource(R.string.premium_terms),
+                            ended = ended,
+                            busy = busy,
                             onUpgrade = {},
                             onNotNow = {},
                             modifier = Modifier.padding(top = 24.dp)

@@ -9,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -28,7 +27,9 @@ import com.example.magiceightball.core.domain.model.UserSettings
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
+import com.lorenzosuarez.magiceightball.phone.account.Offer
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
@@ -170,7 +171,9 @@ class CharacterEditorTest {
         characters: List<CustomCharacter>?,
         profile: ProfileState = ProfileState.Present(LORENA),
         sold: Boolean = false,
-        premium: Boolean = true
+        premium: Boolean = true,
+        price: String? = null,
+        onBuyPremium: suspend () -> Bought = { Bought.FAILED }
     ) {
         state = EightBallUiState(
             settings = UserSettings(language = AppLanguage.SPANISH),
@@ -178,7 +181,8 @@ class CharacterEditorTest {
             account = account,
             profile = profile,
             characters = characters,
-            premium = premium
+            premium = premium,
+            offer = price?.let(::Offer)
         )
         compose.setContent {
             MagicEightBallPhoneTheme {
@@ -200,7 +204,8 @@ class CharacterEditorTest {
                             onSaveCharacter = { replacing, _, _, _, _ ->
                                 saved += replacing
                                 CharacterSave.Failed
-                            }
+                            },
+                            onBuyPremium = onBuyPremium
                         )
                     }
                 }
@@ -270,9 +275,11 @@ class CharacterEditorTest {
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
         compose.onNodeWithText("Tus propios personajes, con Premium").assertIsDisplayed()
         // Said before the button: what saying no costs, which is nothing.
-        compose.onNodeWithText("Los personajes de la app siguen siendo gratis.").assertIsDisplayed()
-        // No price and no terms yet: the button is there, and buys nothing.
+        compose.onNodeWithText("Los personajes de la\u00A0app siguen siendo gratis.").assertIsDisplayed()
+        // The store has not named its price: the button is there, buys nothing, and says why.
         compose.onNodeWithText("Obtener Premium").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithText("Buscando el precio en Google\u00A0Play…").assertIsDisplayed()
+        compose.onNodeWithText("Un solo pago, sin suscripción.\nQueda en tu cuenta de la\u00A0app.").assertIsDisplayed()
         assertEquals(0, count("Nuevo personaje"))
 
         compose.onNodeWithText("Ahora no").performClick()
@@ -281,6 +288,134 @@ class CharacterEditorTest {
         // What was made before is still theirs to choose and to correct.
         compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
         compose.onNodeWithText("Tu personaje").assertIsDisplayed()
+    }
+
+    @Test
+    fun `buying it goes on to what they came for, and backing out says nothing`() {
+        var ends = Bought.CANCELLED
+        var asked = 0
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false, price = "2,99 €") {
+            asked++
+            ends
+        }
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+
+        compose.onNodeWithText(BUY).assertIsEnabled().performClick()
+        compose.waitForIdle()
+        assertEquals(1, asked)
+        // Still there, with nothing said: they changed their mind on Google Play's own screen.
+        compose.onNodeWithText(BUY).assertIsEnabled()
+        assertEquals(0, count("No se pudo completar la compra. Inténtalo de nuevo"))
+
+        ends = Bought.DONE
+        compose.onNodeWithText(BUY).performClick()
+        compose.waitForIdle()
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+        compose.onNodeWithText("Nuevo personaje").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a purchase that failed says so, and can be tried again`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false, price = "2,99 €") { Bought.FAILED }
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+
+        compose.onNodeWithText(BUY).performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText("No se pudo completar la compra. Inténtalo de nuevo").assertIsDisplayed()
+        compose.onNodeWithText(BUY).assertIsEnabled()
+        compose.onNodeWithText("Ahora no").assertIsEnabled()
+        assertEquals(0, count("Nuevo personaje"))
+    }
+
+    @Test
+    fun `a payment made and not yet checked is checked again, and no price is asked twice`() {
+        var ends = Bought.UNCONFIRMED
+        var asked = 0
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false, price = "2,99 €") {
+            asked++
+            ends
+        }
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText(BUY).performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText(
+            "El pago está hecho, pero no pudimos confirmarlo. Comprueba de nuevo: no se te cobrará otra\u00A0vez"
+        ).assertIsDisplayed()
+        assertEquals(0, count(BUY))
+
+        ends = Bought.DONE
+        compose.onNodeWithText("Comprobar de nuevo").performClick()
+        compose.waitForIdle()
+        assertEquals(2, asked)
+        compose.onNodeWithText("Nuevo personaje").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a payment Google Play is waiting for is only to be understood`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false, price = "2,99 €") { Bought.PENDING }
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText(BUY).performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText(
+            "Google\u00A0Play está esperando el pago. Premium se activará automáticamente cuando se\u00A0complete"
+        ).assertIsDisplayed()
+        // Nothing here sells it a second time, and there is one way on.
+        assertEquals(0, count(BUY))
+        assertEquals(0, count("Ahora no"))
+
+        compose.onNodeWithText("Entendido").performClick()
+        compose.waitForIdle()
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+        assertEquals(0, count("Nuevo personaje"))
+    }
+
+    @Test
+    fun `what another account holds is not sold here, and the way to it is said`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false, price = "2,99 €") { Bought.TAKEN }
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText(BUY).performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText(
+            "Premium ya se compró con esta cuenta de Google\u00A0Play, en otra cuenta de la app. " +
+                "No se te cobró de nuevo. Cierra sesión y entra con\u00A0esa"
+        ).assertIsDisplayed()
+        assertEquals(0, count(BUY))
+        assertEquals(0, count("Obtener Premium"))
+
+        compose.onNodeWithText("Cerrar").performClick()
+        compose.waitForIdle()
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+    }
+
+    @Test
+    fun `a payment that comes through while the sheet is open goes on by itself`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false, price = "2,99 €")
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText("Tus propios personajes, con Premium").assertIsDisplayed()
+
+        state = state.copy(premium = true, offer = null)
+        compose.waitForIdle()
+
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+        compose.onNodeWithText("Nuevo personaje").assertIsDisplayed()
+    }
+
+    @Test
+    fun `when it stops being sold the sheet goes, and nothing opens in its place`() {
+        showOptions(SIGNED_IN, characters = listOf(NEMO), sold = true, premium = false, price = "2,99 €")
+        compose.onNodeWithContentDescription("Crear un personaje").performClick()
+        compose.onNodeWithText("Tus propios personajes, con Premium").assertIsDisplayed()
+
+        // Switched off from afar, or the app has just come back and does not know yet what is sold.
+        state = state.copy(config = AppConfig(accountEnabled = true, premiumEnabled = false))
+        compose.waitForIdle()
+
+        assertEquals(0, count("Tus propios personajes, con Premium"))
+        assertEquals(0, count("Nuevo personaje"))
     }
 
     @Test
@@ -335,5 +470,8 @@ class CharacterEditorTest {
             colour = Magic8BallPersonality.PIRATE,
             emblem = Magic8BallPersonality.CAT
         )
+
+        /** The button once the store has named its price: the price never breaks off its line. */
+        const val BUY = "Obtener Premium por\u00A02,99\u00A0€"
     }
 }

@@ -138,3 +138,22 @@ class FakeCustomCharacters(initial: List<CustomCharacter>? = emptyList()) : Cust
         return deletes
     }
 }
+
+/** Stands for what the server holds of a purchase: nothing, until the test says otherwise. */
+class FakeEntitlements(initial: Boolean = false) : Entitlements {
+    override val premium = MutableStateFlow(initial)
+}
+
+/** A store driven by the test: what it asks for the thing, and how buying it ends. */
+class FakeShop(price: String? = "2,99 €") : Shop {
+    override val offer = MutableStateFlow(price?.let(::Offer))
+    var sells = Bought.DONE
+
+    /** How many times buying got as far as the store. */
+    var asked = 0
+
+    override suspend fun buy(host: Context): Bought {
+        asked++
+        return sells
+    }
+}

@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
+import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.VoiceStatus
@@ -98,7 +99,8 @@ internal fun SettingsContent(
     onChooseCharacter: (CustomCharacter) -> Unit = {},
     onSaveCharacter: suspend (CustomCharacter?, String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave =
         { _, _, _, _, _ -> CharacterSave.Failed },
-    onDeleteCharacter: suspend (String) -> Boolean = { false }
+    onDeleteCharacter: suspend (String) -> Boolean = { false },
+    onBuyPremium: suspend () -> Bought = { Bought.FAILED }
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -145,8 +147,16 @@ internal fun SettingsContent(
         )
     }
     if (paying) {
-        // Nothing is sold yet, so there is nothing for the button to start: see [Entitlements].
-        PremiumSheet(onUpgrade = { paying = false }, onClose = { paying = false })
+        // Bought, here or wherever a payment that was pending came through: on to what they wanted.
+        val goOn = {
+            paying = false
+            editing = NEW
+        }
+        LaunchedEffect(state.premium) { if (state.premium) goOn() }
+        // No longer sold, or not yet known to be, as when the app has just come back: the sheet
+        // goes, and nothing opens that was not paid for. Whoever wants to make one asks again.
+        LaunchedEffect(state.config.premiumEnabled) { if (!state.config.premiumEnabled) paying = false }
+        PremiumSheet(offer = state.offer, onBuy = onBuyPremium, onBought = goOn, onClose = { paying = false })
     }
     // The character the editor was opened on: kept while those of the account are for a moment
     // not known, so that what is being typed is not lost to a connection that blinked.
@@ -224,7 +234,8 @@ internal fun SettingsContent(
                 onDeleteAccount = onDeleteAccount,
                 profile = (state.profile as? ProfileState.Present)?.profile,
                 onSaveProfile = onSaveProfile,
-                onOpenPrivacyPolicy = onOpenPrivacyPolicy
+                onOpenPrivacyPolicy = onOpenPrivacyPolicy,
+                premium = state.premium
             )
         }
         Section(stringResource(R.string.options_answers)) {

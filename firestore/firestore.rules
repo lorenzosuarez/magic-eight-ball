@@ -3,7 +3,8 @@ rules_version = '2';
 // What the app keeps in Cloud Firestore: one document to an account, its profile, at
 // users/{the account's id}, and under it the characters that account made up, at most five.
 // Whoever is signed in reads and writes their own and nothing else; what is not allowed here is
-// refused. Checked by firestore/rules_test.py.
+// refused. What the server keeps beside it, in functions/, the app can at most read: no rule
+// applies to the server. Checked by firestore/rules_test.py.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -82,6 +83,14 @@ service cloud.firestore {
           && isCharacter(request.resource.data)
           && exists(/databases/$(database)/documents/users/$(uid));
       }
+
+      // What this account has been granted, Premium for one. Its owner reads it and nobody
+      // writes it: only the server grants, once Google Play has confirmed the purchase, and only
+      // the server takes back. A grant does not stand in the way of deleting the profile, and
+      // goes with the account itself.
+      match /grants/{grant} {
+        allow read: if isOwner(uid);
+      }
     }
 
     // A character is these four fields and no other: a name, how it answers, and whose colour
@@ -101,6 +110,15 @@ service cloud.firestore {
         && data.colour.matches('^[a-z]{1,16}$')
         && data.emblem is string
         && data.emblem.matches('^[a-z]{1,16}$');
+    }
+
+    // Which account each purchase belongs to, and how far the server has read in Play's list of
+    // the purchases it took back. The server's alone: nothing here is for the app, whoever asks.
+    match /purchases/{purchase=**} {
+      allow read, write: if false;
+    }
+    match /state/{kept=**} {
+      allow read, write: if false;
     }
   }
 }
