@@ -8,11 +8,12 @@ This is not legal advice. Google's forms are the developer's own declarations: r
 
 - **Together with the feature, not before.** The policy and the delete page describe an app with accounts; published earlier they would be false.
 - **"Released" includes closed testing.** The Data safety form covers closed, open and production tracks; only internal testing is exempt. So everything here is due when the first build with accounts leaves internal testing. ([Data safety](https://support.google.com/googleplay/android-developer/answer/10787469), "Which developers need to complete the Data safety form")
+- **Premium.** The texts speak of Premium as something the app "may offer", so they hold with `premium_enabled` off or on. They do assume a build that carries the purchase code: the policy lists the `com.android.vending.BILLING` permission, which Google Play's billing library adds. What has to be true before `premium_enabled` is turned on is in `docs/REMOTE_CONFIG.md`, under "Before Premium is turned on".
 
 On that day, in this order:
 
 1. Replace `RELEASE-DATE` with the date in `docs/PRIVACY_POLICY.md`, `docs/PRIVACY_POLICY.es.md` and `docs/PRIVACY_POLICY.pt.md`. The site does not build until this is done.
-2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out", "Continue without an account", "Delete all", the six characters the policy names ("Therapist", "Grandma", "Coach", "Lovestruck", "Horoscope", "Mystical") and their Spanish and Portuguese forms. They were read from the app's strings on the profile branch on 13 November.
+2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out", "Continue without an account", "Delete all", "You have Premium", the six characters the policy names ("Therapist", "Grandma", "Coach", "Lovestruck", "Horoscope", "Mystical") and their Spanish and Portuguese forms. They were read from the app's strings on the profile branch on 13 November.
 3. `firebase deploy --only hosting`, then open `/privacy` and `/delete-account` in the three languages.
 4. Send the Play Console changes below.
 5. Roll the build out.
@@ -50,6 +51,18 @@ How the page defines the words, since the answers depend on them:
 None of it is "processed ephemerally": it is stored.
 
 - [ ] **Judgement call: the profile photo.** The app keeps only the address of the Google profile picture; it uploads no photo. This list does not declare "Photos". The cautious alternative is to declare Photos as collected, optional, for Account management. Simpler still: do not ask Google for the photo if the app does not show it.
+
+### New with Premium
+
+| Data type | What it is here | Collected | Shared | Optional or required | Purposes |
+|---|---|---|---|---|---|
+| Financial info → **Purchase history** | That the account bought Premium: the date, Google Play's order number and a fingerprint (SHA-256) of the purchase token, kept by the project's server in Firestore with the account, and which account holds the purchase | Yes | No | Optional | App functionality |
+
+It is kept with the account and deleted with it, so the answer to the form's question about deletion does not change. Declare it with the first build that carries the purchase code, even while `premium_enabled` is off.
+
+- [ ] **Judgement call: payment details.** This list does not declare "User payment info": Google Play takes the payment and the app receives no card or payment details. Not looked up on the Help page: read the form's own text for that type before leaving it out.
+- [ ] **Judgement call: the mark given to Google Play.** With a purchase the app gives Google Play a fingerprint (SHA-256) of the Firebase account identifier (`setObfuscatedAccountId`), so that Google Play can tell buyers apart. "User IDs" is already declared as collected; this list does not declare it as shared.
+- [ ] **Analytics and purchases.** The policy says the app adds nothing about a purchase to the usage counts, which is true of the app's code. Google Analytics for Firebase can record in-app purchases by itself where the Firebase project is linked to Google Play (Firebase console → Project settings → Integrations). Not checked here: it is a setting of the console. If the link is on, either take it off or add a sentence under "Usage measurement" in the three policies.
 
 ### Already true today: compare with what the form says now
 
@@ -104,7 +117,7 @@ The questionnaire has to be filled in again for "All app updates where there has
 - The app now asks for personal information (name, email address, date of birth) and gives it to no other user.
 - Text is written by generative AI and nobody reads it before it is shown; every such answer has a "Report" button.
 - What a user writes in a character's description changes what the AI writes back to that same user.
-- No location, no purchases.
+- No location. One digital purchase once Premium is sold: a single payment through Google Play, no subscription.
 
 - [ ] Fill it in again if any answer changes. The rating is a separate thing from the target audience: declaring 18 and over does not make the rating 18.
 
@@ -135,6 +148,7 @@ No change: the app contains ads.
 
 - [ ] **Google Cloud console, OAuth consent screen:** the app's name, and the privacy policy address. Google asks developers to "list the privacy policy URL in your OAuth client configuration when your application is made available to the public", and says "Don't request access to information that you don't need." ([Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy))
 - [ ] **Firebase console:** the steps in the feature's plan (Blaze plan, Authentication with Google, Firestore and its rules, App Check with Play Integrity). Firestore was created in `eur3`, Google's Europe multi-region (Belgium and the Netherlands, with Finland as witness), and the policy says the profile, the agreement and the characters are kept in the European Union. A database's location cannot be changed afterwards, and a second database anywhere else would make that sentence false. ([Cloud Firestore locations](https://firebase.google.com/docs/firestore/locations)) App Check may be registered without being enforced: the policy says only that its token tells whether a request comes from the app, which holds either way.
+- [ ] **Premium's server:** the three functions run in `europe-west1` (Belgium) and write to the same Firestore database. The policy says a purchase is checked, and its record kept, in the European Union: a function moved to another region would make that false.
 
 ## 9. When a deletion request arrives by email
 
@@ -145,6 +159,8 @@ The delete page promises an answer to the same address and deletion within 30 da
 3. Firestore: delete `users/{UID}`, and make sure its `characters` collection goes with it.
 4. Authentication → Users: delete the user.
 5. Reply that it is done.
+
+Once Premium's functions are deployed, step 4 is what removes the record of a purchase: `forgetAccount` runs when the user is deleted, and deletes everything under `users/{UID}`, the grant at `users/{UID}/grants/premium` included, and the `purchases` documents whose `uid` is that one. Afterwards, check in Firestore that both are gone. The purchase itself stays in the buyer's Google Play account, and nothing here refunds it.
 
 The policy also says that the developer deletes by hand the accounts left without a profile, which is what remains when the app is closed on the profile screen and never opened again. Now and then: Authentication → Users, and delete the users created more than a day ago that have no `users/{UID}` document in Firestore.
 

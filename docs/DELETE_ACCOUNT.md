@@ -16,6 +16,7 @@ Write to the developer at [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez.dev
 - **Your account:** what Google gave the app when you signed in, which is your name, your email address, the address of your profile photo and the account's identifier.
 - **Your profile:** your first name, your date of birth and the record of what you agreed to send to the AI service.
 - **Your characters:** every character you created, with its name, its description and its look.
+- **The record of a Premium purchase**, if you bought it: the date, Google Play's order number and a fingerprint of the purchase kept with your account, and the note of which account held the purchase.
 
 The developer keeps no copy of any of it. Google, which keeps this data for the developer, then removes it from its own systems and backups; for what it gave the app when you signed in, this takes up to 180 days.
 
@@ -24,6 +25,7 @@ The developer keeps no copy of any of it. Google, which keeps this data for the 
 - **What was already sent to the AI service.** Google logs requests for a limited time under its own terms, and the developer cannot delete them from there.
 - **Crash reports and usage counts.** They are not tied to your account. Google keeps crash reports, and any answer you reported, for 90 days, and usage counts for at most 14 months.
 - **Google's record of sign-ins.** The IP addresses used to sign in, which Google keeps for a few weeks.
+- **A Premium purchase itself.** It stays in your Google Play account: that record is Google's, under Google's policy. Deleting the account does not refund it. If you later create a new account in the app on a device signed in to the same Google Play account, the app claims the purchase for the new account without charging you again, as long as Premium is still offered.
 - **Your Google Account.** Nothing in it changes. You can also remove Magic AI Ball from the apps connected to it, at [myaccount.google.com/connections](https://myaccount.google.com/connections).
 - **What you shared.** A picture of an answer that you sent to another app stays wherever you sent it.
 

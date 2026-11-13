@@ -16,6 +16,7 @@ Escríbele al desarrollador a [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez
 - **Tu cuenta:** lo que Google le entregó a la app cuando iniciaste sesión, es decir, tu nombre, tu dirección de correo electrónico, la dirección de tu foto de perfil y el identificador de la cuenta.
 - **Tu perfil:** tu nombre de pila, tu fecha de nacimiento y el registro de lo que aceptaste enviar al servicio de IA.
 - **Tus personajes:** todos los personajes que creaste, con su nombre, su descripción y su aspecto.
+- **El registro de una compra de Premium**, si lo compraste: la fecha, el número de pedido de Google Play y una huella de la compra que se guardan con tu cuenta, y la nota de qué cuenta tenía la compra.
 
 El desarrollador no conserva copia de nada de esto. Después, Google, que guarda estos datos para el desarrollador, los quita de sus propios sistemas y copias de seguridad; en el caso de lo que le entregó a la app cuando iniciaste sesión, esto tarda hasta 180 días.
 
@@ -24,6 +25,7 @@ El desarrollador no conserva copia de nada de esto. Después, Google, que guarda
 - **Lo que ya se envió al servicio de IA.** Google registra las solicitudes durante un tiempo limitado conforme a sus propias condiciones, y el desarrollador no puede eliminarlas de ahí.
 - **Los informes de fallos y los conteos de uso.** No están vinculados a tu cuenta. Google conserva los informes de fallos, y cualquier respuesta que hayas reportado, durante 90 días, y los conteos de uso durante 14 meses como máximo.
 - **El registro de inicios de sesión que conserva Google.** Las direcciones IP desde las que se inició sesión, que Google conserva durante unas semanas.
+- **La compra de Premium en sí.** Sigue en tu cuenta de Google Play: ese registro es de Google, conforme a la política de Google. Eliminar la cuenta no la reembolsa. Si más adelante creas una cuenta nueva en la app en un dispositivo con la sesión iniciada en la misma cuenta de Google Play, la app reclama la compra para la cuenta nueva sin cobrarte de nuevo, siempre que Premium se siga ofreciendo.
 - **Tu cuenta de Google.** Nada cambia en ella. También puedes quitar Magic AI Ball de las apps conectadas a ella, en [myaccount.google.com/connections](https://myaccount.google.com/connections).
 - **Lo que compartiste.** La imagen de una respuesta que enviaste a otra app queda donde la hayas enviado.
 
