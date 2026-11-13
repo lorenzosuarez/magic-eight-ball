@@ -37,10 +37,12 @@ class GeminiRemoteDataSource @Inject constructor(
     /**
      * Asks Gemini for an answer.
      *
-     * The system instruction is always the app's own, with what the app drew for this answer:
-     * nothing of the user's. The user content is the user's question
-     * when the request carries one (capped by [Magic8BallRequest.questionForAi]), and the fixed
-     * trigger otherwise. Nothing else about the user is sent.
+     * The system instruction is always the app's own, with what the app drew for this answer.
+     * Nothing in it is the user's, unless the request carries [Magic8BallRequest.asker]: then it
+     * also holds what the character makes use of among those facts. The user content is the
+     * user's question when the request carries one (capped by
+     * [Magic8BallRequest.questionForAi]), and the fixed trigger otherwise. Nothing else about
+     * the user is sent.
      *
      * A request that fails comes back as a failure with its reason, never as an exception.
      */
@@ -57,7 +59,8 @@ class GeminiRemoteDataSource @Inject constructor(
                 answersQuestion = question != null,
                 // Drawn here, as a shake would: the service words the answer, it does not choose it.
                 // It is also all that tells one request from the next when nothing was asked.
-                brief = brief
+                brief = brief,
+                asker = request.asker
             )
             val userText = question ?: request.userTrigger ?: "What is my fortune?"
 
