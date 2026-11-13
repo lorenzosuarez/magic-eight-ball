@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.Icon
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -76,6 +78,7 @@ internal fun SettingsContent(
     onShowAdPrivacyOptions: (() -> Unit)? = null,
     onGetMoreAiAnswers: (() -> Unit)? = null,
     onSpokenAnswersChange: (Boolean) -> Unit = {},
+    onDetailedAnswersChange: (Boolean) -> Unit = {},
     onPartyNamesChange: (List<String>) -> Unit = {},
     onDailyVerdictChange: (Boolean) -> Unit = {},
     notificationsAllowed: Boolean = true,
@@ -121,15 +124,13 @@ internal fun SettingsContent(
             val classic = state.settings.personality == Magic8BallPersonality.NEUTRAL
             SwitchRow(
                 title = stringResource(R.string.settings_ai),
-                supporting = stringResource(
-                    when {
-                        !state.aiAnswersAvailable -> R.string.settings_ai_unavailable
-                        classic -> R.string.settings_ai_classic
-                        !state.settings.aiAnswersEnabled -> R.string.settings_ai_off
-                        state.aiAllowanceSpent -> R.string.settings_ai_spent
-                        else -> R.string.settings_ai_on
-                    }
-                ),
+                supporting = stringResource(R.string.settings_ai_on),
+                note = when {
+                    !state.aiAnswersAvailable -> stringResource(R.string.settings_ai_unavailable)
+                    classic -> stringResource(R.string.settings_ai_classic)
+                    state.usesAiAnswers && state.aiAllowanceSpent -> stringResource(R.string.settings_ai_spent)
+                    else -> null
+                },
                 checked = state.usesAiAnswers && !classic,
                 enabled = state.aiAnswersAvailable && !classic,
                 onCheckedChange = onAiAnswersChange,
@@ -146,11 +147,20 @@ internal fun SettingsContent(
                 )
             }
             RowDivider()
+            // How much the ball says: only what the AI writes can be longer.
+            SwitchRow(
+                title = stringResource(R.string.settings_detailed),
+                supporting = stringResource(R.string.settings_detailed_on),
+                // Dimmed, it says why.
+                note = if (!state.usesAiAnswers || classic) stringResource(R.string.settings_detailed_needs_ai) else null,
+                checked = state.settings.detailedAnswers && state.usesAiAnswers && !classic,
+                enabled = state.usesAiAnswers && !classic,
+                onCheckedChange = onDetailedAnswersChange
+            )
+            RowDivider()
             SwitchRow(
                 title = stringResource(R.string.settings_spoken),
-                supporting = stringResource(
-                    if (state.settings.spokenAnswersEnabled) R.string.settings_spoken_on else R.string.settings_spoken_off
-                ),
+                supporting = stringResource(R.string.settings_spoken_on),
                 checked = state.settings.spokenAnswersEnabled,
                 enabled = true,
                 onCheckedChange = onSpokenAnswersChange
@@ -158,21 +168,28 @@ internal fun SettingsContent(
         }
 
         Section(stringResource(R.string.options_asking)) {
-            if (state.voice == VoiceStatus.PermissionDenied) {
-                MicrophoneRow(onAllowMicrophone)
-            } else {
-                SwitchRow(
-                    title = stringResource(R.string.settings_voice),
-                    supporting = stringResource(
-                        when (state.voice) {
-                            VoiceStatus.Unsupported -> R.string.settings_voice_unsupported
-                            VoiceStatus.Ready -> R.string.settings_voice_on
-                            else -> R.string.settings_voice_off
-                        }
-                    ),
-                    checked = state.voice.isReady,
-                    enabled = state.voice != VoiceStatus.Unsupported,
-                    onCheckedChange = onVoiceQuestionsChange
+            // Refused, the switch is still the switch and still off: what stands in its way is
+            // said under it, and the way out is a row of its own, as for notifications.
+            val denied = state.voice == VoiceStatus.PermissionDenied
+            SwitchRow(
+                title = stringResource(R.string.settings_voice),
+                supporting = stringResource(R.string.settings_voice_on),
+                note = when (state.voice) {
+                    VoiceStatus.Unsupported -> stringResource(R.string.settings_voice_unsupported)
+                    VoiceStatus.PermissionDenied -> stringResource(R.string.settings_voice_denied)
+                    else -> null
+                },
+                checked = state.voice.isReady,
+                enabled = state.voice != VoiceStatus.Unsupported,
+                onCheckedChange = { if (denied) onAllowMicrophone() else onVoiceQuestionsChange(it) },
+                alert = denied
+            )
+            if (denied) {
+                RowDivider()
+                ActionRow(
+                    title = stringResource(R.string.settings_voice_allow_microphone),
+                    supporting = stringResource(R.string.settings_voice_allow_hint),
+                    onClick = onAllowMicrophone
                 )
             }
             RowDivider()
@@ -194,13 +211,8 @@ internal fun SettingsContent(
                 val blocked = state.settings.dailyVerdictEnabled && !notificationsAllowed
                 SwitchRow(
                     title = stringResource(R.string.settings_daily),
-                    supporting = stringResource(
-                        when {
-                            blocked -> R.string.settings_daily_blocked
-                            state.settings.dailyVerdictEnabled -> R.string.settings_daily_on
-                            else -> R.string.settings_daily_off
-                        }
-                    ),
+                    supporting = stringResource(R.string.settings_daily_on),
+                    note = if (blocked) stringResource(R.string.settings_daily_blocked) else null,
                     checked = state.settings.dailyVerdictEnabled,
                     enabled = true,
                     onCheckedChange = onDailyVerdictChange,
@@ -341,7 +353,7 @@ private fun <T> ChoiceRow(
                             }
                         )
                         .selectable(selected = chosen, role = Role.RadioButton, onClick = { onSelected(option) })
-                        .heightIn(min = 44.dp)
+                        .heightIn(min = 48.dp)
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -365,7 +377,8 @@ private fun SwitchRow(
     checked: Boolean,
     enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    alert: Boolean = false
+    alert: Boolean = false,
+    note: String? = null
 ) {
     Row(
         modifier = Modifier
@@ -378,13 +391,15 @@ private fun SwitchRow(
             )
             .heightIn(min = 72.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+        // By the title, wherever the row ends: a third line under it does not move the switch.
+        verticalAlignment = Alignment.Top
     ) {
-        SettingText(title, supporting, enabled, Modifier.weight(1f), alert)
+        SettingText(title, supporting, enabled, Modifier.weight(1f), alert, note)
         Spacer(Modifier.width(16.dp))
         Switch(
             checked = checked,
             onCheckedChange = null,
+            modifier = Modifier.padding(top = 6.dp),
             enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
@@ -406,33 +421,12 @@ private fun ActionRow(title: String, supporting: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f))
-    }
-}
-
-/** Voice questions while the microphone permission is missing: the way to grant it. */
-@Composable
-private fun MicrophoneRow(onAllowMicrophone: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SettingText(
-            title = stringResource(R.string.settings_voice),
-            supporting = stringResource(R.string.settings_voice_denied),
-            enabled = true,
-            modifier = Modifier.weight(1f)
+        // What tells a row that opens something from one that only says something.
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.width(16.dp))
-        FilledTonalButton(
-            onClick = onAllowMicrophone,
-            modifier = Modifier.heightIn(min = 48.dp),
-            shape = ButtonShape
-        ) {
-            Text(stringResource(R.string.settings_voice_allow))
-        }
     }
 }
 
@@ -442,23 +436,33 @@ private fun SettingText(
     supporting: String,
     enabled: Boolean,
     modifier: Modifier = Modifier,
-    alert: Boolean = false
+    alert: Boolean = false,
+    note: String? = null
 ) {
-    val alpha = if (enabled) 1f else DISABLED_ALPHA
-    // What explains the setting is quiet; what says something is wrong is not.
-    val quiet = if (alert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
+            // Always in full: a row that cannot be changed just now is still to be read, and
+            // its switch and the line under it say that it cannot.
+            color = MaterialTheme.colorScheme.onSurface
         )
+        // What the setting does: said once, and the same whichever way the switch is.
         Text(
             text = supporting,
             style = MaterialTheme.typography.bodyMedium,
-            // Why a setting cannot be changed is the one thing to read on a dimmed row.
-            color = quiet
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        // What stands in its way just now, when something does: a line of its own, so that the
+        // line above never changes. Quiet when it only explains, not when something is wrong.
+        if (note != null) {
+            Text(
+                text = note,
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (alert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 

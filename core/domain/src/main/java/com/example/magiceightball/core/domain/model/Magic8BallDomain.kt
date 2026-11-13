@@ -32,6 +32,8 @@ sealed interface LlmError {
  * @property useAi the user's choice: when false the answer must not come from the AI service.
  * @property question what the user asked, in their own words, when the app heard a question.
  * Null wherever the app takes no question, and then only [userTrigger] is sent.
+ * @property detailed whether that second line may run to a few sentences, and come even when
+ * nothing was asked: the user's choice.
  * @property wantsRemark whether a second line may come with the answer: only where there is
  * room to show one.
  */
@@ -41,7 +43,8 @@ data class Magic8BallRequest(
     val personality: Magic8BallPersonality = Magic8BallPersonality.SARCASTIC,
     val useAi: Boolean = true,
     val question: String? = null,
-    val wantsRemark: Boolean = false
+    val wantsRemark: Boolean = false,
+    val detailed: Boolean = false
 ) {
     /**
      * The only form in which [question] may leave the device: one line, without control

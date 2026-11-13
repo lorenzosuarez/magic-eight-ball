@@ -7,6 +7,8 @@ package com.example.magiceightball.core.domain.model
  * default, so it takes effect as soon as AI answers become available.
  * @property voiceQuestionsEnabled whether the user lets the app listen to a spoken question.
  * Only the phone app has a microphone feature; the watch app ignores it.
+ * @property detailedAnswers whether the AI service is asked to say more under its answer: a few
+ * sentences rather than one line, and also when nothing was asked. Off until asked for.
  * @property spokenAnswersEnabled whether answers are also read out loud. Off until asked for:
  * a phone should not start talking on its own. Only the phone app does it.
  * @property dailyVerdictEnabled whether the phone may give the day's verdict as a notification.
@@ -20,6 +22,7 @@ data class UserSettings(
     val aiAnswersEnabled: Boolean = true,
     val voiceQuestionsEnabled: Boolean = true,
     val spokenAnswersEnabled: Boolean = false,
+    val detailedAnswers: Boolean = false,
     val partyNames: List<String> = emptyList(),
     val dailyVerdictEnabled: Boolean = true
 ) {

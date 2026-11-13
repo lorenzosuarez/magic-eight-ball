@@ -1,5 +1,17 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.CompositingStrategy
+import com.example.magiceightball.core.domain.gateway.ReportReason
+import kotlin.math.roundToInt
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.res.pluralStringResource
 import androidx.core.app.NotificationManagerCompat
 import android.Manifest
 import android.app.Activity
@@ -80,6 +92,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -350,6 +364,10 @@ fun EightBallScreen(
                             viewModel.setVoiceQuestionsEnabled(it)
                         },
                         onAllowMicrophone = { askForMicrophone(true) },
+                        onDetailedAnswersChange = {
+                            tick(it.toggleFeedback())
+                            viewModel.setDetailedAnswers(it)
+                        },
                         onSpokenAnswersChange = {
                             tick(it.toggleFeedback())
                             viewModel.setSpokenAnswersEnabled(it)
@@ -401,9 +419,9 @@ fun EightBallScreen(
                     context.shareAnswer(picture, shareAnswerText)
                     viewModel.onAnswerShared()
                 },
-                onReportAnswer = {
+                onReportAnswer = { reason ->
                     tick(HapticFeedbackConstantsCompat.CONFIRM)
-                    viewModel.reportAnswer()
+                    viewModel.reportAnswer(reason)
                 },
                 onRateAnswer = { liked ->
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
@@ -450,7 +468,7 @@ internal fun EightBallContent(
     onShowHistoryEntry: (HistoryEntry) -> Unit = {},
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
-    onReportAnswer: () -> Unit = {},
+    onReportAnswer: (ReportReason) -> Unit = {},
     onRateAnswer: (Boolean) -> Unit = {},
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
@@ -469,19 +487,44 @@ internal fun EightBallContent(
     val snackbars = remember { SnackbarHostState() }
     val deletedMessage = stringResource(R.string.history_deleted)
     val undoLabel = stringResource(R.string.action_undo)
+    val reportedMessage = stringResource(R.string.report_done)
+    // Reporting asks one thing first, what is wrong, and the answer to that sends it.
+    var reporting by rememberSaveable { mutableStateOf(false) }
+    if (reporting && state.phase is BallPhase.Answered) {
+        ReportSheet(
+            onReason = { reason ->
+                reporting = false
+                onReportAnswer(reason)
+                scope.launch {
+                    snackbars.currentSnackbarData?.dismiss()
+                    snackbars.showSnackbar(reportedMessage, duration = SnackbarDuration.Short)
+                }
+            },
+            onClose = { reporting = false }
+        )
+    }
     val deleteWithUndo: (HistoryEntry) -> Unit = { entry ->
         onDeleteHistoryEntry(entry.id)
         scope.launch {
             // One at a time: the latest deletion is the one that can be undone.
             snackbars.currentSnackbarData?.dismiss()
-            val result = snackbars.showSnackbar(deletedMessage, undoLabel, duration = SnackbarDuration.Short)
+            val result = snackbars.showSnackbar(deletedMessage, undoLabel, duration = SnackbarDuration.Long)
             if (result == SnackbarResult.ActionPerformed) onRestoreHistoryEntry(entry)
         }
     }
 
-    // A question, however it was started, brings the ball to the front.
+    // A question, however it was started, brings the ball to the front; closing its answer
+    // goes back to the page it was started from, so one opened from Recents closes onto Recents.
+    var cameFrom by remember { mutableIntStateOf(BALL_PAGE) }
     LaunchedEffect(atRest) {
-        if (!atRest) pagerState.animateScrollToPage(BALL_PAGE)
+        if (!atRest) {
+            cameFrom = pagerState.currentPage
+            pagerState.animateScrollToPage(BALL_PAGE)
+        } else if (cameFrom != BALL_PAGE) {
+            val page = cameFrom
+            cameFrom = BALL_PAGE
+            pagerState.animateScrollToPage(page)
+        }
     }
     BackHandler(enabled = atRest && !onBallPage) {
         scope.launch { pagerState.animateScrollToPage(BALL_PAGE) }
@@ -514,11 +557,20 @@ internal fun EightBallContent(
             modifier = Modifier.fillMaxSize(),
             userScrollEnabled = atRest
         ) { page ->
+            val pageName = stringResource(
+                when (page) {
+                    HISTORY_PAGE -> R.string.history_title
+                    OPTIONS_PAGE -> R.string.settings_title
+                    else -> R.string.brand_name
+                }
+            )
             // The ball floats on the backdrop; its neighbours are plain pages, edge to edge,
             // so that what is listed on them is read against one flat colour.
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    // Coming into view, a page says its name to whoever cannot see it slide in.
+                    .semantics { paneTitle = pageName }
                     .then(
                         if (page == BALL_PAGE) {
                             Modifier
@@ -542,11 +594,21 @@ internal fun EightBallContent(
                             busy = busy,
                             onDismiss = onDismiss,
                             onSpeakAnswer = onSpeakAnswer,
+                            onReport = { reporting = true },
                             onOpenHistory = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
                             onOpenOptions = { scope.launch { pagerState.animateScrollToPage(OPTIONS_PAGE) } },
                             modifier = Modifier.fillMaxSize().graphicsLayer { alpha = intro() }
                         )
-                        else -> Text(
+                        else -> {
+                          // The way back to the ball, at the side the ball lies on.
+                          val toBall = { scope.launch { pagerState.animateScrollToPage(BALL_PAGE) }; Unit }
+                          BarIconButton(
+                              icon = if (page == HISTORY_PAGE) R.drawable.ic_arrow_forward else R.drawable.ic_arrow_back,
+                              description = stringResource(R.string.action_back_to_ball),
+                              onClick = toBall,
+                              modifier = Modifier.align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
+                          )
+                          Text(
                             text = stringResource(
                                 if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
                             ),
@@ -554,10 +616,16 @@ internal fun EightBallContent(
                                 .align(Alignment.TopCenter)
                                 .padding(top = PAGE_TITLE_TOP)
                                 .semantics { heading() },
-                            style = MaterialTheme.typography.titleMedium,
+                            // The bar has one line's room over the dots: the name grows with the
+                            // system's font only as far as that room goes.
+                            style = MaterialTheme.typography.titleMedium.let {
+                                val fit = (PAGE_TITLE_MAX_SCALE / LocalDensity.current.fontScale).coerceAtMost(1f)
+                                it.copy(fontSize = it.fontSize * fit, lineHeight = it.lineHeight * fit)
+                            },
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
-                        )
+                          )
+                        }
                     }
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -585,7 +653,6 @@ internal fun EightBallContent(
                             onToggleVoiceQuestion = onToggleVoiceQuestion,
                             onAllowMicrophone = onAllowMicrophone,
                             onShareAnswer = { scope.launch { onShareAnswer(shareLayer.toImageBitmap()) } },
-                            onReportAnswer = onReportAnswer,
                             onRateAnswer = onRateAnswer,
                             onAskWho = onAskWho
                         )
@@ -622,7 +689,7 @@ internal fun EightBallContent(
 
 /**
  * The top of the ball's page. At rest, the way to each neighbour at the side it lies on; with a
- * question or an answer, the way out of it and, for an answer, the way to hear it.
+ * question or an answer, the way out of it and, for an answer, the ways to hear it and to report it.
  */
 @Composable
 private fun BallBar(
@@ -630,25 +697,24 @@ private fun BallBar(
     busy: Boolean,
     onDismiss: () -> Unit,
     onSpeakAnswer: () -> Unit,
+    onReport: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenOptions: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
         if (state.phase is BallPhase.Idle) {
-            // Each on a disc of its own, so that it reads as a button without a word under it.
-            val disc = MaterialTheme.colorScheme.onSurface.copy(alpha = TONAL_ALPHA)
             BarButton(
                 icon = R.drawable.ic_history,
                 description = stringResource(R.string.history_title),
                 onClick = onOpenHistory,
-                modifier = Modifier.align(Alignment.CenterStart).background(disc, CircleShape)
+                modifier = Modifier.align(Alignment.CenterStart)
             )
             BarButton(
                 icon = R.drawable.ic_settings,
                 description = stringResource(R.string.settings_title),
                 onClick = onOpenOptions,
-                modifier = Modifier.align(Alignment.CenterEnd).background(disc, CircleShape)
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         } else {
             BarButton(
@@ -657,14 +723,34 @@ private fun BallBar(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.CenterStart)
             )
-            // With an answer on the die, the one thing left to do with it from up here: hear it.
-            if (state.phase is BallPhase.Answered) {
-                BarButton(
-                    icon = R.drawable.ic_volume,
-                    description = stringResource(R.string.action_read_aloud),
-                    onClick = onSpeakAnswer,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
+            // With an answer on the die, what is done about the answer itself from up here: hear
+            // it and, since nobody read what the AI wrote before it was shown, report it.
+            val answered = state.phase as? BallPhase.Answered
+            if (answered != null) {
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if ((answered.answer as? AnswerText.Plain)?.fromAi == true) {
+                        // Once reported it stays marked, and a second press does nothing.
+                        BarIconButton(
+                            icon = if (answered.reported) R.drawable.ic_flag_filled else R.drawable.ic_flag,
+                            description = stringResource(
+                                if (answered.reported) R.string.report_state_done else R.string.report_label
+                            ),
+                            onClick = onReport,
+                            enabled = !answered.reported,
+                            tint = if (answered.reported) {
+                                MaterialTheme.colorScheme.primary
+                            } else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    BarButton(
+                        icon = R.drawable.ic_volume,
+                        description = stringResource(R.string.action_read_aloud),
+                        onClick = onSpeakAnswer
+                    )
+                }
             }
         }
     }
@@ -672,7 +758,7 @@ private fun BallBar(
 
 @Composable
 private fun BarButton(icon: Int, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    AppIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
+    BarIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
 }
 
 /**
@@ -726,7 +812,6 @@ private fun Stage(
     onToggleVoiceQuestion: () -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
-    onReportAnswer: () -> Unit,
     onRateAnswer: (Boolean) -> Unit,
     onAskWho: (String) -> Unit
 ) {
@@ -738,9 +823,25 @@ private fun Stage(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
             minOf(maxWidth * BALL_WIDTH_FRACTION, BALL_MAX_SIZE),
-            // The ball stands in the middle, so the room for what is under it is taken from both ends.
-            maxHeight - (BALL_GAP + CAPTION_HEIGHT + ACTIONS_HEIGHT) * 2
+            // Room for what stands over and under the ball, counted once: when what is written
+            // under it needs more than its share, the ball gives way upwards rather than shrink.
+            maxHeight - (BALL_GAP * 2 + TITLE_ROOM + CAPTION_HEIGHT + ACTIONS_HEIGHT)
         ).coerceAtLeast(BALL_MIN_SIZE)
+        // The die's text does not follow the system's font size: when it comes out small, the
+        // answer is written under the ball as well.
+        val density = LocalDensity.current
+        val measurer = rememberTextMeasurer()
+        val answerText = (state.phase as? BallPhase.Answered)?.answer?.text()
+        val answerOnDie = remember(answerText, ballSize, density) {
+            answerText?.let { answerTextSizeOnBall(it, ballSize, density, measurer) }
+        }
+        // Found out while laying out: the ball has given way to what there is to read so far
+        // that its die no longer reads. Once that is so for an answer, it stays so.
+        val answerId = (state.phase as? BallPhase.Answered)?.id
+        var dieTooSmall by remember(answerId) { mutableStateOf(false) }
+        val answerSmall = dieTooSmall || (answerOnDie != null && answerOnDie < ANSWER_READABLE)
+        // On a dark screen a black ball has no outline of its own: a light behind it gives it one.
+        val glow = if (MaterialTheme.colorScheme.onSurface.luminance() > 0.5f) BallGlow else Color.Transparent
         val band = Modifier
             .graphicsLayer { alpha = intro() }
             .padding(horizontal = 32.dp)
@@ -769,33 +870,76 @@ private fun Stage(
                             translationX = sway.x * reach
                             translationY = sway.y * reach
                         }
+                        .drawBehind {
+                            if (glow.alpha > 0f) {
+                                val reach = size.minDimension / 2f * BALL_GLOW_REACH
+                                drawCircle(
+                                    brush = Brush.radialGradient(
+                                        0f to glow,
+                                        0.5f to glow,
+                                        1f to Color.Transparent,
+                                        center = center,
+                                        radius = reach
+                                    ),
+                                    radius = reach
+                                )
+                            }
+                        }
                 )
-                Caption(state = state, modifier = band)
+                Caption(state = state, answerSmall = answerSmall, modifier = band)
                 Actions(
                     state = state,
                     onAllowMicrophone = onAllowMicrophone,
                     onShareAnswer = onShareAnswer,
-                    onReportAnswer = onReportAnswer,
                     onRateAnswer = onRateAnswer,
                     onAskWho = onAskWho,
-                    modifier = band.padding(bottom = 16.dp).heightIn(min = 48.dp)
+                    modifier = band.padding(top = 24.dp, bottom = 16.dp).heightIn(min = 48.dp)
                 )
             }
         ) { measurables, constraints ->
-            val (status, title, ball, caption, actions) =
-                measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Constraints.Infinity)) }
             val width = constraints.maxWidth
             val height = constraints.maxHeight
-            val gap = BALL_GAP.roundToPx()
-            // In the middle, and it stays there whatever is written around it; it only gives way
-            // upwards when what stands under it would not fit otherwise, as with a very large font.
-            val ballTop = minOf((height - ball.height) / 2, height - actions.height - caption.height - gap - ball.height)
-                .coerceAtLeast(0)
+            val loose = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Constraints.Infinity)
+            val status = measurables[0].measure(loose)
+            val title = measurables[1].measure(loose)
+            val ball = measurables[2].measure(loose)
+            val actions = measurables[4].measure(loose)
+            val breath = BALL_BREATHING.roundToPx()
+            // The room the ball is given is the size it grows to with an answer on it, in every
+            // state, so that what stands around it does not move when it grows.
+            val full = ball.height * (1f + ANSWER_GROWTH)
+            val smallest = minOf(BALL_MIN_SEEN.toPx(), full)
+            // What is written under the ball takes what it needs, short of pushing the ball under
+            // its smallest: past that it scrolls where it is, and never runs into what is below it.
+            val around = title.height + actions.height + breath * 2
+            val caption = measurables[3].measure(
+                loose.copy(maxHeight = (height - around - smallest.roundToInt()).coerceAtLeast(0))
+            )
+            // The ball gives way to what there is to read: as large as the room left allows.
+            val seen = (height - around - caption.height).toFloat().coerceIn(smallest, full)
+            val fit = seen / full
+            if (!dieTooSmall && answerOnDie != null && answerOnDie * fit < ANSWER_READABLE) dieTooSmall = true
+            // In the middle between the bar above and the bottom edge, which is a little higher
+            // than the middle of this page; it moves from there only to make room.
+            val highest = (title.height + breath).toFloat()
+            val middle = (height - seen) / 2f - TOP_BAR_HEIGHT.toPx() / 2f
+            val lowest = height - actions.height - caption.height - breath - seen
+            // With more to read than fits under a ball in the middle, what room there is goes
+            // half over the question and half under the signature, not all to one end.
+            val top = if (lowest < middle) {
+                highest + (lowest - highest).coerceAtLeast(0f) / 2f
+            } else maxOf(middle, highest)
             layout(width, height) {
                 status.place((width - status.width) / 2, 0)
-                title.place((width - title.width) / 2, ballTop - gap - title.height)
-                ball.place((width - ball.width) / 2, ballTop)
-                caption.place((width - caption.width) / 2, ballTop + ball.height + gap)
+                title.place((width - title.width) / 2, (top - breath - title.height).roundToInt())
+                ball.placeWithLayer(
+                    x = (width - ball.width) / 2,
+                    y = (top + seen / 2f - ball.height / 2f).roundToInt()
+                ) {
+                    scaleX = fit
+                    scaleY = fit
+                }
+                caption.place((width - caption.width) / 2, (top + seen + breath).roundToInt())
                 actions.place((width - actions.width) / 2, height - actions.height)
             }
         }
@@ -808,13 +952,12 @@ private fun Status(state: EightBallUiState) {
     val shown = state.phase is BallPhase.Idle && state.notice == null && !state.settings.isParty &&
         state.streakDays >= state.config.streakMinDaysShown
     if (shown) {
+        // Said, not shown as a button: nothing is drawn around it, since a touch does nothing.
         Text(
-            text = stringResource(R.string.streak_days, state.streakDays),
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = TONAL_ALPHA), CircleShape)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            text = pluralStringResource(R.plurals.streak_days, state.streakDays, state.streakDays),
+            modifier = Modifier.padding(vertical = 8.dp),
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1
         )
     }
@@ -856,8 +999,23 @@ private fun Ball(
     val voiceLabel = stringResource(R.string.action_ask_by_voice)
     val offersVoice = state.voice.isReady && (phase is BallPhase.Idle || phase is BallPhase.Answered)
 
+    // An answer takes a moment to rise into view. A tap in that moment was meant for what was
+    // there before it, and must not ask again over an answer nobody has read yet.
+    val answerId = (phase as? BallPhase.Answered)?.id
+    var readable by remember(answerId) { mutableStateOf(answerId == null) }
+    LaunchedEffect(answerId) {
+        if (answerId != null) {
+            delay(ANSWER_SETTLE_MS)
+            readable = true
+        }
+    }
+
     // A tap while the app listens ends the question; any other tap asks.
-    val tap = if (listening) onToggleVoiceQuestion else onAsk
+    val tap = when {
+        listening -> onToggleVoiceQuestion
+        !readable -> NoTap
+        else -> onAsk
+    }
 
     var pressed by remember { mutableStateOf(false) }
     val currentTap by rememberUpdatedState(tap)
@@ -879,17 +1037,10 @@ private fun Ball(
         modifier = modifier
             .pointerInput(Unit) {
                 awaitEachGesture {
-                    awaitFirstDown()
+                    val down = awaitFirstDown()
                     pressed = true
                     try {
-                        // True when lifted in time, false when the gesture was taken away,
-                        // null when the finger is still down after the delay.
-                        val lifted = try {
-                            withTimeout(HOLD_DELAY_MS) { waitForUpOrCancellation() != null }
-                        } catch (_: PointerEventTimeoutCancellationException) {
-                            null
-                        }
-                        when (lifted) {
+                        when (awaitTapOrHold(down)) {
                             true -> currentTap()
                             false -> Unit
                             null -> {
@@ -954,7 +1105,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
     ) { phase ->
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
             when (phase) {
-                is BallPhase.Answered -> QuietText(phase.question.quoted(), maxLines = 2)
+                is BallPhase.Answered -> QuietText(phase.question.quoted(), maxLines = 3)
                 // At rest the ball stands alone: how to ask is said at the bottom edge.
                 else -> if (phase !is BallPhase.Idle || turnName != null) Text(
                     text = when {
@@ -984,8 +1135,9 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
  * so with a large font the answer is written here as well.
  */
 @Composable
-private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
+private fun Caption(state: EightBallUiState, answerSmall: Boolean, modifier: Modifier = Modifier) {
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+    val captionScroll = rememberScrollState()
 
     AnimatedContent(
         targetState = state.phase,
@@ -1011,14 +1163,36 @@ private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
             )
             is BallPhase.Thinking -> QuietText(phase.question.quoted())
             is BallPhase.Answered -> Column(
-                modifier = Modifier.fillMaxWidth(),
+                // Where there is more to read than room for it, it scrolls in its own place, and
+                // what is still below fades out rather than being cut through a line.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        if (captionScroll.canScrollForward) {
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    0f to Color.Black,
+                                    1f to Color.Transparent,
+                                    startY = size.height - CAPTION_FADE.toPx(),
+                                    endY = size.height
+                                ),
+                                blendMode = BlendMode.DstIn
+                            )
+                        }
+                    }
+                    .verticalScroll(captionScroll),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (largeFont) {
+                if (largeFont || answerSmall) {
+                    // The answer itself: heavier than what is said about it, and a little apart.
                     Text(
                         text = phase.answer.text(),
+                        modifier = Modifier.padding(bottom = 4.dp),
                         style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
@@ -1030,9 +1204,11 @@ private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
                         text = remark,
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        // The character's own words, not a note about them: in full ink, apart
+                        // from the question over the ball, which is the user's and is quiet.
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
-                        maxLines = CAPTION_MAX_LINES,
+                        maxLines = REMARK_MAX_LINES,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -1092,7 +1268,6 @@ private fun Actions(
     state: EightBallUiState,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
-    onReportAnswer: () -> Unit,
     onRateAnswer: (Boolean) -> Unit,
     onAskWho: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -1110,19 +1285,17 @@ private fun Actions(
         when (phase) {
             BallPhase.Idle -> Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // How to ask. At a party they know by now, and the button below is the other way.
-                if (!state.settings.isParty) {
-                    Text(
-                        text = stringResource(if (state.voice.isReady) R.string.hint_hold else R.string.hint_tap),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                // How to ask: at a party too, where the phone goes to someone who has never held it.
+                Text(
+                    text = stringResource(if (state.voice.isReady) R.string.hint_hold else R.string.hint_tap),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
                 // A refusal is said in the colour of a warning.
                 if (notice != null) {
                     QuietText(
@@ -1140,8 +1313,12 @@ private fun Actions(
                 }
                 // The way out of a refusal, right where it is explained.
                 if (notice == Notice.MicrophoneDenied) {
-                    TextButton(onClick = onAllowMicrophone, modifier = Modifier.heightIn(min = 48.dp)) {
-                        Text(stringResource(R.string.settings_voice_allow))
+                    FilledTonalButton(
+                        onClick = onAllowMicrophone,
+                        modifier = Modifier.heightIn(min = 48.dp),
+                        shape = ButtonShape
+                    ) {
+                        Text(stringResource(R.string.settings_voice_allow_microphone), fontWeight = FontWeight.SemiBold)
                     }
                 }
                 // At a party, the other thing the ball can be asked: to pick one of the players.
@@ -1157,11 +1334,8 @@ private fun Actions(
             }
             is BallPhase.Answered -> AnswerActions(
                 liked = phase.liked,
-                canReport = (phase.answer as? AnswerText.Plain)?.fromAi == true,
-                reported = phase.reported,
                 onShare = onShareAnswer,
                 onRate = onRateAnswer,
-                onReport = onReportAnswer,
                 modifier = Modifier.fillMaxWidth()
             )
             else -> Spacer(Modifier.fillMaxWidth())
@@ -1172,84 +1346,46 @@ private fun Actions(
 /**
  * What can be done with an answer, in one row and with nothing drawn around it: share it,
  * which is the main thing and the only one with a name, and say whether it was a good one, with
- * two quiet thumbs. What the AI wrote can also be reported, since nobody read it before it was
- * shown: the way to that opens under the row once the answer is called a bad one.
+ * two quiet thumbs.
  */
 @Composable
 private fun AnswerActions(
     liked: Boolean?,
-    canReport: Boolean,
-    reported: Boolean,
     onShare: () -> Unit,
     onRate: (Boolean) -> Unit,
-    onReport: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(
+            onClick = onShare,
+            modifier = Modifier.heightIn(min = 48.dp),
+            shape = ButtonShape,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
         ) {
-            TextButton(
-                onClick = onShare,
-                modifier = Modifier.heightIn(min = 48.dp),
-                shape = ButtonShape,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_share),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
-            }
-            RateButton(
-                good = true,
-                chosen = liked,
-                label = stringResource(R.string.rate_good),
-                onClick = { onRate(true) }
+            Icon(
+                painter = painterResource(R.drawable.ic_share),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
             )
-            RateButton(
-                good = false,
-                chosen = liked,
-                label = stringResource(R.string.rate_bad),
-                onClick = { onRate(false) }
-            )
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.action_share), fontWeight = FontWeight.SemiBold)
         }
-        AnimatedVisibility(visible = canReport && (liked == false || reported)) {
-            if (reported) {
-                Text(
-                    text = stringResource(R.string.report_done),
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .wrapContentHeight()
-                        .semantics { liveRegion = LiveRegionMode.Polite },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                val label = stringResource(R.string.report_label)
-                TextButton(
-                    onClick = onReport,
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .semantics { contentDescription = label },
-                    shape = ButtonShape,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_flag),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_report))
-                }
-            }
-        }
+        RateButton(
+            good = true,
+            chosen = liked,
+            label = stringResource(R.string.rate_good),
+            onClick = { onRate(true) }
+        )
+        RateButton(
+            good = false,
+            chosen = liked,
+            label = stringResource(R.string.rate_bad),
+            onClick = { onRate(false) }
+        )
     }
 }
 
@@ -1311,6 +1447,30 @@ private fun AnswerText.text(): String = when (this) {
  * Waits for every finger to lift, inside the ball or not: a thumb drifts while its owner talks.
  * False when another gesture, a scroll for instance, has taken the touch for itself.
  */
+/**
+ * What a press on the ball turns out to be: true for a tap, lifted in time; false when it was
+ * taken away, or slid off as the start of a swipe to another page; null when the finger is
+ * still down, and still where it came down, after the system's own long-press time. That time
+ * follows the user's accessibility setting for it, so a slow, deliberate tap stays a tap.
+ */
+private suspend fun AwaitPointerEventScope.awaitTapOrHold(down: PointerInputChange): Boolean? = try {
+    withTimeout(viewConfiguration.longPressTimeoutMillis) {
+        var outcome: Boolean? = null
+        while (outcome == null) {
+            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
+            outcome = when {
+                change == null || change.isConsumed -> false
+                !change.pressed -> true
+                (change.position - down.position).getDistance() > viewConfiguration.touchSlop -> false
+                else -> null
+            }
+        }
+        outcome
+    }
+} catch (_: PointerEventTimeoutCancellationException) {
+    null
+}
+
 private suspend fun AwaitPointerEventScope.awaitLift(): Boolean {
     while (true) {
         val event = awaitPointerEvent()
@@ -1371,8 +1531,9 @@ internal fun privacyPolicyUrl(language: AppLanguage): String = SITE_URL + when (
 }
 private const val SHARE_REFERRER = "&referrer=utm_source%3Dshare%26utm_medium%3Dapp"
 
-/** A press shorter than this is a tap; from here on it is a hold, and the app listens. */
-private const val HOLD_DELAY_MS = 180L
+/** How long an answer takes to rise into view: a tap sooner than that does not ask again. */
+private const val ANSWER_SETTLE_MS = 700L
+private val NoTap: () -> Unit = {}
 
 private const val CLOCK_TICK_MS = 30_000L
 
@@ -1397,10 +1558,16 @@ private const val DOT_OFF_ALPHA = 0.48f
 
 private const val BALL_WIDTH_FRACTION = 0.58f
 private val BALL_MAX_SIZE = 320.dp
-private val BALL_MIN_SIZE = 96.dp
+private val BALL_MIN_SIZE = 160.dp
 
 /** Wide enough for the ball to grow into when it shows an answer. */
 private val BALL_GAP = 56.dp
+/** The air between the ball and what stands over and under it. */
+private val BALL_BREATHING = 24.dp
+/** How much of the text under the ball fades out at the bottom when there is more of it below. */
+private val CAPTION_FADE = 32.dp
+/** As small as the ball is ever seen, however much there is to read under it. */
+private val BALL_MIN_SEEN = 112.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
 
@@ -1414,11 +1581,20 @@ private val PAGE_DOT_GAP = 8.dp
 private val TEXT_MAX_WIDTH = 480.dp
 /** Room kept under the ball for what came of a question, and under that for what can be done. */
 private val CAPTION_HEIGHT = 104.dp
+/** Room kept over the ball for the one or two lines that say where things stand. */
+private val TITLE_ROOM = 48.dp
+/** Under this size on the die, the answer is written under the ball as well. */
+private val ANSWER_READABLE = 12.dp
+/** The light behind the ball on a dark screen, and how far past the ball it reaches. */
+private val BallGlow = Color(0xFF3550C8).copy(alpha = 0.3f)
+private const val BALL_GLOW_REACH = 1.8f
+/** As far as a page's name follows the system's font size. */
+private const val PAGE_TITLE_MAX_SCALE = 1.3f
 private val ACTIONS_HEIGHT = 80.dp
-/** How much of the ink a disc behind an icon or a word takes. */
-private const val TONAL_ALPHA = 0.1f
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3
+/** Room for the few sentences of an answer that says more; one line of comeback takes what it needs. */
+private const val REMARK_MAX_LINES = 9
 
 /** How faint the note under an answer the AI wrote is. */
 private const val AI_NOTE_ALPHA = 1f

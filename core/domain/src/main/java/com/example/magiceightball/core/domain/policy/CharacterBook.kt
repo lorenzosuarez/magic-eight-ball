@@ -37,6 +37,7 @@ object AppCharacters : CharacterBook {
  * @property form how a drawn answer is worded: plain enough for a ball, with room for one turn.
  * @property examples what introduces the lines shown of the character's voice.
  * @property remark how the second line, the comeback to the question, is asked for.
+ * @property reading how the second line is asked for when the user wants to hear more.
  * @property questionCraft how a spoken question is played on.
  */
 data class PromptRules(
@@ -44,6 +45,7 @@ data class PromptRules(
     val form: String = FORM,
     val examples: String = EXAMPLES,
     val remark: String = REMARK,
+    val reading: String = READING,
     val questionCraft: String = QUESTION_CRAFT
 ) {
     companion object {
@@ -71,6 +73,16 @@ data class PromptRules(
             " the asker, that names something from their question and would make no sense for any other." +
             " It adds something new and never says line 1 again. If no such line comes, write line 1 alone." +
             " No labels, no quotation marks, no emoji."
+
+        /** The longer second line: what the character makes of it, for those who asked to hear more. */
+        const val READING = "Write two lines and nothing else. Line 1 is the answer as it shows on the ball:" +
+            " every word limit above applies to line 1 only, and line 1 is written as if it stood alone." +
+            " Line 2 is what this character makes of it, said to the asker: two or three short sentences," +
+            " 25 to 40 words in all, on one line. When they asked something, it names something from their" +
+            " question and would make no sense for any other; when nothing was asked, it says why the ball" +
+            " lands there today and what to do about it. It has one turn that makes them smile, ends on" +
+            " something they can do or look out for, and never says line 1 again." +
+            " No labels, no quotation marks, no emoji, no lists."
 
         const val QUESTION_CRAFT = "When a word of what they asked fits your character, play on it." +
             " Make it plain whether you lean yes, no or maybe."

@@ -170,6 +170,20 @@ class DefaultPromptPolicyTest {
     }
 
     @Test
+    fun `asked to say more, a few sentences are wanted, with or without a question`() {
+        val unasked = AnswerBrief.draw(Magic8BallPersonality.PIRATE, hasQuestion = false, withRemark = true, detailed = true)
+        val asked = AnswerBrief.draw(Magic8BallPersonality.PIRATE, hasQuestion = true, withRemark = true, detailed = true)
+        assertTrue(unasked.withRemark && unasked.detailed && asked.detailed)
+        // Switched off from afar, nothing is written under the answer however long it was to be.
+        assertTrue(!AnswerBrief.draw(Magic8BallPersonality.PIRATE, hasQuestion = true, withRemark = false, detailed = true).detailed)
+
+        val prompt = policy.getSystemPrompt("en", Magic8BallPersonality.PIRATE, answersQuestion = true, brief = asked)
+        assertTrue("25 to 40 words" in prompt)
+        assertTrue("comeback to what they asked" !in prompt)
+        assertTrue("Max 6 words." in prompt)
+    }
+
+    @Test
     fun `Portuguese is asked for as it is spoken in Brazil, every word of it`() {
         val plain = policy.getSystemPrompt("pt", Magic8BallPersonality.PIRATE)
         val drawn = policy.getSystemPrompt("pt", Magic8BallPersonality.PIRATE, brief = AnswerBrief(Verdict.NO))

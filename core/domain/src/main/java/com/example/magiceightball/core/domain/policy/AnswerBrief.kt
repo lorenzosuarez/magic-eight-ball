@@ -13,6 +13,7 @@ import kotlin.random.Random
  * around when there is no question to build it around.
  * @property withRemark whether a second line is wanted under the answer: the character's
  * comeback to what was asked, where the screen has room to show it.
+ * @property detailed whether that second line is a few sentences rather than one.
  * @property examples lines the character has said for this verdict, in the language of the
  * answer. They show the voice; drawn anew each time so that none is seen often enough to be copied.
  * @property remarkExample a comeback the character has made to some other question.
@@ -21,6 +22,7 @@ data class AnswerBrief(
     val verdict: Verdict,
     val motif: String? = null,
     val withRemark: Boolean = false,
+    val detailed: Boolean = false,
     val examples: List<String> = emptyList(),
     val remarkExample: SampleRemark? = null
 ) {
@@ -40,17 +42,20 @@ data class AnswerBrief(
             random: Random = Random.Default,
             languageCode: String = "en",
             question: String? = null,
-            characters: CharacterBook = AppCharacters
+            characters: CharacterBook = AppCharacters,
+            detailed: Boolean = false
         ): AnswerBrief {
             val verdict = Verdict.draw(random)
             val lines = characters.lines(personality, languageCode)
-            val remarked = withRemark && hasQuestion
+            // A few sentences can stand on the answer alone; one line needs a question to come back to.
+            val remarked = withRemark && (hasQuestion || detailed)
             return AnswerBrief(
                 verdict = verdict,
                 motif = if (hasQuestion) null else characters.sheet(personality)?.angles.orEmpty().randomOrNull(random),
                 withRemark = remarked,
+                detailed = remarked && detailed,
                 examples = lines?.saying(verdict).orEmpty().shuffled(random).take(EXAMPLES_SHOWN),
-                remarkExample = if (remarked) {
+                remarkExample = if (remarked && !detailed) {
                     lines?.remarks?.filterNot { it.question.isMuchLike(question) }?.randomOrNull(random)
                 } else null
             )

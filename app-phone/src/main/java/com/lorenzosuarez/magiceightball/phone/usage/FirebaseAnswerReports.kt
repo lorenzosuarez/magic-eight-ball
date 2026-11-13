@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.usage
 
+import com.example.magiceightball.core.domain.gateway.ReportReason
 import android.content.Context
 import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -19,12 +20,18 @@ class FirebaseAnswerReports @Inject constructor(
     @ApplicationContext private val context: Context
 ) : AnswerReports {
 
-    override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) {
+    override fun report(
+        answer: String,
+        remark: String?,
+        style: Magic8BallPersonality?,
+        languageCode: String,
+        reason: ReportReason
+    ) {
         // A build without the service has nowhere to send it.
         if (FirebaseApp.getApps(context).isEmpty()) return
         val said = listOfNotNull(answer, remark).joinToString(" | ").take(MAX_LENGTH)
         FirebaseCrashlytics.getInstance().apply {
-            recordException(ReportedAnswer("$languageCode/${style?.name ?: "unknown"}: $said"))
+            recordException(ReportedAnswer("$languageCode/${style?.name ?: "unknown"}/${reason.name}: $said"))
             // Not left for the next time the app starts.
             sendUnsentReports()
         }

@@ -39,7 +39,9 @@ class DefaultPromptPolicy @Inject constructor(
             val motif = it.motif?.let { motif -> " Nothing was asked. If it comes naturally, bring up: $motif." }.orEmpty()
             val examples = it.examples.takeIf { lines -> lines.isNotEmpty() }
                 ?.joinToString(separator = " | ", prefix = " ${rules.examples} ", postfix = ".").orEmpty()
-            val remark = if (it.withRemark) {
+            val remark = if (it.detailed) {
+                " " + rules.reading
+            } else if (it.withRemark) {
                 " " + rules.remark + it.remarkExample?.let { sample ->
                     " As an illustration only, never to be reused: asked '${sample.question}', it said '${sample.remark}'."
                 }.orEmpty()

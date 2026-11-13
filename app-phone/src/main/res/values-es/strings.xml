@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
-    <string name="hint_hold">Mantén presionado o agita para preguntar</string>
+    <string name="hint_hold">Toca o agita para preguntar.\nMantén presionado para hablar.</string>
     <string name="hint_tap">Toca o agita para preguntar</string>
-    <string name="streak_days">%1$d días seguidos</string>
     <string name="hint_listening">Te escucho…</string>
     <string name="hint_speak">Haz una pregunta de sí o no</string>
     <string name="hint_thinking">Pensando…</string>
-    <string name="notice_microphone_denied">Para preguntar por voz, permite el acceso al micrófono. También puedes tocar o agitar.</string>
-    <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas. Toca o agita para preguntar.</string>
+    <string name="notice_microphone_denied">Para preguntar por voz, permite el acceso al micrófono.</string>
+    <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas.</string>
 
     <!-- Result -->
     <string name="question_quoted">“%1$s”</string>
@@ -54,7 +53,7 @@
     <string name="style_grandma">Abuela</string>
     <string name="style_pirate">Pirata</string>
     <string name="style_philosopher">Filósofo</string>
-    <string name="style_coach">Coach</string>
+    <string name="style_coach">Entrenador</string>
     <string name="style_lovestruck">Amor ciego</string>
     <string name="style_drama">Telenovela</string>
     <string name="style_robot">Robot</string>
@@ -94,46 +93,42 @@
     <string name="styles_group_movies">De película</string>
     <string name="styles_group_attitude">Con actitud</string>
     <string name="settings_ai">Respuestas con IA</string>
-    <string name="settings_ai_on">Generadas al momento</string>
-    <string name="settings_ai_off">La bola responde por su cuenta</string>
-    <string name="settings_ai_unavailable">No disponible por ahora. La bola sigue respondiendo</string>
-    <string name="settings_ai_classic">El estilo Clásico no usa IA. Elige otro para activarla</string>
+    <string name="settings_ai_on">Escritas al momento</string>
+    <string name="settings_ai_unavailable">No disponible por ahora</string>
+    <string name="settings_ai_classic">El estilo Clásico no usa IA</string>
     <string name="settings_ai_spent">Ya usaste las de hoy. Vuelven mañana</string>
     <string name="settings_ai_more">Consigue más respuestas con IA hoy</string>
     <string name="settings_ai_more_hint">Mira un anuncio corto para seguir</string>
     <string name="settings_voice">Preguntas por voz</string>
     <string name="settings_voice_on">Mantén presionada la bola y habla</string>
-    <string name="settings_voice_off">Solo tocar o agitar</string>
     <string name="settings_voice_denied">Necesita acceso al micrófono</string>
     <string name="settings_voice_unsupported">No disponible en este dispositivo</string>
-    <string name="settings_voice_allow">Permitir</string>
     <string name="party_turn">%1$s, te toca</string>
-    <string name="party_who">¿Quién de ustedes…?</string>
+    <string name="party_who">¿Quién del grupo…?</string>
     <string name="widget_description">Magic AI Ball. Toca para ver una respuesta</string>
     <string name="settings_party">Modo fiesta</string>
-    <string name="settings_party_off">Agrega nombres para jugar por turnos</string>
+    <string name="settings_party_off">Añade nombres para jugar por turnos</string>
     <string name="party_dialog_note">La bola anuncia el turno de cada persona y puede elegir a alguien del grupo.</string>
     <string name="party_turn_off">Desactivar</string>
     <string name="party_name_hint">Nombre</string>
-    <string name="action_add">Agregar</string>
+    <string name="action_add">Añadir</string>
     <string name="party_remove">Quitar a %1$s</string>
     <string name="party_count">%1$d de %2$d personas</string>
-    <string name="party_need_more">Agrega al menos dos personas</string>
+    <string name="party_need_more">Añade al menos dos personas</string>
     <string name="action_save">Guardar</string>
-    <string name="settings_spoken">Respuestas habladas</string>
-    <string name="settings_spoken_on">La bola dice su respuesta en voz alta</string>
-    <string name="settings_spoken_off">Las respuestas solo aparecen en pantalla</string>
+    <string name="settings_detailed">Respuestas más largas</string>
+    <string name="settings_detailed_on">La bola se explica en unas frases</string>
+    <string name="settings_spoken">Respuestas en voz alta</string>
+    <string name="settings_spoken_on">La bola también dice su respuesta</string>
     <string name="settings_share_app">Compartir la app</string>
     <string name="settings_share_app_hint">Cuéntale a alguien sobre Magic AI Ball</string>
     <string name="share_app_text">Pregúntale lo que quieras a Magic AI Ball: %1$s</string>
-    <string name="action_report">Reportar</string>
-    <string name="report_done">Reportada. Gracias</string>
-    <string name="report_label">Reportar esta respuesta como inapropiada</string>
+    <string name="report_done">Reportada. Gracias.</string>
+    <string name="report_label">Reportar esta respuesta</string>
     <string name="action_share">Compartir</string>
     <string name="rate_good">Buena respuesta</string>
     <string name="rate_bad">Mala respuesta</string>
     <string name="action_read_aloud">Leer la respuesta en voz alta</string>
-    <string name="brand_tagline">Respuestas escritas por IA</string>
     <string name="options_answers">Respuestas</string>
     <string name="options_asking">Preguntas</string>
     <string name="options_general">General</string>
@@ -149,11 +144,26 @@
     <string name="settings_daily_blocked">Las notificaciones están desactivadas para esta app</string>
     <string name="settings_daily_allow">Permitir notificaciones</string>
     <string name="settings_daily_allow_hint">Abre los ajustes de notificaciones de la app</string>
-    <string name="settings_daily_off">Sin notificación diaria</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">El servicio de voz de tu dispositivo convierte tu pregunta en texto, que se envía a Gemini, de Google, para responderla. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
     <string name="privacy_voice_only">El servicio de voz de tu dispositivo convierte tu pregunta en texto. No se envía a Gemini. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
     <string name="privacy_ai_only">Las respuestas vienen de Gemini, de Google. La app no escucha y no se envía ninguna pregunta. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
     <string name="privacy_none">Las respuestas vienen de la propia app. La app no escucha y no se envía ninguna pregunta. Las respuestas se guardan en Recientes, solo en este dispositivo.</string>
+    <string name="action_back_to_ball">Volver a la bola</string>
+    <string name="report_state_done">Respuesta reportada</string>
+    <string name="settings_detailed_needs_ai">Requiere Respuestas con IA</string>
+    <string name="settings_voice_allow_microphone">Permitir micrófono</string>
+    <plurals name="streak_days">
+        <item quantity="one">%1$d día seguido</item>
+        <item quantity="other">%1$d días seguidos</item>
+    </plurals>
+    <string name="report_title">¿Qué tiene de malo esta respuesta?</string>
+    <string name="report_reason_offensive">Es ofensiva</string>
+    <string name="report_reason_inappropriate">Es sexual o inapropiada</string>
+    <string name="report_reason_harmful">Puede hacer daño</string>
+    <string name="report_reason_nonsense">No tiene sentido</string>
+    <string name="report_reason_other">Otra cosa</string>
+    <string name="report_hint">Elige una opción y se envía.</string>
+    <string name="settings_voice_allow_hint">Para preguntar en voz alta</string>
 </resources>

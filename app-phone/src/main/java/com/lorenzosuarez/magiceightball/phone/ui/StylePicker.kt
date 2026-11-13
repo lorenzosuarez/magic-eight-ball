@@ -303,11 +303,11 @@ internal fun StylesContent(
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = HANDLE_ALPHA))
         )
-        AppIconButton(
+        BarIconButton(
             icon = R.drawable.ic_close,
             description = stringResource(R.string.action_close),
             onClick = onClose,
-            modifier = Modifier.padding(start = 4.dp)
+            modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)
         )
         // Only once something has scrolled under the header is there an edge worth drawing.
         HorizontalDivider(
@@ -342,11 +342,11 @@ internal fun StylesContent(
                 Text(
                     text = stringResource(group.title),
                     modifier = Modifier
-                        .padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 12.dp)
+                        .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
                         .semantics { heading() },
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    // Named as the subjects on the options page are: one way of heading a group.
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 // Two rows to a group, so that most of it shows at once: the group opens on the
                 // chosen style when it holds it, with the column before in sight.

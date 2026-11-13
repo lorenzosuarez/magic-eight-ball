@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.ReportReason
 import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.model.Streak
@@ -132,7 +133,13 @@ class EightBallViewModelTest {
         val sent = mutableListOf<String>()
         val viewModel = createViewModel(
             reports = object : AnswerReports {
-                override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) {
+                override fun report(
+                    answer: String,
+                    remark: String?,
+                    style: Magic8BallPersonality?,
+                    languageCode: String,
+                    reason: ReportReason
+                ) {
                     sent += "$languageCode/$style: $answer | $remark"
                 }
             }
@@ -803,9 +810,10 @@ class EightBallViewModelTest {
         assertEquals(VoiceStatus.PermissionDenied, viewModel.state.value?.voice)
         assertEquals(Notice.MicrophoneDenied, viewModel.state.value?.notice)
 
+        // It comes with the way out of it, so it is not taken away while it may still be read.
         advanceTimeBy(EightBallViewModel.NOTICE_DURATION_MS)
         runCurrent()
-        assertNull(viewModel.state.value?.notice)
+        assertEquals(Notice.MicrophoneDenied, viewModel.state.value?.notice)
 
         // A hold is still someone wanting to speak: asked again, and no answer to nothing.
         viewModel.onHoldStart()
@@ -1245,6 +1253,10 @@ class EightBallViewModelTest {
 
         override suspend fun setVoiceQuestionsEnabled(enabled: Boolean) {
             saved.update { it?.copy(voiceQuestionsEnabled = enabled) }
+        }
+
+        override suspend fun setDetailedAnswers(enabled: Boolean) {
+            saved.update { it?.copy(detailedAnswers = enabled) }
         }
 
         override suspend fun setSpokenAnswersEnabled(enabled: Boolean) {

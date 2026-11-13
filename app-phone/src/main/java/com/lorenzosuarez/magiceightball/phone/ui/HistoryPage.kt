@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -80,13 +84,21 @@ internal fun HistoryContent(
             EmptyHistory(Modifier.weight(1f))
         } else {
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                items(entries, key = { it.id }) { entry ->
-                    HistoryRow(entry, now, onDelete, onOpen, Modifier.animateItem())
+                itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
+                    HistoryRow(
+                        entry = entry,
+                        now = now,
+                        onDelete = onDelete,
+                        onOpen = onOpen,
+                        first = index == 0,
+                        last = index == entries.lastIndex,
+                        modifier = Modifier.animateItem()
+                    )
                 }
                 item {
                     Text(
                         text = stringResource(R.string.history_footer),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -130,9 +142,20 @@ private fun HistoryRow(
     now: Long,
     onDelete: (HistoryEntry) -> Unit,
     onOpen: (HistoryEntry) -> Unit,
+    first: Boolean,
+    last: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    // The rows are one card, as on the options page: the first and the last round its corners.
+    val top = if (first) CARD_CORNER else 0.dp
+    val bottom = if (last) CARD_CORNER else 0.dp
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+    ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -188,11 +211,13 @@ private fun HistoryRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 16.dp),
-        thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
-    )
+    if (!last) {
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 16.dp),
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+    }
     }
 }
 
@@ -261,3 +286,5 @@ private fun EmptyHistory(modifier: Modifier = Modifier) {
 private const val EMPTY_ABOVE = 2f
 private const val EMPTY_BELOW = 3f
 private const val EMPTY_ART_ALPHA = 0.6f
+
+private val CARD_CORNER = 16.dp

@@ -11,10 +11,25 @@ interface AnswerReports {
      * Sends what the ball said, as it was written. Never what was asked, and nothing about who
      * asked: the report is about the answer.
      */
-    fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String)
+    fun report(
+        answer: String,
+        remark: String?,
+        style: Magic8BallPersonality?,
+        languageCode: String,
+        reason: ReportReason = ReportReason.OTHER
+    )
 
     /** For where there is nowhere to send them: tests, and builds without the service. */
     object None : AnswerReports {
-        override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) = Unit
+        override fun report(
+            answer: String,
+            remark: String?,
+            style: Magic8BallPersonality?,
+            languageCode: String,
+            reason: ReportReason
+        ) = Unit
     }
 }
+
+/** What the user says is wrong with an answer: a few plain choices, so that reporting takes one touch. */
+enum class ReportReason { OFFENSIVE, INAPPROPRIATE, HARMFUL, NONSENSE, OTHER }
