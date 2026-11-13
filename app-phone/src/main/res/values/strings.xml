@@ -99,7 +99,6 @@
     <string name="styles_group_attitude">With attitude</string>
     <string name="settings_ai">AI answers</string>
     <string name="settings_ai_on">Written on the spot</string>
-    <string name="settings_ai_off">The ball answers on its own</string>
     <string name="settings_ai_unavailable">Not available right now. The ball still answers</string>
     <string name="settings_ai_classic">The Classic style doesn\'t use AI. Pick another style to turn it on</string>
     <string name="settings_ai_spent">You\'ve used today\'s AI answers. More tomorrow</string>
@@ -107,7 +106,6 @@
     <string name="settings_ai_more_hint">Watch a short ad to keep going</string>
     <string name="settings_voice">Voice questions</string>
     <string name="settings_voice_on">Hold the ball and ask out loud</string>
-    <string name="settings_voice_off">Tap or shake only</string>
     <string name="settings_voice_denied">Needs access to the microphone</string>
     <string name="settings_voice_unsupported">Not available on this device</string>
     <string name="settings_voice_allow">Allow</string>
@@ -126,15 +124,13 @@
     <string name="action_save">Save</string>
     <string name="settings_detailed">Longer answers</string>
     <string name="settings_detailed_on">The ball explains itself in a few sentences</string>
-    <string name="settings_detailed_off">A short answer and nothing more</string>
     <string name="settings_spoken">Spoken answers</string>
     <string name="settings_spoken_on">The ball says its answer out loud</string>
-    <string name="settings_spoken_off">Answers appear on screen only</string>
     <string name="settings_share_app">Share the app</string>
     <string name="settings_share_app_hint">Tell someone about Magic AI Ball</string>
     <string name="share_app_text">Ask Magic AI Ball anything: %1$s</string>
     <string name="report_done">Reported. Thank you.</string>
-    <string name="report_label">Report this answer as inappropriate</string>
+    <string name="report_label">Report this answer</string>
     <string name="action_share">Share</string>
     <string name="rate_good">Good answer</string>
     <string name="rate_bad">Bad answer</string>
@@ -155,7 +151,6 @@
     <string name="settings_daily_blocked">Notifications are off for this app</string>
     <string name="settings_daily_allow">Allow notifications</string>
     <string name="settings_daily_allow_hint">Opens this app\'s notification settings</string>
-    <string name="settings_daily_off">No daily notification</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">Your spoken question is turned into text by your device\'s speech service and sent to Google\'s Gemini for the answer. Your questions and answers are saved in Recents, on this device only.</string>
@@ -172,4 +167,10 @@
         <item quantity="one">%1$d-day streak</item>
         <item quantity="other">%1$d-day streak</item>
     </plurals>
+    <string name="report_title">What\'s wrong with this answer?</string>
+    <string name="report_reason_offensive">It\'s offensive</string>
+    <string name="report_reason_inappropriate">It\'s sexual or inappropriate</string>
+    <string name="report_reason_harmful">It could cause harm</string>
+    <string name="report_reason_nonsense">It makes no sense</string>
+    <string name="report_reason_other">Something else</string>
 </resources>

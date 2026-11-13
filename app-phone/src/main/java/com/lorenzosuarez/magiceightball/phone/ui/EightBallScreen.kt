@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.gateway.ReportReason
+import kotlin.math.roundToInt
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -412,9 +416,9 @@ fun EightBallScreen(
                     context.shareAnswer(picture, shareAnswerText)
                     viewModel.onAnswerShared()
                 },
-                onReportAnswer = {
+                onReportAnswer = { reason ->
                     tick(HapticFeedbackConstantsCompat.CONFIRM)
-                    viewModel.reportAnswer()
+                    viewModel.reportAnswer(reason)
                 },
                 onRateAnswer = { liked ->
                     tick(HapticFeedbackConstantsCompat.CONTEXT_CLICK)
@@ -461,7 +465,7 @@ internal fun EightBallContent(
     onShowHistoryEntry: (HistoryEntry) -> Unit = {},
     onAllowMicrophone: () -> Unit = {},
     onShareAnswer: (ImageBitmap) -> Unit = {},
-    onReportAnswer: () -> Unit = {},
+    onReportAnswer: (ReportReason) -> Unit = {},
     onRateAnswer: (Boolean) -> Unit = {},
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
@@ -481,6 +485,21 @@ internal fun EightBallContent(
     val deletedMessage = stringResource(R.string.history_deleted)
     val undoLabel = stringResource(R.string.action_undo)
     val reportedMessage = stringResource(R.string.report_done)
+    // Reporting asks one thing first, what is wrong, and the answer to that sends it.
+    var reporting by rememberSaveable { mutableStateOf(false) }
+    if (reporting && state.phase is BallPhase.Answered) {
+        ReportSheet(
+            onReason = { reason ->
+                reporting = false
+                onReportAnswer(reason)
+                scope.launch {
+                    snackbars.currentSnackbarData?.dismiss()
+                    snackbars.showSnackbar(reportedMessage, duration = SnackbarDuration.Short)
+                }
+            },
+            onClose = { reporting = false }
+        )
+    }
     val deleteWithUndo: (HistoryEntry) -> Unit = { entry ->
         onDeleteHistoryEntry(entry.id)
         scope.launch {
@@ -572,13 +591,7 @@ internal fun EightBallContent(
                             busy = busy,
                             onDismiss = onDismiss,
                             onSpeakAnswer = onSpeakAnswer,
-                            onReport = {
-                                onReportAnswer()
-                                scope.launch {
-                                    snackbars.currentSnackbarData?.dismiss()
-                                    snackbars.showSnackbar(reportedMessage, duration = SnackbarDuration.Short)
-                                }
-                            },
+                            onReport = { reporting = true },
                             onOpenHistory = { scope.launch { pagerState.animateScrollToPage(HISTORY_PAGE) } },
                             onOpenOptions = { scope.launch { pagerState.animateScrollToPage(OPTIONS_PAGE) } },
                             modifier = Modifier.fillMaxSize().graphicsLayer { alpha = intro() }
@@ -816,10 +829,14 @@ private fun Stage(
         val density = LocalDensity.current
         val measurer = rememberTextMeasurer()
         val answerText = (state.phase as? BallPhase.Answered)?.answer?.text()
-        val answerSmall = remember(answerText, ballSize, density) {
-            answerText != null &&
-                (answerTextSizeOnBall(answerText, ballSize, density, measurer) ?: ANSWER_READABLE) < ANSWER_READABLE
+        val answerOnDie = remember(answerText, ballSize, density) {
+            answerText?.let { answerTextSizeOnBall(it, ballSize, density, measurer) }
         }
+        // Found out while laying out: the ball has given way to what there is to read so far
+        // that its die no longer reads. Once that is so for an answer, it stays so.
+        val answerId = (state.phase as? BallPhase.Answered)?.id
+        var dieTooSmall by remember(answerId) { mutableStateOf(false) }
+        val answerSmall = dieTooSmall || (answerOnDie != null && answerOnDie < ANSWER_READABLE)
         // On a dark screen a black ball has no outline of its own: a light behind it gives it one.
         val glow = if (MaterialTheme.colorScheme.onSurface.luminance() > 0.5f) BallGlow else Color.Transparent
         val band = Modifier
@@ -873,30 +890,49 @@ private fun Stage(
                     onShareAnswer = onShareAnswer,
                     onRateAnswer = onRateAnswer,
                     onAskWho = onAskWho,
-                    modifier = band.padding(bottom = 16.dp).heightIn(min = 48.dp)
+                    modifier = band.padding(top = 8.dp, bottom = 16.dp).heightIn(min = 48.dp)
                 )
             }
         ) { measurables, constraints ->
-            val (status, title, ball, caption, actions) =
-                measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Constraints.Infinity)) }
             val width = constraints.maxWidth
             val height = constraints.maxHeight
-            // What the ball grows by to show an answer, and then room to breathe: the same on a
-            // large ball as on a small one.
-            val gap = (ballSize * ANSWER_GROWTH_REACH + BALL_BREATHING).roundToPx()
-            // In the middle between the bar above and the bottom edge, which is a little higher than
-            // the middle of this page, and it stays there whatever is written around it; it only
-            // gives way upwards when what stands under it would not fit otherwise.
-            val middle = (height - ball.height) / 2 - TOP_BAR_HEIGHT.roundToPx() / 2
-            val ballTop = minOf(
-                maxOf(middle, title.height + gap),
-                height - actions.height - caption.height - gap - ball.height
-            ).coerceAtLeast(0)
+            val loose = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Constraints.Infinity)
+            val status = measurables[0].measure(loose)
+            val title = measurables[1].measure(loose)
+            val ball = measurables[2].measure(loose)
+            val actions = measurables[4].measure(loose)
+            val breath = BALL_BREATHING.roundToPx()
+            // The room the ball is given is the size it grows to with an answer on it, in every
+            // state, so that what stands around it does not move when it grows.
+            val full = ball.height * (1f + ANSWER_GROWTH)
+            val smallest = minOf(BALL_MIN_SEEN.toPx(), full)
+            // What is written under the ball takes what it needs, short of pushing the ball under
+            // its smallest: past that it scrolls where it is, and never runs into what is below it.
+            val around = title.height + actions.height + breath * 2
+            val caption = measurables[3].measure(
+                loose.copy(maxHeight = (height - around - smallest.roundToInt()).coerceAtLeast(0))
+            )
+            // The ball gives way to what there is to read: as large as the room left allows.
+            val seen = (height - around - caption.height).toFloat().coerceIn(smallest, full)
+            val fit = seen / full
+            if (!dieTooSmall && answerOnDie != null && answerOnDie * fit < ANSWER_READABLE) dieTooSmall = true
+            // In the middle between the bar above and the bottom edge, which is a little higher
+            // than the middle of this page; it moves from there only to make room.
+            val highest = (title.height + breath).toFloat()
+            val middle = (height - seen) / 2f - TOP_BAR_HEIGHT.toPx() / 2f
+            val lowest = height - actions.height - caption.height - breath - seen
+            val top = minOf(maxOf(middle, highest), lowest).coerceAtLeast(highest)
             layout(width, height) {
                 status.place((width - status.width) / 2, 0)
-                title.place((width - title.width) / 2, ballTop - gap - title.height)
-                ball.place((width - ball.width) / 2, ballTop)
-                caption.place((width - caption.width) / 2, ballTop + ball.height + gap)
+                title.place((width - title.width) / 2, (top - breath - title.height).roundToInt())
+                ball.placeWithLayer(
+                    x = (width - ball.width) / 2,
+                    y = (top + seen / 2f - ball.height / 2f).roundToInt()
+                ) {
+                    scaleX = fit
+                    scaleY = fit
+                }
+                caption.place((width - caption.width) / 2, (top + seen + breath).roundToInt())
                 actions.place((width - actions.width) / 2, height - actions.height)
             }
         }
@@ -1119,7 +1155,8 @@ private fun Caption(state: EightBallUiState, answerSmall: Boolean, modifier: Mod
             )
             is BallPhase.Thinking -> QuietText(phase.question.quoted())
             is BallPhase.Answered -> Column(
-                modifier = Modifier.fillMaxWidth(),
+                // Where there is more to read than room for it, it scrolls in its own place.
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -1496,9 +1533,10 @@ private val BALL_MIN_SIZE = 160.dp
 
 /** Wide enough for the ball to grow into when it shows an answer. */
 private val BALL_GAP = 56.dp
-/** How far past its own edge the ball reaches when it has grown, as a part of its size, and the air left after that. */
-private const val ANSWER_GROWTH_REACH = 0.15f
+/** The air between the ball and what stands over and under it. */
 private val BALL_BREATHING = 24.dp
+/** As small as the ball is ever seen, however much there is to read under it. */
+private val BALL_MIN_SEEN = 132.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
 

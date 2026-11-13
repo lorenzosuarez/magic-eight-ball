@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.ReportReason
 import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.AiAllowance
 import com.example.magiceightball.core.domain.model.Streak
@@ -132,7 +133,13 @@ class EightBallViewModelTest {
         val sent = mutableListOf<String>()
         val viewModel = createViewModel(
             reports = object : AnswerReports {
-                override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) {
+                override fun report(
+                    answer: String,
+                    remark: String?,
+                    style: Magic8BallPersonality?,
+                    languageCode: String,
+                    reason: ReportReason
+                ) {
                     sent += "$languageCode/$style: $answer | $remark"
                 }
             }

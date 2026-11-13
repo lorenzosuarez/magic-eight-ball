@@ -444,6 +444,49 @@ class EightBallScreenshotTest {
         }
     }
 
+    /** As much as the page ever holds: a long question, an answer too long for the die, a reading and a signature. */
+    private fun crowded() = EightBallUiState(
+        settings = UserSettings(
+            language = AppLanguage.SPANISH,
+            personality = Magic8BallPersonality.CONSPIRACY,
+            detailedAnswers = true
+        ),
+        aiAnswersAvailable = true,
+        phase = BallPhase.Answered(
+            id = 0,
+            question = "¿De verdad este va a ser el año en que por fin todo cambie para mí y para los míos?",
+            answer = AnswerText.Plain(
+                "Definitivamente no, según mis fuentes confidenciales.",
+                fromAi = true,
+                remark = LONG_READING
+            ),
+            style = Magic8BallPersonality.CONSPIRACY
+        )
+    )
+
+    @Test
+    fun phone_crowded_answer_spanish() = capture("phone_42_crowded_answer_spanish", crowded())
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_crowded_answer_spanish() = capture("phone_43_small_phone_crowded_answer_spanish", crowded())
+
+    @Test
+    fun phone_crowded_answer_large_font() =
+        capture("phone_44_crowded_answer_large_font", crowded(), fontScale = 1.5f)
+
+    /** What is asked before an answer is reported. */
+    @Test
+    fun report_reasons_spanish() = captureRoboImage(filePath = path("phone_45_report_reasons_spanish")) {
+        MagicEightBallPhoneTheme(dark = false) {
+            ProvideAppLanguage(AppLanguage.SPANISH) {
+                Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    ReportContent(onReason = {}, modifier = Modifier.padding(top = 24.dp))
+                }
+            }
+        }
+    }
+
     /** On, and the system is not letting the app notify: said as a warning, with the way to allow it. */
     @Test
     fun phone_settings_daily_verdict_blocked_spanish() =

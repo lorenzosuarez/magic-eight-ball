@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.gateway.ReportReason
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.magiceightball.core.domain.model.Streak
@@ -294,11 +295,11 @@ class EightBallViewModel @Inject constructor(
      * The user says the answer on screen should not have been given. Only what the AI service
      * wrote can be reported: the app's own answers were read before they were shipped.
      */
-    fun reportAnswer() {
+    fun reportAnswer(reason: ReportReason = ReportReason.OTHER) {
         val shown = phase.value as? BallPhase.Answered ?: return
         val said = shown.answer as? AnswerText.Plain ?: return
         if (!said.fromAi || shown.reported) return
-        reports.report(said.value, said.remark, shown.style, settings.value?.language?.code ?: "en")
+        reports.report(said.value, said.remark, shown.style, settings.value?.language?.code ?: "en", reason)
         phase.value = shown.copy(reported = true)
     }
 

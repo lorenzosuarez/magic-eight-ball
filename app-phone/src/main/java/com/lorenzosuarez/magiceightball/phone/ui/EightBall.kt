@@ -739,7 +739,7 @@ private const val HALO_REST = 0.6f
 private const val HALO_ALPHA = 0.05f
 
 /** How much larger the ball is while it shows an answer, so the answer can be read. */
-private const val ANSWER_GROWTH = 0.3f
+internal const val ANSWER_GROWTH = 0.3f
 
 /** Rings while listening: how far each one stands from the next, relative to the ball's radius. */
 private const val RING_COUNT = 3

@@ -94,7 +94,6 @@
     <string name="styles_group_attitude">Con actitud</string>
     <string name="settings_ai">Respuestas con IA</string>
     <string name="settings_ai_on">Escritas al momento</string>
-    <string name="settings_ai_off">La bola responde por su cuenta</string>
     <string name="settings_ai_unavailable">No disponible por ahora. La bola sigue respondiendo</string>
     <string name="settings_ai_classic">El estilo Clásico no usa IA. Elige otro para activarla</string>
     <string name="settings_ai_spent">Ya usaste las de hoy. Vuelven mañana</string>
@@ -102,7 +101,6 @@
     <string name="settings_ai_more_hint">Mira un anuncio corto para seguir</string>
     <string name="settings_voice">Preguntas por voz</string>
     <string name="settings_voice_on">Mantén presionada la bola y habla</string>
-    <string name="settings_voice_off">Solo tocar o agitar</string>
     <string name="settings_voice_denied">Necesita acceso al micrófono</string>
     <string name="settings_voice_unsupported">No disponible en este dispositivo</string>
     <string name="settings_voice_allow">Permitir</string>
@@ -121,15 +119,13 @@
     <string name="action_save">Guardar</string>
     <string name="settings_detailed">Respuestas más largas</string>
     <string name="settings_detailed_on">La bola se explica en unas frases</string>
-    <string name="settings_detailed_off">Una respuesta corta y nada más</string>
     <string name="settings_spoken">Respuestas en voz alta</string>
     <string name="settings_spoken_on">La bola también dice su respuesta</string>
-    <string name="settings_spoken_off">Las respuestas solo aparecen en pantalla</string>
     <string name="settings_share_app">Compartir la app</string>
     <string name="settings_share_app_hint">Cuéntale a alguien sobre Magic AI Ball</string>
     <string name="share_app_text">Pregúntale lo que quieras a Magic AI Ball: %1$s</string>
     <string name="report_done">Reportada. Gracias.</string>
-    <string name="report_label">Reportar esta respuesta como inapropiada</string>
+    <string name="report_label">Reportar esta respuesta</string>
     <string name="action_share">Compartir</string>
     <string name="rate_good">Buena respuesta</string>
     <string name="rate_bad">Mala respuesta</string>
@@ -149,7 +145,6 @@
     <string name="settings_daily_blocked">Las notificaciones están desactivadas para esta app</string>
     <string name="settings_daily_allow">Permitir notificaciones</string>
     <string name="settings_daily_allow_hint">Abre los ajustes de notificaciones de la app</string>
-    <string name="settings_daily_off">Sin notificación diaria</string>
 
     <!-- Privacy note in settings: one per combination of what is in use -->
     <string name="privacy_voice_and_ai">El servicio de voz de tu dispositivo convierte tu pregunta en texto, que se envía a Gemini, de Google, para responderla. Tus preguntas y respuestas se guardan en Recientes, solo en este dispositivo.</string>
@@ -164,4 +159,10 @@
         <item quantity="one">%1$d día seguido</item>
         <item quantity="other">%1$d días seguidos</item>
     </plurals>
+    <string name="report_title">¿Qué tiene de malo esta respuesta?</string>
+    <string name="report_reason_offensive">Es ofensiva</string>
+    <string name="report_reason_inappropriate">Es sexual o inapropiada</string>
+    <string name="report_reason_harmful">Puede hacer daño</string>
+    <string name="report_reason_nonsense">No tiene sentido</string>
+    <string name="report_reason_other">Otra cosa</string>
 </resources>

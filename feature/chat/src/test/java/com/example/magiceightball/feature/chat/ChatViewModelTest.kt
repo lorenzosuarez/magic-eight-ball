@@ -1,5 +1,6 @@
 package com.example.magiceightball.feature.chat
 
+import com.example.magiceightball.core.domain.gateway.ReportReason
 import com.example.magiceightball.core.domain.gateway.AiAnswersAvailability
 import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.LlmGateway
@@ -848,7 +849,13 @@ class ChatViewModelTest {
     private class FakeAnswerReports : AnswerReports {
         val sent = mutableListOf<String>()
 
-        override fun report(answer: String, remark: String?, style: Magic8BallPersonality?, languageCode: String) {
+        override fun report(
+                    answer: String,
+                    remark: String?,
+                    style: Magic8BallPersonality?,
+                    languageCode: String,
+                    reason: ReportReason
+                ) {
             sent += "$languageCode/$style: $answer | $remark"
         }
     }
