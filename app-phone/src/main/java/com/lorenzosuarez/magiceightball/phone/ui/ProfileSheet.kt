@@ -58,7 +58,9 @@ import com.example.magiceightball.core.common.BrandPalette
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.R
+import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
 import com.lorenzosuarez.magiceightball.phone.account.ProfileRules
@@ -74,20 +76,23 @@ import kotlinx.coroutines.launch
 internal fun AccountPrompts(
     state: EightBallUiState,
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome,
-    onDeclineProfile: suspend () -> Unit,
+    onDeclineProfile: suspend () -> AccountOutcome,
     onOpenPrivacyPolicy: () -> Unit,
     onAgeNoticeSeen: () -> Unit
 ) {
     // Open from the moment a profile is needed until the sheet has closed itself, so that it
-    // closes as a sheet does and not by vanishing with the account.
+    // closes as a sheet does and not by vanishing with the account. Asked again whenever it is
+    // needed and not being asked: a sheet that closed does not end the need.
     var asking by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(state.needsProfile) { if (state.needsProfile) asking = true }
+    LaunchedEffect(state.needsProfile, asking) { if (state.needsProfile && !asking) asking = true }
     if (asking) {
         ProfileSheet(
             profile = null,
             // Google's name for the account, down to its first word: a start, to be corrected.
             suggestedName = (state.account as? AccountState.SignedIn)?.name?.trim()?.substringBefore(' ').orEmpty(),
-            gone = !state.needsProfile,
+            // Gone once it is answered or there is nobody to ask: not while the profile is only
+            // unheard of, which a lost connection makes it for a while.
+            gone = state.account !is AccountState.SignedIn || state.profile is ProfileState.Present || !state.offersAccount,
             onSave = onSaveProfile,
             onDecline = onDeclineProfile,
             onOpenPrivacyPolicy = onOpenPrivacyPolicy,
@@ -96,7 +101,10 @@ internal fun AccountPrompts(
     } else if (state.ageNotice) {
         // The dialog is a window of its own: its texts are read here, in the app's language.
         val title = stringResource(R.string.age_notice_title)
-        val text = stringResource(R.string.age_notice_text)
+        // Said to be deleted only when it was: an account that could not be reached is still there.
+        val text = stringResource(
+            if (state.account is AccountState.SignedIn) R.string.age_notice_text_pending else R.string.age_notice_text
+        )
         val understood = stringResource(R.string.action_understood)
         AlertDialog(
             onDismissRequest = onAgeNoticeSeen,
@@ -126,7 +134,7 @@ internal fun ProfileSheet(
     suggestedName: String,
     gone: Boolean,
     onSave: suspend (String, LocalDate) -> ProfileOutcome,
-    onDecline: (suspend () -> Unit)?,
+    onDecline: (suspend () -> AccountOutcome)?,
     onOpenPrivacyPolicy: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -137,7 +145,7 @@ internal fun ProfileSheet(
         ProfileDraft(profile?.firstName ?: ProfileRules.nameOrNull(suggestedName).orEmpty(), profile?.birthDate)
     }
     var busy by remember { mutableStateOf(false) }
-    var failed by rememberSaveable { mutableStateOf(false) }
+    var trouble by rememberSaveable { mutableStateOf<ProfileTrouble?>(null) }
     // Up once the sheet is leaving by its own doing: until then, asked for the first time, it stays.
     var leaving by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(
@@ -168,12 +176,12 @@ internal fun ProfileSheet(
                 firstTime = firstTime,
                 today = today,
                 busy = busy,
-                failed = failed,
+                trouble = trouble?.let { stringResource(it.message) },
                 onSave = { name, date ->
                     if (!busy) {
                         scope.launch {
                             busy = true
-                            failed = false
+                            trouble = null
                             val outcome = try {
                                 onSave(name, date)
                             } finally {
@@ -182,7 +190,8 @@ internal fun ProfileSheet(
                             // An under-age date takes the account away, which closes the sheet.
                             when (outcome) {
                                 ProfileOutcome.SAVED -> leave()
-                                ProfileOutcome.FAILED -> failed = true
+                                ProfileOutcome.FAILED -> trouble = ProfileTrouble.NOT_SAVED
+                                ProfileOutcome.REFUSED -> trouble = ProfileTrouble.REFUSED
                                 ProfileOutcome.UNDER_AGE -> Unit
                             }
                         }
@@ -194,10 +203,16 @@ internal fun ProfileSheet(
                     } else if (!busy) {
                         scope.launch {
                             busy = true
-                            try {
+                            trouble = null
+                            val outcome = try {
                                 onDecline()
                             } finally {
                                 busy = false
+                            }
+                            // Gone, the account closes the sheet. Still there, the user is told
+                            // and can try again; backing out of Google's own question needs no telling.
+                            if (outcome != AccountOutcome.DONE && outcome != AccountOutcome.CANCELLED) {
+                                trouble = ProfileTrouble.ACCOUNT_KEPT
                             }
                         }
                     }
@@ -209,10 +224,21 @@ internal fun ProfileSheet(
     }
 }
 
+/** What can stand between the sheet's buttons and what they do, and how each is said. */
+internal enum class ProfileTrouble(val message: Int) {
+    NOT_SAVED(R.string.profile_save_failed),
+
+    /** The server's clock and the device's disagree about the date: it is the date to look at. */
+    REFUSED(R.string.profile_date_invalid),
+
+    /** Going on without an account could not delete the one just made. */
+    ACCOUNT_KEPT(R.string.account_delete_failed)
+}
+
 /** What is being typed into the profile, until it is saved or given up. */
 @Stable
 internal class ProfileDraft(name: String = "", birthDate: LocalDate? = null) {
-    var name by mutableStateOf(name.take(AskerFacts.MAX_NAME_LENGTH))
+    var name by mutableStateOf(AskerFacts.cut(name))
         private set
     var day by mutableStateOf(birthDate?.dayOfMonth?.toString().orEmpty())
         private set
@@ -222,7 +248,7 @@ internal class ProfileDraft(name: String = "", birthDate: LocalDate? = null) {
         private set
 
     fun typeName(typed: String) {
-        name = typed.take(AskerFacts.MAX_NAME_LENGTH)
+        name = AskerFacts.cut(typed)
     }
 
     fun typeDay(typed: String) {
@@ -265,7 +291,7 @@ internal class ProfileDraft(name: String = "", birthDate: LocalDate? = null) {
  * what never is, and the button that is the user's agreement to it. A date that cannot be one
  * is said under the date; a save that failed, by the button.
  *
- * @param failed whether the last try to save could not reach the server.
+ * @param trouble what the last touch of a button could not do, if anything.
  * @param onSecondary "not now" the first time, and cancelling over a profile that exists.
  */
 @Composable
@@ -274,7 +300,7 @@ internal fun ProfileContent(
     firstTime: Boolean,
     today: LocalDate,
     busy: Boolean,
-    failed: Boolean,
+    trouble: String?,
     onSave: (String, LocalDate) -> Unit,
     onSecondary: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
@@ -284,8 +310,8 @@ internal fun ProfileContent(
     val date = draft.date(today)
     val badDate = draft.dateTyped && date == null
     val scroll = rememberScrollState()
-    // A save that failed is said by the button that was touched: brought into sight if it is not.
-    LaunchedEffect(failed) { if (failed) scroll.animateScrollTo(scroll.maxValue) }
+    // What a button could not do is said by the buttons: brought into sight if it is not.
+    LaunchedEffect(trouble) { if (trouble != null) scroll.animateScrollTo(scroll.maxValue) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -339,6 +365,15 @@ internal fun ProfileContent(
         }
         if (badDate) {
             Trouble(stringResource(R.string.profile_date_invalid), Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp))
+        } else if (date != null) {
+            // The date read back in words, whatever it is: a slip of the finger in the year
+            // is seen here, before the button, and not after.
+            Text(
+                text = date.spelledOut(),
+                modifier = Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         // Before the button, and in full: what agreeing to it means.
         Column(
@@ -384,13 +419,13 @@ internal fun ProfileContent(
                 )
             }
         }
-        if (failed) {
-            Trouble(stringResource(R.string.profile_save_failed), Modifier.padding(start = 32.dp, top = 12.dp, end = 32.dp))
+        if (trouble != null) {
+            Trouble(trouble, Modifier.padding(start = 32.dp, top = 12.dp, end = 32.dp))
         }
         Button(
             onClick = { if (name != null && date != null) onSave(name, date) },
             modifier = Modifier
-                .padding(start = 16.dp, top = if (failed) 8.dp else 16.dp, end = 16.dp)
+                .padding(start = 16.dp, top = if (trouble != null) 8.dp else 16.dp, end = 16.dp)
                 .fillMaxWidth()
                 .heightIn(min = 48.dp),
             enabled = !busy && name != null && date != null,

@@ -447,7 +447,7 @@ internal fun AccountSheetContent(
 
 /** The date as it is written out in the app's language: "12 de marzo de 1990". */
 @Composable
-private fun LocalDate.spelledOut(): String {
+internal fun LocalDate.spelledOut(): String {
     val locale = LocalConfiguration.current.locales[0]
     return remember(this, locale) { format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale)) }
 }

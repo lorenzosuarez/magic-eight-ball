@@ -43,24 +43,38 @@ enum class ProfileOutcome {
     /** The date of birth is that of someone under [ProfileRules.ADULT_AGE]: no account for them. */
     UNDER_AGE,
 
+    /** The server would not have it: what was typed passes here and not there, where the clock is its own. */
+    REFUSED,
+
     /** It could not be saved, for want of a connection or of anything else: worth trying again. */
     FAILED
 }
+
+/** How the store took a profile: see [ProfileOutcome] for what each means to the user. */
+enum class SaveOutcome { SAVED, REFUSED, FAILED }
 
 /** Where the profile of whoever is signed in is kept. */
 interface Profiles {
     val state: StateFlow<ProfileState>
 
-    /** Saves [profile] for the account signed in, with the record of the user's agreement. */
-    suspend fun save(profile: Profile): Boolean
+    /**
+     * Saves [profile] for the account signed in. The first time, the record of the user's
+     * agreement is written with it; a correction leaves that record as it was.
+     *
+     * Saved means the server has it: nothing is kept to be sent later.
+     */
+    suspend fun save(profile: Profile): SaveOutcome
 
-    /** Deletes the profile of the account signed in: done before the account itself is deleted. */
+    /**
+     * Deletes the profile of the account signed in, whether or not this device knows of one:
+     * done before the account itself is deleted. True once the server holds none.
+     */
     suspend fun delete(): Boolean
 
     /** For builds with nothing to sign in to, and for tests. */
     object None : Profiles {
         override val state: StateFlow<ProfileState> = MutableStateFlow(ProfileState.Unknown)
-        override suspend fun save(profile: Profile) = false
+        override suspend fun save(profile: Profile) = SaveOutcome.FAILED
         override suspend fun delete() = true
     }
 }
@@ -75,7 +89,7 @@ object ProfileRules {
 
     /** [typed] as it is kept, or null when there is no name in it. */
     fun nameOrNull(typed: String): String? =
-        typed.trim().replace(Regex("\\s+"), " ").take(AskerFacts.MAX_NAME_LENGTH).trim()
+        AskerFacts.cut(typed.trim().replace(Regex("\\s+"), " ")).trim()
             .takeIf { AskerFacts(firstName = it).nameForAi != null }
 
     /** The date typed as three numbers, or null when there is no such day or nobody was born on it. */

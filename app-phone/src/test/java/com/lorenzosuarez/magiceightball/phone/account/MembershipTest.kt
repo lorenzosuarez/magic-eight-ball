@@ -6,7 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.Zodiac
 import java.time.LocalDate
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,6 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /** An account, its profile and the device's marks, kept in step: see [Membership]. */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
 class MembershipTest {
@@ -35,7 +40,7 @@ class MembershipTest {
         assertEquals(ProfileOutcome.SAVED, outcome)
         assertEquals(Profile("lorena maría", ADULT), profiles.saved.single())
         assertEquals(FakeAccount.ANA, account.state.value)
-        assertFalse(marks.underAge.value)
+        assertFalse(membership.isUnderAge())
     }
 
     @Test
@@ -74,23 +79,73 @@ class MembershipTest {
     }
 
     @Test
-    fun `when the account cannot be deleted for an under-age date the device is signed out and still marked`() = runTest {
-        account.deletes = AccountOutcome.FAILED
+    fun `the account goes even when the screen that gave the under-age date goes first`() = runTest {
+        // Marking the device takes that screen, and whatever it started, away.
+        val reachedTheServer = CompletableDeferred<Unit>()
+        account.beforeDeleting = { reachedTheServer.await() }
+        val screen = launch { membership.saveProfile("Lorena", MINOR, TODAY, host) }
+        runCurrent()
+        assertTrue(membership.who.first().removing)
 
-        membership.saveProfile("Lorena", MINOR, TODAY, host)
+        screen.cancel()
+        reachedTheServer.complete(Unit)
+        screen.join()
 
-        assertEquals(0, account.deleted)
-        assertEquals(1, account.signedOut)
+        assertEquals(1, account.deleted)
         assertTrue(marks.underAge.value)
+        assertTrue(membership.who.first().ageNotice)
+        assertFalse(membership.who.first().removing)
     }
 
     @Test
-    fun `a profile that cannot be saved says so and leaves the account as it was`() = runTest {
-        profiles.works = false
+    fun `an account that cannot be reached for an under-age date stays signed in, to be deleted at the next start`() = runTest {
+        account.deletes = AccountOutcome.FAILED
+        membership.saveProfile("Lorena", MINOR, TODAY, host)
 
+        // Signing out would leave an account nobody could reach to delete.
+        assertEquals(0, account.signedOut)
+        assertEquals(FakeAccount.ANA, account.state.value)
+        assertTrue(marks.underAge.value)
+        assertNull(membership.asker(TODAY))
+
+        account.deletes = AccountOutcome.DONE
+        Membership(account, profiles, marks).enforceAge()
+
+        assertEquals(1, account.deleted)
+        // Nothing is asked of anyone at start.
+        assertNull(account.deletedWith.last())
+    }
+
+    @Test
+    fun `at start nothing is done to an account on a device that is not marked`() = runTest {
+        membership.enforceAge()
+
+        assertEquals(0, account.deleted)
+        assertEquals(0, profiles.deleted)
+    }
+
+    @Test
+    fun `a device whose file cannot be written is still under age for as long as the app runs`() = runTest {
+        marks.writes = false
+
+        membership.saveProfile("Lorena", MINOR, TODAY, host)
+
+        assertFalse(marks.underAge.value)
+        assertTrue(membership.isUnderAge())
+        assertTrue(membership.who.first().underAge)
+    }
+
+    @Test
+    fun `a profile that cannot be saved, or that the server refuses, says so and leaves the account as it was`() = runTest {
+        profiles.saves = SaveOutcome.FAILED
         assertEquals(ProfileOutcome.FAILED, membership.saveProfile("Lorena", ADULT, TODAY, host))
+
+        profiles.saves = SaveOutcome.REFUSED
+        assertEquals(ProfileOutcome.REFUSED, membership.saveProfile("Lorena", ADULT, TODAY, host))
+
         assertEquals(FakeAccount.ANA, account.state.value)
         assertEquals(0, account.deleted)
+        assertFalse(membership.isUnderAge())
     }
 
     @Test
@@ -100,23 +155,55 @@ class MembershipTest {
     }
 
     @Test
-    fun `not now means no account`() = runTest {
-        membership.declineProfile(host)
+    fun `going on without an account deletes the one just made`() = runTest {
+        assertEquals(AccountOutcome.DONE, membership.declineProfile(host))
 
         assertEquals(1, account.deleted)
         assertEquals(AccountState.SignedOut, account.state.value)
-        assertFalse(marks.underAge.value)
+        assertFalse(membership.isUnderAge())
+    }
+
+    @Test
+    fun `an account that cannot be deleted on the way out is kept signed in, and said to be`() = runTest {
+        account.deletes = AccountOutcome.FAILED
+
+        assertEquals(AccountOutcome.FAILED, membership.declineProfile(host))
+        assertEquals(0, account.signedOut)
+        assertEquals(FakeAccount.ANA, account.state.value)
+    }
+
+    @Test
+    fun `deleting the account asks who it is before anything is touched`() = runTest {
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+        account.confirms = AccountOutcome.CANCELLED
+
+        assertEquals(AccountOutcome.CANCELLED, membership.deleteAccount(host))
+
+        assertEquals(0, profiles.deleted)
+        assertEquals(0, account.deleted)
+        assertEquals(ProfileState.Present(Profile("Lorena", ADULT)), profiles.state.value)
     }
 
     @Test
     fun `deleting the account deletes its profile first, and keeps the account if that fails`() = runTest {
         profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
-        profiles.works = false
+        profiles.deletes = false
         assertEquals(AccountOutcome.FAILED, membership.deleteAccount(host))
         assertEquals(0, account.deleted)
 
-        profiles.works = true
+        profiles.deletes = true
         assertEquals(AccountOutcome.DONE, membership.deleteAccount(host))
+        assertEquals(1, profiles.deleted)
+        assertEquals(1, account.deleted)
+    }
+
+    @Test
+    fun `a profile this device does not know of is deleted with its account all the same`() = runTest {
+        // Not heard of here, and there all the same: a listener that failed, a document that does not read.
+        profiles.state.value = ProfileState.Unknown
+
+        assertEquals(AccountOutcome.DONE, membership.deleteAccount(host))
+
         assertEquals(1, profiles.deleted)
         assertEquals(1, account.deleted)
     }
@@ -147,6 +234,8 @@ class MembershipTest {
         membership.birthdayWished(birthday)
         assertEquals(false, membership.asker(birthday)?.birthdayToday)
         assertEquals(true, membership.asker(birthday.plusYears(1))?.birthdayToday)
+        // What the device keeps of it is the year, which is nobody's birthday.
+        assertEquals(TODAY.year, marks.birthdayWishedIn.value)
     }
 
     @Test
@@ -170,17 +259,20 @@ class MembershipTest {
     }
 
     @Test
-    fun `what the server holds is a profile only if it is whole and was agreed to`() {
+    fun `what the server holds is a profile only if it is whole and was agreed to as worded today`() {
         val whole = mapOf(
             "firstName" to "Lorena",
             "birthDate" to "1990-03-12",
-            "consent" to mapOf("version" to 1L, "at" to "whenever")
+            "consent" to mapOf("version" to FirestoreProfiles.CONSENT_VERSION, "at" to "whenever")
         )
         assertEquals(
             ProfileState.Present(Profile("Lorena", ADULT)),
-            FirestoreProfiles.profileOf(exists = true, fromCache = false, data = whole)
+            FirestoreProfiles.profileOf(exists = true, unconfirmed = false, data = whole)
         )
         assertEquals(ProfileState.Missing, FirestoreProfiles.profileOf(true, false, whole - "consent"))
+        // Agreed to an earlier wording: asked again.
+        val earlier = whole + ("consent" to mapOf("version" to FirestoreProfiles.CONSENT_VERSION - 1, "at" to "whenever"))
+        assertEquals(ProfileState.Missing, FirestoreProfiles.profileOf(true, false, earlier))
         assertEquals(ProfileState.Missing, FirestoreProfiles.profileOf(true, false, whole + ("birthDate" to "12/03/1990")))
         assertEquals(ProfileState.Missing, FirestoreProfiles.profileOf(true, false, whole + ("firstName" to 7)))
         assertEquals(ProfileState.Missing, FirestoreProfiles.profileOf(true, false, null))
@@ -188,8 +280,8 @@ class MembershipTest {
 
     @Test
     fun `a profile this device has no copy of is unknown until the server has spoken`() {
-        assertEquals(ProfileState.Unknown, FirestoreProfiles.profileOf(exists = false, fromCache = true, data = null))
-        assertEquals(ProfileState.Missing, FirestoreProfiles.profileOf(exists = false, fromCache = false, data = null))
+        assertEquals(ProfileState.Unknown, FirestoreProfiles.profileOf(exists = false, unconfirmed = true, data = null))
+        assertEquals(ProfileState.Missing, FirestoreProfiles.profileOf(exists = false, unconfirmed = false, data = null))
     }
 
     private companion object {

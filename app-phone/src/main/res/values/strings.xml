@@ -211,6 +211,7 @@
     <string name="profile_not_now">Continue without an account</string>
     <string name="age_notice_title">You can\'t have an account</string>
     <string name="age_notice_text">The account was deleted and nothing you typed was kept. On this device the ball keeps answering, without an account and without AI.</string>
+    <string name="age_notice_text_pending">Nothing you typed was kept. The account could not be deleted yet: the app will try again when it is opened. On this device the ball keeps answering, without an account and without AI.</string>
     <string name="action_understood">Got it</string>
     <string name="privacy_account">With your account, Gemini is also told your first name, your sign and that it\'s your birthday (only on the day).</string>
 </resources>

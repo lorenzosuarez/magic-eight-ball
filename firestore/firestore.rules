@@ -32,21 +32,30 @@ service cloud.firestore {
         && data.firstName.size() >= 1
         && data.firstName.size() <= 20
         && data.birthDate is string
-        && data.birthDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        // A year of the last two centuries, a month and a day that can be one.
+        && data.birthDate.matches('^(19|20)[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
         && data.birthDate <= latestAdultBirthDate()
-        // The record of the user's agreement: which wording, and when by the server's clock,
-        // which the app cannot set to a time of its choosing.
+        // The record of the user's agreement: which wording, and when.
         && data.consent is map
         && data.consent.keys().hasOnly(['version', 'at'])
         && data.consent.keys().hasAll(['version', 'at'])
         && data.consent.version is int
         && data.consent.version >= 1
-        && data.consent.at == request.time;
+        && data.consent.at is timestamp;
+    }
+
+    // An agreement is dated by the server's clock, as it is made: the app cannot set it to a
+    // time of its choosing.
+    function isAgreedNow(data) {
+      return data.consent.at == request.time;
     }
 
     match /users/{uid} {
       allow get, delete: if isOwner(uid);
-      allow create, update: if isOwner(uid) && isProfile(request.resource.data);
+      allow create: if isOwner(uid) && isProfile(request.resource.data) && isAgreedNow(request.resource.data);
+      // A correction leaves the agreement as it was made, or makes it anew: never anything else.
+      allow update: if isOwner(uid) && isProfile(request.resource.data)
+        && (request.resource.data.consent == resource.data.consent || isAgreedNow(request.resource.data));
     }
   }
 }

@@ -18,6 +18,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.UserSettings
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
+import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
@@ -70,7 +71,7 @@ class ProfileSheetTest {
                     firstTime = firstTime,
                     today = TODAY,
                     busy = false,
-                    failed = false,
+                    trouble = null,
                     onSave = { name, date -> saved += name to date },
                     onSecondary = {},
                     onOpenPrivacyPolicy = {}
@@ -145,6 +146,7 @@ class ProfileSheetTest {
                         onDeclineProfile = {
                             declined++
                             state = state.copy(account = AccountState.SignedOut, profile = ProfileState.Unknown)
+                            AccountOutcome.DONE
                         },
                         onOpenPrivacyPolicy = {},
                         onAgeNoticeSeen = {}
@@ -173,7 +175,7 @@ class ProfileSheetTest {
                     AccountPrompts(
                         state = state,
                         onSaveProfile = { _, _ -> ProfileOutcome.FAILED },
-                        onDeclineProfile = {},
+                        onDeclineProfile = { AccountOutcome.DONE },
                         onOpenPrivacyPolicy = {},
                         onAgeNoticeSeen = {
                             seen++

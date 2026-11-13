@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone
 
 import kotlinx.coroutines.flow.StateFlow
 import android.content.Context
+import android.content.ContextWrapper
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.example.magiceightball.core.domain.model.AskerFacts
@@ -46,6 +47,7 @@ import java.time.ZoneId
 import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
@@ -1221,22 +1223,8 @@ class EightBallViewModelTest {
 
     @Test
     fun `whoever is signed in is on the screen's state, and signing out goes through the account`() = runTest {
-        val current = MutableStateFlow<AccountState>(AccountState.SignedOut)
-        var signedOut = 0
-        val account = object : Account {
-            override val state: StateFlow<AccountState> = current
-            override suspend fun signIn(host: Context): AccountOutcome {
-                current.value = AccountState.SignedIn("1", "Ana", "ana@example.com")
-                return AccountOutcome.DONE
-            }
-
-            override suspend fun signOut() {
-                signedOut++
-                current.value = AccountState.SignedOut
-            }
-
-            override suspend fun delete(host: Context) = AccountOutcome.FAILED
-        }
+        val account = FakeAccount()
+        val current = account.state
         val viewModel = createViewModel(account = account)
         runCurrent()
         assertEquals(AccountState.SignedOut, viewModel.state.value?.account)
@@ -1249,7 +1237,7 @@ class EightBallViewModelTest {
 
         viewModel.signOut()
         runCurrent()
-        assertEquals(1, signedOut)
+        assertEquals(1, account.signedOut)
         assertEquals(AccountState.SignedOut, viewModel.state.value?.account)
     }
 
@@ -1336,7 +1324,7 @@ class EightBallViewModelTest {
         viewModel.ask()
         advanceUntilIdle()
         assertEquals(true, llmGateway.requests.last().asker?.birthdayToday)
-        assertNull(marks.birthdayWishedOn.value)
+        assertNull(marks.birthdayWishedIn.value)
         viewModel.dismiss()
         advanceUntilIdle()
 
@@ -1344,13 +1332,58 @@ class EightBallViewModelTest {
         viewModel.ask()
         advanceUntilIdle()
         assertEquals(true, llmGateway.requests.last().asker?.birthdayToday)
-        assertEquals(today.toEpochDay(), marks.birthdayWishedOn.value)
+        assertEquals(today.year, marks.birthdayWishedIn.value)
         viewModel.dismiss()
         advanceUntilIdle()
 
         viewModel.ask()
         advanceUntilIdle()
         assertEquals(false, llmGateway.requests.last().asker?.birthdayToday)
+    }
+
+    @Test
+    fun `a marked device asks the AI service for nothing from its very first answer`() = runTest {
+        // Before the screen's state is there to be read: the mark is read where it is kept.
+        val marks = FakeDeviceMarks().apply { underAge.value = true }
+        val viewModel = createViewModel(account = FakeAccount(), marks = marks)
+
+        viewModel.ask()
+        advanceUntilIdle()
+
+        assertEquals(false, llmGateway.requests.single().useAi)
+    }
+
+    @Test
+    fun `an account left on a marked device is taken away when the app starts`() = runTest {
+        val account = FakeAccount(initial = FakeAccount.ANA)
+        val marks = FakeDeviceMarks().apply { underAge.value = true }
+        createViewModel(account = account, marks = marks)
+        advanceUntilIdle()
+
+        assertEquals(1, account.deleted)
+        assertEquals(AccountState.SignedOut, account.state.value)
+    }
+
+    @Test
+    fun `an account being taken away is not one that still needs a profile`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        val account = FakeAccount(initial = FakeAccount.ANA)
+        val profiles = FakeProfiles(ProfileState.Present(Profile("Lorena", LocalDate.of(1990, 3, 12))))
+        val reached = CompletableDeferred<Unit>()
+        account.beforeDeleting = { reached.await() }
+        val viewModel = createViewModel(account = account, profiles = profiles)
+        advanceUntilIdle()
+
+        val deleting = launch { viewModel.deleteAccount(ContextWrapper(null)) }
+        runCurrent()
+        // The profile is gone and the account is not yet: nobody is asked who they are.
+        assertEquals(ProfileState.Missing, viewModel.state.value?.profile)
+        assertEquals(false, viewModel.state.value?.needsProfile)
+
+        reached.complete(Unit)
+        deleting.join()
+        advanceUntilIdle()
+        assertEquals(AccountState.SignedOut, viewModel.state.value?.account)
     }
 
     private fun createViewModel(

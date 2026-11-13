@@ -54,18 +54,28 @@ interface Account {
     suspend fun signOut()
 
     /**
-     * Deletes the account and everything kept with it, for good. The system may ask the user to
-     * pick the account once more first, to be sure it is them.
+     * Makes sure it is the account's owner who is here: someone who signed in a while ago is
+     * asked to pick the account once more. Done before anything that cannot be taken back, so
+     * that backing out of it leaves everything as it was.
      *
      * @param host as for [signIn].
      */
-    suspend fun delete(host: Context): AccountOutcome
+    suspend fun confirmIdentity(host: Context): AccountOutcome
+
+    /**
+     * Deletes the account, for good. What is kept with it is deleted first, by whoever calls.
+     *
+     * @param host as for [signIn], for the case the service still wants the account picked
+     * again; null to delete without asking anything, which fails where it would have asked.
+     */
+    suspend fun delete(host: Context?): AccountOutcome
 
     /** For builds with nothing to sign in to, and for tests. */
     object None : Account {
         override val state: StateFlow<AccountState> = MutableStateFlow(AccountState.Unavailable)
         override suspend fun signIn(host: Context) = AccountOutcome.FAILED
         override suspend fun signOut() = Unit
-        override suspend fun delete(host: Context) = AccountOutcome.FAILED
+        override suspend fun confirmIdentity(host: Context) = AccountOutcome.FAILED
+        override suspend fun delete(host: Context?) = AccountOutcome.FAILED
     }
 }

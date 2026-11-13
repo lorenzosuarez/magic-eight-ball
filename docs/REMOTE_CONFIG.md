@@ -31,6 +31,8 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 2. **The rules are in the project.** `firestore/firestore.rules` is what keeps each profile to its owner: `firebase deploy --only firestore:rules`. Until then the project refuses everything, the app cannot tell whether an account has a profile, and nobody is asked for one. After any change to the rules, `firebase emulators:exec --only firestore --project demo-magic-ball "python3 firestore/rules_test.py"` says whether they still hold.
 3. **The privacy policy says so.** The one published has to be the one that describes the account, the profile and what is sent of it.
 
+One thing the app cannot do by itself, and someone has to: **an account that was never given a profile, and could not be deleted, stays in Authentication.** It happens when the app is closed on the screen that asks for a profile and never opened again, or when the account could not be reached to be deleted and the sign-in had gone stale by the next start. Such an account holds what Google gave at sign-in and nothing else. Any user in Authentication with no document under `users/` a day after it was created is one of these, and is to be deleted there.
+
 ## `answers_json`: the answers the app keeps
 
 The lines used when the AI is off, away or used up. Same shape as `core/data/src/main/assets/magic_8_ball_responses.json`: a language, then a style, then the list. A list given here takes the place of the app's list for that language and style; the rest stay.

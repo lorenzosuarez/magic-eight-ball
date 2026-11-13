@@ -1,5 +1,7 @@
 package com.example.magiceightball.core.domain.model
 
+import java.text.Normalizer
+
 /** The twelve signs, by the dates the horoscope pages use. */
 enum class Zodiac {
     ARIES, TAURUS, GEMINI, CANCER, LEO, VIRGO, LIBRA, SCORPIO, SAGITTARIUS, CAPRICORN, AQUARIUS, PISCES;
@@ -35,19 +37,24 @@ data class AskerFacts(
 ) {
     /**
      * The only form in which the name may leave the device: its letters, at most two words and
-     * [MAX_NAME_LENGTH] characters. Anything else typed into the field is dropped, so a name
-     * can never be more than a name to whoever reads it. Null when nothing is left.
+     * [MAX_NAME_LENGTH] characters, or [MAX_DENSE_NAME_LENGTH] in a script that writes a whole
+     * sentence without a space. Anything else typed into the field is dropped: what is not a
+     * letter, letters that only look like punctuation, and marks piled on a letter. What is
+     * left can be read as little more than a name, and the instruction says to take it for
+     * nothing else. Null when nothing is left.
      */
     val nameForAi: String?
-        get() = firstName
-            ?.replace(NOT_OF_A_NAME, " ")
-            ?.split(' ')
-            ?.filter { it.any(Char::isLetter) }
-            ?.take(MAX_NAME_WORDS)
-            ?.joinToString(" ")
-            ?.take(MAX_NAME_LENGTH)
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() }
+        get() {
+            val letters = Normalizer.normalize(firstName ?: return null, Normalizer.Form.NFC)
+                .replace(NOT_OF_A_NAME, " ")
+                .replace(STACKED_MARKS, "$1")
+            val name = letters.split(' ')
+                .filter { word -> word.codePoints().anyMatch(Character::isLetter) }
+                .take(MAX_NAME_WORDS)
+                .joinToString(" ")
+            val longest = if (name.codePoints().anyMatch(::isOfADenseScript)) MAX_DENSE_NAME_LENGTH else MAX_NAME_LENGTH
+            return cut(name, longest).trim().takeIf { it.isNotEmpty() }
+        }
 
     /**
      * What [personality] makes use of, and nothing more: the rest is not sent. A name is for
@@ -65,10 +72,34 @@ data class AskerFacts(
 
     companion object {
         const val MAX_NAME_LENGTH = 20
+
+        /** Six signs are a name in Chinese, Japanese or Korean, and not yet much of a sentence. */
+        const val MAX_DENSE_NAME_LENGTH = 6
         private const val MAX_NAME_WORDS = 2
 
-        /** Letters, their accents, and the two marks a name can carry. */
-        private val NOT_OF_A_NAME = Regex("[^\\p{L}\\p{M}'’-]+")
+        /**
+         * Everything but letters, their accents, and the two marks a name can carry. The
+         * letters that modify others are left out with the rest: some of them are drawn as
+         * quotes and colons.
+         */
+        private val NOT_OF_A_NAME = Regex("[^\\p{L}\\p{M}'’-]+|\\p{Lm}+")
+
+        /** A letter carries one accent: a second and a third are not part of anyone's name. */
+        private val STACKED_MARKS = Regex("(\\p{M})\\p{M}+")
+
+        private val DENSE_SCRIPTS = setOf(
+            Character.UnicodeScript.HAN,
+            Character.UnicodeScript.HIRAGANA,
+            Character.UnicodeScript.KATAKANA,
+            Character.UnicodeScript.HANGUL,
+            Character.UnicodeScript.BOPOMOFO
+        )
+
+        private fun isOfADenseScript(codePoint: Int): Boolean = Character.UnicodeScript.of(codePoint) in DENSE_SCRIPTS
+
+        /** [text] down to its first [length] characters, never half of one. */
+        fun cut(text: String, length: Int = MAX_NAME_LENGTH): String =
+            if (text.codePointCount(0, text.length) <= length) text else text.substring(0, text.offsetByCodePoints(0, length))
 
         private val CALL_BY_NAME = setOf(
             Magic8BallPersonality.THERAPIST,

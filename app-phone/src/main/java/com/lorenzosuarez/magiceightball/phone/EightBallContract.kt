@@ -26,6 +26,7 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * then offers no account, and [aiAnswersAvailable] is false for good.
  * @property ageNotice true from the moment that date was given until the user has been told
  * that there is no account for them.
+ * @property removingAccount true while an account is being taken away, profile first.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
 data class EightBallUiState(
@@ -43,7 +44,8 @@ data class EightBallUiState(
     val account: AccountState = AccountState.Unavailable,
     val profile: ProfileState = ProfileState.Unknown,
     val underAge: Boolean = false,
-    val ageNotice: Boolean = false
+    val ageNotice: Boolean = false,
+    val removingAccount: Boolean = false
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?
@@ -54,7 +56,7 @@ data class EightBallUiState(
 
     /** Whether whoever has just signed in is still to be asked who they are: no account is kept without. */
     val needsProfile: Boolean
-        get() = offersAccount && account is AccountState.SignedIn && profile == ProfileState.Missing
+        get() = offersAccount && account is AccountState.SignedIn && profile == ProfileState.Missing && !removingAccount
 
     /** Whether a question the app hears is sent to the AI service to be answered. */
     val usesAiAnswers: Boolean get() = settings.aiAnswersEnabled && aiAnswersAvailable

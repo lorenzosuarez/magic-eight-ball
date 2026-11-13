@@ -6,7 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -27,17 +27,20 @@ interface DeviceMarks {
 
     suspend fun markUnderAge()
 
-    /** The day, counted from 1970, on which a birthday was last wished: once a year is enough. */
-    val birthdayWishedOn: Flow<Long?>
+    /**
+     * The year in which a birthday was last wished, so that it is wished once. Only the year:
+     * the day would be the user's birthday, written down where it outlives their account.
+     */
+    val birthdayWishedIn: Flow<Int?>
 
-    suspend fun markBirthdayWished(epochDay: Long)
+    suspend fun markBirthdayWished(year: Int)
 
     /** For tests, and for anything that has no device to remember on. */
     object None : DeviceMarks {
         override val underAge: Flow<Boolean> = flowOf(false)
         override suspend fun markUnderAge() = Unit
-        override val birthdayWishedOn: Flow<Long?> = flowOf(null)
-        override suspend fun markBirthdayWished(epochDay: Long) = Unit
+        override val birthdayWishedIn: Flow<Int?> = flowOf(null)
+        override suspend fun markBirthdayWished(year: Int) = Unit
     }
 }
 
@@ -51,11 +54,11 @@ class DataStoreDeviceMarks(private val dataStore: DataStore<Preferences>) : Devi
     }
 
     override val underAge: Flow<Boolean> = marks.map { it[UNDER_AGE] == true }
-    override val birthdayWishedOn: Flow<Long?> = marks.map { it[BIRTHDAY_WISHED_ON] }
+    override val birthdayWishedIn: Flow<Int?> = marks.map { it[BIRTHDAY_WISHED_IN] }
 
     override suspend fun markUnderAge() = write { it[UNDER_AGE] = true }
 
-    override suspend fun markBirthdayWished(epochDay: Long) = write { it[BIRTHDAY_WISHED_ON] = epochDay }
+    override suspend fun markBirthdayWished(year: Int) = write { it[BIRTHDAY_WISHED_IN] = year }
 
     private suspend fun write(change: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         try {
@@ -68,6 +71,6 @@ class DataStoreDeviceMarks(private val dataStore: DataStore<Preferences>) : Devi
     private companion object {
         const val TAG = "DeviceMarks"
         val UNDER_AGE = booleanPreferencesKey("under_age")
-        val BIRTHDAY_WISHED_ON = longPreferencesKey("birthday_wished_on")
+        val BIRTHDAY_WISHED_IN = intPreferencesKey("birthday_wished_in")
     }
 }

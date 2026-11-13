@@ -134,6 +134,7 @@ class EightBallViewModel @Inject constructor(
                 profile = who.profile,
                 underAge = who.underAge,
                 ageNotice = who.ageNotice,
+                removingAccount = who.removing,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
@@ -168,6 +169,8 @@ class EightBallViewModel @Inject constructor(
 
     init {
         observeShakes()
+        // An account that an under-age date could not take away then is taken away now.
+        viewModelScope.launch { membership.enforceAge() }
     }
 
     fun setLanguage(language: AppLanguage) {
@@ -207,7 +210,7 @@ class EightBallViewModel @Inject constructor(
         membership.saveProfile(firstName, birthDate, LocalDate.ofEpochDay(today()), host)
 
     /** See [Membership.declineProfile]. */
-    suspend fun declineProfile(host: Context) = membership.declineProfile(host)
+    suspend fun declineProfile(host: Context): AccountOutcome = membership.declineProfile(host)
 
     fun ageNoticeSeen() = membership.ageNoticeSeen()
 
@@ -642,8 +645,9 @@ class EightBallViewModel @Inject constructor(
                     trigger = ASK_TRIGGER,
                     languageCode = settings.language.code,
                     personality = settings.personality,
-                    // Never from a device that was given an under-age date of birth.
-                    useAi = settings.aiAnswersEnabled && state.value?.underAge != true,
+                    // Never from a device that was given an under-age date of birth: read where
+                    // it is kept, since at the very start the screen's state is not there yet.
+                    useAi = settings.aiAnswersEnabled && !membership.isUnderAge(),
                     question = question.takeIf { it.isNotBlank() },
                     // Under the ball there is room for a second line, unless it is switched off from afar.
                     wantsRemark = appConfig.config.value.aiRemarkEnabled,

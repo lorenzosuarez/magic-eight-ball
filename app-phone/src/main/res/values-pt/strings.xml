@@ -203,6 +203,7 @@
     <string name="profile_not_now">Continuar sem conta</string>
     <string name="age_notice_title">Você não pode ter conta</string>
     <string name="age_notice_text">A conta foi excluída e nada do que você digitou foi salvo. Neste dispositivo a bola continua respondendo, sem conta e sem IA.</string>
+    <string name="age_notice_text_pending">Nada do que você digitou foi salvo. A conta ainda não pôde ser excluída: o app vai tentar de novo ao ser aberto. Neste dispositivo a bola continua respondendo, sem conta e sem IA.</string>
     <string name="action_understood">Entendi</string>
     <string name="privacy_account">Com sua conta, o Gemini também recebe seu nome, seu signo e que é seu aniversário (só no dia).</string>
 </resources>

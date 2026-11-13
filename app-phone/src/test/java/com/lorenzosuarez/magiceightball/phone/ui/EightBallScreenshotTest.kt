@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -31,6 +32,7 @@ import com.lorenzosuarez.magiceightball.phone.AnswerText
 import com.lorenzosuarez.magiceightball.phone.BallPhase
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.Notice
+import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.VoiceStatus
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -652,7 +654,7 @@ class EightBallScreenshotTest {
                             firstTime = firstTime,
                             today = LocalDate.of(2026, 11, 13),
                             busy = false,
-                            failed = failed,
+                            trouble = if (failed) stringResource(R.string.profile_save_failed) else null,
                             onSave = { _, _ -> },
                             onSecondary = {},
                             onOpenPrivacyPolicy = {},

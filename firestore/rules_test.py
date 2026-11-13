@@ -44,7 +44,13 @@ def call(method, url, uid=None, body=None):
         return error.code
 
 
+class At(str):
+    """A moment written by the app itself, where the server's own is wanted."""
+
+
 def value(v):
+    if isinstance(v, At):
+        return {"timestampValue": str(v)}
     if isinstance(v, bool):
         return {"booleanValue": v}
     if isinstance(v, int):
@@ -59,6 +65,16 @@ def save(uid, as_uid, fields, server_time="consent.at", collection="users"):
     write = {"update": {"name": f"{ROOT}/{collection}/{uid}", "fields": {k: value(v) for k, v in fields.items()}}}
     if server_time:
         write["updateTransforms"] = [{"fieldPath": server_time, "setToServerValue": "REQUEST_TIME"}]
+    return call("POST", f"http://{HOST}/v1/{ROOT}:commit", as_uid, {"writes": [write]})
+
+
+def correct(uid, as_uid, **fields):
+    """Some fields changed and the rest left alone, as the app corrects a profile."""
+    write = {
+        "update": {"name": f"{ROOT}/users/{uid}", "fields": {k: value(v) for k, v in fields.items()}},
+        "updateMask": {"fieldPaths": list(fields)},
+        "currentDocument": {"exists": True},
+    }
     return call("POST", f"http://{HOST}/v1/{ROOT}:commit", as_uid, {"writes": [write]})
 
 
@@ -93,7 +109,13 @@ check("nobody signed in cannot read it", call("GET", f"{BASE}/users/ana"), REFUS
 check("someone else cannot write it", save("ana", "eve", profile()), REFUSED)
 check("nobody signed in cannot write it", save("ana", None, profile()), REFUSED)
 check("nobody can list the profiles", call("GET", f"{BASE}/users", "ana"), REFUSED)
-check("the owner corrects the name", save("ana", "ana", profile(firstName="Ana María")), OK)
+check("the owner corrects the name, and the agreement stays as it was made", correct("ana", "ana", firstName="Ana María"), OK)
+check("a correction cannot redate the agreement", correct("ana", "ana", consent={"version": 1, "at": At("2020-01-01T00:00:00Z")}), REFUSED)
+check("a correction cannot slip a field in", correct("ana", "ana", premium=True), REFUSED)
+check("someone else cannot correct it", correct("ana", "eve", firstName="Eve"), REFUSED)
+check("agreeing again, dated by the server, is allowed", save("ana", "ana", profile(firstName="Ana María")), OK)
+check("twenty letters with accents are a name", save("ñu", "ñu", profile(firstName="Ñ" * 20)), OK)
+check("someone born on a 29 February is kept", save("bis", "bis", profile(birthDate="2000-02-29")), OK)
 
 check("eighteen today is an adult", save("bea", "bea", profile(birthDate=years_ago(18))), OK)
 check("seventeen is refused", save("teo", "teo", profile(birthDate=years_ago(17))), REFUSED)
@@ -106,9 +128,13 @@ check("an empty name is refused", save("cai", "cai", profile(firstName="")), REF
 check("a name longer than a name is refused", save("cai", "cai", profile(firstName="A" * 21)), REFUSED)
 check("a name that is not text is refused", save("cai", "cai", profile(firstName=7)), REFUSED)
 check("a date not written as a date is refused", save("cai", "cai", profile(birthDate="12/03/1990")), REFUSED)
+check("a month that is none is refused", save("cai", "cai", profile(birthDate="1990-13-45")), REFUSED)
+check("the year nought is refused", save("cai", "cai", profile(birthDate="0000-00-00")), REFUSED)
 check("no agreement is refused", save("cai", "cai", profile(consent=None), server_time=None), REFUSED)
-check("an agreement dated by the app is refused",
+check("an agreement dated in words is refused",
       save("cai", "cai", profile(consent={"version": 1, "at": "2020-01-01"}), server_time=None), REFUSED)
+check("an agreement dated by the app, at a moment of its choosing, is refused",
+      save("cai", "cai", profile(consent={"version": 1, "at": At("2020-01-01T00:00:00Z")}), server_time=None), REFUSED)
 check("an agreement to no wording is refused", save("cai", "cai", profile(consent={"version": 0})), REFUSED)
 check("something else slipped into the agreement is refused",
       save("cai", "cai", profile(consent={"version": 1, "note": "x"})), REFUSED)
