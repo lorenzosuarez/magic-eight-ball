@@ -162,6 +162,37 @@ class EightBallViewModelTest {
     }
 
     @Test
+    fun `an answer is rated good or bad, counted once each way and without what it said`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.showAgain(
+            HistoryEntry(
+                id = 7,
+                question = "Will my secret come out?",
+                answer = "Nay, matey.",
+                askedAtMillis = 1L,
+                fromAi = true,
+                style = Magic8BallPersonality.PIRATE
+            )
+        )
+        tracked.clear()
+
+        viewModel.rateAnswer(true)
+        viewModel.rateAnswer(true)
+        viewModel.rateAnswer(false)
+
+        assertEquals(
+            listOf(
+                UsageEvent.AnswerRated(liked = true, style = Magic8BallPersonality.PIRATE, fromAi = true),
+                UsageEvent.AnswerRated(liked = false, style = Magic8BallPersonality.PIRATE, fromAi = true)
+            ),
+            tracked
+        )
+        assertEquals(false, (viewModel.state.value?.phase as BallPhase.Answered).liked)
+        assertEquals(mapOf("liked" to "no", "style" to "pirate", "source" to "ai"), tracked.last().params)
+    }
+
+    @Test
     fun `the day's verdict opens on the ball, is kept, and gives way to a question in progress`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()

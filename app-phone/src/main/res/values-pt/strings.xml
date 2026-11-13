@@ -130,6 +130,8 @@
     <string name="report_done">Denunciada. Agradecemos</string>
     <string name="report_label">Denunciar esta resposta como inadequada</string>
     <string name="action_share">Compartilhar</string>
+    <string name="rate_good">Boa resposta</string>
+    <string name="rate_bad">Resposta ruim</string>
     <string name="action_read_aloud">Ler a resposta em voz alta</string>
     <string name="brand_tagline">Respostas escritas por IA</string>
     <string name="options_answers">Respostas</string>

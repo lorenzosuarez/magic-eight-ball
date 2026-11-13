@@ -213,6 +213,28 @@ class EightBallScreenshotTest {
     )
 
     @Test
+    fun phone_ai_answer_rated_bad() = capture(
+        name = "phone_24_ai_answer_rated_bad",
+        state = EightBallUiState(
+            phase = BallPhase.Answered(
+                id = 0,
+                question = "¿Me conviene pedir pizza hoy?",
+                answer = AnswerText.Plain("Tu estómago ya decidió.", fromAi = true),
+                style = Magic8BallPersonality.DETECTIVE,
+                liked = false
+            ),
+            settings = UserSettings(language = AppLanguage.SPANISH),
+            aiAnswersAvailable = true
+        )
+    )
+
+    @Test
+    fun phone_answer_rated_good() = capture(
+        name = "phone_25_answer_rated_good",
+        state = ANSWERED.copy(phase = (ANSWERED.phase as BallPhase.Answered).copy(liked = true))
+    )
+
+    @Test
     fun phone_settings_light() = captureWithSettings("phone_7_settings_light", ANSWERED)
 
     @Test

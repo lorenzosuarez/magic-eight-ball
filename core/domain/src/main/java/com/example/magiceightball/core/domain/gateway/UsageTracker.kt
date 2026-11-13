@@ -55,6 +55,17 @@ sealed interface UsageEvent {
         override val params get() = mapOf("style" to style.label, "source" to if (fromAi) "ai" else "bundled")
     }
 
+    /** The user said whether the answer on screen was a good one: which way, never the answer. */
+    data class AnswerRated(val liked: Boolean, val style: Magic8BallPersonality?, val fromAi: Boolean) : UsageEvent {
+        override val name get() = "rate_answer"
+        override val params
+            get() = mapOf(
+                "liked" to liked.label,
+                "style" to (style?.label ?: "none"),
+                "source" to if (fromAi) "ai" else "bundled"
+            )
+    }
+
     data object AppShared : UsageEvent {
         override val name get() = "share_app"
     }
