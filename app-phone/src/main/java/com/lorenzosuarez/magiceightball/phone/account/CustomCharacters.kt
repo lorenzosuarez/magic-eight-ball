@@ -35,6 +35,9 @@ sealed interface CharacterSave {
     /** Every slot is taken: one has to go before another comes. */
     data object Full : CharacterSave
 
+    /** The character being corrected is no longer what it was when it was opened: changed, or gone, from elsewhere. */
+    data object Changed : CharacterSave
+
     /** The server would not have it. */
     data object Refused : CharacterSave
 
@@ -51,23 +54,21 @@ interface CustomCharacters {
     val state: StateFlow<List<CustomCharacter>?>
 
     /**
-     * Saves [character]: over the one in its slot when [CustomCharacter.id] names one, and
-     * otherwise in the first slot that is free. Saved means the server has it.
+     * Saves [character]. With [replacing], the character that was opened to be corrected, it
+     * goes over that one, in its slot, and only if that one is still there as it was: what
+     * another device changed or deleted meanwhile is not written over or brought back. Without,
+     * it is a new one, and goes in the first slot that is free. Saved means the server has it.
      */
-    suspend fun save(character: CustomCharacter): CharacterSave
+    suspend fun save(character: CustomCharacter, replacing: CustomCharacter? = null): CharacterSave
 
     /** Deletes the character in slot [id]. True once the server holds none there. */
     suspend fun delete(id: String): Boolean
 
-    /** Deletes every character of the account signed in: done before the account is deleted. */
-    suspend fun deleteAll(): Boolean
-
     /** For builds with nothing to sign in to, and for tests. */
     object None : CustomCharacters {
         override val state: StateFlow<List<CustomCharacter>?> = MutableStateFlow(null)
-        override suspend fun save(character: CustomCharacter) = CharacterSave.Failed
+        override suspend fun save(character: CustomCharacter, replacing: CustomCharacter?) = CharacterSave.Failed
         override suspend fun delete(id: String) = true
-        override suspend fun deleteAll() = true
     }
 }
 
@@ -121,13 +122,19 @@ class FirestoreCustomCharacters @Inject constructor(
         true
     }.onStart { emit(null) }
 
-    override suspend fun save(character: CustomCharacter): CharacterSave {
+    override suspend fun save(character: CustomCharacter, replacing: CustomCharacter?): CharacterSave {
         val collection = collection ?: return CharacterSave.Failed
         return store.write<CharacterSave>(refused = CharacterSave.Refused) { transaction, _ ->
-            // Its own slot, or the first that is free: read before anything is written.
-            val slot = character.id.takeIf { it in CustomCharacter.SLOTS }
-                ?: CustomCharacter.SLOTS.firstOrNull { !transaction.get(collection.document(it)).exists() }
-                ?: return@write CharacterSave.Full
+            // Read before anything is written: the slot of the one corrected, which must still
+            // hold it, or the first that is free.
+            val slot = if (replacing != null) {
+                val there = transaction.get(collection.document(replacing.id))
+                if (characterOf(there.id, there.data) != replacing) return@write CharacterSave.Changed
+                replacing.id
+            } else {
+                CustomCharacter.SLOTS.firstOrNull { !transaction.get(collection.document(it)).exists() }
+                    ?: return@write CharacterSave.Full
+            }
             val kept = character.copy(id = slot)
             transaction.set(collection.document(slot), fieldsOf(kept))
             CharacterSave.Saved(kept)
@@ -139,14 +146,6 @@ class FirestoreCustomCharacters @Inject constructor(
         if (id !in CustomCharacter.SLOTS) return true
         return store.write(refused = false) { transaction, _ ->
             transaction.delete(collection.document(id))
-            true
-        } == true
-    }
-
-    override suspend fun deleteAll(): Boolean {
-        val collection = collection ?: return false
-        return store.write(refused = false) { transaction, _ ->
-            CustomCharacter.SLOTS.forEach { transaction.delete(collection.document(it)) }
             true
         } == true
     }

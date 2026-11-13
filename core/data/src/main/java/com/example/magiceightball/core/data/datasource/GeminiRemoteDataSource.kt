@@ -67,7 +67,7 @@ class GeminiRemoteDataSource @Inject constructor(
             )
             val userText = question ?: request.userTrigger ?: "What is my fortune?"
 
-            executeWithRetry(settings, systemPromptText, userText, brief.detailed)
+            executeWithRetry(settings, systemPromptText, userText, brief.detailed, brief.withRemark)
         }
     }
 
@@ -76,6 +76,7 @@ class GeminiRemoteDataSource @Inject constructor(
         systemPromptText: String,
         userText: String,
         detailed: Boolean,
+        withRemark: Boolean,
         attempt: Int = 1
     ): Magic8BallResult {
         val instruction =
@@ -95,11 +96,13 @@ class GeminiRemoteDataSource @Inject constructor(
         // The first line is the answer; what follows it, when there is anything, is the remark.
         val lines = written.lines().map { it.tidied() }.filter { it.isNotEmpty() }
         val text = lines.firstOrNull() ?: return Magic8BallResult.Failure(LlmError.Serialization)
-        val remark = lines.drop(1).joinToString(" ").takeIf { it.isUsableRemark(text, detailed) }
+        // Only when one was asked for: a second line nobody asked for is not shown, whatever
+        // made the service write it.
+        val remark = lines.drop(1).joinToString(" ").takeIf { withRemark && it.isUsableRemark(text, detailed) }
 
         if (!validateWordCount(text)) {
             return if (attempt <= config.maxRetries) {
-                executeWithRetry(settings, systemPromptText, userText, detailed, attempt + 1)
+                executeWithRetry(settings, systemPromptText, userText, detailed, withRemark, attempt + 1)
             } else {
                 Magic8BallResult.Failure(LlmError.ValidationFailed)
             }
@@ -122,12 +125,16 @@ class GeminiRemoteDataSource @Inject constructor(
             length <= (if (detailed) MAX_READING_LENGTH else MAX_REMARK_LENGTH) &&
             split(WHITESPACE).count { it.isNotBlank() } <= (if (detailed) MAX_READING_WORDS else MAX_REMARK_WORDS)
 
+    /** Six words at most, and no more letters than six words take: a line written without spaces is not one word. */
     private fun validateWordCount(text: String): Boolean {
         val wordCount = text.split("\\s+".toRegex()).count { it.isNotBlank() }
-        return wordCount <= 6
+        return wordCount <= 6 && text.length <= MAX_ANSWER_LENGTH
     }
 
     private companion object {
+        /** Far more than six words take in any of the app's languages, and far less than a paragraph. */
+        const val MAX_ANSWER_LENGTH = 72
+
         /** A little over what is asked for: a remark one word long is not thrown away. */
         const val MAX_REMARK_WORDS = 18
         const val MAX_REMARK_LENGTH = 120

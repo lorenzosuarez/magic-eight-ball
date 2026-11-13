@@ -19,8 +19,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  * device, and every change is made on the server or not at all.
  *
  * The copy Firestore keeps is in memory only, and changes are transactions, which are never
- * left on the device to be sent later: a screen that said something could not be saved or
- * deleted is never made a liar of once the connection comes back.
+ * left on the device to be sent when a connection comes back. One that did not answer in time
+ * is told as not made and may yet be made: whoever asks again reads what is kept first, so
+ * that it is not made twice.
  */
 @Singleton
 class AccountStore @Inject constructor(@ApplicationContext context: Context) {

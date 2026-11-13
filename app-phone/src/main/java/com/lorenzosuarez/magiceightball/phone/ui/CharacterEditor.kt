@@ -126,6 +126,7 @@ internal fun CharacterEditorSheet(
                         when (onSave(name, description, draft.colour, draft.emblem)) {
                             is CharacterSave.Saved -> null
                             CharacterSave.Full -> CharacterTrouble.FULL
+                            CharacterSave.Changed -> CharacterTrouble.CHANGED
                             CharacterSave.Refused -> CharacterTrouble.REFUSED
                             CharacterSave.Failed -> CharacterTrouble.NOT_SAVED
                         }
@@ -167,6 +168,9 @@ internal enum class CharacterTrouble(val message: Int) {
     NOT_SAVED(R.string.profile_save_failed),
     REFUSED(R.string.character_refused),
     FULL(R.string.character_full),
+
+    /** Changed or deleted on another device since it was opened here. */
+    CHANGED(R.string.character_changed),
     NOT_DELETED(R.string.character_delete_failed)
 }
 

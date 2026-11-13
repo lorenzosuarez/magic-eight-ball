@@ -192,6 +192,26 @@ class GeminiRemoteDataSourceTest {
     }
 
     @Test
+    fun `a second line the service wrote without being asked is not shown`() = runTest {
+        // Whatever made it write one: a character the user described, told to always add something.
+        apiClient.answer = "Nay.\nAnd here is a line nobody asked for."
+
+        val result = fetch(Magic8BallRequest(userTrigger = "shake"))
+
+        assertEquals(Magic8BallResult.Success("Nay.", fromAi = true, remark = null), result)
+    }
+
+    @Test
+    fun `an answer far too long for a ball is asked for again, however few spaces it has`() = runTest {
+        apiClient.answers = ArrayDeque(listOf("Nay" + "-and-on".repeat(20), "Nay."))
+
+        val result = fetch(Magic8BallRequest(userTrigger = "shake"))
+
+        assertEquals(Magic8BallResult.Success("Nay.", fromAi = true), result)
+        assertEquals(2, apiClient.requests.size)
+    }
+
+    @Test
     fun `a remark too long to show, or the answer said again, is left out and the answer kept`() = runTest {
         apiClient.answer = "Nay.\n" + "word ".repeat(40)
         assertEquals(Magic8BallResult.Success("Nay.", fromAi = true), fetch(Magic8BallRequest(wantsRemark = true)))

@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.account
 
 import android.util.Log
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -101,6 +102,10 @@ class FirestoreProfiles @Inject constructor(
     override suspend fun delete(): Boolean {
         val document = document ?: return false
         return store.write(refused = false) { transaction, _ ->
+            // In one change: characters left under a profile that is gone could be reached by
+            // nobody, and the project's rules refuse a profile deleted without them.
+            val characters = document.collection(AccountStore.CHARACTERS)
+            CustomCharacter.SLOTS.forEach { transaction.delete(characters.document(it)) }
             transaction.delete(document)
             true
         } == true

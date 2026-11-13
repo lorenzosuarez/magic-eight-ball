@@ -1395,7 +1395,11 @@ class EightBallViewModelTest {
         appConfig.config.value = AppConfig(accountEnabled = true)
         aiAvailability.isAvailable.value = true
         llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, fromAi = true) }
-        val viewModel = createViewModel(account = FakeAccount(initial = FakeAccount.ANA), characters = FakeCustomCharacters(listOf(NEMO)))
+        val viewModel = createViewModel(
+            account = FakeAccount(initial = FakeAccount.ANA),
+            profiles = FakeProfiles(ProfileState.Present(LORENA)),
+            characters = FakeCustomCharacters(listOf(NEMO))
+        )
         advanceUntilIdle()
 
         viewModel.chooseCharacter(NEMO)
@@ -1419,13 +1423,30 @@ class EightBallViewModelTest {
     }
 
     @Test
-    fun `what the user wrote for a character is not sent once accounts are switched off, or they sign out`() = runTest {
+    fun `what the user wrote for a character is sent only with their profile in sight, accounts on and them signed in`() = runTest {
         appConfig.config.value = AppConfig(accountEnabled = true)
         val account = FakeAccount(initial = FakeAccount.ANA)
-        val viewModel = createViewModel(account = account, characters = FakeCustomCharacters(listOf(NEMO)))
+        val profiles = FakeProfiles(ProfileState.Present(LORENA))
+        val viewModel = createViewModel(account = account, profiles = profiles, characters = FakeCustomCharacters(listOf(NEMO)))
         advanceUntilIdle()
         viewModel.chooseCharacter(NEMO)
         advanceUntilIdle()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertEquals(NEMO, llmGateway.requests.last().custom)
+        assertEquals(false, viewModel.state.value?.answersAsClassic)
+        viewModel.dismiss()
+        advanceUntilIdle()
+
+        // The profile is where they agreed to it: not in sight, nothing of the character is sent.
+        profiles.state.value = ProfileState.Unknown
+        viewModel.ask()
+        advanceUntilIdle()
+        assertNull(llmGateway.requests.last().custom)
+        assertEquals(true, viewModel.state.value?.answersAsClassic)
+        viewModel.dismiss()
+        advanceUntilIdle()
+        profiles.state.value = ProfileState.Present(LORENA)
 
         appConfig.config.value = AppConfig(accountEnabled = false)
         viewModel.ask()
@@ -1446,7 +1467,7 @@ class EightBallViewModelTest {
     fun `a character just made is chosen, and the one chosen follows what is kept with the account`() = runTest {
         appConfig.config.value = AppConfig(accountEnabled = true)
         val characters = FakeCustomCharacters()
-        val profiles = FakeProfiles(ProfileState.Present(Profile("Lorena", LocalDate.of(1990, 3, 12))))
+        val profiles = FakeProfiles(ProfileState.Present(LORENA))
         val viewModel = createViewModel(account = FakeAccount(initial = FakeAccount.ANA), profiles = profiles, characters = characters)
         advanceUntilIdle()
 
@@ -1456,8 +1477,13 @@ class EightBallViewModelTest {
         assertEquals(NEMO, viewModel.state.value?.settings?.customCharacter)
         assertEquals(listOf(NEMO), viewModel.state.value?.characters)
 
+        // Asked for again, as after a turn of the phone that hid the first answer: made once.
+        assertEquals(CharacterSave.Saved(NEMO), viewModel.saveCharacter(null, NEMO.name, NEMO.description, NEMO.colour, NEMO.emblem))
+        assertEquals(1, characters.written)
+        assertEquals(listOf(NEMO), characters.state.value)
+
         // Corrected, here or on another device: the copy in the settings is corrected with it.
-        viewModel.saveCharacter("1", "Nemo", NEMO.description, NEMO.colour, NEMO.emblem)
+        viewModel.saveCharacter(NEMO, "Nemo", NEMO.description, NEMO.colour, NEMO.emblem)
         advanceUntilIdle()
         assertEquals("Nemo", viewModel.state.value?.settings?.customCharacter?.name)
 
@@ -1471,6 +1497,37 @@ class EightBallViewModelTest {
         advanceUntilIdle()
         assertNull(viewModel.state.value?.settings?.customCharacter)
         assertEquals(UserSettings().personality, viewModel.state.value?.settings?.personality)
+    }
+
+    @Test
+    fun `a character is saved even when the screen that asked goes away first, and one not seen in time is not chosen`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        val characters = FakeCustomCharacters()
+        val viewModel = createViewModel(
+            account = FakeAccount(initial = FakeAccount.ANA),
+            profiles = FakeProfiles(ProfileState.Present(LORENA)),
+            characters = characters
+        )
+        advanceUntilIdle()
+
+        // On its way to the server when the phone is turned, and the editor with it.
+        val reachedTheServer = CompletableDeferred<Unit>()
+        characters.beforeSaving = { reachedTheServer.await() }
+        val screen = launch { viewModel.saveCharacter(null, NEMO.name, NEMO.description, NEMO.colour, NEMO.emblem) }
+        runCurrent()
+        screen.cancel()
+        reachedTheServer.complete(Unit)
+        screen.join()
+        advanceUntilIdle()
+        assertEquals(listOf(NEMO), characters.state.value)
+        assertEquals(NEMO, viewModel.state.value?.settings?.customCharacter)
+        characters.beforeSaving = {}
+
+        // Saved, and the list that would show it never comes: the choice is left as it was.
+        characters.saves = CharacterSave.Saved(NEMO.copy(id = "2", name = "Otro"))
+        viewModel.saveCharacter(null, "Otro", NEMO.description, NEMO.colour, NEMO.emblem)
+        advanceUntilIdle()
+        assertEquals(NEMO, viewModel.state.value?.settings?.customCharacter)
     }
 
     @Test
@@ -1689,6 +1746,8 @@ class EightBallViewModelTest {
         const val MAX_THINKING_MS = 5_000L
         const val COOLDOWN_MS = 500L
         const val NOW = 1_800_000_000_000L
+
+        val LORENA = Profile("Lorena", LocalDate.of(1990, 3, 12))
 
         val NEMO = CustomCharacter(
             id = "1",

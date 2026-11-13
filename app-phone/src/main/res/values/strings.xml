@@ -195,6 +195,8 @@
     <string name="character_sent">The name and the description are sent to Google\'s Gemini when this character answers. Write nothing personal.</string>
     <string name="character_refused">Check the name and the description</string>
     <string name="character_full">You already have five. Delete one to make another</string>
+    <string name="character_changed">This character was changed on another device. Close it and open it again</string>
+    <string name="settings_ai_custom_waiting">Your character answers as Classic until your account connects</string>
     <string name="character_delete">Delete character</string>
     <string name="character_delete_title">Delete %1$s?</string>
     <string name="character_delete_text">This can\'t be undone. Its answers stay in Recents.</string>
@@ -235,8 +237,8 @@
     <string name="profile_date_invalid">Check the date</string>
     <string name="profile_save_failed">Couldn\'t save. Check your connection and try again</string>
     <string name="profile_sent_title">What is sent to Google\'s Gemini</string>
-    <string name="profile_sent_text">Your first name, your sign and that it\'s your birthday (only on the day). Each character gets only what it uses. Your date of birth, your email and your photo,&#160;never.</string>
-    <string name="profile_sent_text_edit">Your first name, your sign and that it\'s your birthday (only on the day). They stop being sent if you sign out. Each character gets only what it uses. Your date of birth, your email and your photo,&#160;never.</string>
+    <string name="profile_sent_text">Your first name, your sign and that it\'s your birthday (only on the day). Each character gets only what it uses. Of a character you make, its name and what you say of it. Your date of birth, your email and your photo,&#160;never.</string>
+    <string name="profile_sent_text_edit">Your first name, your sign and that it\'s your birthday (only on the day). They stop being sent if you sign out. Each character gets only what it uses. Of a character you make, its name and what you say of it. Your date of birth, your email and your photo,&#160;never.</string>
     <string name="profile_accept">Agree and continue</string>
     <string name="profile_not_now">Continue without an account</string>
     <string name="age_notice_title">You can\'t have an account</string>

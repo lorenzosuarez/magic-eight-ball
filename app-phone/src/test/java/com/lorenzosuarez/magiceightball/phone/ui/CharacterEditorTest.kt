@@ -155,7 +155,7 @@ class CharacterEditorTest {
 
     private var state by mutableStateOf(EightBallUiState())
     private val chosen = mutableListOf<CustomCharacter>()
-    private val saved = mutableListOf<String?>()
+    private val saved = mutableListOf<CustomCharacter?>()
     private var signIns = 0
 
     private fun showOptions(account: AccountState, characters: List<CustomCharacter>?, profile: ProfileState = ProfileState.Present(LORENA)) {
@@ -183,8 +183,8 @@ class CharacterEditorTest {
                                 AccountOutcome.FAILED
                             },
                             onChooseCharacter = { chosen += it },
-                            onSaveCharacter = { id, _, _, _, _ ->
-                                saved += id
+                            onSaveCharacter = { replacing, _, _, _, _ ->
+                                saved += replacing
                                 CharacterSave.Failed
                             }
                         )
@@ -220,9 +220,9 @@ class CharacterEditorTest {
         compose.onNodeWithText("Tu personaje").assertIsDisplayed()
         compose.onNodeWithText("Guardar").performScrollTo().performClick()
         compose.waitForIdle()
-        // Saved over itself, by its slot; and what could not be saved is said by the button.
-        assertEquals(listOf<String?>("1"), saved)
-        compose.onNodeWithText("No se pudo guardar. Revisa tu conexión e inténtalo de nuevo").assertIsDisplayed()
+        // Saved over the one that was opened; and what could not be saved is said by the button.
+        assertEquals(listOf<CustomCharacter?>(NEMO), saved)
+        compose.onNodeWithText("No se pudo guardar", substring = true).assertIsDisplayed()
     }
 
     @Test

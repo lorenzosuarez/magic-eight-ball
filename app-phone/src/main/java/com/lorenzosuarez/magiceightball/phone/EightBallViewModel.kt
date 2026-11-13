@@ -43,6 +43,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -62,6 +63,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class EightBallViewModel @Inject constructor(
@@ -213,21 +215,38 @@ class EightBallViewModel @Inject constructor(
     /**
      * Saves a character of the user's own: see [Membership.saveCharacter]. A new one is chosen
      * at once, since whoever makes a character means to hear it.
+     *
+     * It runs to its end whatever happens to the screen that asked: a save cut short by a turn
+     * of the phone would be made all the same, and nobody would be told.
+     *
+     * @param replacing the character that was opened to be corrected; null for a new one.
      */
     suspend fun saveCharacter(
-        id: String?,
+        replacing: CustomCharacter?,
         name: String,
         description: String,
         colour: Magic8BallPersonality,
         emblem: Magic8BallPersonality
-    ): CharacterSave {
-        val outcome = membership.saveCharacter(id, name, description, colour, emblem)
-        if (outcome is CharacterSave.Saved && id == null) {
-            // Chosen once it is among those kept, or the copy would be taken for one that is gone.
-            withTimeoutOrNull(CHARACTER_SEEN_MS) { membership.who.first { outcome.character in it.characters.orEmpty() } }
-            chooseCharacter(outcome.character)
+    ): CharacterSave = withContext(NonCancellable) {
+        if (replacing == null) {
+            // Asked for twice, it is made once: the one already kept is the one meant.
+            val twin = state.value?.characters?.find {
+                it.name == CustomCharacter.nameOrNull(name) && it.description == CustomCharacter.descriptionOrNull(description) &&
+                    it.colour == colour && it.emblem == emblem
+            }
+            if (twin != null) {
+                chooseCharacter(twin)
+                return@withContext CharacterSave.Saved(twin)
+            }
         }
-        return outcome
+        val outcome = membership.saveCharacter(replacing, name, description, colour, emblem)
+        if (outcome is CharacterSave.Saved && replacing == null) {
+            // Chosen once it is among those kept: chosen before, the copy would be taken for
+            // one that is gone, and the choice given up. Not seen in time, it is left unchosen.
+            val seen = withTimeoutOrNull(CHARACTER_SEEN_MS) { membership.who.first { outcome.character in it.characters.orEmpty() } }
+            if (seen != null) chooseCharacter(outcome.character)
+        }
+        outcome
     }
 
     /** Deletes a character of the user's own, for good. If it was the one chosen, the app's first is again. */

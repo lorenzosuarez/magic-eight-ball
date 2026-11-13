@@ -31,9 +31,9 @@ class MembershipTest {
 
     private val host: Context = ApplicationProvider.getApplicationContext()
     private val account = FakeAccount(initial = FakeAccount.ANA)
-    private val profiles = FakeProfiles(initial = ProfileState.Missing)
-    private val marks = FakeDeviceMarks()
     private val characters = FakeCustomCharacters()
+    private val profiles = FakeProfiles(initial = ProfileState.Missing, under = characters)
+    private val marks = FakeDeviceMarks()
     private val membership = Membership(account, profiles, marks, characters)
 
     @Test
@@ -222,19 +222,36 @@ class MembershipTest {
         assertEquals(CharacterSave.Saved(nemo), first)
         assertEquals("2", (second as CharacterSave.Saved).character.id)
 
-        membership.saveCharacter("1", "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT)
+        membership.saveCharacter(nemo, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT)
         assertEquals(listOf("Nemo", "Doña Rosa"), characters.state.value?.map { it.name })
         assertEquals(characters.state.value, membership.who.first().characters)
+    }
+
+    @Test
+    fun `a correction is not written over what another device changed, nor brings back what it deleted`() = runTest {
+        profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
+        val opened = (membership.saveCharacter(null, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT) as CharacterSave.Saved).character
+
+        // Changed elsewhere while it was open here.
+        characters.state.value = listOf(opened.copy(name = "Otro"))
+        assertEquals(CharacterSave.Changed, membership.saveCharacter(opened, "Nemo II", opened.description, opened.colour, opened.emblem))
+        assertEquals(listOf("Otro"), characters.state.value?.map { it.name })
+
+        // Deleted elsewhere.
+        characters.state.value = emptyList()
+        assertEquals(CharacterSave.Changed, membership.saveCharacter(opened, "Nemo II", opened.description, opened.colour, opened.emblem))
+        assertTrue(characters.state.value.orEmpty().isEmpty())
     }
 
     @Test
     fun `a sixth character has nowhere to go, and one with no name or nothing said of it is not saved`() = runTest {
         profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
         repeat(CustomCharacter.MAX_COUNT) { membership.saveCharacter(null, "Nemo $it", "Un capitán gruñón del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT) }
+        val first = characters.state.value!!.first()
 
         assertEquals(CharacterSave.Full, membership.saveCharacter(null, "Otro", "Uno más, que ya no cabe.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
-        assertEquals(CharacterSave.Refused, membership.saveCharacter("1", " -- ", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
-        assertEquals(CharacterSave.Refused, membership.saveCharacter("1", "Nemo", "ok", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
+        assertEquals(CharacterSave.Refused, membership.saveCharacter(first, " -- ", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
+        assertEquals(CharacterSave.Refused, membership.saveCharacter(first, "Nemo", "ok", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT))
         assertEquals(CustomCharacter.MAX_COUNT, characters.state.value?.size)
     }
 
@@ -265,19 +282,19 @@ class MembershipTest {
     }
 
     @Test
-    fun `an account goes with its characters first, then its profile, and stays if either cannot be deleted`() = runTest {
+    fun `an account goes with its profile and its characters at once, and stays if they cannot be deleted`() = runTest {
         profiles.state.value = ProfileState.Present(Profile("Lorena", ADULT))
         membership.saveCharacter(null, "Nemo", "Un capitán gruñón del mar.", Magic8BallPersonality.CAT, Magic8BallPersonality.CAT)
 
-        characters.deletes = false
+        profiles.deletes = false
         assertEquals(AccountOutcome.FAILED, membership.deleteAccount(host))
-        assertEquals(0, profiles.deleted)
         assertEquals(0, account.deleted)
+        assertEquals(1, characters.state.value?.size)
 
-        characters.deletes = true
+        profiles.deletes = true
         assertEquals(AccountOutcome.DONE, membership.deleteAccount(host))
-        assertEquals(1, characters.deletedAll)
         assertEquals(1, profiles.deleted)
+        assertTrue(characters.state.value.orEmpty().isEmpty())
         assertEquals(1, account.deleted)
     }
 

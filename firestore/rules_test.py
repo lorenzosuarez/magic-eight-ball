@@ -87,6 +87,14 @@ def keep(uid, as_uid, slot, **changed):
     return call("POST", f"http://{HOST}/v1/{ROOT}:commit", as_uid, {"writes": [write]})
 
 
+def remove(uid, as_uid, slots=("1", "2", "3", "4", "5"), with_profile=True):
+    """Everything kept with an account deleted in one change, as the app deletes it."""
+    names = [f"{ROOT}/users/{uid}/characters/{slot}" for slot in slots]
+    if with_profile:
+        names.append(f"{ROOT}/users/{uid}")
+    return call("POST", f"http://{HOST}/v1/{ROOT}:commit", as_uid, {"writes": [{"delete": name} for name in names]})
+
+
 def profile(**changed):
     whole = {"firstName": "Lorena", "birthDate": "1990-03-12", "consent": {"version": 1}}
     whole.update(changed)
@@ -134,7 +142,8 @@ check("a profile cannot be corrected into an under-age one", save("ana", "ana", 
 check("a field the app does not ask for is refused", save("cai", "cai", profile(premium=True)), REFUSED)
 check("no name is refused", save("cai", "cai", profile(firstName=None)), REFUSED)
 check("an empty name is refused", save("cai", "cai", profile(firstName="")), REFUSED)
-check("a name longer than a name is refused", save("cai", "cai", profile(firstName="A" * 21)), REFUSED)
+check("a name longer than a name is refused", save("cai", "cai", profile(firstName="A" * 41)), REFUSED)
+check("twenty letters from beyond the common ones are a name", save("got", "got", profile(firstName="𐌰" * 20)), OK)
 check("a name that is not text is refused", save("cai", "cai", profile(firstName=7)), REFUSED)
 check("a date not written as a date is refused", save("cai", "cai", profile(birthDate="12/03/1990")), REFUSED)
 check("a month that is none is refused", save("cai", "cai", profile(birthDate="1990-13-45")), REFUSED)
@@ -165,19 +174,35 @@ check("nobody signed in cannot write one", keep("ana", None, "2"), REFUSED)
 check("an account with no profile keeps no character", keep("zoe", "zoe", "1"), REFUSED)
 check("a character with no name is refused", keep("ana", "ana", "2", name=None), REFUSED)
 check("an empty name is refused", keep("ana", "ana", "2", name=""), REFUSED)
-check("a name longer than a name is refused", keep("ana", "ana", "2", name="N" * 17), REFUSED)
+check("a name longer than a name is refused", keep("ana", "ana", "2", name="N" * 33), REFUSED)
 check("sixteen letters with accents are a name", keep("ana", "ana", "2", name="Ñ" * 16), OK)
 check("nothing said of how it answers is refused", keep("ana", "ana", "3", description=""), REFUSED)
-check("more than can be said is refused", keep("ana", "ana", "3", description="a" * 281), REFUSED)
-check("as much as can be said is kept", keep("ana", "ana", "3", description="á" * 280), OK)
+check("more than can be said is refused", keep("ana", "ana", "3", description="a" * 561), REFUSED)
+check("as much as can be said is kept, in letters from beyond the common ones too", keep("ana", "ana", "3", description="𐌰" * 280), OK)
 check("a colour that is no name is refused", keep("ana", "ana", "4", colour="#FF0000"), REFUSED)
 check("an accessory that is not text is refused", keep("ana", "ana", "4", emblem=7), REFUSED)
 check("a field the app does not ask for is refused", keep("ana", "ana", "4", premium=True), REFUSED)
+check("no slot is named with a nought before it", keep("ana", "ana", "01"), REFUSED)
+check("nor with a space after it", keep("ana", "ana", "1 "), REFUSED)
+check("nor nought", keep("ana", "ana", "0"), REFUSED)
+check("nor with a wide digit", keep("ana", "ana", "１"), REFUSED)
+check("something said of it that is not text is refused", keep("ana", "ana", "4", description=7), REFUSED)
+check("sixteen letters from beyond the common ones are a name", keep("ana", "ana", "4", name="𐌰" * 16), OK)
+check("and seventeen are not", keep("ana", "ana", "4", name="𐌰" * 17), REFUSED)
 check("someone else cannot delete a character", call("DELETE", f"{BASE}/users/ana/characters/1", "eve"), REFUSED)
 check("the owner deletes a character", call("DELETE", f"{BASE}/users/ana/characters/1", "ana"), OK)
+check("a profile is not deleted from over its characters", call("DELETE", f"{BASE}/users/ana", "ana"), REFUSED)
+check("nor with only some of them", remove("ana", "ana", slots=("2", "3")), REFUSED)
+check("someone else cannot take an account's things away", remove("ana", "eve"), REFUSED)
+check("the owner deletes the profile and every character at once", remove("ana", "ana"), OK)
+check("and nothing of it is left", call("GET", f"{BASE}/users/ana/characters/2", "ana"), 404)
+check("with the profile gone, no character can be kept", keep("ana", "ana", "1"), REFUSED)
+check("an account with no character deletes its profile alone", save("uma", "uma", profile()), OK)
+check("as it could before there were any", call("DELETE", f"{BASE}/users/uma", "uma"), OK)
 
-check("someone else cannot delete it", call("DELETE", f"{BASE}/users/ana", "eve"), REFUSED)
-check("the owner deletes it", call("DELETE", f"{BASE}/users/ana", "ana"), OK)
+check("someone else cannot delete a profile", save("ivo", "ivo", profile()), OK)
+check("not theirs", call("DELETE", f"{BASE}/users/ivo", "eve"), REFUSED)
+check("the owner deletes it", call("DELETE", f"{BASE}/users/ivo", "ivo"), OK)
 
 print(f"\n{len(failures)} failed" if failures else "\nall as the rules say")
 sys.exit(1 if failures else 0)

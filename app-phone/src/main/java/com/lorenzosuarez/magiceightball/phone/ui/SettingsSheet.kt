@@ -40,6 +40,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -95,7 +96,7 @@ internal fun SettingsContent(
     onDeleteAccount: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
     onChooseCharacter: (CustomCharacter) -> Unit = {},
-    onSaveCharacter: suspend (String?, String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave =
+    onSaveCharacter: suspend (CustomCharacter?, String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave =
         { _, _, _, _, _ -> CharacterSave.Failed },
     onDeleteCharacter: suspend (String) -> Boolean = { false }
 ) {
@@ -140,18 +141,31 @@ internal fun SettingsContent(
             onEditYours = { editing = it.id }
         )
     }
+    // The character the editor was opened on: kept while those of the account are for a moment
+    // not known, so that what is being typed is not lost to a connection that blinked.
+    var opened by remember { mutableStateOf<CustomCharacter?>(null) }
     editing?.let { slot ->
-        val character = state.characters?.find { it.id == slot }
+        val kept = state.characters
+        val character = kept?.find { it.id == slot } ?: opened?.takeIf { it.id == slot && kept == null }
         if (slot == NEW || character != null) {
+            // As it was when the editor opened: what is saved goes over that, or not at all.
+            if (opened?.id != slot) opened = character
+            val original = opened
             CharacterEditorSheet(
-                character = character,
-                onSave = { name, description, colour, emblem -> onSaveCharacter(character?.id, name, description, colour, emblem) },
-                onDelete = character?.let { { onDeleteCharacter(it.id) } },
-                onClose = { editing = null }
+                character = original,
+                onSave = { name, description, colour, emblem -> onSaveCharacter(original, name, description, colour, emblem) },
+                onDelete = original?.let { { onDeleteCharacter(it.id) } },
+                onClose = {
+                    editing = null
+                    opened = null
+                }
             )
-        } else {
-            // Gone while it was open, from here or from another device: there is nothing to correct.
-            LaunchedEffect(slot) { editing = null }
+        } else if (kept != null) {
+            // Known to be gone, from here or from another device: there is nothing to correct.
+            LaunchedEffect(slot) {
+                editing = null
+                opened = null
+            }
         }
     }
     notice?.let { what ->
@@ -216,8 +230,10 @@ internal fun SettingsContent(
                 custom = state.settings.customCharacter
             )
             RowDivider()
-            // The classic style never asks the AI service: the switch says so rather than promise it.
-            val classic = state.settings.personality == Magic8BallPersonality.NEUTRAL
+            // The classic style never asks the AI service, and neither does one of the user's own
+            // while it is not theirs to use: the switch says so rather than promise it.
+            val classic = state.answersAsClassic
+            val waiting = classic && state.settings.personality == Magic8BallPersonality.CUSTOM
             SwitchRow(
                 title = stringResource(R.string.settings_ai),
                 supporting = stringResource(R.string.settings_ai_on),
@@ -225,6 +241,7 @@ internal fun SettingsContent(
                     // Not "for now": on a device given an under-age date of birth it is for good.
                     state.underAge -> stringResource(R.string.settings_ai_unavailable_here)
                     !state.aiAnswersAvailable -> stringResource(R.string.settings_ai_unavailable)
+                    waiting -> stringResource(R.string.settings_ai_custom_waiting)
                     classic -> stringResource(R.string.settings_ai_classic)
                     state.usesAiAnswers && state.aiAllowanceSpent -> stringResource(R.string.settings_ai_spent)
                     else -> null
@@ -602,14 +619,13 @@ private const val NEW = ""
 
 /** Whether answers are being made for whoever is signed in: the AI service is asked, and they have a profile. */
 private val EightBallUiState.sendsProfile: Boolean
-    get() = offersAccount && profile is ProfileState.Present && usesAiAnswers &&
-        settings.personality != Magic8BallPersonality.NEUTRAL
+    get() = offersAccount && profile is ProfileState.Present && usesAiAnswers && !answersAsClassic
 
 /** What is said about the user's data depends on what the app is doing with it right now. */
 @StringRes
 private fun EightBallUiState.privacyNoteRes(): Int {
     // The Classic style never asks the AI service, whatever the switch says.
-    val asksAi = usesAiAnswers && settings.personality != Magic8BallPersonality.NEUTRAL
+    val asksAi = usesAiAnswers && !answersAsClassic
     return when {
         voice.isReady && asksAi -> R.string.privacy_voice_and_ai
         voice.isReady -> R.string.privacy_voice_only

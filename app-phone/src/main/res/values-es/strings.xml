@@ -187,6 +187,8 @@
     <string name="character_sent">El nombre y la descripción se envían a Gemini, de Google, cuando este personaje responde. No escribas nada personal.</string>
     <string name="character_refused">Revisa el nombre y la descripción</string>
     <string name="character_full">Ya tienes cinco. Elimina uno para crear otro</string>
+    <string name="character_changed">Este personaje cambió en otro dispositivo. Ciérralo y vuelve a abrirlo</string>
+    <string name="settings_ai_custom_waiting">Tu personaje responde como Clásico hasta que conecte tu cuenta</string>
     <string name="character_delete">Eliminar personaje</string>
     <string name="character_delete_title">¿Eliminar a %1$s?</string>
     <string name="character_delete_text">No se puede deshacer. Sus respuestas siguen en Recientes.</string>
@@ -227,8 +229,8 @@
     <string name="profile_date_invalid">Revisa la fecha</string>
     <string name="profile_save_failed">No se pudo guardar. Revisa tu conexión e inténtalo de nuevo</string>
     <string name="profile_sent_title">Qué se envía a Gemini, de Google</string>
-    <string name="profile_sent_text">Tu nombre, tu signo y que es tu cumpleaños (solo ese día). Cada personaje recibe solo lo que usa. Tu fecha de nacimiento, tu correo y tu foto,&#160;nunca.</string>
-    <string name="profile_sent_text_edit">Tu nombre, tu signo y que es tu cumpleaños (solo ese día). Dejan de enviarse si cierras sesión. Cada personaje recibe solo lo que usa. Tu fecha de nacimiento, tu correo y tu foto,&#160;nunca.</string>
+    <string name="profile_sent_text">Tu nombre, tu signo y que es tu cumpleaños (solo ese día). Cada personaje recibe solo lo que usa. De un personaje que crees, su nombre y lo que digas de él. Tu fecha de nacimiento, tu correo y tu foto,&#160;nunca.</string>
+    <string name="profile_sent_text_edit">Tu nombre, tu signo y que es tu cumpleaños (solo ese día). Dejan de enviarse si cierras sesión. Cada personaje recibe solo lo que usa. De un personaje que crees, su nombre y lo que digas de él. Tu fecha de nacimiento, tu correo y tu foto,&#160;nunca.</string>
     <string name="profile_accept">Aceptar y continuar</string>
     <string name="profile_not_now">Continuar sin cuenta</string>
     <string name="age_notice_title">No puedes tener cuenta</string>

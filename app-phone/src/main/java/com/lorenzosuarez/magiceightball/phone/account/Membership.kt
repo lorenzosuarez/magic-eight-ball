@@ -156,12 +156,12 @@ class Membership @Inject constructor(
     suspend fun birthdayWished(today: LocalDate) = marks.markBirthdayWished(today.year)
 
     /**
-     * Saves a character of the user's own, as typed: over the one in slot [id], or as a new one
-     * when [id] is null. Only for someone signed in with a profile, which is where they agreed
-     * to what is sent to the AI service.
+     * Saves a character of the user's own, as typed: over [replacing], the one that was opened
+     * to be corrected, or as a new one when that is null. Only for someone signed in with a
+     * profile, which is where they agreed to what is sent to the AI service.
      */
     suspend fun saveCharacter(
-        id: String?,
+        replacing: CustomCharacter?,
         name: String,
         description: String,
         colour: Magic8BallPersonality,
@@ -171,27 +171,27 @@ class Membership @Inject constructor(
             return CharacterSave.Failed
         }
         val character = CustomCharacter(
-            id = id.orEmpty(),
+            id = replacing?.id.orEmpty(),
             name = CustomCharacter.nameOrNull(name) ?: return CharacterSave.Refused,
             description = CustomCharacter.descriptionOrNull(description) ?: return CharacterSave.Refused,
             colour = colour.takeIf { it in CustomCharacter.LOOKS } ?: Magic8BallPersonality.NEUTRAL,
             emblem = emblem.takeIf { it in CustomCharacter.LOOKS } ?: Magic8BallPersonality.NEUTRAL
         )
-        return characters.save(character)
+        return characters.save(character, replacing)
     }
 
     /** Deletes the character in slot [id], for good. */
     suspend fun deleteCharacter(id: String): Boolean = characters.delete(id)
 
     /**
-     * The characters, the profile, then the account: in that order, to the end, and with
-     * nothing asked for in between. What is kept with the account is deleted whether or not
-     * this device knows of any, since what it does not know of may still be there.
+     * What is kept with the account, its profile and its characters at once, then the account:
+     * in that order, to the end, and with nothing asked for in between. It is deleted whether
+     * or not this device knows of any, since what it does not know of may still be there.
      */
     private suspend fun remove(host: Context?): AccountOutcome = withContext(NonCancellable) {
         removing.value = true
         try {
-            if (characters.deleteAll() && profiles.delete()) account.delete(host) else AccountOutcome.FAILED
+            if (profiles.delete()) account.delete(host) else AccountOutcome.FAILED
         } finally {
             removing.value = false
         }

@@ -68,11 +68,20 @@ data class EightBallUiState(
     val canMakeCharacters: Boolean
         get() = offersAccount && account is AccountState.SignedIn && profile is ProfileState.Present
 
-    /** The character of the user's own that answers, when one does: chosen, and still theirs to use. */
+    /** The character of the user's own that answers in its voice, when one does: chosen, and still theirs to use. */
     val answeringCustom: CustomCharacter?
         get() = settings.customCharacter.takeIf {
-            settings.personality == Magic8BallPersonality.CUSTOM && offersAccount && account is AccountState.SignedIn
+            // With the profile in sight: it is where they agreed to what is sent of a character.
+            settings.personality == Magic8BallPersonality.CUSTOM && canMakeCharacters
         }
+
+    /**
+     * Whether the character chosen has no voice the AI service could be asked for: the classic
+     * one, or one of the user's own that is not theirs to use just now.
+     */
+    val answersAsClassic: Boolean
+        get() = settings.personality == Magic8BallPersonality.NEUTRAL ||
+            (settings.personality == Magic8BallPersonality.CUSTOM && answeringCustom == null)
 
     /** Whether a question the app hears is sent to the AI service to be answered. */
     val usesAiAnswers: Boolean get() = settings.aiAnswersEnabled && aiAnswersAvailable
