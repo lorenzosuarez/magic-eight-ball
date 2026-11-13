@@ -94,13 +94,16 @@ class CharacterEditorTest {
         val saved = mutableListOf<Pair<String, String>>()
         showEditor(draft, onSave = { name, description -> saved += name to description })
         compose.onNodeWithText("Guardar").assertIsNotEnabled()
-        // Before the button, and said in full: what saving it sends.
-        compose.onNodeWithText("El nombre y la descripción se envían a Gemini, de Google, cuando este personaje responde. No escribas nada personal.")
+        // Why it waits is said while it does.
+        compose.onNodeWithText("Ponle un nombre y di cómo responde").assertIsDisplayed()
+        // Before the button, and said in full: where saving keeps it and where it is sent.
+        compose.onNodeWithText("Se guarda en tu cuenta y se envía a Gemini, de Google, cuando este personaje responde. No pongas nada personal.")
             .assertIsDisplayed()
 
         compose.onNodeWithText("Nombre").performTextInput("Capitán Nemo")
         compose.onNodeWithText("Guardar").assertIsNotEnabled()
-        compose.onNodeWithText("¿Cómo responde?").performTextInput("ok")
+        // The field shows an example of what to write for as long as nothing is written.
+        compose.onNodeWithText("Un capitán gruñón que todo lo compara con el mar").performTextInput("ok")
         compose.onNodeWithText("Guardar").assertIsNotEnabled()
         // Typed on after what is there: a few words more, and it says something.
         compose.onNodeWithText("ok").performTextInput(", pero gruñón como el mar ")
@@ -108,8 +111,11 @@ class CharacterEditorTest {
         compose.onAllNodesWithContentDescription("Pirata")[0].performScrollTo().performClick()
         compose.onAllNodesWithContentDescription("Gato")[1].performScrollTo().performClick()
 
+        assertEquals(0, count("Ponle un nombre y di cómo responde"))
         compose.onNodeWithText("Guardar").assertIsEnabled().performClick()
         assertEquals(listOf("Capitán Nemo" to "ok, pero gruñón como el mar"), saved)
+        // What is worn is named, since a small drawing may not say it.
+        compose.onNodeWithText("Accesorio \u00b7 Gato").assertIsDisplayed()
         assertEquals(Magic8BallPersonality.PIRATE, draft.colour)
         assertEquals(Magic8BallPersonality.CAT, draft.emblem)
         // The card follows what is typed.
@@ -201,14 +207,15 @@ class CharacterEditorTest {
         assertEquals(0, count("Tuyos"))
 
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
-        compose.onNodeWithText("Los personajes propios van con una cuenta").assertIsDisplayed()
+        compose.onNodeWithText("Para crear personajes necesitas una cuenta").assertIsDisplayed()
         assertEquals(0, count("Nuevo personaje"))
 
         // The page's own button is under the sheet: the dialog's is the later of the two.
         compose.onAllNodesWithText("Continuar con Google")[1].performClick()
         compose.waitForIdle()
         assertEquals(1, signIns)
-        compose.onNodeWithText("No se pudo entrar. Revisa tu conexión e inténtalo de nuevo").assertIsDisplayed()
+        compose.onNodeWithText("No se pudo entrar").assertIsDisplayed()
+        compose.onNodeWithText("Revisa tu conexión e inténtalo de nuevo en un momento.").assertIsDisplayed()
     }
 
     @Test
@@ -244,7 +251,7 @@ class CharacterEditorTest {
 
         state = state.copy(characters = null)
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
-        compose.onNodeWithText("No se pudo leer tu cuenta").assertIsDisplayed()
+        compose.onNodeWithText("No se pudo conectar con tu cuenta").assertIsDisplayed()
         assertEquals(0, count("Nuevo personaje"))
     }
 

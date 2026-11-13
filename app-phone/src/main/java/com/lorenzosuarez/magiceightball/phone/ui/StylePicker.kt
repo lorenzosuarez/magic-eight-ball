@@ -43,6 +43,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,8 +55,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -189,7 +192,8 @@ internal fun StyleRow(
                 val own = custom.takeIf { style == Magic8BallPersonality.CUSTOM }
                 StyleCard(
                     title = own?.name ?: stringResource(style.labelRes()),
-                    sample = own?.description ?: stringResource(style.sampleRes()),
+                    // What the user wrote of it is theirs and long: a line of the app's says whose words it speaks in.
+                    sample = stringResource(style.sampleRes()),
                     chosen = style == selected,
                     onClick = { onSelected(style) },
                     // As wide as what it says: in a row that scrolls, nothing has to be cut short.
@@ -386,7 +390,7 @@ internal fun StylesContent(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                // One row: there are five at most, and each is wider than the app's, for its pencil.
+                // One row, of cards as wide as the app's own: there are five at most.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -398,10 +402,10 @@ internal fun StylesContent(
                     yours.forEach { character ->
                         StyleCard(
                             title = character.name,
-                            sample = character.description,
+                            sample = stringResource(R.string.style_custom_sample),
                             chosen = selected == Magic8BallPersonality.CUSTOM && character.id == chosenOfYours,
                             onClick = { onYoursSelected(character) },
-                            modifier = Modifier.width(cardWidth + YOURS_EXTRA_WIDTH).fillMaxHeight(),
+                            modifier = Modifier.width(cardWidth).fillMaxHeight(),
                             onEdit = { onEditYours(character) }
                         )
                     }
@@ -468,7 +472,7 @@ private fun StyleCard(
     onEdit: (() -> Unit)? = null
 ) {
     val ink = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
-    Row(
+    Box(
         modifier = modifier
             .clip(ButtonShape)
             .background(
@@ -478,13 +482,10 @@ private fun StyleCard(
                     MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
                 }
             )
-            .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically
+            .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 14.dp, top = 14.dp, end = if (onEdit == null) 14.dp else 0.dp, bottom = 14.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
@@ -497,20 +498,34 @@ private fun StyleCard(
             )
             Text(
                 text = sample,
+                // Clear of the pencil, where there is one.
+                modifier = Modifier.padding(end = if (onEdit == null) 0.dp else EDIT_GLYPH + 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = ink.copy(alpha = SAMPLE_ALPHA),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        // On a character of the user's own: the way to correct it, a touch of its own.
+        // On a character of the user's own: the way to correct it, a touch of its own, at the
+        // end of the second line. The card stays as wide and as tall as the app's.
         if (onEdit != null) {
-            AppIconButton(
-                icon = R.drawable.ic_edit,
-                description = stringResource(R.string.character_edit, title),
-                onClick = onEdit,
-                tint = ink
-            )
+            val edit = stringResource(R.string.character_edit, title)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(EDIT_TARGET)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = edit, role = Role.Button, onClick = onEdit)
+                    .semantics { contentDescription = edit },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_edit),
+                    contentDescription = null,
+                    modifier = Modifier.size(EDIT_GLYPH),
+                    tint = ink
+                )
+            }
         }
     }
 }
@@ -580,6 +595,7 @@ private val STYLE_CARD_WIDTH = 152.dp
 private val STYLE_CARD_GAP = 8.dp
 private const val STYLE_ROWS = 2
 
-/** What a card of the user's own is wider by, for the pencil at its end. */
-private val YOURS_EXTRA_WIDTH = 40.dp
+/** The pencil on a card of the user's own, and the room round it that takes the touch. */
+private val EDIT_GLYPH = 18.dp
+private val EDIT_TARGET = 44.dp
 private const val MAX_CARD_GROWTH = 1.6f

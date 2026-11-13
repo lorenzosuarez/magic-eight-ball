@@ -611,7 +611,7 @@ internal enum class CharactersNotice(@StringRes val title: Int, @StringRes val t
     FULL(R.string.characters_full_title, R.string.characters_full_text),
 
     /** The way to an account was taken, and led nowhere. */
-    NO_SIGN_IN(R.string.characters_account_title, R.string.account_sign_in_failed)
+    NO_SIGN_IN(R.string.characters_no_sign_in_title, R.string.characters_unknown_text)
 }
 
 /** What [SettingsContent] calls the editor open on nobody yet. */

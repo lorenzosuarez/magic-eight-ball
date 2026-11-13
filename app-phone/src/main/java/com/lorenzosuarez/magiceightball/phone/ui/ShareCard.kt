@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,6 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -177,20 +179,31 @@ internal fun ShareCard(
                     }
                     // Signed like a quote, in another hand: the one change of voice on the card.
                     if (styleLabel != null) {
-                        Text(
-                            text = "\u2014 $styleLabel",
-                            modifier = Modifier.padding(top = 12.dp),
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontFamily = FontFamily.Serif,
-                                fontStyle = FontStyle.Italic,
-                                fontSize = 24.sp
-                            ),
-                            color = SHARE_INK,
-                            // One line and never a second: a name too wide for it is cut short, not lost.
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
+                        val signature = "\u2014 $styleLabel"
+                        val hand = MaterialTheme.typography.headlineSmall.copy(
+                            fontFamily = FontFamily.Serif,
+                            fontStyle = FontStyle.Italic
                         )
+                        val measurer = rememberTextMeasurer()
+                        BoxWithConstraints(modifier = Modifier.padding(top = 12.dp).fillMaxWidth()) {
+                            // A name the user gave may be wider than any of the app's: it is
+                            // written smaller, a step at a time, before it is cut short.
+                            val room = constraints.maxWidth
+                            val size = remember(signature, room) {
+                                SIGNATURE_SIZES.firstOrNull {
+                                    measurer.measure(signature, hand.copy(fontSize = it), softWrap = false).size.width <= room
+                                } ?: SIGNATURE_SIZES.last()
+                            }
+                            Text(
+                                text = signature,
+                                style = hand.copy(fontSize = size),
+                                color = SHARE_INK,
+                                // One line and never a second: too wide even then, it is cut short, not lost.
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                     Spacer(Modifier.weight(1f))
                     // A maker's mark, not a line to read.
@@ -539,6 +552,9 @@ private val SHARE_WIDTH = 360.dp
 private val SHARE_HEIGHT = 450.dp
 private val SHARE_MARGIN = 28.dp
 private val SHARE_INK = Color(0xFF12110D)
+
+/** The sizes the signature is tried at, largest first. */
+private val SIGNATURE_SIZES = listOf(24.sp, 22.sp, 20.sp, 18.sp)
 
 /** The card's ink, for whatever shows a card's look elsewhere: the same in both themes. */
 internal val ShareInk = SHARE_INK

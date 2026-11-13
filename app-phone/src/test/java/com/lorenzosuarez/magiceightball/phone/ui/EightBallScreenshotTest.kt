@@ -913,6 +913,17 @@ class EightBallScreenshotTest {
     fun phone_character_new_spanish() =
         captureEditor("phone_68_character_new_spanish", CharacterDraft(), AppLanguage.SPANISH, dark = false)
 
+    /** The picks that are furthest along their rows: each row opens on the one picked. */
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun phone_character_last_picks_spanish() = captureEditor(
+        "phone_76_character_last_picks_spanish",
+        CharacterDraft(CustomCharacter("1", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.DOG, Magic8BallPersonality.GRANDMA)),
+        AppLanguage.SPANISH,
+        dark = false,
+        isNew = false
+    )
+
     /** One that exists, being corrected, in the dark theme: the card and its picks stay light. */
     @Test
     @Config(qualifiers = "w432dp-h1200dp-night-400dpi")
@@ -981,6 +992,22 @@ class EightBallScreenshotTest {
                 styleLabel = character.name,
                 personality = Magic8BallPersonality.CUSTOM,
                 look = character
+            )
+        }
+    }
+
+    /** The tightest card: the widest name, an answer on three lines, and the tallest things a ball wears. */
+    @Test
+    fun share_card_of_the_user_s_own_at_its_tightest() = listOf(Magic8BallPersonality.CAT, Magic8BallPersonality.DRAMA).forEach { worn ->
+        captureRoboImage(filePath = path("phone_75_share_card_yours_tight_${worn.name.lowercase()}")) {
+            ShareCard(
+                question = "¿Me va a escribir esta noche?",
+                answer = "Ni con la marea más alta del año.",
+                layer = rememberGraphicsLayer(),
+                visible = true,
+                styleLabel = "Wwwwwwwwwwwwwwww",
+                personality = Magic8BallPersonality.CUSTOM,
+                look = CustomCharacter("1", "Wwwwwwwwwwwwwwww", "W", Magic8BallPersonality.ZOOMER, worn)
             )
         }
     }
