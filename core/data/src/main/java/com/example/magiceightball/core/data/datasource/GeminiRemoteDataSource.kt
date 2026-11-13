@@ -32,6 +32,7 @@ class GeminiRemoteDataSource @Inject constructor(
             personality = request.personality,
             hasQuestion = request.questionForAi != null,
             withRemark = request.wantsRemark,
+            detailed = request.detailed,
             languageCode = request.languageCode,
             question = request.questionForAi,
             characters = characters
@@ -53,13 +54,14 @@ class GeminiRemoteDataSource @Inject constructor(
     ): Magic8BallResult {
         return withContext(Dispatchers.IO) {
             val question = request.questionForAi
+            val brief = drawBrief(request)
             val systemPromptText = promptPolicy.getSystemPrompt(
                 languageCode = request.languageCode,
                 personality = request.personality,
                 answersQuestion = question != null,
                 // Drawn here, as a shake would: the service words the answer, it does not choose it.
                 // It is also all that tells one request from the next when nothing was asked.
-                brief = drawBrief(request)
+                brief = brief
             )
 
             val systemInstruction = Content(parts = listOf(Part(text = systemPromptText)))
@@ -76,7 +78,7 @@ class GeminiRemoteDataSource @Inject constructor(
                 generationConfig = genConfig
             )
 
-            executeWithRetry(apiKey, modelId, apiRequest, systemPromptText)
+            executeWithRetry(apiKey, modelId, apiRequest, systemPromptText, brief.detailed)
         }
     }
 
@@ -85,6 +87,7 @@ class GeminiRemoteDataSource @Inject constructor(
         modelId: String,
         initialRequest: GeminiRequest,
         systemPromptText: String,
+        detailed: Boolean,
         attempt: Int = 1
     ): Magic8BallResult {
         try {
@@ -107,7 +110,7 @@ class GeminiRemoteDataSource @Inject constructor(
             // The first line is the answer; what follows it, when there is anything, is the remark.
             val lines = written.lines().map { it.tidied() }.filter { it.isNotEmpty() }
             val text = lines.firstOrNull() ?: return Magic8BallResult.Failure(LlmError.Serialization)
-            val remark = lines.drop(1).joinToString(" ").takeIf { it.isUsableRemark(text) }
+            val remark = lines.drop(1).joinToString(" ").takeIf { it.isUsableRemark(text, detailed) }
 
             if (!validateWordCount(text)) {
                 if (attempt <= config.maxRetries) {
@@ -115,7 +118,7 @@ class GeminiRemoteDataSource @Inject constructor(
                         parts = listOf(Part(text = "$systemPromptText Line 1 MUST use 6 words or less."))
                     )
                     val retryRequest = initialRequest.copy(systemInstruction = stricterInstruction)
-                    return executeWithRetry(apiKey, modelId, retryRequest, systemPromptText, attempt + 1)
+                    return executeWithRetry(apiKey, modelId, retryRequest, systemPromptText, detailed, attempt + 1)
                 } else {
                     return Magic8BallResult.Failure(LlmError.ValidationFailed)
                 }
@@ -153,9 +156,10 @@ class GeminiRemoteDataSource @Inject constructor(
         .trim()
 
     /** A remark worth showing: something of its own, of a length the screen can hold. */
-    private fun String.isUsableRemark(answer: String): Boolean =
-        isNotBlank() && length <= MAX_REMARK_LENGTH && !equals(answer, ignoreCase = true) &&
-            split(WHITESPACE).count { it.isNotBlank() } <= MAX_REMARK_WORDS
+    private fun String.isUsableRemark(answer: String, detailed: Boolean): Boolean =
+        isNotBlank() && !equals(answer, ignoreCase = true) &&
+            length <= (if (detailed) MAX_READING_LENGTH else MAX_REMARK_LENGTH) &&
+            split(WHITESPACE).count { it.isNotBlank() } <= (if (detailed) MAX_READING_WORDS else MAX_REMARK_WORDS)
 
     private fun validateWordCount(text: String): Boolean {
         val wordCount = text.split("\\s+".toRegex()).count { it.isNotBlank() }
@@ -166,6 +170,9 @@ class GeminiRemoteDataSource @Inject constructor(
         /** A little over what is asked for: a remark one word long is not thrown away. */
         const val MAX_REMARK_WORDS = 18
         const val MAX_REMARK_LENGTH = 120
+        /** The same for the few sentences a user asked for: what the screen under the ball can hold. */
+        const val MAX_READING_WORDS = 55
+        const val MAX_READING_LENGTH = 340
         val WHITESPACE = Regex("\\s+")
         val LINE_LABEL = Regex("^(line|línea|linea)\\s*[12]\\s*[:.)-]\\s*", RegexOption.IGNORE_CASE)
     }

@@ -167,6 +167,10 @@ class EightBallViewModel @Inject constructor(
         viewModelScope.launch { userSettingsRepository.setVoiceQuestionsEnabled(enabled) }
     }
 
+    fun setDetailedAnswers(enabled: Boolean) {
+        viewModelScope.launch { userSettingsRepository.setDetailedAnswers(enabled) }
+    }
+
     fun setSpokenAnswersEnabled(enabled: Boolean) {
         usage.track(UsageEvent.SettingChanged(UsageEvent.SettingChanged.Setting.SPOKEN_ANSWERS, enabled))
         viewModelScope.launch { userSettingsRepository.setSpokenAnswersEnabled(enabled) }
@@ -592,7 +596,8 @@ class EightBallViewModel @Inject constructor(
                     useAi = settings.aiAnswersEnabled,
                     question = question.takeIf { it.isNotBlank() },
                     // Under the ball there is room for a second line, unless it is switched off from afar.
-                    wantsRemark = appConfig.config.value.aiRemarkEnabled
+                    wantsRemark = appConfig.config.value.aiRemarkEnabled,
+                    detailed = settings.detailedAnswers
                 )
             }
         } catch (e: CancellationException) {

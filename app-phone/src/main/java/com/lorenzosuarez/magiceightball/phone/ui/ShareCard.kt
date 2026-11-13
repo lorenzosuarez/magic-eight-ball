@@ -102,11 +102,21 @@ internal fun ShareCard(
                     .clipToBounds()
                     .background(shareColor(personality))
             ) {
+                // A few sentences need the room: the ball steps back into the corner for them.
+                val reading = remark != null && remark.length > SHARE_LONG_REMARK
                 FlatBall(
                     personality = personality,
                     modifier = Modifier
                         .offset(x = SHARE_BALL_LEFT, y = SHARE_BALL_TOP)
                         .requiredSize(SHARE_BALL_SIZE)
+                        .graphicsLayer {
+                            if (reading) {
+                                scaleX = SHARE_BALL_BACK
+                                scaleY = SHARE_BALL_BACK
+                                translationX = SHARE_BALL_BACK_SHIFT.toPx()
+                                translationY = SHARE_BALL_BACK_SHIFT.toPx()
+                            }
+                        }
                 )
                 Column(modifier = Modifier.fillMaxSize().padding(SHARE_MARGIN)) {
                     if (question.isNotBlank()) {
@@ -131,7 +141,7 @@ internal fun ShareCard(
                         longest > SHARE_WORD_AT_46 || answer.length > SHARE_MEDIUM_ANSWER -> 38
                         longest > SHARE_WORD_AT_58 || answer.length > SHARE_SHORT_ANSWER -> 46
                         else -> 58
-                    }
+                    }.let { if (reading) minOf(it, SHARE_READING_ANSWER) else it }
                     Text(
                         text = answer,
                         style = MaterialTheme.typography.displayLarge.copy(
@@ -149,11 +159,12 @@ internal fun ShareCard(
                         Text(
                             text = remark,
                             // Kept clear of the ball, which comes in from the right lower down.
-                            modifier = Modifier.padding(top = 12.dp, end = SHARE_REMARK_INSET),
-                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 12.dp, end = if (reading) SHARE_READING_INSET else SHARE_REMARK_INSET),
+                            // A few sentences are set smaller, so that all of them are on the card.
+                            style = if (reading) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = SHARE_INK,
-                            maxLines = 3,
+                            maxLines = if (reading) 9 else 3,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -210,6 +221,7 @@ private fun DrawScope.drawBubble() {
 @Composable
 private fun FlatBall(personality: Magic8BallPersonality, modifier: Modifier = Modifier) {
     val worn = remember(personality) { silhouette(personality)?.let { PathParser().parsePathString(it).toPath() } }
+    val cut = remember(personality) { detail(personality)?.let { PathParser().parsePathString(it).toPath() } }
     Box(modifier = modifier.rotate(SHARE_BALL_TILT)) {
         Canvas(Modifier.fillMaxSize()) {
             val radius = size.minDimension / 2
@@ -219,13 +231,13 @@ private fun FlatBall(personality: Magic8BallPersonality, modifier: Modifier = Mo
                 withTransform({
                     translate(center.x - WORN_CENTRE_X * unit, center.y - WORN_CENTRE_Y * unit)
                     scale(unit, unit, pivot = Offset.Zero)
-                    // Small on the crown of the ball, unless it hangs down its sides.
-                    if (personality != Magic8BallPersonality.DOG) {
-                        scale(WORN_SIZE, WORN_SIZE, pivot = Offset(WORN_CENTRE_X, WORN_CENTRE_Y - WORN_RADIUS))
-                    }
+                    // Small, on the crown of the ball.
+                    scale(WORN_SIZE, WORN_SIZE, pivot = Offset(WORN_CENTRE_X, WORN_CENTRE_Y - WORN_RADIUS))
                 }) {
                     drawPath(worn, SHARE_INK)
                     drawPath(worn, SHARE_INK, style = Stroke(width = WORN_SOFTEN, join = StrokeJoin.Round))
+                    // What is cut out of it in white: the one detail that says what the shape is.
+                    if (cut != null) drawPath(cut, Color.White)
                 }
             }
             drawCircle(SHARE_INK, radius)
@@ -259,12 +271,18 @@ private fun FlatBall(personality: Magic8BallPersonality, modifier: Modifier = Mo
  */
 private fun silhouette(personality: Magic8BallPersonality): String? = when (personality) {
     Magic8BallPersonality.NEUTRAL -> null
-    Magic8BallPersonality.SARCASTIC -> "M33 23 L56 17 L57 22 L34 28Z"
-    Magic8BallPersonality.MYSTICAL -> "M56 4 A11 11 0 1 0 61 24 A9 9 0 1 1 56 4Z"
-    Magic8BallPersonality.GRANDMA -> "M41 25 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0Z"
-    Magic8BallPersonality.PIRATE -> "M28 35 Q50 6 72 35 Q50 26 28 35Z"
+    Magic8BallPersonality.SARCASTIC ->
+        "M35 11 a6 6 0 1 1 12 0 q0 9 -9 14 q3 -5 2 -8.4 a6 6 0 0 1 -5 -5.6Z M53 11 a6 6 0 1 1 12 0 q0 9 -9 14 q3 -5 2 -8.4 a6 6 0 0 1 -5 -5.6Z"
+    Magic8BallPersonality.MYSTICAL ->
+        "M56 4 A11 11 0 1 0 61 24 A9 9 0 1 1 56 4Z M72 6 l1.6 4.4 l4.4 1.6 l-4.4 1.6 l-1.6 4.4 l-1.6 -4.4 l-4.4 -1.6 l4.4 -1.6Z"
+    Magic8BallPersonality.GRANDMA ->
+        "M41 25 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0Z M45 29 L62 4 L60 2.7 L43 27.7Z M53 31 L70 6 L68 4.7 L51 29.7Z" +
+        " M58 3 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0Z M66 5 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0Z"
+    Magic8BallPersonality.PIRATE ->
+        "M22 35 Q25 20 40 18 Q50 0 60 18 Q75 20 78 35 Q50 25 22 35Z"
     Magic8BallPersonality.PHILOSOPHER ->
-        "M46 22 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0Z M55 13 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0Z M62 6 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0Z"
+        "M35 12 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0Z M47 9 a8.5 8.5 0 1 0 17 0 a8.5 8.5 0 1 0 -17 0Z M42 17 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0Z" +
+        " M53 15 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0Z M43 29 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0Z"
     Magic8BallPersonality.COACH -> "M31 34 Q31 13 50 13 Q69 13 69 34Z M14 29 h24 v5 h-24Z"
     Magic8BallPersonality.LOVESTRUCK -> "M50 24 C39 16 42 6 50 12 C58 6 61 16 50 24Z"
     Magic8BallPersonality.DRAMA -> "M35 36 L32 14 L42 24 L50 10 L58 24 L68 14 L65 36Z"
@@ -274,11 +292,29 @@ private fun silhouette(personality: Magic8BallPersonality): String? = when (pers
     Magic8BallPersonality.CAT -> "M31 40 L30 20 L45 31Z M55 31 L70 20 L69 40Z"
     Magic8BallPersonality.ZOOMER -> "M55 0 L41 17 L50 17 L45 30 L61 12 L52 12Z"
     Magic8BallPersonality.VILLAIN -> "M33 36 Q24 24 31 12 Q33 24 42 30Z M67 36 Q76 24 69 12 Q67 24 58 30Z"
-    Magic8BallPersonality.POET -> "M50 31 Q38 15 55 2 Q65 17 50 31Z"
+    Magic8BallPersonality.POET ->
+        "M63 0 Q73 15 54 30 L49 35 L47 33 L52 28 Q40 15 63 0Z"
     Magic8BallPersonality.ASTRO -> "M50 2 L52.5 11.5 L62 14 L52.5 16.5 L50 26 L47.5 16.5 L38 14 L47.5 11.5Z"
     Magic8BallPersonality.THERAPIST ->
-        "M48.8 16 h2.5 v16 h-2.5Z M50 22 Q40 20 38 10 Q49 11 50 22Z M51 20 Q61 18 63 8 Q52 9 51 20Z"
-    Magic8BallPersonality.DOG -> "M27 40 Q11 42 13 66 Q24 68 29 52Z M73 40 Q89 42 87 66 Q76 68 71 52Z"
+        "M30 20 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0Z M52 20 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0Z M48 17 h6 v4 h-6Z"
+    Magic8BallPersonality.DOG ->
+        "M38 36 Q32 6 14 12 Q8 30 26 42Z M62 36 Q68 6 86 12 Q92 30 74 42Z"
+}
+
+/**
+ * What is cut out of [silhouette] in white, drawn in the same place and at the same size: a
+ * band on a hat, the lenses of a pair of glasses. Most shapes say what they are without one.
+ */
+private fun detail(personality: Magic8BallPersonality): String? = when (personality) {
+    Magic8BallPersonality.PIRATE -> "M44.5 13 l2 -2 l9 9 l-2 2Z M55.5 13 l-2 -2 l-9 9 l2 2Z"
+    Magic8BallPersonality.DETECTIVE -> "M36 22.5 h28 v4 h-28Z"
+    Magic8BallPersonality.CONSPIRACY -> "M41 25 Q50 15 59 25 Q50 35 41 25Z M53.5 25 a3.5 3.5 0 1 0 -7 0 a3.5 3.5 0 1 0 7 0Z"
+    Magic8BallPersonality.DRAMA -> "M39 30 a2.2 2.2 0 1 0 4.4 0 a2.2 2.2 0 1 0 -4.4 0Z M47.8 29 a2.2 2.2 0 1 0 4.4 0 a2.2 2.2 0 1 0 -4.4 0Z" +
+        " M56.6 30 a2.2 2.2 0 1 0 4.4 0 a2.2 2.2 0 1 0 -4.4 0Z"
+    Magic8BallPersonality.POET -> "M61 5 l1.2 .6 l-10 24 l-1.2 -.6Z"
+    Magic8BallPersonality.THERAPIST -> "M34 20 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0Z M56 20 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0Z"
+    Magic8BallPersonality.COACH -> "M48 14.5 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0Z"
+    else -> null
 }
 
 /**
@@ -355,6 +391,14 @@ private const val SHARE_ANSWER_TRACKING = 0.02f
 private const val SHARE_MARK_ALPHA = 0.55f
 
 private val SHARE_REMARK_INSET = 76.dp
+/** From this many characters a remark is a few sentences, not a line. */
+private const val SHARE_LONG_REMARK = 120
+/** How far the ball steps back for them: its size, and how far towards the corner. */
+private const val SHARE_BALL_BACK = 0.7f
+private val SHARE_BALL_BACK_SHIFT = 30.dp
+/** With them, the answer gives up some of its size and the text some of its margin. */
+private const val SHARE_READING_ANSWER = 38
+private val SHARE_READING_INSET = 48.dp
 private val SHARE_BUBBLE_CORNER = 20.dp
 private val SHARE_BUBBLE_TAIL = 9.dp
 

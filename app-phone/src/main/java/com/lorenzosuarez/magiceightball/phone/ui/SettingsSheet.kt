@@ -76,6 +76,7 @@ internal fun SettingsContent(
     onShowAdPrivacyOptions: (() -> Unit)? = null,
     onGetMoreAiAnswers: (() -> Unit)? = null,
     onSpokenAnswersChange: (Boolean) -> Unit = {},
+    onDetailedAnswersChange: (Boolean) -> Unit = {},
     onPartyNamesChange: (List<String>) -> Unit = {},
     onDailyVerdictChange: (Boolean) -> Unit = {},
     notificationsAllowed: Boolean = true,
@@ -145,6 +146,17 @@ internal fun SettingsContent(
                     onClick = onGetMoreAiAnswers
                 )
             }
+            RowDivider()
+            // How much the ball says: only what the AI writes can be longer.
+            SwitchRow(
+                title = stringResource(R.string.settings_detailed),
+                supporting = stringResource(
+                    if (state.settings.detailedAnswers) R.string.settings_detailed_on else R.string.settings_detailed_off
+                ),
+                checked = state.settings.detailedAnswers && state.usesAiAnswers && !classic,
+                enabled = state.usesAiAnswers && !classic,
+                onCheckedChange = onDetailedAnswersChange
+            )
             RowDivider()
             SwitchRow(
                 title = stringResource(R.string.settings_spoken),

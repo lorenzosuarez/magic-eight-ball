@@ -12,6 +12,7 @@ class SendMessageUseCase @Inject constructor(
     /**
      * @param useAi the user's choice; when false the answer never comes from the AI service.
      * @param question what the user asked, where the app hears questions; null everywhere else.
+     * @param detailed whether that line may run to a few sentences: see [Magic8BallRequest.detailed].
      * @param wantsRemark whether the screen has room for a second line under the answer.
      */
     suspend operator fun invoke(
@@ -20,7 +21,8 @@ class SendMessageUseCase @Inject constructor(
         personality: Magic8BallPersonality,
         useAi: Boolean,
         question: String? = null,
-        wantsRemark: Boolean = false
+        wantsRemark: Boolean = false,
+        detailed: Boolean = false
     ): Magic8BallResult {
         return llmGateway.generateMagic8BallMessage(
             Magic8BallRequest(
@@ -29,7 +31,8 @@ class SendMessageUseCase @Inject constructor(
                 personality = personality,
                 useAi = useAi,
                 question = question,
-                wantsRemark = wantsRemark
+                wantsRemark = wantsRemark,
+                detailed = detailed
             )
         )
     }

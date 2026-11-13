@@ -303,11 +303,11 @@ internal fun StylesContent(
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = HANDLE_ALPHA))
         )
-        AppIconButton(
+        BarIconButton(
             icon = R.drawable.ic_close,
             description = stringResource(R.string.action_close),
             onClick = onClose,
-            modifier = Modifier.padding(start = 4.dp)
+            modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)
         )
         // Only once something has scrolled under the header is there an edge worth drawing.
         HorizontalDivider(

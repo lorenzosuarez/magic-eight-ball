@@ -120,6 +120,9 @@
     <string name="party_count">%1$d de %2$d pessoas</string>
     <string name="party_need_more">Adicione pelo menos duas pessoas</string>
     <string name="action_save">Salvar</string>
+    <string name="settings_detailed">Respostas mais longas</string>
+    <string name="settings_detailed_on">A bola se explica em algumas frases</string>
+    <string name="settings_detailed_off">Uma resposta curta e nada mais</string>
     <string name="settings_spoken">Respostas faladas</string>
     <string name="settings_spoken_on">A bola diz a resposta em voz alta</string>
     <string name="settings_spoken_off">As respostas só aparecem na tela</string>
@@ -156,4 +159,5 @@
     <string name="privacy_voice_only">O serviço de voz do seu dispositivo transforma sua pergunta em texto. Ela não é enviada ao Gemini. Suas perguntas e respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
     <string name="privacy_ai_only">As respostas vêm do Gemini, do Google. O app não escuta e nenhuma pergunta é enviada. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
     <string name="privacy_none">As respostas vêm do próprio app. O app não escuta e nenhuma pergunta é enviada. As respostas ficam salvas em Recentes, apenas neste dispositivo.</string>
+    <string name="action_back_to_ball">Voltar à bola</string>
 </resources>

@@ -350,6 +350,10 @@ fun EightBallScreen(
                             viewModel.setVoiceQuestionsEnabled(it)
                         },
                         onAllowMicrophone = { askForMicrophone(true) },
+                        onDetailedAnswersChange = {
+                            tick(it.toggleFeedback())
+                            viewModel.setDetailedAnswers(it)
+                        },
                         onSpokenAnswersChange = {
                             tick(it.toggleFeedback())
                             viewModel.setSpokenAnswersEnabled(it)
@@ -546,7 +550,16 @@ internal fun EightBallContent(
                             onOpenOptions = { scope.launch { pagerState.animateScrollToPage(OPTIONS_PAGE) } },
                             modifier = Modifier.fillMaxSize().graphicsLayer { alpha = intro() }
                         )
-                        else -> Text(
+                        else -> {
+                          // The way back to the ball, at the side the ball lies on.
+                          val toBall = { scope.launch { pagerState.animateScrollToPage(BALL_PAGE) }; Unit }
+                          BarIconButton(
+                              icon = if (page == HISTORY_PAGE) R.drawable.ic_arrow_forward else R.drawable.ic_arrow_back,
+                              description = stringResource(R.string.action_back_to_ball),
+                              onClick = toBall,
+                              modifier = Modifier.align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
+                          )
+                          Text(
                             text = stringResource(
                                 if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
                             ),
@@ -557,7 +570,8 @@ internal fun EightBallContent(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
-                        )
+                          )
+                        }
                     }
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -636,19 +650,17 @@ private fun BallBar(
 ) {
     Box(modifier = modifier) {
         if (state.phase is BallPhase.Idle) {
-            // Each on a disc of its own, so that it reads as a button without a word under it.
-            val disc = MaterialTheme.colorScheme.onSurface.copy(alpha = TONAL_ALPHA)
             BarButton(
                 icon = R.drawable.ic_history,
                 description = stringResource(R.string.history_title),
                 onClick = onOpenHistory,
-                modifier = Modifier.align(Alignment.CenterStart).background(disc, CircleShape)
+                modifier = Modifier.align(Alignment.CenterStart)
             )
             BarButton(
                 icon = R.drawable.ic_settings,
                 description = stringResource(R.string.settings_title),
                 onClick = onOpenOptions,
-                modifier = Modifier.align(Alignment.CenterEnd).background(disc, CircleShape)
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         } else {
             BarButton(
@@ -672,7 +684,7 @@ private fun BallBar(
 
 @Composable
 private fun BarButton(icon: Int, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    AppIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
+    BarIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
 }
 
 /**
@@ -811,7 +823,7 @@ private fun Status(state: EightBallUiState) {
         Text(
             text = stringResource(R.string.streak_days, state.streakDays),
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = TONAL_ALPHA), CircleShape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA), CircleShape)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface,
@@ -1032,7 +1044,7 @@ private fun Caption(state: EightBallUiState, modifier: Modifier = Modifier) {
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        maxLines = CAPTION_MAX_LINES,
+                        maxLines = REMARK_MAX_LINES,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -1415,10 +1427,10 @@ private val TEXT_MAX_WIDTH = 480.dp
 /** Room kept under the ball for what came of a question, and under that for what can be done. */
 private val CAPTION_HEIGHT = 104.dp
 private val ACTIONS_HEIGHT = 80.dp
-/** How much of the ink a disc behind an icon or a word takes. */
-private const val TONAL_ALPHA = 0.1f
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3
+/** Room for the few sentences of an answer that says more; one line of comeback takes what it needs. */
+private const val REMARK_MAX_LINES = 9
 
 /** How faint the note under an answer the AI wrote is. */
 private const val AI_NOTE_ALPHA = 1f

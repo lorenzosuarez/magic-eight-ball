@@ -825,6 +825,8 @@ class ChatViewModelTest {
             saved.update { it?.copy(voiceQuestionsEnabled = enabled) }
         }
 
+        override suspend fun setDetailedAnswers(enabled: Boolean) = Unit
+
         override suspend fun setSpokenAnswersEnabled(enabled: Boolean) {
             saved.update { it?.copy(spokenAnswersEnabled = enabled) }
         }

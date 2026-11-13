@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.IndicationNodeFactory
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -121,3 +122,26 @@ internal fun AppIconButton(
 }
 
 private val ICON_BUTTON_SIZE = 48.dp
+
+/**
+ * A button at the top of a screen: [AppIconButton] on a quiet disc, so that it reads as a
+ * button with no word beside it. Every screen's top buttons are this one, each at the side
+ * that what it leads to lies on.
+ */
+@Composable
+internal fun BarIconButton(
+    @DrawableRes icon: Int,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppIconButton(
+        icon = icon,
+        description = description,
+        onClick = onClick,
+        modifier = modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA), CircleShape)
+    )
+}
+
+/** How much of the ink the disc behind a top button, or behind a word, takes. */
+internal const val BAR_DISC_ALPHA = 0.1f

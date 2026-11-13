@@ -125,6 +125,9 @@
     <string name="party_count">%1$d of %2$d players</string>
     <string name="party_need_more">Add at least two players</string>
     <string name="action_save">Save</string>
+    <string name="settings_detailed">Longer answers</string>
+    <string name="settings_detailed_on">The ball explains itself in a few sentences</string>
+    <string name="settings_detailed_off">A short answer and nothing more</string>
     <string name="settings_spoken">Spoken answers</string>
     <string name="settings_spoken_on">The ball says its answer out loud</string>
     <string name="settings_spoken_off">Answers appear on screen only</string>
@@ -164,4 +167,5 @@
     <string name="privacy_none">Answers come from the app itself. The app doesn\'t listen, and no question is sent anywhere. Answers are saved in Recents, on this device only.</string>
     <string name="footer_powered_by" translatable="false">Powered by Gemini</string>
     <string name="footer_version" translatable="false">v%1$s</string>
+    <string name="action_back_to_ball">Back to the ball</string>
 </resources>
