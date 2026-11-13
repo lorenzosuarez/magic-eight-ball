@@ -1,6 +1,7 @@
 package com.example.magiceightball.core.domain.repository
 
 import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.UserSettings
 import kotlinx.coroutines.flow.Flow
@@ -12,7 +13,14 @@ interface UserSettingsRepository {
 
     suspend fun setLanguage(language: AppLanguage)
 
+    /** Chooses one of the app's characters. One of the user's own is chosen with [setCustomCharacter]. */
     suspend fun setPersonality(personality: Magic8BallPersonality)
+
+    /**
+     * Chooses [character], one of the user's own, and keeps it whole. Null gives the choice
+     * up: if one of the user's own was chosen, the app's first character is again.
+     */
+    suspend fun setCustomCharacter(character: CustomCharacter?)
 
     suspend fun setAiAnswersEnabled(enabled: Boolean)
 

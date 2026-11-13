@@ -466,6 +466,8 @@ internal fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.ASTRO -> R.string.style_astro
     Magic8BallPersonality.THERAPIST -> R.string.style_therapist
     Magic8BallPersonality.DOG -> R.string.style_dog
+    // What one of the user's own is called where its own name is not known.
+    Magic8BallPersonality.CUSTOM -> R.string.style_custom
 }
 
 /** Something the style would say, to tell it from the others at a glance. */
@@ -490,6 +492,7 @@ private fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.ASTRO -> R.string.style_astro_sample
     Magic8BallPersonality.THERAPIST -> R.string.style_therapist_sample
     Magic8BallPersonality.DOG -> R.string.style_dog_sample
+    Magic8BallPersonality.CUSTOM -> R.string.style_custom_sample
 }
 
 private val STYLE_CARD_MIN_WIDTH = 132.dp

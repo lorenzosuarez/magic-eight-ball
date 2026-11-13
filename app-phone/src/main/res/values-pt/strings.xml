@@ -85,6 +85,8 @@
     <string name="style_astro_sample">Sinal verde cósmico.</string>
     <string name="style_therapist_sample">O que você acha?</string>
     <string name="style_dog_sample">Au! Ou seja, sim.</string>
+    <string name="style_custom">Seu personagem</string>
+    <string name="style_custom_sample">Com as suas palavras</string>
     <string name="styles_title">Personagens</string>
     <string name="styles_subtitle">Escolha quem responde</string>
     <string name="styles_see_all">Ver todos</string>

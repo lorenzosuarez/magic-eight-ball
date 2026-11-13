@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.example.magiceightball.core.domain.model.AppLanguage
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.HistoryEntry
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.UserSettings
@@ -138,7 +139,7 @@ class EightBallScreenshotTest {
 
     /** Every style in its colour, wearing what it wears. */
     @Test
-    fun share_card_every_style() = Magic8BallPersonality.entries.forEach { style ->
+    fun share_card_every_style() = CustomCharacter.LOOKS.forEach { style ->
         captureRoboImage(filePath = path("phone_37_share_card_${style.name.lowercase()}")) {
             ShareCard(
                 question = "Will they text me tonight?",
@@ -816,7 +817,8 @@ class EightBallScreenshotTest {
 
     @Test
     fun every_style_is_in_one_group_and_the_row_shows_the_chosen_one() {
-        assertEquals(Magic8BallPersonality.entries.sortedBy { it.name }, StyleGroups.flatMap { it.styles }.sortedBy { it.name })
+        // Every character the app wrote: the user's own are no group of the app's.
+        assertEquals(CustomCharacter.LOOKS.sortedBy { it.name }, StyleGroups.flatMap { it.styles }.sortedBy { it.name })
         Magic8BallPersonality.entries.forEach { style ->
             val row = stylesInRow(style)
             assertTrue(style in row)
@@ -839,7 +841,7 @@ class EightBallScreenshotTest {
 
         val shown = styleGroups(Magic8BallPersonality.SARCASTIC, hidden).flatMap { it.styles }
         assertTrue(Magic8BallPersonality.CAT !in shown && Magic8BallPersonality.DOG !in shown)
-        assertEquals(Magic8BallPersonality.entries.size - 2, shown.size)
+        assertEquals(CustomCharacter.LOOKS.size - 2, shown.size)
 
         assertTrue(Magic8BallPersonality.CAT in styleGroups(Magic8BallPersonality.CAT, hidden).flatMap { it.styles })
     }

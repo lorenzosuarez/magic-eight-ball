@@ -59,7 +59,8 @@ internal fun PersonalityList(
     selectedPersonality: Magic8BallPersonality,
     onPersonalitySelected: (Magic8BallPersonality) -> Unit
 ) {
-    val styles = Magic8BallPersonality.entries
+    // The user's own characters are made and kept on the phone: the watch has none to offer.
+    val styles = Magic8BallPersonality.entries - Magic8BallPersonality.CUSTOM
     // The title is the first item: the style in use is one further down.
     val list = rememberScalingLazyListState(initialCenterItemIndex = styles.indexOf(selectedPersonality) + 1)
     ScalingLazyColumn(
@@ -111,6 +112,8 @@ private fun Magic8BallPersonality.label(): LocalizedString = when (this) {
     Magic8BallPersonality.ASTRO -> Strings.PersonalityAstro
     Magic8BallPersonality.THERAPIST -> Strings.PersonalityTherapist
     Magic8BallPersonality.DOG -> Strings.PersonalityDog
+    // Never chosen on the watch, which has none: it answers as the classic one would.
+    Magic8BallPersonality.CUSTOM -> Strings.PersonalityNeutral
 }
 
 @Preview(widthDp = 200, heightDp = 200, showBackground = true)

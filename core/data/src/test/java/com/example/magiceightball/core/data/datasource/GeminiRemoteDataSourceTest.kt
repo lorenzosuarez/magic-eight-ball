@@ -6,6 +6,7 @@ import com.example.magiceightball.core.data.gateway.GeminiApiClient
 import com.example.magiceightball.core.data.gateway.GeminiReply
 import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.AskerFacts
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Zodiac
 import com.example.magiceightball.core.domain.policy.AnswerBrief
@@ -57,6 +58,17 @@ class GeminiRemoteDataSourceTest {
         assertFalse("Leo" in pirate.systemText)
         // Never in what is sent as the user's own words.
         assertEquals("shake", grandma.userText)
+    }
+
+    @Test
+    fun `the words of a character the user made up go in the instruction, never as the user's message`() = runTest {
+        val nemo = CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el mar.")
+        fetch(Magic8BallRequest(userTrigger = "shake", personality = Magic8BallPersonality.CUSTOM, custom = nemo))
+
+        val sent = apiClient.requests.single()
+        assertTrue("[[Un capitán gruñón que todo lo compara con el mar.]]" in sent.systemText)
+        assertTrue("[[Capitán Nemo]]" in sent.systemText)
+        assertEquals("shake", sent.userText)
     }
 
     @Test

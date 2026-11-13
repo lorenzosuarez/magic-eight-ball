@@ -85,6 +85,8 @@
     <string name="style_astro_sample">Luz verde cósmica.</string>
     <string name="style_therapist_sample">¿Tú qué crees?</string>
     <string name="style_dog_sample">¡Guau! O sea, sí.</string>
+    <string name="style_custom">Tu personaje</string>
+    <string name="style_custom_sample">Con tus palabras</string>
     <string name="styles_title">Personajes</string>
     <string name="styles_subtitle">Elige quién responde</string>
     <string name="styles_see_all">Ver todos</string>

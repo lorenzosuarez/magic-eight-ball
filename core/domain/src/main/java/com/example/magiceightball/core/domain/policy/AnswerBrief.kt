@@ -51,7 +51,7 @@ data class AnswerBrief(
             val remarked = withRemark && (hasQuestion || detailed)
             return AnswerBrief(
                 verdict = verdict,
-                motif = if (hasQuestion) null else characters.sheet(personality)?.angles.orEmpty().randomOrNull(random),
+                motif = if (hasQuestion) null else anglesOf(personality, characters).randomOrNull(random),
                 withRemark = remarked,
                 detailed = remarked && detailed,
                 examples = lines?.saying(verdict).orEmpty().shuffled(random).take(EXAMPLES_SHOWN),
@@ -60,6 +60,21 @@ data class AnswerBrief(
                 } else null
             )
         }
+
+        /**
+         * What a character may bring up when nothing was asked. One of the user's own has none
+         * written for it, and is given some that any character could make its own: without one,
+         * every answer to a shake would be asked for in the same words, and come back the same.
+         */
+        private fun anglesOf(personality: Magic8BallPersonality, characters: CharacterBook): List<String> =
+            if (personality == Magic8BallPersonality.CUSTOM) ANYONE_S_ANGLES else characters.sheet(personality)?.angles.orEmpty()
+
+        private val ANYONE_S_ANGLES = listOf(
+            "they already knew the answer", "they will ask again until they like the answer",
+            "the last thing they asked was stranger", "the hour at which they are asking",
+            "how hard they shook", "whoever is next to them right now",
+            "what they are putting off by asking", "what they will do the moment they put the ball down"
+        )
 
         /** What each character would bring up unprompted. The plain style has none: it stays plain. */
         internal fun motifsOf(personality: Magic8BallPersonality): List<String> =

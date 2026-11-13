@@ -46,8 +46,14 @@ class Magic8BallRepositoryImpl(
     override suspend fun generateMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         geminiSettings.refresh()
         var allowanceSpent = false
-        // The classic style is the toy's own twenty answers: nothing is written for it.
-        if (request.useAi && request.personality != Magic8BallPersonality.NEUTRAL) {
+        // The classic style is the toy's own twenty answers: nothing is written for it. Nor for
+        // one of the user's own that came without saying who it is: there is no voice to write in.
+        val hasVoice = when (request.personality) {
+            Magic8BallPersonality.NEUTRAL -> false
+            Magic8BallPersonality.CUSTOM -> request.custom?.descriptionForAi != null
+            else -> true
+        }
+        if (request.useAi && hasVoice) {
             // Remote Config may touch disk the first time it is read.
             val settings = withContext(Dispatchers.IO) { geminiSettings.current() }
             // Past the day's allowance the ball goes on answering, from its own list.

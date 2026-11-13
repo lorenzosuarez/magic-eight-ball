@@ -81,6 +81,11 @@ class OfflineResponsesTest {
         for ((language, cap) in caps) {
             for (personality in Magic8BallPersonality.entries) {
                 val messages = bundled.messagesFor(language, personality)
+                // Nothing is written in advance for one of the user's own: it answers as the classic one.
+                if (personality == Magic8BallPersonality.CUSTOM) {
+                    assertEquals(bundled.messagesFor(language, Magic8BallPersonality.NEUTRAL), messages)
+                    continue
+                }
                 // The classic style is the toy's twenty answers, no more and no fewer.
                 if (personality == Magic8BallPersonality.NEUTRAL) {
                     assertEquals(20, messages.size)

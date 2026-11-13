@@ -307,7 +307,7 @@ private class Worn(
 )
 
 /**
- * The nineteen, drawn to one set of rules so that they read as one family. There are two
+ * What the app's characters wear, drawn to one set of rules so that they read as one family. There are two
  * kinds: something worn, which sits on the crown and touches it, and a small charm that floats
  * just over it (a pair of quotes, a moon, a star, a heart, a thought). Two of them have
  * something beside them as well, where that is what says who they are. Each is built of
@@ -316,6 +316,8 @@ private class Worn(
  */
 private fun worn(personality: Magic8BallPersonality): Worn? = when (personality) {
     Magic8BallPersonality.NEUTRAL -> null
+    // One of the user's own wears what it borrowed from another: asked for by that other's name.
+    Magic8BallPersonality.CUSTOM -> null
     Magic8BallPersonality.SARCASTIC -> Worn(
         shape = "M35 11 a6 6 0 1 1 12 0 q0 9 -9 14 q3 -5 2 -8.4 a6 6 0 0 1 -5 -5.6Z" +
             " M53 11 a6 6 0 1 1 12 0 q0 9 -9 14 q3 -5 2 -8.4 a6 6 0 0 1 -5 -5.6Z"
@@ -466,6 +468,8 @@ internal fun shareColor(personality: Magic8BallPersonality): Color = Color(
         Magic8BallPersonality.ASTRO -> 0xFF8FA8FF
         Magic8BallPersonality.THERAPIST -> 0xFFBFE8D2
         Magic8BallPersonality.DOG -> 0xFFF0B878
+        // One of the user's own has the colour it borrowed: this is the card with none chosen.
+        Magic8BallPersonality.CUSTOM -> 0xFFF2EEE3
     }
 )
 

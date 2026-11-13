@@ -105,7 +105,9 @@ data class AskerFacts(
             Magic8BallPersonality.THERAPIST,
             Magic8BallPersonality.GRANDMA,
             Magic8BallPersonality.COACH,
-            Magic8BallPersonality.LOVESTRUCK
+            Magic8BallPersonality.LOVESTRUCK,
+            // A character of the user's own talks to the user, whoever it is.
+            Magic8BallPersonality.CUSTOM
         )
         private val READ_THE_STARS = setOf(Magic8BallPersonality.ASTRO, Magic8BallPersonality.MYSTICAL)
     }

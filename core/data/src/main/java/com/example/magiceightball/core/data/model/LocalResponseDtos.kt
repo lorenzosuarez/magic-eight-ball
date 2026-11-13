@@ -105,6 +105,8 @@ data class PersonalityResponsesDto(
         Magic8BallPersonality.ASTRO -> astro
         Magic8BallPersonality.THERAPIST -> therapist
         Magic8BallPersonality.DOG -> dog
+        // Nothing is written in advance for a character the user made up: it answers as the toy does.
+        Magic8BallPersonality.CUSTOM -> neutral
     }
 }
 

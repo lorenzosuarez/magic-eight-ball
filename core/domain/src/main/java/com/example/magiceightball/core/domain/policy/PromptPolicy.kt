@@ -1,6 +1,7 @@
 package com.example.magiceightball.core.domain.policy
 
 import com.example.magiceightball.core.domain.model.AskerFacts
+import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 
 interface PromptPolicy {
@@ -13,12 +14,15 @@ interface PromptPolicy {
      * around. The service then only finds the words. Null leaves the instruction as it is.
      * @param asker what is known of whoever is asking. Only what [personality] makes use of is
      * put in the instruction: see [AskerFacts.knownTo].
+     * @param custom who answers when [personality] is [Magic8BallPersonality.CUSTOM]: the
+     * user's own description of the character, quoted and never obeyed.
      */
     fun getSystemPrompt(
         languageCode: String,
         personality: Magic8BallPersonality,
         answersQuestion: Boolean = false,
         brief: AnswerBrief? = null,
-        asker: AskerFacts? = null
+        asker: AskerFacts? = null,
+        custom: CustomCharacter? = null
     ): String
 }

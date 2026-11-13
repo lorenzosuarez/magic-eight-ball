@@ -102,6 +102,8 @@ data class AppConfig(
             fun styles(key: String): List<Magic8BallPersonality> = text(key).orEmpty()
                 .split(',')
                 .mapNotNull { name -> Magic8BallPersonality.entries.find { it.name.equals(name.trim(), ignoreCase = true) } }
+                // The user's own are theirs to show and hide: not a style to be named from afar.
+                .filter { it != Magic8BallPersonality.CUSTOM }
                 .distinct()
 
             // The plain style and the default one are never taken out: there must be somewhere to land.

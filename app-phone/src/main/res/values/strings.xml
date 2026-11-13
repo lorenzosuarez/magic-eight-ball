@@ -90,6 +90,8 @@
     <string name="style_astro_sample">Cosmic green light.</string>
     <string name="style_therapist_sample">What do you think?</string>
     <string name="style_dog_sample">Woof! That means yes.</string>
+    <string name="style_custom">Your character</string>
+    <string name="style_custom_sample">In your own words</string>
     <string name="styles_title">Characters</string>
     <string name="styles_subtitle">Pick who answers</string>
     <string name="styles_see_all">See all</string>

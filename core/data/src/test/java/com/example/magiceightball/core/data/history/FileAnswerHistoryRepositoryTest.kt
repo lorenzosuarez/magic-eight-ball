@@ -65,6 +65,40 @@ class FileAnswerHistoryRepositoryTest {
     }
 
     @Test
+    fun `an answer from a character of the user's own keeps that character's name, and no other answer keeps one`() = runTest {
+        val history = open()
+        history.add("", "Al fondo del mar.", 10L, fromAi = true, style = Magic8BallPersonality.CUSTOM, customName = "Capitán Nemo")
+        history.add("", "Nay.", 20L, fromAi = true, style = Magic8BallPersonality.PIRATE, customName = "Capitán Nemo")
+        history.add("", "Yes", 30L, fromAi = false, style = Magic8BallPersonality.CUSTOM, customName = " ")
+
+        val kept = open().entries.first()
+        assertEquals(listOf(null, null, "Capitán Nemo"), kept.map { it.customName })
+        assertEquals(Magic8BallPersonality.CUSTOM, kept.last().style)
+    }
+
+    @Test
+    fun `a file from before names were kept is still read, with its styles`() = runTest {
+        // The second format: an entry ends with the name of its style.
+        java.io.DataOutputStream(file.outputStream()).use { old ->
+            old.writeInt(2)
+            old.writeInt(1)
+            old.writeLong(4L)
+            old.writeUTF("Will it rain?")
+            old.writeBoolean(true)
+            old.writeUTF("Nay, matey.")
+            old.writeLong(9L)
+            old.writeBoolean(true)
+            old.writeUTF("PIRATE")
+        }
+
+        val read = open().entries.first().single()
+        assertEquals(listOf<Any?>(4L, "Nay, matey.", Magic8BallPersonality.PIRATE, null), listOf(read.id, read.answer, read.style, read.customName))
+        // Added to, it is written in today's format and read back whole.
+        open().add("", "Sí", 12L, fromAi = true, style = Magic8BallPersonality.CUSTOM, customName = "Nemo")
+        assertEquals(listOf("Nemo", null), open().entries.first().map { it.customName })
+    }
+
+    @Test
     fun `only the latest entries are kept, each with an id of its own`() = runTest {
         val history = open()
         repeat(MAX_ENTRIES + 5) { history.add("q$it", "a$it", it.toLong(), fromAi = false) }
