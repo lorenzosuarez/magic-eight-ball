@@ -85,11 +85,14 @@ def inline(text: str) -> str:
     text = html.escape(text, quote=False)
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
-    return re.sub(
-        r"\[([^\]]+)\]\(([^)\s]+)\)",
-        lambda link: f'<a href="{html.escape(link.group(2).removeprefix(BASE_URL))}" rel="noopener">{link.group(1)}</a>',
-        text,
-    )
+
+    def anchor(link: re.Match) -> str:
+        # The address was escaped with the rest of the line: escaping it again would break an "&"
+        # in it. What is left to guard is the quote that would end the attribute.
+        address = link.group(2).removeprefix(BASE_URL).replace('"', "&quot;")
+        return f'<a href="{address}" rel="noopener">{link.group(1)}</a>'
+
+    return re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", anchor, text)
 
 
 def markdown(source: str) -> tuple[str, str]:
