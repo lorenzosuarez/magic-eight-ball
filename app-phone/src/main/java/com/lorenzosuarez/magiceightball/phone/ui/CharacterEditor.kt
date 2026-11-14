@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.input.key.Key
@@ -562,9 +563,9 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
 }
 
 /**
- * What the ball can wear: nothing, or what one of the app's characters wears, drawn on the
- * colour picked, which is light in both themes. The ones that read best come first, the row
- * opens on the one picked, and half of the next always shows.
+ * What the ball can wear: nothing, or what one of the app's characters wears, as the round faces
+ * characters have everywhere else, on the colour picked. The ones that read best come first,
+ * and the row opens on the one picked with the one before it in sight.
  */
 @Composable
 private fun EmblemRow(
@@ -573,47 +574,46 @@ private fun EmblemRow(
     enabled: Boolean,
     onChosen: (Magic8BallPersonality) -> Unit
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val whole = if (maxWidth >= WIDE_ROW) 4 else 3
-        val tile = (maxWidth - PICK_EDGE - EMBLEM_GAP * whole) / (whole + 0.5f)
-        val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
-        val start = with(LocalDensity.current) { ((tile + EMBLEM_GAP) * (at - 1).coerceAtLeast(0)).roundToPx() }
-        // The tiles take the colour picked as the card over them does, and with it.
-        val ground by animateColorAsState(shareColor(colour), choiceTween(), label = "emblem ground")
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fadingRow(rememberScrollState(start), PICK_EDGE)
-                .padding(horizontal = PICK_EDGE)
-                .selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(EMBLEM_GAP)
-        ) {
-            OnCardColours {
-                EMBLEMS.forEach { look ->
-                    val picked = look == chosen
-                    val label = stringResource(if (look == Magic8BallPersonality.NEUTRAL) R.string.character_no_emblem else look.labelRes())
-                    val touch = remember { MutableInteractionSource() }
-                    val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
-                    // Picked: a ring at the tile's own edge, in the text's colour, and the tile a little
-                    // inside it. A ring drawn on the tile would be lost on the lighter colours. The
-                    // ring comes as the tile draws in from it, and goes as the tile fills out again.
+    val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
+    val start = with(LocalDensity.current) { ((EMBLEM_RING + EMBLEM_GAP) * (at - 1).coerceAtLeast(0)).roundToPx() }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fadingRow(rememberScrollState(start), PICK_EDGE)
+            .padding(horizontal = PICK_EDGE)
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(EMBLEM_GAP)
+    ) {
+        OnCardColours {
+            EMBLEMS.forEach { look ->
+                val picked = look == chosen
+                val label = stringResource(if (look == Magic8BallPersonality.NEUTRAL) R.string.character_no_emblem else look.labelRes())
+                val touch = remember { MutableInteractionSource() }
+                val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
+                // Picked: a ring in the text's colour with the face a little inside it, as a
+                // colour that is picked has. The ring comes as the face draws in from it, and
+                // goes as the face fills out again.
+                Box(
+                    modifier = Modifier
+                        .size(EMBLEM_RING)
+                        .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), CircleShape)
+                        .clip(CircleShape)
+                        .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
+                        .semantics { contentDescription = label },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // The light of the touch is drawn here, over the face's colour: behind it, it would not show.
                     Box(
                         modifier = Modifier
-                            .size(tile)
-                            .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), EmblemRing)
-                            .clip(EmblemRing)
-                            .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
-                            .semantics { contentDescription = label },
-                        contentAlignment = Alignment.Center
+                            .graphicsLayer {
+                                val drawn = 1f - EMBLEM_DRAWN_IN * mark
+                                scaleX = drawn
+                                scaleY = drawn
+                            }
+                            .clip(CircleShape)
+                            .indication(touch, PressHighlight)
                     ) {
-                        val inside = tile - 10.dp * mark
-                        // The light of the touch is drawn here, over the tile's colour: behind it, it would not show.
-                        Box(
-                            modifier = Modifier.size(inside).clip(ButtonShape).background(ground).indication(touch, PressHighlight),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CharacterBall(emblem = look, size = inside)
-                        }
+                        CharacterFace(colour = colour, emblem = look, size = EMBLEM_RING, chosen = { mark })
                     }
                 }
             }
@@ -651,11 +651,11 @@ private val PICK_EDGE = 16.dp
 private val SWATCH = 40.dp
 private val SWATCH_LEAST_GAP = 12.dp
 private const val SWATCH_EDGE_ALPHA = 0.24f
-private val EMBLEM_GAP = 8.dp
-private val WIDE_ROW = 400.dp
+private val EMBLEM_GAP = 12.dp
 
-/** Round the picked tile: the tile's own corners, a little wider for standing outside it. */
-private val EmblemRing = RoundedCornerShape(13.dp)
+/** A look to pick: how large, ring and all, and how far the face draws in from the ring when it is the one. */
+private val EMBLEM_RING = 56.dp
+private const val EMBLEM_DRAWN_IN = 0.16f
 
 /**
  * The colours offered: those of the app's characters, but one of two that are told apart only

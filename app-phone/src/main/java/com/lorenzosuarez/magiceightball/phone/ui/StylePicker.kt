@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.border
@@ -360,12 +361,10 @@ internal fun StylesContent(
     val handleAlpha by animateFloatAsState(if (full) 0f else 1f, label = "sheet handle")
     val scroll = rememberScrollState()
     val density = LocalDensity.current
-    // A card and most of the next across the sheet, whatever its width: the one that is cut
-    // off, fading at the edge, is what says the row goes on. Wider with larger text, and never
-    // so wide that nothing of the next shows.
+    // Two cards across, and one where two would be too narrow for what they say: on a small
+    // phone, or with large text. Everything is in sight going down, and nothing is off to a side.
     val across = LocalConfiguration.current.screenWidthDp.dp.coerceAtMost(SHEET_WIDEST)
-    val cardWidth = ((across * STYLE_CARD_SHARE).coerceIn(STYLE_CARD_WIDTH, STYLE_CARD_WIDEST) *
-        density.fontScale.coerceIn(1f, MAX_CARD_GROWTH)).coerceAtMost(across - STYLE_CARD_PEEK)
+    val columns = if ((across - ROW_EDGE * 2 - STYLE_CARD_GAP) / 2 / density.fontScale >= STYLE_CARD_LEAST) 2 else 1
     Column(modifier = modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -426,105 +425,88 @@ internal fun StylesContent(
             )
             if (yours.isEmpty() && yoursPlaces > 0) {
                 val waiting = stringResource(R.string.characters_loading)
-                Text(
-                    text = stringResource(R.string.styles_group_yours),
-                    modifier = Modifier
-                        .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
-                        .semantics { heading() },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                GroupTitle(stringResource(R.string.styles_group_yours))
                 // Their places kept, in the shape of the cards that are coming: said once, as one thing.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fadingRow(rememberScrollState())
-                        .padding(horizontal = 16.dp)
-                        .clearAndSetSemantics { contentDescription = waiting },
-                    horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
-                ) {
-                    repeat(yoursPlaces) { StyleCardPlace(Modifier.width(cardWidth)) }
-                }
+                CardGrid(
+                    items = List(yoursPlaces) { it },
+                    columns = columns,
+                    modifier = Modifier.clearAndSetSemantics { contentDescription = waiting }
+                ) { _, place -> StyleCardPlace(place) }
             }
             if (yours.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.styles_group_yours),
-                    modifier = Modifier
-                        .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
-                        .semantics { heading() },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                // One row, of cards as wide as the app's own: there are five at most.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fadingRow(rememberScrollState())
-                        .padding(horizontal = 16.dp)
-                        .height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
-                ) {
-                    yours.forEach { character ->
-                        StyleCard(
-                            title = character.name,
-                            sample = stringResource(R.string.style_custom_sample),
-                            colour = character.colour,
-                            emblem = character.emblem,
-                            chosen = touched == Magic8BallPersonality.CUSTOM to character.id,
-                            onClick = {
-                                touched = Magic8BallPersonality.CUSTOM to character.id
-                                onYoursSelected(character)
-                            },
-                            modifier = Modifier.width(cardWidth).fillMaxHeight(),
-                            onEdit = onEditYours?.let { edit -> { edit(character) } }
-                        )
-                    }
+                GroupTitle(stringResource(R.string.styles_group_yours))
+                CardGrid(items = yours, columns = columns) { character, place ->
+                    StyleCard(
+                        title = character.name,
+                        sample = stringResource(R.string.style_custom_sample),
+                        colour = character.colour,
+                        emblem = character.emblem,
+                        chosen = touched == Magic8BallPersonality.CUSTOM to character.id,
+                        onClick = {
+                            touched = Magic8BallPersonality.CUSTOM to character.id
+                            onYoursSelected(character)
+                        },
+                        modifier = place,
+                        onEdit = onEditYours?.let { edit -> { edit(character) } }
+                    )
                 }
             }
             styleGroups(selected, hidden).forEach { group ->
-                Text(
-                    text = stringResource(group.title),
-                    modifier = Modifier
-                        .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
-                        .semantics { heading() },
-                    // Named as the subjects on the options page are: one way of heading a group.
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                // Two rows to a group, so that most of it shows at once: the group opens on the
-                // chosen style when it holds it, with the column before in sight.
-                val columns = group.styles.chunked(STYLE_ROWS)
-                val lead = (group.styles.indexOf(selected) / STYLE_ROWS - 1).coerceAtLeast(0)
-                val start = with(density) { ((cardWidth + STYLE_CARD_GAP) * lead - ROW_EDGE).roundToPx().coerceAtLeast(0) }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fadingRow(rememberScrollState(start))
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
-                ) {
-                    columns.forEach { column ->
-                        Column(
-                            modifier = Modifier.width(cardWidth),
-                            verticalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
-                        ) {
-                            column.forEach { style ->
-                                StyleCard(
-                                    title = stringResource(style.labelRes()),
-                                    sample = stringResource(style.sampleRes()),
-                                    colour = style,
-                                    emblem = style,
-                                    chosen = touched == style to null,
-                                    onClick = {
-                                        touched = style to null
-                                        onSelected(style)
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                    }
+                GroupTitle(stringResource(group.title))
+                CardGrid(items = group.styles, columns = columns) { style, place ->
+                    StyleCard(
+                        title = stringResource(style.labelRes()),
+                        sample = stringResource(style.sampleRes()),
+                        colour = style,
+                        emblem = style,
+                        chosen = touched == style to null,
+                        onClick = {
+                            touched = style to null
+                            onSelected(style)
+                        },
+                        modifier = place
+                    )
                 }
+            }
+        }
+    }
+}
+
+/** The name of a group of characters: as the subjects on the options page are named, one way of heading a group. */
+@Composable
+private fun GroupTitle(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .padding(start = ROW_EDGE, top = 24.dp, end = ROW_EDGE, bottom = 8.dp)
+            .semantics { heading() },
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+/**
+ * Cards down the sheet, so many across and all as wide and, in a row, as tall as each other: a
+ * group is seen whole, and the last row keeps its cards' width when it is not full.
+ */
+@Composable
+private fun <T> CardGrid(
+    items: List<T>,
+    columns: Int,
+    modifier: Modifier = Modifier,
+    card: @Composable (item: T, place: Modifier) -> Unit
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(horizontal = ROW_EDGE),
+        verticalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
+    ) {
+        items.chunked(columns).forEach { row ->
+            Row(
+                modifier = Modifier.height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(STYLE_CARD_GAP)
+            ) {
+                row.forEach { item -> card(item, Modifier.weight(1f).fillMaxHeight()) }
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
@@ -569,9 +551,9 @@ private fun StyleCardPlace(modifier: Modifier = Modifier) {
  *
  * The card is the app's own, as every other choice is: a quiet tile, and the chosen one filled
  * with the text's colour. A character's colour is kept to its face, which is small, and is
- * muted there for as long as the character is one among many: with twenty of them side by side,
- * twenty colours at full strength would be all anyone saw. The one that answers has its colour
- * whole, so the eye finds it by that as well as by the card.
+ * muted there: with twenty of them side by side, twenty colours at full strength would be all
+ * anyone saw. The one that answers has more of its colour, so the eye finds it by that as well
+ * as by the card; none has it whole, which is for the picture that is shared.
  *
  * A name over one line: cards side by side then have their names on one line and their sayings
  * on the next. The sayings are picked short enough to fit, see the `style_*_sample` strings; one
@@ -618,7 +600,7 @@ private fun StyleCard(
                 horizontalArrangement = Arrangement.spacedBy(CARD_GAP),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CharacterFace(colour = colour, emblem = emblem, size = CARD_FACE, vivid = { arrived })
+                CharacterFace(colour = colour, emblem = emblem, size = CARD_FACE, chosen = { arrived })
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = title,
@@ -667,11 +649,15 @@ private fun StyleCard(
 
 /**
  * The face of a character wherever it is shown small: the ball wearing what is theirs, on their
- * colour, in a round. It is the drawing the shared card signs with, so a character looks the
- * same on a card to choose, on the ball's page and in a chat.
+ * colour, in a round. It is the shared card's own drawing and it is seen as the card shows it,
+ * close: the ball runs off the lower corner and what it wears comes to the middle, so that at
+ * this size it is a mark, and what is worn is what tells one from another.
  *
- * @param vivid how much of its colour the face has, from 0, muted as one among many, to 1, the
- * colour whole: read while drawing, so a face can take its colour without anything composing again.
+ * The colour is muted, towards a grey of the theme: that much while the character is one among
+ * many, and less on the one that is chosen or that answers.
+ *
+ * @param chosen from 0, one among many, to 1, the one: read while drawing, so a face can take
+ * its colour without anything composing again.
  */
 @Composable
 internal fun CharacterFace(
@@ -679,27 +665,30 @@ internal fun CharacterFace(
     emblem: Magic8BallPersonality,
     size: Dp,
     modifier: Modifier = Modifier,
-    vivid: () -> Float = { 1f }
+    chosen: () -> Float = { 1f }
 ) {
+    val dark = MaterialTheme.colorScheme.isDark
     val whole = shareColor(colour)
-    val muted = remember(whole) { lerp(whole, FACE_NEUTRAL, FACE_MUTING) }
-    // A line round it, barely there: the palest of the colours has an edge on a pale card too.
-    val edge = ShareInk.copy(alpha = FACE_EDGE_ALPHA)
+    val neutral = if (dark) FACE_NEUTRAL_DARK else FACE_NEUTRAL_LIGHT
+    // On a pale ground the palest of the colours needs an edge; on a dark one none does.
+    val edge = if (dark) Color.Transparent else ShareInk.copy(alpha = FACE_EDGE_ALPHA)
     Box(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .drawBehind { drawRect(lerp(muted, whole, vivid())) }
+            .drawBehind {
+                drawRect(lerp(whole, neutral, FACE_MUTING + (FACE_MUTING_CHOSEN - FACE_MUTING) * chosen()))
+            }
             .border(1.dp, edge, CircleShape)
     ) {
-        CharacterBall(emblem = emblem, size = size)
+        CharacterBall(emblem = emblem, size = size, share = FACE_BALL, right = FACE_BALL_RIGHT, down = FACE_BALL_DOWN)
     }
 }
 
 /**
- * Who answers now, under the ball: a disc as the buttons at the top of the page are, a size up
- * since it is the one thing to do down here, with the face of who answers in it and under it
- * their name, with the mark of something that opens. One touch leads to everyone else. When who
+ * Who answers now, under the ball: a disc as the buttons at the top of the page are, and their
+ * size, with the face of who answers in it and under it their name, with the mark of something
+ * that opens. One touch leads to everyone else. When who
  * answers changes, the one face passes into the other.
  *
  * @param named whether the name is written under the disc: beside another button it is not,
@@ -716,7 +705,6 @@ internal fun CharacterButton(
 ) {
     val said = stringResource(R.string.character_now, name)
     val touch = remember { MutableInteractionSource() }
-    val disc = if (named) WHO_DISC else WHO_DISC_BESIDE
     Column(
         // One thing to touch and one thing said: the disc lights up, and the name is its name.
         modifier = modifier
@@ -733,14 +721,14 @@ internal fun CharacterButton(
     ) {
         Box(
             modifier = Modifier
-                .size(disc)
+                .size(WHO_DISC)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
                 .indication(touch, PressHighlight),
             contentAlignment = Alignment.Center
         ) {
             Crossfade(targetState = colour to emblem, animationSpec = choiceTween(), label = "who answers") { (colour, emblem) ->
-                CharacterFace(colour = colour, emblem = emblem, size = disc * WHO_FACE_SHARE)
+                CharacterFace(colour = colour, emblem = emblem, size = WHO_FACE)
             }
         }
         if (named) {
@@ -828,13 +816,8 @@ private const val SAMPLE_ALPHA = 0.66f
 private val SHEET_CORNER = 28.dp
 private const val HANDLE_ALPHA = 0.3f
 
-/** Two cards and the start of a third across a phone: what tells that a line goes on. */
-private val STYLE_CARD_WIDTH = 196.dp
-
-/** How much of the sheet's width a card takes, the widest it gets, and the least of the next one that shows. */
-private const val STYLE_CARD_SHARE = 0.5f
-private val STYLE_CARD_WIDEST = 260.dp
-private val STYLE_CARD_PEEK = 88.dp
+/** The narrowest a card is before two across give way to one, at the type size the system gives. */
+private val STYLE_CARD_LEAST = 150.dp
 
 /** As wide as a sheet gets on a large screen. */
 private val SHEET_WIDEST = 640.dp
@@ -844,34 +827,39 @@ private val STYLE_CARD_GAP = 8.dp
 private val PLACE_BAR_HEIGHT = 8.dp
 private const val PLACE_NAME_WIDTH = 0.55f
 private const val PLACE_LINE_WIDTH = 0.8f
-private const val STYLE_ROWS = 2
 
 /** The pencil on a card of the user's own, and the room round it that takes the touch. */
 private val EDIT_GLYPH = 18.dp
 private val EDIT_TARGET = 48.dp
-private const val MAX_CARD_GROWTH = 1.5f
 
 /** The face on a card, the room between it and the card's edge and its words, and the room after the words. */
-private val CARD_FACE = 40.dp
-private val CARD_INSET = 8.dp
+private val CARD_FACE = 36.dp
+private val CARD_INSET = 10.dp
 private val CARD_GAP = 10.dp
 private val CARD_END = 14.dp
 
-/** Who answers, under the ball: the disc, how much of it the face takes, and the longest name shown whole. */
-private val WHO_DISC = 56.dp
-private val WHO_DISC_BESIDE = 48.dp
-private const val WHO_FACE_SHARE = 0.68f
+/** Who answers, under the ball: the disc, the face in it, and the longest name shown whole. */
+private val WHO_DISC = 48.dp
+private val WHO_FACE = 32.dp
 private val WHO_NAME_WIDEST = 200.dp
 
 /** How strong the place of a face that is still on its way. */
 private const val PLACE_FACE_ALPHA = 0.14f
 
 /**
- * What a face's colour is drawn towards while it is one among many, and how far: a cool grey
- * of the colours' own lightness, so the ball on it reads as before and only the colour is less.
+ * What a face's colour is drawn towards, and how far: a cool grey that the ball still reads on,
+ * a step darker in the dark where a pale round would glare. That far while the character is one
+ * among many, which evens out colours that are not all as strong, and less far on the one.
  */
-private val FACE_NEUTRAL = Color(0xFFC6CCD4)
-private const val FACE_MUTING = 0.55f
+private val FACE_NEUTRAL_LIGHT = Color(0xFFC6CCD4)
+private val FACE_NEUTRAL_DARK = Color(0xFFAAB2BD)
+private const val FACE_MUTING = 0.7f
+private const val FACE_MUTING_CHOSEN = 0.3f
+
+/** How the ball stands in a face: how much of it the ball takes, and how far its middle is to the right and down, in its own widths. */
+private const val FACE_BALL = 0.8f
+private const val FACE_BALL_RIGHT = 0.1f
+private const val FACE_BALL_DOWN = 0.275f
 
 /** The line round a face. */
 private const val FACE_EDGE_ALPHA = 0.14f

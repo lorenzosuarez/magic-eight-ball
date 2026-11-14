@@ -253,19 +253,31 @@ private fun DrawScope.drawBubble() {
  * The ball as the card draws it, wearing what [emblem] wears, in a square of [size]: for showing
  * a look where one is picked. It is the card's own drawing at the card's own measures, brought
  * to the size asked for, with room over and beside the ball for what it wears.
+ *
+ * @param share how much of the square the ball takes, and [right] and [down] how far its
+ * middle is from the square's, in the ball's own widths. As given, the whole figure stands in
+ * the square; larger and further down and to the right, it is seen close, as on the card
+ * itself, where the ball runs off the corner and what it wears comes to the middle.
  */
 @Composable
-internal fun CharacterBall(emblem: Magic8BallPersonality, size: Dp, modifier: Modifier = Modifier) {
+internal fun CharacterBall(
+    emblem: Magic8BallPersonality,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    share: Float = BALL_IN_SQUARE,
+    right: Float = 0f,
+    down: Float = BALL_DROP
+) {
     val density = LocalDensity.current.density
     Box(modifier = modifier.requiredSize(size).clipToBounds().clearAndSetSemantics {}) {
         CompositionLocalProvider(
-            LocalDensity provides Density(density * (size / SHARE_BALL_SIZE) * BALL_IN_SQUARE, fontScale = 1f)
+            LocalDensity provides Density(density * (size / SHARE_BALL_SIZE) * share, fontScale = 1f)
         ) {
             FlatBall(
                 personality = emblem,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = SHARE_BALL_SIZE * BALL_DROP)
+                    .offset(x = SHARE_BALL_SIZE * right, y = SHARE_BALL_SIZE * down)
                     .requiredSize(SHARE_BALL_SIZE)
             )
         }

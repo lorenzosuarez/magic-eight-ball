@@ -1206,12 +1206,14 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
-                        QuietText(stringResource(hint))
+                        // Whole, however large the type: it is how the thing is done.
+                        QuietText(stringResource(hint), maxLines = HINT_MAX_LINES)
                     } else {
                         Text(
                             text = stringResource(hint),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            // Said, not announced: the ball is what the page is about.
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center
                         )
@@ -1442,7 +1444,12 @@ private fun Actions(
                         FilledTonalButton(
                             onClick = { onAskWho(whoQuestion) },
                             modifier = Modifier.heightIn(min = 48.dp),
-                            shape = ButtonShape
+                            shape = ButtonShape,
+                            // On the ground of the disc beside it: the two are one row of things to touch.
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA),
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
                         ) {
                             Text(whoQuestion, fontWeight = FontWeight.SemiBold)
                         }
@@ -1713,6 +1720,9 @@ private val ACTIONS_HEIGHT = 122.dp
 private val ACTIONS_LEAST = 82.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3
+
+/** How to ask, under whose turn it is: two sentences, each of which may take two lines at a large size. */
+private const val HINT_MAX_LINES = 4
 /** Room for the few sentences of an answer that says more; one line of comeback takes what it needs. */
 private const val REMARK_MAX_LINES = 9
 
