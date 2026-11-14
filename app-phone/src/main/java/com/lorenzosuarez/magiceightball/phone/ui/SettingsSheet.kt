@@ -74,7 +74,10 @@ import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.VoiceStatus
 
 /**
- * The options, as the page to the right of the ball: every choice takes effect at once.
+ * The options, as the page to the right of the ball: every choice takes effect at once. Who
+ * answers is not among them: that is chosen on the ball's page, where the answer is.
+ *
+ * @param onAskPremium what is sold was asked for: see [CharacterFlows].
  *
  * Text and switches, nothing else: one card per subject under a quiet label, its rows separated
  * by hairlines. It scrolls when the font is large or the window is short.
@@ -83,7 +86,6 @@ import com.lorenzosuarez.magiceightball.phone.VoiceStatus
 internal fun SettingsContent(
     state: EightBallUiState,
     onLanguageSelected: (AppLanguage) -> Unit,
-    onPersonalitySelected: (Magic8BallPersonality) -> Unit,
     onAiAnswersChange: (Boolean) -> Unit,
     onVoiceQuestionsChange: (Boolean) -> Unit,
     onAllowMicrophone: () -> Unit,
@@ -102,11 +104,7 @@ internal fun SettingsContent(
     onSignOut: () -> Unit = {},
     onDeleteAccount: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
-    onChooseCharacter: (CustomCharacter) -> Unit = {},
-    onSaveCharacter: suspend (CustomCharacter?, String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave =
-        { _, _, _, _, _ -> CharacterSave.Failed },
-    onDeleteCharacter: suspend (String) -> Boolean = { false },
-    onBuyPremium: suspend () -> Bought = { Bought.FAILED }
+    onAskPremium: () -> Unit = {}
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -119,198 +117,7 @@ internal fun SettingsContent(
             onDismiss = { editingParty = false }
         )
     }
-    var browsingStyles by rememberSaveable { mutableStateOf(false) }
-    // Which character of the user's own is open in the editor: its slot, or [NEW] for one being made.
-    var editing by rememberSaveable { mutableStateOf<String?>(null) }
-    var notice by rememberSaveable { mutableStateOf<CharactersNotice?>(null) }
-    // What is sold is being shown, and what for: null while it is not.
-    var paying by rememberSaveable { mutableStateOf<PremiumFor?>(null) }
-    val scope = rememberCoroutineScope()
     val signedIn = state.account is AccountState.SignedIn
-    val snackbars = LocalSnackbars.current
-    val premiumMessage = stringResource(R.string.account_premium)
-    // What is sold was asked for with nobody signed in, and they signed in for it: it is shown
-    // once the account is whole and known not to hold it, and forgotten if they sign out first.
-    var wantsPremium by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(signedIn) { if (!signedIn) wantsPremium = false }
-    LaunchedEffect(wantsPremium, signedIn, state.profile, state.premiumKnown) {
-        if (wantsPremium && signedIn && state.profile is ProfileState.Present && state.premiumKnown) {
-            wantsPremium = false
-            if (state.offersPremium && paying == null && editing == null) paying = PremiumFor.EVERYTHING
-        }
-    }
-    // Whether what is kept with the account, its profile and its characters, has been heard of.
-    val accountKnown = state.profile != ProfileState.Unknown && state.characters != null
-    // What "Create" does once that is known: said here once, for a touch now or one that waited.
-    val create = {
-        val kept = state.characters
-        when {
-            !state.canMakeCharacters || kept == null -> notice = CharactersNotice.UNKNOWN
-            kept.size >= CustomCharacter.MAX_COUNT -> notice = CharactersNotice.FULL
-            // Last: nobody is asked to pay for what they could not have made anyway.
-            state.mustPayToCreate -> paying = PremiumFor.CHARACTERS
-            else -> editing = NEW
-        }
-    }
-    // "Create" touched while the account was still on its way: it goes on by itself when it
-    // arrives, and says that it could not only once it has plainly not come.
-    var waitingToCreate by remember { mutableStateOf(false) }
-    // The places kept for their characters while those are on their way: as many as there were
-    // when last heard of, one when one of them is the character chosen, and none when there is
-    // no reason to think there are any. Kept for a while only: after that it is a connection
-    // that is not there, which a touch on "Create" says in words.
-    val yoursOnTheirWay = state.offersAccount && signedIn && state.characters == null
-    // Of this account: what another one had says nothing of it.
-    var lastHeardOf by rememberSaveable((state.account as? AccountState.SignedIn)?.id) { mutableIntStateOf(UNHEARD_OF) }
-    LaunchedEffect(state.characters) { state.characters?.let { lastHeardOf = it.size } }
-    var patient by remember(yoursOnTheirWay) { mutableStateOf(true) }
-    LaunchedEffect(yoursOnTheirWay) {
-        if (yoursOnTheirWay) {
-            delay(ACCOUNT_PATIENCE_MS)
-            patient = false
-        }
-    }
-    val yoursPlaces = when {
-        !yoursOnTheirWay || !patient -> 0
-        lastHeardOf != UNHEARD_OF -> lastHeardOf
-        state.settings.customCharacter != null -> 1
-        else -> 0
-    }
-    // As things stand when the wait ends, not as they stood when it began.
-    val createNow by rememberUpdatedState(create)
-    LaunchedEffect(waitingToCreate, accountKnown) {
-        if (waitingToCreate) {
-            if (!accountKnown) delay(ACCOUNT_PATIENCE_MS)
-            waitingToCreate = false
-            // Unless something else was opened meanwhile, or the profile is being asked for:
-            // what waited does not land on top of that.
-            if (editing == null && paying == null && state.profile != ProfileState.Missing) createNow()
-        }
-    }
-    if (browsingStyles) {
-        StylesSheet(
-            selected = state.settings.personality,
-            hidden = state.config.hiddenStyles,
-            onSelected = onPersonalitySelected,
-            onClose = {
-                browsingStyles = false
-                // A wait that outlived the sheet it was asked on would open something unasked.
-                waitingToCreate = false
-            },
-            // Offered wherever an account is: whoever has none yet is shown the way to one.
-            onCreate = if (state.offersAccount) {
-                {
-                    when {
-                        !signedIn -> notice = CharactersNotice.ACCOUNT
-                        accountKnown -> create()
-                        else -> waitingToCreate = true
-                    }
-                }
-            } else null,
-            yours = state.characters.orEmpty().takeIf { state.offersAccount && signedIn }.orEmpty(),
-            yoursPlaces = yoursPlaces,
-            creating = waitingToCreate,
-            chosenOfYours = state.settings.customCharacter?.id,
-            onYoursSelected = onChooseCharacter,
-            onEditYours = { editing = it.id }
-        )
-    }
-    paying?.let { wanted ->
-        // Bought, here or wherever a payment that was pending came through: on to what they
-        // wanted, which for whoever only asked what is sold is the page they were on.
-        val goOn = {
-            // Once, though it may be told both by the purchase and by the account.
-            if (paying != null) {
-                paying = null
-                if (wanted == PremiumFor.CHARACTERS) {
-                    editing = NEW
-                } else {
-                    // Back on the page with nothing opened for them: they are told it is theirs.
-                    scope.launch {
-                        snackbars?.currentSnackbarData?.dismiss()
-                        snackbars?.showSnackbar(premiumMessage, duration = SnackbarDuration.Short)
-                    }
-                }
-            }
-        }
-        // No longer sold, or not yet known to be, as when the app has just come back: the sheet
-        // goes, and nothing opens that was not paid for. Whoever wants to make one asks again.
-        LaunchedEffect(state.config.premiumEnabled) { if (!state.config.premiumEnabled) paying = null }
-        PremiumSheet(
-            offer = state.offer,
-            wanted = wanted,
-            held = state.premium,
-            onBuy = onBuyPremium,
-            onBought = goOn,
-            onClose = { paying = null }
-        )
-    }
-    // The character the editor was opened on: kept while those of the account are for a moment
-    // not known, so that what is being typed is not lost to a connection that blinked.
-    var opened by remember { mutableStateOf<CustomCharacter?>(null) }
-    editing?.let { slot ->
-        val kept = state.characters
-        val character = kept?.find { it.id == slot } ?: opened?.takeIf { it.id == slot && kept == null }
-        if (slot == NEW || character != null) {
-            // As it was when the editor opened: what is saved goes over that, or not at all.
-            if (opened?.id != slot) opened = character
-            val original = opened
-            CharacterEditorSheet(
-                character = original,
-                onSave = { name, description, colour, emblem -> onSaveCharacter(original, name, description, colour, emblem) },
-                onDelete = original?.let { { onDeleteCharacter(it.id) } },
-                onClose = {
-                    editing = null
-                    opened = null
-                }
-            )
-        } else if (kept != null) {
-            // Known to be gone, from here or from another device: there is nothing to correct.
-            LaunchedEffect(slot) {
-                editing = null
-                opened = null
-            }
-        }
-    }
-    notice?.let { what ->
-        // The dialog is a window of its own: its texts are read here, in the app's language.
-        val title = stringResource(what.title)
-        val text = stringResource(what.text)
-        val go = stringResource(R.string.account_continue_google)
-        val later = stringResource(R.string.action_not_now)
-        val understood = stringResource(R.string.action_understood)
-        // What stands in the way is that nobody is signed in: the way there is offered.
-        val signsIn = what == CharactersNotice.ACCOUNT || what == CharactersNotice.PREMIUM_ACCOUNT
-        AlertDialog(
-            onDismissRequest = { notice = null },
-            title = { Text(title) },
-            text = { Text(text) },
-            confirmButton = {
-                if (signsIn) {
-                    TextButton(
-                        onClick = {
-                            notice = null
-                            scope.launch {
-                                when (onSignIn()) {
-                                    // What they signed in for is not forgotten on the way.
-                                    AccountOutcome.DONE -> if (what == CharactersNotice.PREMIUM_ACCOUNT) wantsPremium = true
-                                    // Backing out of Google's own question needs no telling.
-                                    AccountOutcome.CANCELLED -> Unit
-                                    AccountOutcome.NO_GOOGLE_ACCOUNT -> notice = CharactersNotice.NO_GOOGLE
-                                    else -> notice = CharactersNotice.NO_SIGN_IN
-                                }
-                            }
-                        }
-                    ) { Text(go) }
-                } else {
-                    TextButton(onClick = { notice = null }) { Text(understood) }
-                }
-            },
-            dismissButton = if (signsIn) {
-                { TextButton(onClick = { notice = null }) { Text(later) } }
-            } else null
-        )
-    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -340,22 +147,11 @@ internal fun SettingsContent(
                 ActionRow(
                     title = stringResource(R.string.premium_row_title),
                     supporting = stringResource(R.string.premium_row_hint),
-                    onClick = {
-                        if (signedIn) paying = PremiumFor.EVERYTHING else notice = CharactersNotice.PREMIUM_ACCOUNT
-                    }
+                    onClick = onAskPremium
                 )
             }
         }
         Section(stringResource(R.string.options_answers)) {
-            StyleRow(
-                selected = state.settings.personality,
-                onSelected = onPersonalitySelected,
-                onSeeAll = { browsingStyles = true },
-                featured = state.config.featuredStyles,
-                hidden = state.config.hiddenStyles,
-                custom = state.settings.customCharacter
-            )
-            RowDivider()
             // The classic style never asks the AI service, and neither does one of the user's own
             // while it is not theirs to use: the switch says so rather than promise it.
             val classic = state.answersAsClassic
@@ -754,30 +550,6 @@ internal fun SettingText(
     }
 }
 
-/** What making a character, or buying what is sold, can run into before its sheet opens, and how each is said. */
-internal enum class CharactersNotice(@StringRes val title: Int, @StringRes val text: Int) {
-    /** Nobody is signed in: the way to an account. */
-    ACCOUNT(R.string.characters_account_title, R.string.characters_account_text),
-
-    /** Signed in, and what is kept with the account has not been heard of. */
-    UNKNOWN(R.string.characters_unknown_title, R.string.characters_unknown_text),
-
-    /** Every slot is taken. */
-    FULL(R.string.characters_full_title, R.string.characters_full_text),
-
-    /** The way to an account was taken, and led nowhere. */
-    NO_SIGN_IN(R.string.characters_no_sign_in_title, R.string.characters_unknown_text),
-
-    /** It led nowhere because the device has no Google account to sign in with. */
-    NO_GOOGLE(R.string.characters_no_sign_in_title, R.string.characters_no_google_text),
-
-    /** What is sold was asked for with nobody signed in: it is kept with an account. */
-    PREMIUM_ACCOUNT(R.string.premium_account_title, R.string.premium_account_text)
-}
-
-/** What [SettingsContent] calls the editor open on nobody yet. */
-private const val NEW = ""
-
 /** Whether answers are being made for whoever is signed in: the AI service is asked, and they have a profile. */
 private val EightBallUiState.sendsProfile: Boolean
     get() = offersAccount && profile is ProfileState.Present && usesAiAnswers && !answersAsClassic
@@ -815,8 +587,3 @@ private const val DISABLED_ALPHA = 0.38f
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
 internal const val TILE_ALPHA = 0.08f
 
-/** How long a touch on "Create" waits for an account that is on its way before saying it has not come. */
-private const val ACCOUNT_PATIENCE_MS = 6_000L
-
-/** Before the characters of the account have been heard of once: how many there are is not known. */
-private const val UNHEARD_OF = -1

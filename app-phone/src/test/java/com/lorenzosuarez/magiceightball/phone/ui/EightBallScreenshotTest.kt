@@ -340,7 +340,6 @@ class EightBallScreenshotTest {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
@@ -368,7 +367,6 @@ class EightBallScreenshotTest {
                             SettingsContent(
                                 state = state,
                                 onLanguageSelected = {},
-                                onPersonalitySelected = {},
                                 onAiAnswersChange = {},
                                 onVoiceQuestionsChange = {},
                                 onAllowMicrophone = {},
@@ -397,13 +395,6 @@ class EightBallScreenshotTest {
     @Test
     @Config(qualifiers = TABLET_LANDSCAPE)
     fun tablet_landscape_idle_dark() = capture("tablet_2_ask_landscape_dark", EightBallUiState())
-
-    /** A style from the far end of the row: the row opens with it in the middle, whole. */
-    @Test
-    fun phone_settings_chosen_style_in_view() = captureWithSettings(
-        "phone_23_settings_chosen_style_in_view",
-        EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH, personality = Magic8BallPersonality.CAT))
-    )
 
     @Test
     fun phone_answer_with_remark_spanish() = capture(
@@ -696,7 +687,6 @@ class EightBallScreenshotTest {
                             SettingsContent(
                                 state = state,
                                 onLanguageSelected = {},
-                                onPersonalitySelected = {},
                                 onAiAnswersChange = {},
                                 onVoiceQuestionsChange = {},
                                 onAllowMicrophone = {},
@@ -766,7 +756,6 @@ class EightBallScreenshotTest {
                         SettingsContent(
                             state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH)),
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
@@ -876,23 +865,9 @@ class EightBallScreenshotTest {
     fun phone_styles_english_light() = captureStyles("phone_19_styles_english_light", AppLanguage.ENGLISH, dark = false)
 
     @Test
-    fun every_style_is_in_one_group_and_the_row_shows_the_chosen_one() {
+    fun every_style_is_in_one_group() {
         // Every character the app wrote: the user's own are no group of the app's.
         assertEquals(CustomCharacter.LOOKS.sortedBy { it.name }, StyleGroups.flatMap { it.styles }.sortedBy { it.name })
-        Magic8BallPersonality.entries.forEach { style ->
-            val row = stylesInRow(style)
-            assertTrue(style in row)
-            assertTrue(Magic8BallPersonality.NEUTRAL in row)
-            // Whatever is set from afar: the plain style stays, and a hidden one is not offered.
-            val steered = stylesInRow(
-                style,
-                featured = listOf(Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT),
-                hidden = setOf(Magic8BallPersonality.CAT)
-            )
-            assertTrue(Magic8BallPersonality.NEUTRAL in steered && style in steered)
-            assertTrue(style == Magic8BallPersonality.CAT || Magic8BallPersonality.CAT !in steered)
-            assertEquals(row.size, row.distinct().size)
-        }
     }
 
     @Test
@@ -1207,7 +1182,6 @@ class EightBallScreenshotTest {
                         SettingsContent(
                             state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), aiAnswersAvailable = true),
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
@@ -1350,7 +1324,6 @@ class EightBallScreenshotTest {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},

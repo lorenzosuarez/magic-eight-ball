@@ -328,32 +328,30 @@ fun EightBallScreen(
                 onAnswered = viewModel::onNotificationsAnswered
             )
             val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
-            // Who answers, chosen from the ball's page: among the app's characters and those the
-            // user made. Making one and correcting one are done from the options, where the
-            // account is.
-            var pickingCharacter by rememberSaveable { mutableStateOf(false) }
-            if (pickingCharacter) {
-                val signedIn = current.account is AccountState.SignedIn
-                StylesSheet(
-                    selected = current.settings.personality,
-                    hidden = current.config.hiddenStyles,
-                    onSelected = {
-                        tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
-                        viewModel.setPersonality(it)
-                    },
-                    onClose = { pickingCharacter = false },
-                    yours = current.characters.orEmpty().takeIf { current.offersAccount && signedIn }.orEmpty(),
-                    chosenOfYours = current.settings.customCharacter?.id,
-                    onYoursSelected = {
-                        tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
-                        viewModel.chooseCharacter(it)
-                    },
-                    onEditYours = null
-                )
-            }
+            // Who answers and the characters of one's own are asked for from the ball's page, and
+            // what is sold from the options: see [CharacterFlows].
+            val flowsAsked = rememberFlowsAsked()
             EightBallContent(
                 state = current,
-                onPickCharacter = { pickingCharacter = true },
+                onPickCharacter = { flowsAsked.browsing = true },
+                flows = {
+                    CharacterFlows(
+                        state = current,
+                        asked = flowsAsked,
+                        onPersonalitySelected = {
+                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                            viewModel.setPersonality(it)
+                        },
+                        onSignIn = { viewModel.signIn(context) },
+                        onChooseCharacter = {
+                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                            viewModel.chooseCharacter(it)
+                        },
+                        onSaveCharacter = viewModel::saveCharacter,
+                        onDeleteCharacter = viewModel::deleteCharacter,
+                        onBuyPremium = { viewModel.buyPremium(context) }
+                    )
+                },
                 now = now,
                 intro = { intro.value },
                 voiceLevel = { voiceLevel.value },
@@ -394,10 +392,6 @@ fun EightBallScreen(
                         onLanguageSelected = {
                             tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
                             viewModel.setLanguage(it)
-                        },
-                        onPersonalitySelected = {
-                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
-                            viewModel.setPersonality(it)
                         },
                         onAiAnswersChange = {
                             tick(it.toggleFeedback())
@@ -447,10 +441,7 @@ fun EightBallScreen(
                         onSignOut = viewModel::signOut,
                         onDeleteAccount = { viewModel.deleteAccount(context) },
                         onSaveProfile = { name, birthDate -> viewModel.saveProfile(name, birthDate, context) },
-                        onChooseCharacter = viewModel::chooseCharacter,
-                        onSaveCharacter = viewModel::saveCharacter,
-                        onDeleteCharacter = viewModel::deleteCharacter,
-                        onBuyPremium = { viewModel.buyPremium(context) },
+                        onAskPremium = { flowsAsked.premium = true },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
@@ -490,6 +481,7 @@ fun EightBallScreen(
  * @param voiceLevel read while drawing only; see [EightBall].
  * @param onDeleteHistoryEntry deletes at once; the screen then offers to undo it, which calls
  * [onRestoreHistoryEntry].
+ * @param flows the sheets a page can ask for, which belong to no page: see [CharacterFlows].
  * @param initialPage the page in front at first: [BALL_PAGE] or [HISTORY_PAGE].
  */
 @Composable
@@ -516,6 +508,7 @@ internal fun EightBallContent(
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
     onPickCharacter: () -> Unit = {},
+    flows: @Composable () -> Unit = {},
     options: @Composable () -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
@@ -537,6 +530,8 @@ internal fun EightBallContent(
     val reportedMessage = stringResource(R.string.report_done)
     // Reporting asks one thing first, what is wrong, and the answer to that sends it.
     var reporting by rememberSaveable { mutableStateOf(false) }
+    // What the flows have to say once they are done is said by the screen, as the options' is.
+    CompositionLocalProvider(LocalSnackbars provides snackbars) { flows() }
     if (reporting && state.phase is BallPhase.Answered) {
         ReportSheet(
             onReason = { reason ->
@@ -969,9 +964,7 @@ private fun Stage(
                     onShareAnswer = onShareAnswer,
                     onRateAnswer = onRateAnswer,
                     onAskWho = onAskWho,
-                    // As tall with nothing in it as with who answers in it: the ball does not
-                    // move when a question takes the place of what stands here at rest.
-                    modifier = band.padding(top = 24.dp, bottom = 16.dp).heightIn(min = ACTIONS_LEAST)
+                    modifier = band.padding(top = 24.dp, bottom = 16.dp).heightIn(min = 48.dp)
                 )
             }
         ) { measurables, constraints ->
@@ -1432,7 +1425,7 @@ private fun Actions(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CharacterButton(
+                    CharacterChip(
                         name = own?.name ?: stringResource(style.labelRes()),
                         colour = own?.colour ?: style,
                         emblem = own?.emblem ?: style,
@@ -1714,10 +1707,7 @@ private val BallGlow = Color(0xFF3550C8).copy(alpha = 0.3f)
 private const val BALL_GLOW_REACH = 1.8f
 /** As far as a page's name follows the system's font size. */
 private const val PAGE_TITLE_MAX_SCALE = 1.3f
-private val ACTIONS_HEIGHT = 122.dp
-
-/** What stands under the ball at rest, at the least: a face and its name. Kept in every state. */
-private val ACTIONS_LEAST = 82.dp
+private val ACTIONS_HEIGHT = 80.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3
 

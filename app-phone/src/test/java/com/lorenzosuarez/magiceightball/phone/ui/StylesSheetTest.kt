@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.test.assertIsNotSelected
 import android.app.Application
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
@@ -95,6 +96,20 @@ class StylesSheetTest {
         assertEquals(Magic8BallPersonality.CAT, selected)
         assertEquals(1, closes)
         compose.onNodeWithText("Characters").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a card shows that it was touched at once, before the choice has been saved`() {
+        compose.setContent {
+            MagicEightBallPhoneTheme(dark = true) {
+                // Nothing here saves anything: what is chosen stays as it was, however long one waits.
+                StylesContent(selected = Magic8BallPersonality.SARCASTIC, onSelected = {}, onClose = {})
+            }
+        }
+
+        compose.onNodeWithText("Classic").performScrollTo().performClick()
+        compose.onNodeWithText("Classic").assertIsSelected()
+        compose.onNodeWithText("Sarcastic").assertIsNotSelected()
     }
 
     @Test

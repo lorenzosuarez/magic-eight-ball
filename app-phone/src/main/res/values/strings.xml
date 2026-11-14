@@ -52,7 +52,6 @@
     <string name="language_english" translatable="false">English</string>
     <string name="language_spanish" translatable="false">Español</string>
     <string name="language_portuguese" translatable="false">Português</string>
-    <string name="settings_style">Character</string>
     <string name="style_sarcastic">Sarcastic</string>
     <string name="style_mystical">Mystical</string>
     <string name="style_neutral">Classic</string>
@@ -95,7 +94,6 @@
     <string name="style_custom_sample">In your words</string>
     <string name="styles_title">Characters</string>
     <string name="styles_subtitle">Pick who answers</string>
-    <string name="styles_see_all">See all</string>
     <string name="styles_group_classics">Old favorites</string>
     <string name="styles_group_heart">With heart</string>
     <string name="styles_group_movies">Straight from a movie</string>

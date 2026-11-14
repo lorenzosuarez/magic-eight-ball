@@ -130,23 +130,6 @@ internal val StyleGroups = listOf(
     )
 )
 
-/**
- * The styles the options show without asking: [featured], led by [selected] when it is not one
- * of them, so the choice is always in sight. The plain style is always among them, whatever was
- * set from afar: whoever tires of a character should not have to look for the way back.
- */
-internal fun stylesInRow(
-    selected: Magic8BallPersonality,
-    featured: List<Magic8BallPersonality> = AppConfig.DEFAULT_FEATURED,
-    hidden: Set<Magic8BallPersonality> = emptySet()
-): List<Magic8BallPersonality> {
-    val shown = (featured - hidden).let { if (Magic8BallPersonality.NEUTRAL in it) it else it + Magic8BallPersonality.NEUTRAL }
-    if (selected in shown) return shown
-    // The chosen one takes the place of the last of the others, never of the plain style.
-    val making = shown.lastOrNull { it != Magic8BallPersonality.NEUTRAL }
-    return listOf(selected) + if (shown.size > 1 && making != null) shown - making else shown
-}
-
 /** The groups without the styles taken out from afar; the one in use stays, wherever it is. */
 internal fun styleGroups(
     selected: Magic8BallPersonality,
@@ -154,106 +137,6 @@ internal fun styleGroups(
 ): List<StyleGroup> = StyleGroups
     .map { group -> StyleGroup(group.title, group.styles.filter { it == selected || it !in hidden }) }
     .filter { it.styles.isNotEmpty() }
-
-/**
- * The style of the answers, as a row of the options: a few styles side by side, each with a line
- * in its own voice, and after them the way to all the rest.
- */
-@Composable
-internal fun StyleRow(
-    selected: Magic8BallPersonality,
-    onSelected: (Magic8BallPersonality) -> Unit,
-    onSeeAll: () -> Unit,
-    featured: List<Magic8BallPersonality> = AppConfig.DEFAULT_FEATURED,
-    hidden: Set<Magic8BallPersonality> = emptySet(),
-    custom: CustomCharacter? = null
-) {
-    val scroll = rememberScrollState()
-    // Where each card starts and how wide it is, within the row.
-    val spans = remember { mutableStateMapOf<Magic8BallPersonality, IntRange>() }
-    var shown by remember { mutableStateOf(false) }
-    // What was just touched is shown as chosen in the frame of the touch: saving a choice and
-    // hearing it back takes a moment, and a card that waited for it would answer late. It
-    // follows what is saved whenever that changes, from here or from anywhere else.
-    var touched by remember(selected) { mutableStateOf(selected) }
-    // The chosen style is brought to the middle of the row, with its neighbours on either side:
-    // at once when the row first shows, so it is simply there, and gliding after every choice,
-    // so a card touched at the edge comes fully into view.
-    val span = spans[touched]
-    LaunchedEffect(touched, span, scroll.viewportSize) {
-        if (span == null || scroll.viewportSize == 0) return@LaunchedEffect
-        val middle = (span.first + span.last) / 2 - scroll.viewportSize / 2
-        val target = middle.coerceIn(0, scroll.maxValue)
-        if (shown) scroll.animateScrollTo(target, tween(ROW_GLIDE_MS)) else scroll.scrollTo(target)
-        shown = true
-    }
-    val edge = with(LocalDensity.current) { ROW_EDGE.roundToPx() }
-    Column(modifier = Modifier.padding(vertical = 16.dp)) {
-        Text(
-            text = stringResource(R.string.settings_style),
-            modifier = Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Row(
-            modifier = Modifier
-                .padding(top = 12.dp)
-                .fadingRow(scroll)
-                .padding(horizontal = ROW_EDGE)
-                .height(IntrinsicSize.Min)
-                .selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            stylesInRow(selected, featured, hidden).forEach { style ->
-                // One of the user's own, when it is the one chosen, under the name they gave it.
-                val own = custom.takeIf { style == Magic8BallPersonality.CUSTOM }
-                StyleCard(
-                    title = own?.name ?: stringResource(style.labelRes()),
-                    // What the user wrote of it is theirs and long: a line of the app's says whose words it speaks in.
-                    sample = stringResource(style.sampleRes()),
-                    colour = own?.colour ?: style,
-                    emblem = own?.emblem ?: style,
-                    chosen = style == touched,
-                    onClick = {
-                        touched = style
-                        onSelected(style)
-                    },
-                    // As wide as what it says: in a row that scrolls, nothing has to be cut short.
-                    modifier = Modifier
-                        .widthIn(min = STYLE_CARD_MIN_WIDTH)
-                        .fillMaxHeight()
-                        .onPlaced { placed ->
-                            val start = placed.positionInParent().x.roundToInt() + edge
-                            spans[style] = start..start + placed.size.width
-                        }
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .width(1.dp)
-                    .height(32.dp)
-                    .background(MaterialTheme.colorScheme.hairline)
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .clip(ButtonShape)
-                    .clickable(role = Role.Button, onClick = onSeeAll)
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.styles_see_all),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-    }
-}
 
 /**
  * Every style, in a sheet that comes up from the bottom over half the screen and, pulled or
@@ -658,6 +541,8 @@ private fun StyleCard(
  *
  * @param chosen from 0, one among many, to 1, the one: read while drawing, so a face can take
  * its colour without anything composing again.
+ * @param ground how much of the colour's round there is, from nothing to all of it: less than
+ * all lets what the face stands on show through, where the face is to be quieter still.
  */
 @Composable
 internal fun CharacterFace(
@@ -665,7 +550,8 @@ internal fun CharacterFace(
     emblem: Magic8BallPersonality,
     size: Dp,
     modifier: Modifier = Modifier,
-    chosen: () -> Float = { 1f }
+    chosen: () -> Float = { 1f },
+    ground: Float = 1f
 ) {
     val dark = MaterialTheme.colorScheme.isDark
     val whole = shareColor(colour)
@@ -677,7 +563,7 @@ internal fun CharacterFace(
             .size(size)
             .clip(CircleShape)
             .drawBehind {
-                drawRect(lerp(whole, neutral, FACE_MUTING + (FACE_MUTING_CHOSEN - FACE_MUTING) * chosen()))
+                drawRect(lerp(whole, neutral, FACE_MUTING + (FACE_MUTING_CHOSEN - FACE_MUTING) * chosen()), alpha = ground)
             }
             .border(1.dp, edge, CircleShape)
     ) {
@@ -686,16 +572,16 @@ internal fun CharacterFace(
 }
 
 /**
- * Who answers now, under the ball: a disc as the buttons at the top of the page are, and their
- * size, with the face of who answers in it and under it their name, with the mark of something
- * that opens. One touch leads to everyone else. When who
- * answers changes, the one face passes into the other.
+ * Who answers now, under the ball: a chip, their face and their name side by side with the mark
+ * of something that opens, on a ground that is barely there. It says who it is and that it can
+ * be changed, and no more: the page is the ball's. One touch leads to everyone, to choose among
+ * and to make one's own. When who answers changes, the one passes into the other.
  *
- * @param named whether the name is written under the disc: beside another button it is not,
+ * @param named whether the name is written beside the face: beside another button it is not,
  * and is then only said to whoever cannot see the face.
  */
 @Composable
-internal fun CharacterButton(
+internal fun CharacterChip(
     name: String,
     colour: Magic8BallPersonality,
     emblem: Magic8BallPersonality,
@@ -703,56 +589,42 @@ internal fun CharacterButton(
     modifier: Modifier = Modifier,
     named: Boolean = true
 ) {
+    val scheme = MaterialTheme.colorScheme
     val said = stringResource(R.string.character_now, name)
-    val touch = remember { MutableInteractionSource() }
-    Column(
-        // One thing to touch and one thing said: the disc lights up, and the name is its name.
+    Row(
         modifier = modifier
-            .clickable(
-                interactionSource = touch,
-                indication = null,
-                onClickLabel = stringResource(R.string.styles_subtitle),
-                role = Role.Button,
-                onClick = onClick
-            )
-            .semantics(mergeDescendants = true) { contentDescription = said },
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .clip(CircleShape)
+            .background(scheme.onSurface.copy(alpha = CHIP_GROUND_ALPHA))
+            .clickable(onClickLabel = stringResource(R.string.styles_subtitle), role = Role.Button, onClick = onClick)
+            // Said once, as a sentence: the name alone would not say what it is the name of.
+            .semantics(mergeDescendants = true) { contentDescription = said }
+            .height(CHIP_HEIGHT)
+            .padding(start = CHIP_INSET, end = CHIP_END),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(WHO_DISC)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
-                .indication(touch, PressHighlight),
-            contentAlignment = Alignment.Center
-        ) {
-            Crossfade(targetState = colour to emblem, animationSpec = choiceTween(), label = "who answers") { (colour, emblem) ->
-                CharacterFace(colour = colour, emblem = emblem, size = WHO_FACE)
+        Crossfade(targetState = Triple(name.takeIf { named }, colour, emblem), animationSpec = choiceTween(), label = "who answers") { (name, colour, emblem) ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                // As quiet as a face gets: one among many, and a little of the page through it.
+                CharacterFace(colour = colour, emblem = emblem, size = CHIP_HEIGHT - CHIP_INSET * 2, chosen = { 0f }, ground = CHIP_FACE_GROUND)
+                if (name != null) {
+                    Text(
+                        text = name,
+                        modifier = Modifier.widthIn(max = CHIP_NAME_WIDEST).clearAndSetSemantics {},
+                        style = MaterialTheme.typography.labelLarge,
+                        color = scheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
-        if (named) {
-            Row(
-                modifier = Modifier.clearAndSetSemantics {},
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = name,
-                    modifier = Modifier.widthIn(max = WHO_NAME_WIDEST),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Icon(
-                    painter = painterResource(R.drawable.ic_expand_more),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+        Icon(
+            painter = painterResource(R.drawable.ic_expand_more),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = scheme.onSurfaceVariant
+        )
     }
 }
 
@@ -806,7 +678,6 @@ internal fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.CUSTOM -> R.string.style_custom_sample
 }
 
-private val STYLE_CARD_MIN_WIDTH = 168.dp
 private val ROW_EDGE = 16.dp
 
 /** How much quieter than its name a style's line is. */
@@ -838,10 +709,17 @@ private val CARD_INSET = 10.dp
 private val CARD_GAP = 10.dp
 private val CARD_END = 14.dp
 
-/** Who answers, under the ball: the disc, the face in it, and the longest name shown whole. */
-private val WHO_DISC = 48.dp
-private val WHO_FACE = 32.dp
-private val WHO_NAME_WIDEST = 200.dp
+/**
+ * Who answers, under the ball: how tall the chip is, the room round its face and after its mark,
+ * the longest name it shows whole, how little of the text's colour its ground has, and how much
+ * of its colour's round the face keeps.
+ */
+private val CHIP_HEIGHT = 40.dp
+private val CHIP_INSET = 6.dp
+private val CHIP_END = 10.dp
+private val CHIP_NAME_WIDEST = 180.dp
+private const val CHIP_GROUND_ALPHA = 0.06f
+private const val CHIP_FACE_GROUND = 0.8f
 
 /** How strong the place of a face that is still on its way. */
 private const val PLACE_FACE_ALPHA = 0.14f

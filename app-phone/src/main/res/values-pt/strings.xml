@@ -47,7 +47,6 @@
     <!-- Settings -->
     <string name="settings_title">Opções</string>
     <string name="settings_language">Idioma</string>
-    <string name="settings_style">Personagem</string>
     <string name="style_sarcastic">Sarcástico</string>
     <string name="style_mystical">Místico</string>
     <string name="style_neutral">Clássico</string>
@@ -90,7 +89,6 @@
     <string name="style_custom_sample">Do seu jeito</string>
     <string name="styles_title">Personagens</string>
     <string name="styles_subtitle">Escolha quem responde</string>
-    <string name="styles_see_all">Ver todos</string>
     <string name="styles_group_classics">Os de sempre</string>
     <string name="styles_group_heart">Com coração</string>
     <string name="styles_group_movies">De cinema</string>

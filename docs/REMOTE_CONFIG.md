@@ -13,7 +13,6 @@ Everything here is a Remote Config parameter of the project. No key for the AI s
 | `gemini_daily_limit` | Number | AI answers one device may ask for in a day: 20 when absent. |
 | `gemini_daily_limit_premium` | Number | The same for whoever has paid for Premium: 40 when absent, and never less than `gemini_daily_limit`, whatever is set here. The sheet that sells Premium promises more answers a day, so this stays above the other. |
 | `ai_remark_enabled` | Boolean | Whether a second line may come under an answer to a spoken question. |
-| `styles_featured` | String | Styles shown first in Options, by name in lower case, comma separated. |
 | `styles_hidden` | String | Styles not offered at all, same format. |
 | `ads_enabled` | Boolean | Ads on or off. Whoever has Premium is shown none either way, and is not offered the one for more answers. |
 | `ads_min_answers`, `ads_min_interval_seconds` | Number | How many answers and how much time between two ads. |
