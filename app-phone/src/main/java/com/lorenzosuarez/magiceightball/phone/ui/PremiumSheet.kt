@@ -100,7 +100,7 @@ internal fun PremiumSheet(
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.sheetGround,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp
     ) {
@@ -203,7 +203,7 @@ internal fun PremiumContent(
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
                 .clip(CardShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.colorScheme.sheetCard)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -309,7 +309,8 @@ internal fun PremiumContent(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
                 enabled = !busy,
-                shape = ButtonShape
+                shape = ButtonShape,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.sheetAction)
             ) {
                 Text(
                     text = stringResource(if (held) R.string.action_close else R.string.action_not_now),

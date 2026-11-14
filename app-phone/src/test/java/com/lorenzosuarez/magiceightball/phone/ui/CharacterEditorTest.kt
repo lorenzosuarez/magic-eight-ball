@@ -214,6 +214,7 @@ class CharacterEditorTest {
     private val chosen = mutableListOf<CustomCharacter>()
     private val saved = mutableListOf<CustomCharacter?>()
     private var signIns = 0
+    private val asked = FlowsAsked()
     private var signInEnds = AccountOutcome.FAILED
 
     private fun showOptions(
@@ -247,13 +248,24 @@ class CharacterEditorTest {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
                             onShareApp = {},
                             onGetMoreAiAnswers = onGetMoreAiAnswers,
                             onShowAdPrivacyOptions = onShowAdPrivacyOptions,
+                            onSignIn = {
+                                signIns++
+                                signInEnds
+                            },
+                            onAskPremium = { asked.premium = true }
+                        )
+                        // What the pages ask for, which belongs to neither: on the screen itself it
+                        // is the ball's page that asks for the characters.
+                        CharacterFlows(
+                            state = state,
+                            asked = asked,
+                            onPersonalitySelected = {},
                             onSignIn = {
                                 signIns++
                                 signInEnds
@@ -271,7 +283,8 @@ class CharacterEditorTest {
                 }
             }
         }
-        compose.onNodeWithText("Ver todos").performScrollTo().performClick()
+        asked.browsing = true
+        compose.waitForIdle()
     }
 
     @Test
@@ -689,19 +702,12 @@ class CharacterEditorTest {
         compose.setContent {
             MagicEightBallPhoneTheme {
                 ProvideAppLanguage(AppLanguage.SPANISH) {
-                    SettingsContent(
-                        state = state,
-                        onLanguageSelected = {},
-                        onPersonalitySelected = {},
-                        onAiAnswersChange = {},
-                        onVoiceQuestionsChange = {},
-                        onAllowMicrophone = {},
-                        onShareApp = {}
-                    )
+                    CharacterFlows(state = state, asked = asked, onPersonalitySelected = {})
                 }
             }
         }
-        compose.onNodeWithText("Ver todos").performScrollTo().performClick()
+        asked.browsing = true
+        compose.waitForIdle()
 
         assertEquals(0, compose.onAllNodesWithContentDescription("Crear un personaje").fetchSemanticsNodes().size)
         assertEquals(0, count("Tuyos"))

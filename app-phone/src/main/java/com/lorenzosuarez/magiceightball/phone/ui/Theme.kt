@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalContentColor
@@ -47,7 +49,8 @@ private val DarkColors = darkColorScheme(
     surfaceContainer = Color(0xFF111C27),
     surfaceContainerHigh = Color(0xFF1B222B),
     surfaceContainerHighest = Color(0xFF24313E),
-    outline = Color(0xFF5C6875),
+    // Light enough to edge a field on a sheet as well as on the page.
+    outline = Color(0xFF6F7B88),
     outlineVariant = Color(0xFF2C3540)
 )
 
@@ -81,6 +84,40 @@ private val LightColors = lightColorScheme(
     outline = Color(0xFF7A8693),
     outlineVariant = Color(0xFFE1E5EB)
 )
+
+/** Whether this is the dark palette: the one whose text is light. */
+internal val ColorScheme.isDark: Boolean get() = onSurface.luminance() > 0.5f
+
+/** What a page stands on, where it is not the backdrop itself: the options and what was asked before. */
+internal val ColorScheme.pageGround: Color get() = surfaceContainerLow
+
+/** What is carded on a page: one step off it. */
+internal val ColorScheme.pageCard: Color get() = surfaceContainerHigh
+
+/**
+ * What a sheet stands on. A sheet comes up over the page and has to be told from it at a
+ * glance, so it is never the page's own ground: a step lighter than the page in the dark, and
+ * white over the page's grey in the light.
+ */
+internal val ColorScheme.sheetGround: Color get() = if (isDark) SheetGroundDark else surfaceContainerLowest
+
+/** What is carded on a sheet: one step off the sheet, as the page's cards are one step off the page. */
+internal val ColorScheme.sheetCard: Color get() = if (isDark) surfaceContainerHighest else surfaceContainerLow
+
+/**
+ * The ink of a quiet button on a sheet, one that is words alone. On the lifted ground of a dark
+ * sheet the page's own accent no longer reads, so there it is the lighter one.
+ */
+internal val ColorScheme.sheetAction: Color get() = if (isDark) Color(BrandPalette.ACCENT) else primary
+
+/**
+ * The line between two rows, or under a header that things have scrolled under: a little of
+ * the text's own colour, so that it shows the same on the page, on a card and on a sheet.
+ */
+internal val ColorScheme.hairline: Color get() = onSurface.copy(alpha = HAIRLINE_ALPHA)
+
+private val SheetGroundDark = Color(0xFF18212C)
+private const val HAIRLINE_ALPHA = 0.12f
 
 /** How far down the screen stays plain before the colour starts to rise from the bottom. */
 private const val BACKDROP_PLAIN_STOP = 0.45f

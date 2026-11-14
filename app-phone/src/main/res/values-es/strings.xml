@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The one line under the ball -->
+    <string name="character_now">Responde %1$s</string>
     <string name="hint_hold">Toca o agita para preguntar.\nMantén presionado para hablar.</string>
     <string name="hint_tap">Toca o agita para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
@@ -46,7 +47,6 @@
     <!-- Settings -->
     <string name="settings_title">Opciones</string>
     <string name="settings_language">Idioma</string>
-    <string name="settings_style">Personaje</string>
     <string name="style_sarcastic">Sarcástico</string>
     <string name="style_mystical">Místico</string>
     <string name="style_neutral">Clásico</string>
@@ -89,7 +89,6 @@
     <string name="style_custom_sample">Con tus palabras</string>
     <string name="styles_title">Personajes</string>
     <string name="styles_subtitle">Elige quién responde</string>
-    <string name="styles_see_all">Ver todos</string>
     <string name="styles_group_classics">Los de siempre</string>
     <string name="styles_group_heart">Con corazón</string>
     <string name="styles_group_movies">De película</string>
@@ -98,7 +97,7 @@
     <string name="settings_ai_on">Escritas al momento</string>
     <string name="settings_ai_unavailable">No disponible por ahora</string>
     <string name="settings_ai_unavailable_here">No disponible en este dispositivo</string>
-    <string name="settings_ai_classic">Clásico no usa IA</string>
+    <string name="settings_ai_classic">El personaje Clásico no usa IA</string>
     <string name="settings_ai_spent">Ya usaste las de hoy. Vuelven mañana</string>
     <string name="settings_ai_more">Consigue más respuestas con IA hoy</string>
     <string name="settings_ai_more_hint">Mira un anuncio corto para seguir</string>

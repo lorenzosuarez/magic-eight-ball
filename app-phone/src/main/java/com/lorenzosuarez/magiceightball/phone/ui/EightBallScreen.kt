@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.draw.drawWithContent
@@ -327,8 +328,30 @@ fun EightBallScreen(
                 onAnswered = viewModel::onNotificationsAnswered
             )
             val shareAppText = stringResource(R.string.share_app_text, playStoreUrl)
+            // Who answers and the characters of one's own are asked for from the ball's page, and
+            // what is sold from the options: see [CharacterFlows].
+            val flowsAsked = rememberFlowsAsked()
             EightBallContent(
                 state = current,
+                onPickCharacter = { flowsAsked.browsing = true },
+                flows = {
+                    CharacterFlows(
+                        state = current,
+                        asked = flowsAsked,
+                        onPersonalitySelected = {
+                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                            viewModel.setPersonality(it)
+                        },
+                        onSignIn = { viewModel.signIn(context) },
+                        onChooseCharacter = {
+                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
+                            viewModel.chooseCharacter(it)
+                        },
+                        onSaveCharacter = viewModel::saveCharacter,
+                        onDeleteCharacter = viewModel::deleteCharacter,
+                        onBuyPremium = { viewModel.buyPremium(context) }
+                    )
+                },
                 now = now,
                 intro = { intro.value },
                 voiceLevel = { voiceLevel.value },
@@ -369,10 +392,6 @@ fun EightBallScreen(
                         onLanguageSelected = {
                             tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
                             viewModel.setLanguage(it)
-                        },
-                        onPersonalitySelected = {
-                            tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
-                            viewModel.setPersonality(it)
                         },
                         onAiAnswersChange = {
                             tick(it.toggleFeedback())
@@ -422,10 +441,7 @@ fun EightBallScreen(
                         onSignOut = viewModel::signOut,
                         onDeleteAccount = { viewModel.deleteAccount(context) },
                         onSaveProfile = { name, birthDate -> viewModel.saveProfile(name, birthDate, context) },
-                        onChooseCharacter = viewModel::chooseCharacter,
-                        onSaveCharacter = viewModel::saveCharacter,
-                        onDeleteCharacter = viewModel::deleteCharacter,
-                        onBuyPremium = { viewModel.buyPremium(context) },
+                        onAskPremium = { flowsAsked.premium = true },
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
@@ -465,6 +481,7 @@ fun EightBallScreen(
  * @param voiceLevel read while drawing only; see [EightBall].
  * @param onDeleteHistoryEntry deletes at once; the screen then offers to undo it, which calls
  * [onRestoreHistoryEntry].
+ * @param flows the sheets a page can ask for, which belong to no page: see [CharacterFlows].
  * @param initialPage the page in front at first: [BALL_PAGE] or [HISTORY_PAGE].
  */
 @Composable
@@ -490,6 +507,8 @@ internal fun EightBallContent(
     onRateAnswer: (Boolean) -> Unit = {},
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
+    onPickCharacter: () -> Unit = {},
+    flows: @Composable () -> Unit = {},
     options: @Composable () -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
@@ -511,6 +530,8 @@ internal fun EightBallContent(
     val reportedMessage = stringResource(R.string.report_done)
     // Reporting asks one thing first, what is wrong, and the answer to that sends it.
     var reporting by rememberSaveable { mutableStateOf(false) }
+    // What the flows have to say once they are done is said by the screen, as the options' is.
+    CompositionLocalProvider(LocalSnackbars provides snackbars) { flows() }
     if (reporting && state.phase is BallPhase.Answered) {
         ReportSheet(
             onReason = { reason ->
@@ -598,7 +619,7 @@ internal fun EightBallContent(
                         if (page == BALL_PAGE) {
                             Modifier
                         } else {
-                            Modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)
+                            Modifier.background(MaterialTheme.colorScheme.pageGround)
                         }
                     )
                     .windowInsetsPadding(WindowInsets.safeDrawing)
@@ -676,6 +697,7 @@ internal fun EightBallContent(
                             onHoldEnd = onHoldEnd,
                             onHoldCancel = onHoldCancel,
                             onToggleVoiceQuestion = onToggleVoiceQuestion,
+                            onPickCharacter = onPickCharacter,
                             onAllowMicrophone = onAllowMicrophone,
                             onShareAnswer = {
                                 if (!sharing) {
@@ -857,6 +879,7 @@ private fun Stage(
     onHoldEnd: () -> Unit,
     onHoldCancel: () -> Unit,
     onToggleVoiceQuestion: () -> Unit,
+    onPickCharacter: () -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
     onRateAnswer: (Boolean) -> Unit,
@@ -936,6 +959,7 @@ private fun Stage(
                 Caption(state = state, answerSmall = answerSmall, modifier = band)
                 Actions(
                     state = state,
+                    onPickCharacter = onPickCharacter,
                     onAllowMicrophone = onAllowMicrophone,
                     onShareAnswer = onShareAnswer,
                     onRateAnswer = onRateAnswer,
@@ -958,7 +982,7 @@ private fun Stage(
             val smallest = minOf(BALL_MIN_SEEN.toPx(), full)
             // What is written under the ball takes what it needs, short of pushing the ball under
             // its smallest: past that it scrolls where it is, and never runs into what is below it.
-            val around = title.height + actions.height + breath * 2
+            val around = status.height + title.height + actions.height + breath * 2
             val caption = measurables[3].measure(
                 loose.copy(maxHeight = (height - around - smallest.roundToInt()).coerceAtLeast(0))
             )
@@ -968,7 +992,8 @@ private fun Stage(
             if (!dieTooSmall && answerOnDie != null && answerOnDie * fit < ANSWER_READABLE) dieTooSmall = true
             // In the middle between the bar above and the bottom edge, which is a little higher
             // than the middle of this page; it moves from there only to make room.
-            val highest = (title.height + breath).toFloat()
+            // Clear of what stands at the top of the page, which is there only at rest.
+            val highest = (status.height + title.height + breath).toFloat()
             val middle = (height - seen) / 2f - TOP_BAR_HEIGHT.toPx() / 2f
             val lowest = height - actions.height - caption.height - breath - seen
             // With more to read than fits under a ball in the middle, what room there is goes
@@ -978,7 +1003,10 @@ private fun Stage(
             } else maxOf(middle, highest)
             layout(width, height) {
                 status.place((width - status.width) / 2, 0)
-                title.place((width - title.width) / 2, (top - breath - title.height).roundToInt())
+                // The room is the ball's with an answer on it. Without one the ball is smaller
+                // than its room, and what is written over it comes down to it.
+                val slack = if (state.phase is BallPhase.Answered) 0f else (seen - ball.height * fit) / 2f
+                title.place((width - title.width) / 2, (top + slack - breath - title.height).roundToInt())
                 ball.placeWithLayer(
                     x = (width - ball.width) / 2,
                     y = (top + seen / 2f - ball.height / 2f).roundToInt()
@@ -1136,8 +1164,8 @@ private fun Ball(
 }
 
 /**
- * Above the ball, one line that says where things stand: that the app is listening or
- * thinking and, with an answer, the question it answers. At rest, nothing.
+ * Above the ball, one line that says where things stand: at rest, how to ask; then that the app
+ * is listening or thinking and, with an answer, the question it answers.
  */
 @Composable
 private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
@@ -1153,14 +1181,41 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
             when (phase) {
                 is BallPhase.Answered -> QuietText(phase.question.quoted(), maxLines = 3)
-                // At rest the ball stands alone: how to ask is said at the bottom edge.
-                else -> if (phase !is BallPhase.Idle || turnName != null) Text(
-                    text = when {
-                        phase is BallPhase.Listening -> stringResource(R.string.hint_listening)
-                        phase is BallPhase.Thinking -> stringResource(R.string.hint_thinking)
-                        // At a party the line says whose turn it is.
-                        else -> stringResource(R.string.party_turn, turnName.orEmpty())
-                    },
+                // At rest, how to ask, right over what is asked: at a party too, where the phone
+                // goes to someone who has never held it, and there under whose turn it is.
+                BallPhase.Idle -> Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Holding the ball asks out loud, where that can be done: said with the rest.
+                    val hint = if (state.voice.isReady) R.string.hint_hold else R.string.hint_tap
+                    if (turnName != null) {
+                        Text(
+                            text = stringResource(R.string.party_turn, turnName),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        // Whole, however large the type: it is how the thing is done.
+                        QuietText(stringResource(hint), maxLines = HINT_MAX_LINES)
+                    } else {
+                        Text(
+                            text = stringResource(hint),
+                            style = MaterialTheme.typography.titleMedium,
+                            // Said, not announced: the ball is what the page is about.
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                else -> Text(
+                    text = stringResource(
+                        if (phase is BallPhase.Listening) R.string.hint_listening else R.string.hint_thinking
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -1306,13 +1361,15 @@ private fun Caption(state: EightBallUiState, answerSmall: Boolean, modifier: Mod
 }
 
 /**
- * At the bottom edge, where the thumb is: what can be done now. At rest, how to ask, and
- * whatever stands in the way of asking by voice with the way out of it; with an answer, what
- * can be done with it. It is always here, so the hand does not have to look for it.
+ * At the bottom edge, where the thumb is: what can be done now. At rest, who answers, as the
+ * way to everyone else, and whatever stands in the way of asking by voice with the way out of
+ * it; with an answer, what can be done with it. It is always here, so the hand does not have
+ * to look for it.
  */
 @Composable
 private fun Actions(
     state: EightBallUiState,
+    onPickCharacter: () -> Unit,
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
     onRateAnswer: (Boolean) -> Unit,
@@ -1335,14 +1392,6 @@ private fun Actions(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // How to ask: at a party too, where the phone goes to someone who has never held it.
-                Text(
-                    text = stringResource(if (state.voice.isReady) R.string.hint_hold else R.string.hint_tap),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
-                )
                 // A refusal is said in the colour of a warning.
                 if (notice != null) {
                     QuietText(
@@ -1368,14 +1417,35 @@ private fun Actions(
                         Text(stringResource(R.string.settings_voice_allow_microphone), fontWeight = FontWeight.SemiBold)
                     }
                 }
-                // At a party, the other thing the ball can be asked: to pick one of the players.
-                if (notice == null && state.settings.isParty) {
-                    FilledTonalButton(
-                        onClick = { onAskWho(whoQuestion) },
-                        modifier = Modifier.heightIn(min = 48.dp),
-                        shape = ButtonShape
-                    ) {
-                        Text(whoQuestion, fontWeight = FontWeight.SemiBold)
+                val party = notice == null && state.settings.isParty
+                // One of the user's own answers under the name and the look they gave it, while it is theirs to use.
+                val own = state.answeringCustom
+                val style = state.settings.personality
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CharacterChip(
+                        name = own?.name ?: stringResource(style.labelRes()),
+                        colour = own?.colour ?: style,
+                        emblem = own?.emblem ?: style,
+                        onClick = onPickCharacter,
+                        named = !party
+                    )
+                    // At a party, the other thing the ball can be asked: to pick one of the players.
+                    if (party) {
+                        FilledTonalButton(
+                            onClick = { onAskWho(whoQuestion) },
+                            modifier = Modifier.heightIn(min = 48.dp),
+                            shape = ButtonShape,
+                            // On the ground of the chip beside it: the two are one row of things to touch.
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA),
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        ) {
+                            Text(whoQuestion, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                        }
                     }
                 }
             }
@@ -1640,6 +1710,9 @@ private const val PAGE_TITLE_MAX_SCALE = 1.3f
 private val ACTIONS_HEIGHT = 80.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3
+
+/** How to ask, under whose turn it is: two sentences, each of which may take two lines at a large size. */
+private const val HINT_MAX_LINES = 4
 /** Room for the few sentences of an answer that says more; one line of comeback takes what it needs. */
 private const val REMARK_MAX_LINES = 9
 

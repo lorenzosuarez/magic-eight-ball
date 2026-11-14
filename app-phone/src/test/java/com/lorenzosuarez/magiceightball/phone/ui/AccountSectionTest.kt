@@ -107,7 +107,6 @@ class AccountSectionTest {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
@@ -196,10 +195,6 @@ class AccountSectionTest {
     fun `a choice shows where it was touched at once, before it has been saved`() {
         // Nothing here saves anything: what is chosen stays as it was, however long one waits.
         show()
-        compose.onNodeWithText("Clásico").performScrollTo().performClick()
-        compose.onNodeWithText("Clásico").assertIsSelected()
-        compose.onNodeWithText("Sarcástico").assertIsNotSelected()
-
         compose.onNodeWithText("English").performScrollTo().performClick()
         compose.onNodeWithText("English").assertIsSelected()
         compose.onNodeWithText("Español").assertIsNotSelected()

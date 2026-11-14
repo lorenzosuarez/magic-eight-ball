@@ -1,9 +1,16 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.Profile
+import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import java.time.LocalDate
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
@@ -333,7 +340,6 @@ class EightBallScreenshotTest {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
@@ -361,7 +367,6 @@ class EightBallScreenshotTest {
                             SettingsContent(
                                 state = state,
                                 onLanguageSelected = {},
-                                onPersonalitySelected = {},
                                 onAiAnswersChange = {},
                                 onVoiceQuestionsChange = {},
                                 onAllowMicrophone = {},
@@ -390,13 +395,6 @@ class EightBallScreenshotTest {
     @Test
     @Config(qualifiers = TABLET_LANDSCAPE)
     fun tablet_landscape_idle_dark() = capture("tablet_2_ask_landscape_dark", EightBallUiState())
-
-    /** A style from the far end of the row: the row opens with it in the middle, whole. */
-    @Test
-    fun phone_settings_chosen_style_in_view() = captureWithSettings(
-        "phone_23_settings_chosen_style_in_view",
-        EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH, personality = Magic8BallPersonality.CAT))
-    )
 
     @Test
     fun phone_answer_with_remark_spanish() = capture(
@@ -661,7 +659,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         ProfileContent(
                             draft = draft,
                             firstTime = firstTime,
@@ -689,7 +687,6 @@ class EightBallScreenshotTest {
                             SettingsContent(
                                 state = state,
                                 onLanguageSelected = {},
-                                onPersonalitySelected = {},
                                 onAiAnswersChange = {},
                                 onVoiceQuestionsChange = {},
                                 onAllowMicrophone = {},
@@ -712,7 +709,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(AppLanguage.SPANISH) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         AccountSheetContent(
                             account = account,
                             profile = PROFILE,
@@ -742,7 +739,7 @@ class EightBallScreenshotTest {
     fun report_reasons_spanish() = captureRoboImage(filePath = path("phone_45_report_reasons_spanish")) {
         MagicEightBallPhoneTheme(dark = false) {
             ProvideAppLanguage(AppLanguage.SPANISH) {
-                Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Surface(color = MaterialTheme.colorScheme.sheetGround) {
                     ReportContent(onReason = {}, modifier = Modifier.padding(top = 24.dp))
                 }
             }
@@ -759,7 +756,6 @@ class EightBallScreenshotTest {
                         SettingsContent(
                             state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH)),
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},
@@ -804,6 +800,45 @@ class EightBallScreenshotTest {
         )
     }
 
+    /** The ball's page at rest where it is tightest: a small phone, a large font, a run of days to say. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_ask_large_font() = capture(
+        "phone_95_small_phone_ask_portuguese_large_font",
+        EightBallUiState(settings = UserSettings(language = AppLanguage.PORTUGUESE), streakDays = 12),
+        fontScale = 1.5f
+    )
+
+    /** And at a party there: whose turn it is, how to ask, and two buttons under the ball. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_party_large_font() = capture(
+        "phone_96_small_phone_party_large_font",
+        EightBallUiState(
+            settings = UserSettings(language = AppLanguage.SPANISH, partyNames = listOf("Ana", "Beto", "Caro")),
+            turn = 1
+        ),
+        fontScale = 1.5f
+    )
+
+    /** One of the user's own answering: its name and its look on the pill, at the longest a name gets. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_ask_yours_longest_name_dark() = capture(
+        "phone_97_ask_yours_longest_name_dark",
+        EightBallUiState(
+            settings = UserSettings(
+                language = AppLanguage.SPANISH,
+                personality = Magic8BallPersonality.CUSTOM,
+                customCharacter = YOURS[2]
+            ),
+            config = AppConfig(accountEnabled = true),
+            account = AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"),
+            profile = ProfileState.Present(Profile("Lorena", LocalDate.of(1990, 3, 12))),
+            characters = YOURS
+        )
+    )
+
     @Test
     fun phone_streak_spanish() = capture(
         "phone_30_streak_spanish",
@@ -830,23 +865,9 @@ class EightBallScreenshotTest {
     fun phone_styles_english_light() = captureStyles("phone_19_styles_english_light", AppLanguage.ENGLISH, dark = false)
 
     @Test
-    fun every_style_is_in_one_group_and_the_row_shows_the_chosen_one() {
+    fun every_style_is_in_one_group() {
         // Every character the app wrote: the user's own are no group of the app's.
         assertEquals(CustomCharacter.LOOKS.sortedBy { it.name }, StyleGroups.flatMap { it.styles }.sortedBy { it.name })
-        Magic8BallPersonality.entries.forEach { style ->
-            val row = stylesInRow(style)
-            assertTrue(style in row)
-            assertTrue(Magic8BallPersonality.NEUTRAL in row)
-            // Whatever is set from afar: the plain style stays, and a hidden one is not offered.
-            val steered = stylesInRow(
-                style,
-                featured = listOf(Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT),
-                hidden = setOf(Magic8BallPersonality.CAT)
-            )
-            assertTrue(Magic8BallPersonality.NEUTRAL in steered && style in steered)
-            assertTrue(style == Magic8BallPersonality.CAT || Magic8BallPersonality.CAT !in steered)
-            assertEquals(row.size, row.distinct().size)
-        }
     }
 
     @Test
@@ -895,7 +916,7 @@ class EightBallScreenshotTest {
             WithFontScale(fontScale) {
                 MagicEightBallPhoneTheme(dark = dark) {
                     ProvideAppLanguage(language) {
-                        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        Surface(color = MaterialTheme.colorScheme.sheetGround) {
                             StylesContent(
                                 // With characters of the user's own, the first of them is the one that answers.
                                 selected = if (yours.isEmpty()) Magic8BallPersonality.LOVESTRUCK else Magic8BallPersonality.CUSTOM,
@@ -1000,7 +1021,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         CharacterEditorContent(
                             draft = draft,
                             isNew = isNew,
@@ -1145,6 +1166,49 @@ class EightBallScreenshotTest {
         1f
     )
 
+    /** A sheet over the page it came up from, under the dimming a sheet brings: the two are told apart at a glance. */
+    @Test
+    fun phone_sheet_over_page_light() = captureSheetOverPage("phone_98_sheet_over_page_light", dark = false)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_sheet_over_page_dark() = captureSheetOverPage("phone_99_sheet_over_page_dark", dark = true)
+
+    private fun captureSheetOverPage(name: String, dark: Boolean) = captureRoboImage(filePath = path(name)) {
+        MagicEightBallPhoneTheme(dark = dark) {
+            ProvideAppLanguage(AppLanguage.SPANISH) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Surface(color = MaterialTheme.colorScheme.pageGround) {
+                        SettingsContent(
+                            state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), aiAnswersAvailable = true),
+                            onLanguageSelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {}
+                        )
+                    }
+                    // The dimming Material draws behind a sheet.
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)))
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                        color = MaterialTheme.colorScheme.sheetGround
+                    ) {
+                        PremiumContent(
+                            price = "0,99 €",
+                            terms = stringResource(R.string.premium_terms),
+                            wanted = PremiumFor.EVERYTHING,
+                            onUpgrade = {},
+                            onNotNow = {},
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     private fun capturePremium(
         name: String,
         language: AppLanguage,
@@ -1158,7 +1222,7 @@ class EightBallScreenshotTest {
         WithFontScale(fontScale) {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
                         PremiumContent(
                             price = price,
                             terms = stringResource(R.string.premium_terms),
@@ -1260,7 +1324,6 @@ class EightBallScreenshotTest {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
-                            onPersonalitySelected = {},
                             onAiAnswersChange = {},
                             onVoiceQuestionsChange = {},
                             onAllowMicrophone = {},

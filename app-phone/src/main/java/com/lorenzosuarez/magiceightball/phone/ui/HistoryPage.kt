@@ -154,7 +154,7 @@ private fun HistoryRow(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .background(MaterialTheme.colorScheme.pageCard)
     ) {
     Row(
         modifier = Modifier
@@ -216,7 +216,7 @@ private fun HistoryRow(
         HorizontalDivider(
             modifier = Modifier.padding(start = 16.dp),
             thickness = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant
+            color = MaterialTheme.colorScheme.hairline
         )
     }
     }

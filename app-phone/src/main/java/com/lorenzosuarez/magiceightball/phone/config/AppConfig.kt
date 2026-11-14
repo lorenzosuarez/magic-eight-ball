@@ -24,7 +24,6 @@ import javax.inject.Singleton
  * | `ads_min_answers` | Number | 4 | Answers closed before a full-screen ad may show |
  * | `ads_min_interval_seconds` | Number | 180 | Least time between two such ads |
  * | `ai_remark_enabled` | Boolean | true | Whether AI answers come with a second line |
- * | `styles_featured` | String | see [DEFAULT_FEATURED] | Styles in the row of the options, in order, by name, between commas |
  * | `styles_hidden` | String | (none) | Styles taken out of the app, by name, between commas |
  * | `streak_min_days_shown` | Number | 2 | From which day a run of days is mentioned |
  * | `notifications_ask_after_days` | Number | 3 | Best run of days after which notifications are asked for; 0 never asks |
@@ -39,7 +38,6 @@ data class AppConfig(
     val adsMinAnswers: Int = 4,
     val adsMinIntervalSeconds: Int = 180,
     val aiRemarkEnabled: Boolean = true,
-    val featuredStyles: List<Magic8BallPersonality> = DEFAULT_FEATURED,
     val hiddenStyles: Set<Magic8BallPersonality> = emptySet(),
     val streakMinDaysShown: Int = 2,
     val notificationsAskAfterDays: Int = 3,
@@ -53,7 +51,6 @@ data class AppConfig(
         const val KEY_ADS_MIN_ANSWERS = "ads_min_answers"
         const val KEY_ADS_MIN_INTERVAL_SECONDS = "ads_min_interval_seconds"
         const val KEY_AI_REMARK_ENABLED = "ai_remark_enabled"
-        const val KEY_STYLES_FEATURED = "styles_featured"
         const val KEY_STYLES_HIDDEN = "styles_hidden"
         const val KEY_STREAK_MIN_DAYS_SHOWN = "streak_min_days_shown"
         const val KEY_NOTIFICATIONS_ASK_AFTER_DAYS = "notifications_ask_after_days"
@@ -72,7 +69,6 @@ data class AppConfig(
             KEY_ADS_MIN_ANSWERS,
             KEY_ADS_MIN_INTERVAL_SECONDS,
             KEY_AI_REMARK_ENABLED,
-            KEY_STYLES_FEATURED,
             KEY_STYLES_HIDDEN,
             KEY_STREAK_MIN_DAYS_SHOWN,
             KEY_NOTIFICATIONS_ASK_AFTER_DAYS,
@@ -81,15 +77,6 @@ data class AppConfig(
             KEY_DAILY_VERDICT_HOUR,
             KEY_ACCOUNT_ENABLED,
             KEY_PREMIUM_ENABLED
-        )
-
-        /** One of each kind of character, the liveliest first, with the plain one always at hand. */
-        val DEFAULT_FEATURED = listOf(
-            Magic8BallPersonality.SARCASTIC,
-            Magic8BallPersonality.NEUTRAL,
-            Magic8BallPersonality.LOVESTRUCK,
-            Magic8BallPersonality.CAT,
-            Magic8BallPersonality.DRAMA
         )
 
         /**
@@ -120,9 +107,6 @@ data class AppConfig(
                 adsMinAnswers = number(KEY_ADS_MIN_ANSWERS, defaults.adsMinAnswers, 1..100),
                 adsMinIntervalSeconds = number(KEY_ADS_MIN_INTERVAL_SECONDS, defaults.adsMinIntervalSeconds, 30..86_400),
                 aiRemarkEnabled = flag(KEY_AI_REMARK_ENABLED, defaults.aiRemarkEnabled),
-                featuredStyles = (styles(KEY_STYLES_FEATURED) - hidden)
-                    .ifEmpty { defaults.featuredStyles - hidden }
-                    .take(MAX_FEATURED),
                 hiddenStyles = hidden,
                 streakMinDaysShown = number(KEY_STREAK_MIN_DAYS_SHOWN, defaults.streakMinDaysShown, 1..365),
                 notificationsAskAfterDays = number(KEY_NOTIFICATIONS_ASK_AFTER_DAYS, defaults.notificationsAskAfterDays, 0..365),
@@ -133,8 +117,6 @@ data class AppConfig(
                 premiumEnabled = flag(KEY_PREMIUM_ENABLED, defaults.premiumEnabled)
             )
         }
-
-        private const val MAX_FEATURED = 8
     }
 }
 
