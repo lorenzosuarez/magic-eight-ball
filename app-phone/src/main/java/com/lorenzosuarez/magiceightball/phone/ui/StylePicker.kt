@@ -626,7 +626,7 @@ internal fun CharacterChip(
                     Text(
                         text = name,
                         modifier = Modifier.widthIn(max = CHIP_NAME_WIDEST).clearAndSetSemantics {},
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.titleSmall,
                         color = scheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -730,10 +730,10 @@ private val CARD_END = 14.dp
  * the longest name it shows whole, how little of the text's colour its ground has, and how much
  * of its colour's round the face keeps.
  */
-private val CHIP_HEIGHT = 40.dp
+private val CHIP_HEIGHT = 44.dp
 private val CHIP_HEIGHT_BESIDE = 48.dp
 private val CHIP_INSET = 6.dp
-private val CHIP_END = 10.dp
+private val CHIP_END = 12.dp
 private val CHIP_NAME_WIDEST = 180.dp
 private const val CHIP_GROUND_ALPHA = 0.06f
 private const val CHIP_GROUND_ALPHA_LIGHT = 0.08f
