@@ -39,11 +39,14 @@ data class GeminiSettings(
     }
 
     companion object {
-        /** Generous for a toy that is asked a few questions at a time, and a ceiling on its cost. */
-        const val DEFAULT_DAILY_LIMIT = 40
+        /** Plenty for a toy that is asked a few questions at a time, and a ceiling on its cost. */
+        const val DEFAULT_DAILY_LIMIT = 20
 
-        /** Three times as many for whoever paid. */
-        const val DEFAULT_PREMIUM_DAILY_LIMIT = 120
+        /**
+         * Twice as many for whoever paid. Not more: it is paid for once, and every answer costs
+         * something every day after that.
+         */
+        const val DEFAULT_PREMIUM_DAILY_LIMIT = 40
     }
 }
 

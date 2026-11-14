@@ -128,7 +128,7 @@ The app builds and runs with no setup at all: without Firebase it answers from t
         |:---|:---|:---|
         | `gemini_enabled` | Boolean | Turns Gemini answers on or off for everyone. Off when missing. Each user can still switch AI answers off in the app. |
         | `gemini_model` | String | Optional Gemini model ID. Defaults to `gemini-3.5-flash-lite`; change it here when Google retires a model. |
-        | `gemini_daily_limit` | Number | Optional. AI answers one device may ask for per day; 40 when absent. |
+        | `gemini_daily_limit` | Number | Optional. AI answers one device may ask for per day; 20 when absent. |
         | `gemini_backend` | String | Optional. `agent_platform` (or `vertex`) when the project is set up for the Agent Platform Gemini API; otherwise the Gemini Developer API. It must match what was chosen in the console. |
         | `gemini_limited_use_tokens` | Boolean | Optional, off when absent. When true each request carries an App Check token made for it alone, which is what replay protection needs; it costs a Play Integrity check per answer. |
         | `answers_json` | JSON | Optional. Answers in the format of `magic_8_ball_responses.json`; every list it fills replaces the bundled one. Kept on the device, so it works offline. Entries over 6 words or 40 characters are ignored. |
