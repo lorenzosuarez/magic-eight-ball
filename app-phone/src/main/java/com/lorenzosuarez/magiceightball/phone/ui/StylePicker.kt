@@ -98,7 +98,9 @@ internal val StyleGroups = listOf(
             Magic8BallPersonality.MYSTICAL,
             Magic8BallPersonality.ASTRO,
             Magic8BallPersonality.NEUTRAL,
-            Magic8BallPersonality.PHILOSOPHER
+            Magic8BallPersonality.PHILOSOPHER,
+            // With the thinkers: groups of an even number leave no card alone on its line.
+            Magic8BallPersonality.POET
         )
     ),
     StyleGroup(
@@ -107,8 +109,7 @@ internal val StyleGroups = listOf(
             Magic8BallPersonality.LOVESTRUCK,
             Magic8BallPersonality.GRANDMA,
             Magic8BallPersonality.THERAPIST,
-            Magic8BallPersonality.DRAMA,
-            Magic8BallPersonality.POET
+            Magic8BallPersonality.DRAMA
         )
     ),
     StyleGroup(
@@ -518,12 +519,13 @@ private fun StyleCard(
                         // Named once, by what it says it is: said again as what a touch does, it is heard twice.
                         .clickable(role = Role.Button, onClick = onEdit)
                         .semantics { contentDescription = edit },
-                    contentAlignment = Alignment.Center
+                    // On the line of what the character says, not in the middle of its touch.
+                    contentAlignment = Alignment.BottomCenter
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_edit),
                         contentDescription = null,
-                        modifier = Modifier.size(EDIT_GLYPH),
+                        modifier = Modifier.padding(bottom = EDIT_DROP).size(EDIT_GLYPH),
                         tint = ink
                     )
                 }
@@ -715,6 +717,7 @@ private const val PLACE_LINE_WIDTH = 0.8f
 /** The pencil on a card of the user's own, and the room round it that takes the touch. */
 private val EDIT_GLYPH = 18.dp
 private val EDIT_TARGET = 48.dp
+private val EDIT_DROP = 9.dp
 
 /** The face on a card, the room between it and the card's edge and its words, and the room after the words. */
 private val CARD_FACE = 36.dp
