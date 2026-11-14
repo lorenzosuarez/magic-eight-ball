@@ -97,7 +97,7 @@
     <string name="settings_ai_on">Escritas na hora</string>
     <string name="settings_ai_unavailable">Indisponível por enquanto</string>
     <string name="settings_ai_unavailable_here">Não disponível neste dispositivo</string>
-    <string name="settings_ai_classic">Clássico não usa IA</string>
+    <string name="settings_ai_classic">O personagem Clássico não usa IA</string>
     <string name="settings_ai_spent">Você já usou as de hoje. Voltam amanhã</string>
     <string name="settings_ai_more">Ganhe mais respostas com IA hoje</string>
     <string name="settings_ai_more_hint">Assista a um anúncio curto para continuar</string>

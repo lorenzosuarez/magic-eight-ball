@@ -1438,13 +1438,13 @@ private fun Actions(
                             onClick = { onAskWho(whoQuestion) },
                             modifier = Modifier.heightIn(min = 48.dp),
                             shape = ButtonShape,
-                            // On the ground of the disc beside it: the two are one row of things to touch.
+                            // On the ground of the chip beside it: the two are one row of things to touch.
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA),
                                 contentColor = MaterialTheme.colorScheme.onSurface
                             )
                         ) {
-                            Text(whoQuestion, fontWeight = FontWeight.SemiBold)
+                            Text(whoQuestion, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                         }
                     }
                 }

@@ -102,7 +102,7 @@
     <string name="settings_ai_on">Written on the spot</string>
     <string name="settings_ai_unavailable">Not available right now</string>
     <string name="settings_ai_unavailable_here">Not available on this device</string>
-    <string name="settings_ai_classic">Classic doesn\'t use AI</string>
+    <string name="settings_ai_classic">The Classic character doesn\'t use AI</string>
     <string name="settings_ai_spent">You\'ve used today\'s AI answers. More tomorrow</string>
     <string name="settings_ai_more">Get more AI answers today</string>
     <string name="settings_ai_more_hint">Watch a short ad to keep going</string>

@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.draw.drawBehind
@@ -204,8 +206,8 @@ internal fun StylesSheet(
 
 /**
  * What [StylesSheet] shows: the way out, which stays put, and under it the title and the styles.
- * Each group is a line of its own that scrolls sideways, its cards all one width, so the one cut
- * off at the edge says there are more; the page itself only scrolls up and down.
+ * Each group is a grid of its own, two cards across where there is room for two; the page only
+ * scrolls up and down.
  *
  * @param full whether the sheet takes the whole screen: the header then clears the status bar.
  * @param onCreate the way to make a character of one's own; null where that is not offered, and
@@ -233,7 +235,7 @@ internal fun StylesContent(
     yoursPlaces: Int = 0,
     creating: Boolean = false
 ) {
-    // As in the row on the options page: what was just touched is chosen in the frame of the
+    // What was just touched is chosen in the frame of the
     // touch, and follows what is saved whenever that changes. One of the user's own is told
     // from the others by its slot.
     var touched by remember(selected, chosenOfYours) {
@@ -591,16 +593,27 @@ internal fun CharacterChip(
 ) {
     val scheme = MaterialTheme.colorScheme
     val said = stringResource(R.string.character_now, name)
+    // Beside a button it is that button's height and ground: the two are one row of things to touch.
+    // Alone, the faintest that still has an edge, which on a light page takes a little more.
+    val ground = when {
+        !named -> BAR_DISC_ALPHA
+        scheme.isDark -> CHIP_GROUND_ALPHA
+        else -> CHIP_GROUND_ALPHA_LIGHT
+    }
     Row(
         modifier = modifier
+            // The room of a touch whatever the pill's height: it rests at one height in every state.
+            .minimumInteractiveComponentSize()
             .clip(CircleShape)
-            .background(scheme.onSurface.copy(alpha = CHIP_GROUND_ALPHA))
+            .background(scheme.onSurface.copy(alpha = ground))
             .clickable(onClickLabel = stringResource(R.string.styles_subtitle), role = Role.Button, onClick = onClick)
             // Said once, as a sentence: the name alone would not say what it is the name of.
             .semantics(mergeDescendants = true) { contentDescription = said }
-            .height(CHIP_HEIGHT)
+            // At least: a name in large type makes the pill taller rather than be cut.
+            .heightIn(min = if (named) CHIP_HEIGHT else CHIP_HEIGHT_BESIDE)
             .padding(start = CHIP_INSET, end = CHIP_END),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        // The mark belongs to the name: nearer to it than the name is to the face.
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Crossfade(targetState = Triple(name.takeIf { named }, colour, emblem), animationSpec = choiceTween(), label = "who answers") { (name, colour, emblem) ->
@@ -715,10 +728,12 @@ private val CARD_END = 14.dp
  * of its colour's round the face keeps.
  */
 private val CHIP_HEIGHT = 40.dp
+private val CHIP_HEIGHT_BESIDE = 48.dp
 private val CHIP_INSET = 6.dp
 private val CHIP_END = 10.dp
 private val CHIP_NAME_WIDEST = 180.dp
 private const val CHIP_GROUND_ALPHA = 0.06f
+private const val CHIP_GROUND_ALPHA_LIGHT = 0.08f
 private const val CHIP_FACE_GROUND = 0.8f
 
 /** How strong the place of a face that is still on its way. */
