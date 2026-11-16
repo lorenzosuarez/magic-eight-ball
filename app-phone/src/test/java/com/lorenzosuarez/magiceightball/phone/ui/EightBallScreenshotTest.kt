@@ -939,6 +939,51 @@ class EightBallScreenshotTest {
         }
     }
 
+    /** A character opened, to be looked at: one of the app's that answers now, and one of other people's. */
+    @Test
+    fun phone_character_opened() {
+        val theirs = CharacterListing.Community(
+            id = "1",
+            name = "Narrador de fútbol",
+            sample = "¡Gooool del sí!",
+            description = "Un relator que narra cada respuesta como una jugada de último minuto en una final.",
+            colour = Magic8BallPersonality.COACH,
+            emblem = Magic8BallPersonality.ZOOMER,
+            author = "marta.r"
+        )
+        listOf(
+            Triple("phone_104_character_opened_original_dark", true, CharacterListing.Original(Magic8BallPersonality.PIRATE)),
+            Triple("phone_105_character_opened_community_light", false, theirs),
+            Triple("phone_106_character_opened_yours_dark", true, CharacterListing.Yours(YOURS[0]))
+        ).forEach { (name, dark, listing) ->
+            captureRoboImage(filePath = path(name)) {
+                MagicEightBallPhoneTheme(dark = dark) {
+                    ProvideAppLanguage(AppLanguage.SPANISH) {
+                        Surface(color = MaterialTheme.colorScheme.sheetGround) {
+                            CharacterDetail(
+                                listing = listing,
+                                answering = listing is CharacterListing.Original,
+                                onUse = {},
+                                modifier = Modifier.padding(top = 24.dp),
+                                onEdit = if (listing is CharacterListing.Yours) ({}) else null
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** Before there are any of other people's: their shelf says they are coming. */
+    @Test
+    fun phone_characters_community_soon() = captureStyles(
+        "phone_107_characters_community_soon",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        shelf = CharacterShelf.COMMUNITY
+    )
+
     /** Other people's, once there are any: the shelf of them alone, and where they follow the app's. */
     @Test
     fun phone_characters_community_dark() = captureStyles(

@@ -288,7 +288,19 @@
     <string name="characters_by">by %1$s</string>
     <string name="characters_empty_yours">You haven\'t made any yet</string>
     <string name="characters_empty">No characters here</string>
-    <string name="characters_load_failed">Couldn\'t load them. Check your connection</string>
+    <string name="characters_load_failed">Couldn\'t load the characters</string>
     <string name="characters_loading_more">Loading more characters</string>
     <string name="action_retry">Try again</string>
+    <string name="characters_community_soon">The community is coming soon</string>
+    <string name="characters_community_soon_text">Characters made by other people will be listed here.</string>
+    <string name="characters_load_failed_text">Check your connection and try again.</string>
+    <string name="characters_empty_yours_text">Make one with your own words and it will be listed here.</string>
+    <string name="character_answering">Answering now</string>
+    <string name="character_use">Use this character</string>
+    <string name="character_edit_action">Edit</string>
+    <string name="character_of_app">A Magic AI Ball original</string>
+    <string name="character_of_yours">Made by you</string>
+    <string name="character_says">“%1$s”</string>
+    <string name="characters_community_account_title">You need an account to use this character</string>
+    <string name="characters_community_account_text">What is written about a community character is sent to the AI service to answer in its voice. Sign in to agree to that.</string>
 </resources>

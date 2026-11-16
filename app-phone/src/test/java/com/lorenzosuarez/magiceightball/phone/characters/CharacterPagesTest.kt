@@ -6,6 +6,8 @@ import androidx.paging.PagingSource
 import androidx.paging.testing.TestPager
 import androidx.paging.testing.asSnapshot
 import com.example.magiceightball.core.domain.model.CharacterListing
+import com.example.magiceightball.core.domain.model.CharacterPage
+import com.example.magiceightball.core.domain.repository.CommunityCharacters
 import com.example.magiceightball.core.domain.model.CharacterShelf
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -101,6 +103,22 @@ class CharacterPagesTest {
     }
 
     @Test
+    fun `one handed out again on a later page, as when the list moved, is listed once`() = runTest {
+        // Every page starts one short of where the last ended: its first was the last one's last.
+        val moving = object : CommunityCharacters {
+            private val all = FakeCommunity(100)
+            override val open = true
+            override suspend fun page(after: String?, limit: Int): CharacterPage =
+                all.page(after?.let { (it.toInt() - 1).toString() }, limit)
+        }
+        val pager = TestPager(config, CharactersPagingSource(CharactersQuery(shelf = CharacterShelf.COMMUNITY), moving))
+        val keys = listOf(pager.refresh(), pager.append(), pager.append())
+            .flatMap { (it as PagingSource.LoadResult.Page).data.map(CharacterRow::key) }
+
+        assertEquals(keys.size, keys.toSet().size)
+    }
+
+    @Test
     fun `groups are named where they begin, and a shelf of one kind names none`() = runTest {
         val pages = CharacterPages(FakeCommunity(10))
         val all = pages.flow(CharactersQuery(yours = listOf(nemo))).asSnapshot { scrollTo(index = 40) }
@@ -116,9 +134,20 @@ class CharacterPagesTest {
     }
 
     @Test
-    fun `the shelf of other people's is offered only once there are any`() {
-        assertTrue(CharacterShelf.COMMUNITY !in CharacterPages(NoCommunityCharacters).shelves)
-        assertEquals(CharacterShelf.entries, CharacterPages(FakeCommunity(1)).shelves)
+    fun `the shelf of other people's is always there, and says whether there are any yet`() {
+        assertEquals(CharacterShelf.entries, CharacterPages(NoCommunityCharacters).shelves)
+        assertTrue(!CharacterPages(NoCommunityCharacters).communityOpen)
+        assertTrue(CharacterPages(FakeCommunity(1)).communityOpen)
+    }
+
+    @Test
+    fun `one of other people's answers as a copy under a key no slot of the user's has`() {
+        val listing = FakeCommunity(1).let { runCatching { kotlinx.coroutines.runBlocking { it.page(null, 1) } }.getOrThrow().items.single() }
+        val answering = listing.answering()
+
+        assertEquals(listing.key, answering.id)
+        assertTrue(answering.id !in CustomCharacter.SLOTS)
+        assertEquals(listing.description, answering.description)
     }
 
     @Test

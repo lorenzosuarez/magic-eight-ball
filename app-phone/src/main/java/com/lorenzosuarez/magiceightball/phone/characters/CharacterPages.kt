@@ -64,9 +64,11 @@ sealed interface CharacterRow {
  */
 class CharacterPages @Inject constructor(private val community: CommunityCharacters) {
 
-    /** Which shelves there are to choose among: other people's only once there are any. */
-    val shelves: List<CharacterShelf>
-        get() = CharacterShelf.entries.filter { it != CharacterShelf.COMMUNITY || community.open }
+    /** Which shelves there are to choose among. */
+    val shelves: List<CharacterShelf> get() = CharacterShelf.entries
+
+    /** Whether other people's characters are to be had yet: until they are, their shelf says they are coming. */
+    val communityOpen: Boolean get() = community.open
 
     fun flow(query: CharactersQuery): Flow<PagingData<CharacterRow>> =
         Pager(PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = PAGE_SIZE / 2, enablePlaceholders = false)) {
@@ -116,11 +118,17 @@ internal class CharactersPagingSource(
         if (!community.open) return LoadResult.Page(emptyList(), prevKey = null, nextKey = null)
         return try {
             val page = community.page(after = key?.takeUnless { it == FIRST }, limit = params.loadSize)
-            LoadResult.Page(data = page.items.map(CharacterRow::Card), prevKey = null, nextKey = page.next)
+            // A list that other people add to moves under whoever reads it: one handed out again,
+            // on a later page, is one already listed, and a list is keyed by who is on it.
+            val fresh = page.items.filter { listed.add(it.id) }
+            LoadResult.Page(data = fresh.map(CharacterRow::Card), prevKey = null, nextKey = page.next)
         } catch (failed: IOException) {
             LoadResult.Error(failed)
         }
     }
+
+    /** Whose of other people's have been listed by this source, which lives as long as one reading of the list. */
+    private val listed = mutableSetOf<String>()
 
     /** Refreshed, the list starts over: what is at hand is first, and is all there at once. */
     override fun getRefreshKey(state: PagingState<String, CharacterRow>): String? = null

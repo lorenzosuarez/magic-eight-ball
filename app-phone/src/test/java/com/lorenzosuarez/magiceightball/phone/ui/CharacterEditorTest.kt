@@ -246,7 +246,7 @@ class CharacterEditorTest {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
                         // As on the screen itself: what the page has to say in passing is shown over it.
                         val snackbars = remember { SnackbarHostState() }
-                        CompositionLocalProvider(LocalSnackbars provides snackbars, LocalGridPrefetch provides NoPrefetch) {
+                        CompositionLocalProvider(LocalSnackbars provides snackbars, LocalListPrefetch provides NoPrefetch) {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
@@ -332,7 +332,10 @@ class CharacterEditorTest {
     fun `one of yours is chosen with a touch`() {
         showOptions(SIGNED_IN, characters = listOf(NEMO))
 
+        // Opened first, to be looked at; it answers once that is asked for.
         compose.onNodeWithText("Capitán Nemo").performClick()
+        assertEquals(emptyList<CustomCharacter>(), chosen)
+        compose.onNodeWithText("Usar este personaje").performClick()
         compose.waitForIdle()
 
         assertEquals(listOf(NEMO), chosen)
@@ -717,7 +720,7 @@ class CharacterEditorTest {
         compose.setContent {
             MagicEightBallPhoneTheme {
                 ProvideAppLanguage(AppLanguage.SPANISH) {
-                    CompositionLocalProvider(LocalGridPrefetch provides NoPrefetch) {
+                    CompositionLocalProvider(LocalListPrefetch provides NoPrefetch) {
                         CharacterFlows(state = state, asked = asked, onPersonalitySelected = {})
                     }
                 }

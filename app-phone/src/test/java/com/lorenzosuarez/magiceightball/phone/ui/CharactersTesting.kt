@@ -3,9 +3,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.lazy.grid.LazyGridLayoutInfo
-import androidx.compose.foundation.lazy.grid.LazyGridPrefetchScope
-import androidx.compose.foundation.lazy.grid.LazyGridPrefetchStrategy
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
+import androidx.compose.foundation.lazy.LazyListPrefetchScope
+import androidx.compose.foundation.lazy.LazyListPrefetchStrategy
 import androidx.compose.foundation.lazy.layout.NestedPrefetchScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -44,7 +44,8 @@ internal class FakeCommunity(private val count: Int, var failing: Boolean = fals
                 CharacterListing.Community(
                     id = "$number",
                     name = "Personaje ${number + 1}",
-                    sample = "Lo que diría el número ${number + 1}, en dos líneas si hace falta.",
+                    sample = "Lo que diría el número ${number + 1}.",
+                    description = "Responde como el personaje número ${number + 1}, con sus manías.",
                     colour = look,
                     emblem = CustomCharacter.LOOKS[(number * 7) % CustomCharacter.LOOKS.size],
                     author = "autora${number % 9}"
@@ -56,9 +57,9 @@ internal class FakeCommunity(private val count: Int, var failing: Boolean = fals
 }
 
 /** Gets nothing ready ahead: see [LocalGridPrefetch]. */
-internal object NoPrefetch : LazyGridPrefetchStrategy {
-    override fun LazyGridPrefetchScope.onScroll(delta: Float, layoutInfo: LazyGridLayoutInfo) = Unit
-    override fun LazyGridPrefetchScope.onVisibleItemsUpdated(layoutInfo: LazyGridLayoutInfo) = Unit
+internal object NoPrefetch : LazyListPrefetchStrategy {
+    override fun LazyListPrefetchScope.onScroll(delta: Float, layoutInfo: LazyListLayoutInfo) = Unit
+    override fun LazyListPrefetchScope.onVisibleItemsUpdated(layoutInfo: LazyListLayoutInfo) = Unit
     override fun NestedPrefetchScope.onNestedPrefetch(firstVisibleItemIndex: Int) = Unit
 }
 
@@ -71,22 +72,23 @@ internal fun CharactersShown(
     query: CharactersQuery = CharactersQuery(),
     community: CommunityCharacters = NoCommunityCharacters,
     chosen: String? = CharacterListing.Original(Magic8BallPersonality.SARCASTIC).key,
-    onChoose: (CharacterListing) -> Unit = {},
+    onUse: (CharacterListing) -> Unit = {},
     onClose: () -> Unit = {},
     onCreate: (() -> Unit)? = null,
-    onEdit: ((CustomCharacter) -> Unit)? = null
+    onEdit: ((CharacterListing.Yours) -> Unit)? = null
 ) {
     val pages = remember(community) { CharacterPages(community) }
     var shelf by remember { mutableStateOf(query.shelf) }
     val shown = query.copy(shelf = shelf)
-    CompositionLocalProvider(LocalGridPrefetch provides NoPrefetch) {
+    CompositionLocalProvider(LocalListPrefetch provides NoPrefetch) {
       CharactersScreen(
         rows = remember(shown) { pages.flow(shown) }.collectAsLazyPagingItems(),
         shelf = shelf,
         shelves = pages.shelves,
         onShelf = { shelf = it },
         chosen = chosen,
-        onChoose = onChoose,
+        onUse = onUse,
+        communityOpen = pages.communityOpen,
         onClose = onClose,
         onCreate = onCreate,
         onEdit = onEdit

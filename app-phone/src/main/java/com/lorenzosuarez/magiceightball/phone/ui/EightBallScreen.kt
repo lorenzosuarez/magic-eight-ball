@@ -341,6 +341,7 @@ fun EightBallScreen(
                         state = current,
                         asked = flowsAsked,
                         shelves = viewModel.characterShelves,
+                        communityOpen = viewModel.communityOpen,
                         pages = viewModel::characterPages,
                         onPersonalitySelected = {
                             tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
@@ -1697,7 +1698,7 @@ private val BALL_MIN_SEEN = 112.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
 
-private val TOP_BAR_HEIGHT = 72.dp
+internal val TOP_BAR_HEIGHT = 72.dp
 
 /** Where a page's name and the dots stand in the bar: one over the other, with the bar's middle between them. */
 private val PAGE_TITLE_TOP = 15.dp
@@ -1715,7 +1716,7 @@ private val ANSWER_READABLE = 12.dp
 private val BallGlow = Color(0xFF3550C8).copy(alpha = 0.3f)
 private const val BALL_GLOW_REACH = 1.8f
 /** As far as a page's name follows the system's font size. */
-private const val PAGE_TITLE_MAX_SCALE = 1.3f
+internal const val PAGE_TITLE_MAX_SCALE = 1.3f
 private val ACTIONS_HEIGHT = 80.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3

@@ -26,6 +26,7 @@ sealed interface CharacterListing {
      * One somebody else made.
      *
      * @property sample something it would say, in the words of whoever made it.
+     * @property description how it answers, as its maker wrote it: what the AI service is told of it.
      * @property author the name its maker goes by, as it is shown.
      * @property uses how many times it has been chosen, by anyone.
      */
@@ -33,12 +34,30 @@ sealed interface CharacterListing {
         val id: String,
         val name: String,
         val sample: String,
+        val description: String,
         val colour: Magic8BallPersonality,
         val emblem: Magic8BallPersonality,
         val author: String,
         val uses: Long = 0
     ) : CharacterListing {
-        override val key: String get() = "c:$id"
+        override val key: String get() = "$KEY_PREFIX$id"
+
+        /**
+         * This character as one that answers: the copy that is kept as the choice, under its
+         * [key], which no character of the user's own has for a slot.
+         */
+        fun answering(): CustomCharacter = CustomCharacter(
+            id = key,
+            name = name,
+            description = description,
+            colour = colour,
+            emblem = emblem
+        )
+
+        companion object {
+            /** What the key of every one of other people's starts with, and of none of anyone else's. */
+            const val KEY_PREFIX = "c:"
+        }
     }
 }
 

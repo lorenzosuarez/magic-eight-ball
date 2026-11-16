@@ -78,6 +78,7 @@ internal fun CharacterFlows(
     asked: FlowsAsked,
     onPersonalitySelected: (Magic8BallPersonality) -> Unit,
     shelves: List<CharacterShelf> = AtHand.shelves,
+    communityOpen: Boolean = AtHand.communityOpen,
     pages: (CharactersQuery) -> Flow<PagingData<CharacterRow>> = AtHand::flow,
     onSignIn: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onChooseCharacter: (CustomCharacter) -> Unit = {},
@@ -191,17 +192,34 @@ internal fun CharacterFlows(
             shelves = offered,
             onShelf = { shelf = it },
             chosen = when (val style = state.settings.personality) {
-                Magic8BallPersonality.CUSTOM -> state.settings.customCharacter?.let { CharacterListing.Yours(it).key }
+                // One of other people's is kept under its own key; one of the user's, under its slot.
+                Magic8BallPersonality.CUSTOM -> state.settings.customCharacter?.let { kept ->
+                    kept.id.takeIf { it.startsWith(CharacterListing.Community.KEY_PREFIX) } ?: CharacterListing.Yours(kept).key
+                }
                 else -> CharacterListing.Original(style).key
             },
-            onChoose = { listing ->
+            communityOpen = communityOpen,
+            onUse = { listing ->
                 when (listing) {
-                    is CharacterListing.Original -> onPersonalitySelected(listing.style)
-                    is CharacterListing.Yours -> onChooseCharacter(listing.character)
-                    // Not chosen among yet: there are none.
-                    is CharacterListing.Community -> Unit
+                    is CharacterListing.Original -> {
+                        onPersonalitySelected(listing.style)
+                        close()
+                    }
+                    is CharacterListing.Yours -> {
+                        onChooseCharacter(listing.character)
+                        close()
+                    }
+                    // What is written of it is sent to the AI service, as of one of the user's own:
+                    // it answers for whoever has agreed to that, and anyone else is shown the way.
+                    is CharacterListing.Community -> when {
+                        !signedIn -> notice = CharactersNotice.COMMUNITY_ACCOUNT
+                        !state.canMakeCharacters -> notice = CharactersNotice.UNKNOWN
+                        else -> {
+                            onChooseCharacter(listing.answering())
+                            close()
+                        }
+                    }
                 }
-                close()
             },
             onClose = close,
             // What is under the screen is not touched through it.
@@ -217,7 +235,7 @@ internal fun CharacterFlows(
                 }
             } else null,
             creating = waitingToCreate,
-            onEdit = { editing = it.id }
+            onEdit = { editing = it.character.id }
         )
     }
     paying?.let { wanted ->
@@ -285,7 +303,8 @@ internal fun CharacterFlows(
         val later = stringResource(R.string.action_not_now)
         val understood = stringResource(R.string.action_understood)
         // What stands in the way is that nobody is signed in: the way there is offered.
-        val signsIn = what == CharactersNotice.ACCOUNT || what == CharactersNotice.PREMIUM_ACCOUNT
+        val signsIn = what == CharactersNotice.ACCOUNT || what == CharactersNotice.PREMIUM_ACCOUNT ||
+            what == CharactersNotice.COMMUNITY_ACCOUNT
         AlertDialog(
             onDismissRequest = { notice = null },
             title = { Text(title) },
@@ -336,7 +355,10 @@ internal enum class CharactersNotice(@StringRes val title: Int, @StringRes val t
     NO_GOOGLE(R.string.characters_no_sign_in_title, R.string.characters_no_google_text),
 
     /** What is sold was asked for with nobody signed in: it is kept with an account. */
-    PREMIUM_ACCOUNT(R.string.premium_account_title, R.string.premium_account_text)
+    PREMIUM_ACCOUNT(R.string.premium_account_title, R.string.premium_account_text),
+
+    /** One of other people's was to answer, with nobody signed in. */
+    COMMUNITY_ACCOUNT(R.string.characters_community_account_title, R.string.characters_community_account_text)
 }
 
 /** The characters where nobody else's are to be had: the app's own and the user's. */

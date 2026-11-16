@@ -280,7 +280,19 @@
     <string name="characters_by">de %1$s</string>
     <string name="characters_empty_yours">Você ainda não criou nenhum</string>
     <string name="characters_empty">Não há personagens aqui</string>
-    <string name="characters_load_failed">Não foi possível carregar. Verifique sua conexão</string>
+    <string name="characters_load_failed">Não foi possível carregar os personagens</string>
     <string name="characters_loading_more">Carregando mais personagens</string>
     <string name="action_retry">Tentar de novo</string>
+    <string name="characters_community_soon">A comunidade chega em breve</string>
+    <string name="characters_community_soon_text">Aqui você verá personagens criados por outras pessoas.</string>
+    <string name="characters_load_failed_text">Verifique sua conexão e tente de novo.</string>
+    <string name="characters_empty_yours_text">Crie um com suas palavras e ele aparecerá aqui.</string>
+    <string name="character_answering">Responde agora</string>
+    <string name="character_use">Usar este personagem</string>
+    <string name="character_edit_action">Editar</string>
+    <string name="character_of_app">Original do Magic AI Ball</string>
+    <string name="character_of_yours">Criado por você</string>
+    <string name="character_says">“%1$s”</string>
+    <string name="characters_community_account_title">Para usar este personagem você precisa de uma conta</string>
+    <string name="characters_community_account_text">O que está escrito sobre um personagem da comunidade é enviado ao serviço de IA para que responda com sua voz. Entre com sua conta para aceitar.</string>
 </resources>

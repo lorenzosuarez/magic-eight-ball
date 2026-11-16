@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.model.CharacterListing
 import android.content.Context
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
@@ -94,6 +95,9 @@ class EightBallViewModel @Inject constructor(
 
     /** Which shelves of characters there are to look at. */
     val characterShelves: List<CharacterShelf> get() = pages.shelves
+
+    /** Whether other people's characters are to be had yet. */
+    val communityOpen: Boolean get() = pages.communityOpen
 
     /** The pages last asked for, and what they were asked with: kept, so a turn of the screen loads nothing again. */
     private var lastPages: Pair<CharactersQuery, Flow<PagingData<CharacterRow>>>? = null
@@ -223,6 +227,8 @@ class EightBallViewModel @Inject constructor(
                 val kept = who.characters
                 when {
                     who.account is AccountState.SignedOut -> userSettingsRepository.setCustomCharacter(null)
+                    // One of other people's: it is nobody's slot, and follows nothing kept with the account.
+                    chosen.id.startsWith(CharacterListing.Community.KEY_PREFIX) -> Unit
                     // Not heard from the server: the copy stands for now.
                     kept == null -> Unit
                     else -> kept.find { it.id == chosen.id }.let { now ->
