@@ -25,19 +25,20 @@ sealed interface CharacterListing {
     /**
      * One somebody else made.
      *
-     * @property sample something it would say, in the words of whoever made it.
-     * @property description how it answers, as its maker wrote it: what the AI service is told of it.
+     * @property description how it answers, as its maker wrote it: what the AI service is told of
+     * it, and what is read of it where characters are listed.
      * @property author the name its maker goes by, as it is shown.
+     * @property authorPhotoUrl where its maker's picture is, when they have one.
      * @property uses how many times it has been chosen, by anyone.
      */
     data class Community(
         val id: String,
         val name: String,
-        val sample: String,
         val description: String,
         val colour: Magic8BallPersonality,
         val emblem: CharacterLook,
         val author: String,
+        val authorPhotoUrl: String? = null,
         val uses: Long = 0
     ) : CharacterListing {
         override val key: String get() = "$KEY_PREFIX$id"

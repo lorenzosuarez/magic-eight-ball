@@ -993,12 +993,11 @@ class EightBallScreenshotTest {
     fun phone_character_opened() {
         val theirs = CharacterListing.Community(
             id = "1",
-            name = "Narrador de fútbol",
-            sample = "¡Gooool del sí!",
-            description = "Un relator que narra cada respuesta como una jugada de último minuto en una final.",
+            name = "Mi ex a las 3am",
+            description = "responde como mi ex cuando escribe a las 3 de la mañana: \"hola, estás?\", todo en minúscula, se hace el que no pasó nada, mete un \"jaja\" incómodo y al final pregunta si sigo despierta. nunca da una respuesta clara pero se nota lo que quiere",
             colour = Magic8BallPersonality.COACH,
             emblem = CharacterLook.ZOOMER,
-            author = "marta.r"
+            author = "usuario 4"
         )
         listOf(
             Triple("phone_104_character_opened_original_dark", true, CharacterListing.Original(Magic8BallPersonality.PIRATE)),

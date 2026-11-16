@@ -45,7 +45,6 @@ internal class FakeCommunity(private val count: Int, var failing: Boolean = fals
                 CharacterListing.Community(
                     id = "$number",
                     name = "Personaje ${number + 1}",
-                    sample = "Lo que diría el número ${number + 1}.",
                     description = "Responde como el personaje número ${number + 1}, con sus manías.",
                     colour = look,
                     emblem = CharacterLook.entries[(number * 7) % CharacterLook.entries.size],

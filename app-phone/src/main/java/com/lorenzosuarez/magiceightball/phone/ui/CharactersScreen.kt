@@ -466,7 +466,7 @@ private fun CharacterListing.title(): String = when (this) {
 private fun CharacterListing.line(): String = when (this) {
     is CharacterListing.Original -> stringResource(style.sampleRes())
     is CharacterListing.Yours -> character.description.ifBlank { stringResource(R.string.style_custom_sample) }
-    is CharacterListing.Community -> sample
+    is CharacterListing.Community -> description
 }
 
 /** The face of [listing], whichever kind it is. */
@@ -639,22 +639,39 @@ internal fun CharacterDetail(
             color = scheme.onSurface,
             textAlign = TextAlign.Center
         )
-        // Whose it is.
-        Text(
-            text = when (listing) {
-                is CharacterListing.Original -> stringResource(R.string.character_of_app)
-                is CharacterListing.Yours -> stringResource(R.string.character_of_yours)
-                is CharacterListing.Community -> stringResource(R.string.characters_by, listing.author)
-            },
-            modifier = Modifier.padding(top = 2.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = scheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        // What it is like: for the app's own, something it would say; for anyone else's, what was written of it.
+        // Whose it is: of somebody else's, who that is, with their picture beside their name.
+        Row(
+            modifier = Modifier.padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (listing is CharacterListing.Community) {
+                AccountAvatar(name = listing.author, photoUrl = listing.authorPhotoUrl, size = MAKER_FACE, small = true)
+            }
+            Text(
+                text = when (listing) {
+                    is CharacterListing.Original -> stringResource(R.string.character_of_app)
+                    is CharacterListing.Yours -> stringResource(R.string.character_of_yours)
+                    is CharacterListing.Community -> stringResource(R.string.characters_by, listing.author)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+        // What it is like: for the app's own, something it would say; for anyone else's, what was
+        // written of it, in its maker's words and as long as they made it.
+        if (listing !is CharacterListing.Original) {
+            Text(
+                text = stringResource(R.string.character_how),
+                modifier = Modifier.padding(start = 16.dp, top = 20.dp).align(Alignment.Start),
+                style = MaterialTheme.typography.labelLarge,
+                color = scheme.onSurfaceVariant
+            )
+        }
         Box(
             modifier = Modifier
-                .padding(top = 20.dp)
+                .padding(top = if (listing is CharacterListing.Original) 20.dp else 8.dp)
                 .fillMaxWidth()
                 .clip(groupedShape(first = true, last = true))
                 .background(scheme.sheetCard)
@@ -664,7 +681,7 @@ internal fun CharacterDetail(
                 text = when (listing) {
                     is CharacterListing.Original -> stringResource(R.string.character_says, stringResource(listing.style.sampleRes()))
                     is CharacterListing.Yours -> listing.character.description.ifBlank { stringResource(R.string.style_custom_sample) }
-                    is CharacterListing.Community -> listing.description.ifBlank { listing.sample }
+                    is CharacterListing.Community -> listing.description
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = scheme.onSurface
@@ -733,6 +750,9 @@ private val SCREEN_WIDEST = 640.dp
 /** The face on a row, and on the sheet a character is opened in. */
 private val ROW_FACE = 40.dp
 private val SHEET_FACE = 88.dp
+
+/** The picture of whoever made a character, beside their name. */
+private val MAKER_FACE = 22.dp
 
 /** How tall a shelf is drawn; its touch takes more. */
 private val SHELF_HEIGHT = 36.dp

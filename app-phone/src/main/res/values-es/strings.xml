@@ -269,7 +269,7 @@
     <string name="characters_shelf_all">Todos</string>
     <string name="characters_shelf_originals">Originales</string>
     <string name="characters_shelf_community">Comunidad</string>
-    <string name="characters_by">de %1$s</string>
+    <string name="characters_by">Creado por %1$s</string>
     <string name="characters_empty_yours">Aún no has creado ninguno</string>
     <string name="characters_empty">No hay personajes aquí</string>
     <string name="characters_load_failed">No se pudieron cargar los personajes</string>
@@ -306,4 +306,5 @@
     <string name="look_graduate">Graduado</string>
     <string name="look_flower">Flor</string>
     <string name="look_party">Fiesta</string>
+    <string name="character_how">Cómo responde</string>
 </resources>

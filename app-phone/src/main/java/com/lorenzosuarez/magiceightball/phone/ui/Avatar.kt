@@ -33,9 +33,11 @@ import java.net.URL
  * Whose account it is, as a round: the picture Google has of them, and until it has come, or
  * where there is none, the first letter of their name. It says nothing to whoever has the
  * screen read out: the name beside it does.
+ *
+ * @param small where it stands beside a line of text rather than over a name.
  */
 @Composable
-internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: Modifier = Modifier) {
+internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: Modifier = Modifier, small: Boolean = false) {
     val cache = LocalContext.current.applicationContext.cacheDir
     val pixels = with(LocalDensity.current) { size.roundToPx() }
     // Shown before, it is shown at once: no letter in its place for a moment each time the row comes back.
@@ -56,7 +58,8 @@ internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: 
         } else {
             Text(
                 text = name.trim().take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
+                // Beside a line of text it is a letter of that line's size.
+                style = if (small) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )

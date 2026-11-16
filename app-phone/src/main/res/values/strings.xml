@@ -277,7 +277,7 @@
     <string name="characters_shelf_all">All</string>
     <string name="characters_shelf_originals">Originals</string>
     <string name="characters_shelf_community">Community</string>
-    <string name="characters_by">by %1$s</string>
+    <string name="characters_by">Created by %1$s</string>
     <string name="characters_empty_yours">You haven\'t made any yet</string>
     <string name="characters_empty">No characters here</string>
     <string name="characters_load_failed">Couldn\'t load the characters</string>
@@ -314,4 +314,5 @@
     <string name="look_graduate">Graduate</string>
     <string name="look_flower">Flower</string>
     <string name="look_party">Party</string>
+    <string name="character_how">How it answers</string>
 </resources>
