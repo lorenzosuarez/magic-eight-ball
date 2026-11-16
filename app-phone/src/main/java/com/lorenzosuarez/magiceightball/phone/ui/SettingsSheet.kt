@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.common.BrandPalette
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.shape.CircleShape
@@ -438,7 +439,8 @@ private fun PremiumBanner(onClick: () -> Unit) {
             modifier = Modifier
                 .heightIn(min = 36.dp)
                 .clip(CircleShape)
-                .background(scheme.primary)
+                // The deep accent in both themes: white on the dark theme's lighter one is too faint to read.
+                .background(Color(BrandPalette.ACCENT_DEEP))
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -808,9 +810,8 @@ private fun AppLanguage.labelRes(): Int = when (this) {
     AppLanguage.PORTUGUESE -> R.string.language_portuguese
 }
 
-/** Cards and the buttons on them: the two corner sizes the whole app uses. */
-internal val CardShape = RoundedCornerShape(16.dp)
-internal val ButtonShape = RoundedCornerShape(10.dp)
+/** What is typed into, and what is touched inside a dialog: a size under a group's corner. */
+internal val FieldShape = RoundedCornerShape(16.dp)
 
 
 

@@ -403,6 +403,12 @@ internal fun AccountSheetContent(
             .navigationBarsPadding()
             .padding(bottom = 16.dp)
     ) {
+        AccountAvatar(
+            name = name,
+            photoUrl = account.photoUrl,
+            size = 64.dp,
+            modifier = Modifier.padding(start = 32.dp, bottom = 12.dp)
+        )
         Text(
             text = name,
             modifier = Modifier.padding(horizontal = 32.dp).semantics { heading() },

@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -74,7 +76,12 @@ internal fun HistoryContent(
             // The page's name is in the bar above, with the dots.
             Spacer(Modifier.weight(1f))
             if (entries.isNotEmpty()) {
-                TextButton(onClick = { confirmClear = true }, modifier = Modifier.heightIn(min = 48.dp)) {
+                TextButton(
+                    onClick = { confirmClear = true },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                ) {
                     Text(stringResource(R.string.history_clear_all))
                 }
             }

@@ -69,32 +69,20 @@ internal fun ReportContent(onReason: (ReportReason) -> Unit, modifier: Modifier 
         // Said before the first touch: choosing is sending.
         Text(
             text = stringResource(R.string.report_hint),
-            modifier = Modifier.padding(start = 32.dp, top = 2.dp, end = 32.dp, bottom = 16.dp),
+            modifier = Modifier.padding(start = 32.dp, top = 2.dp, end = 32.dp, bottom = 8.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        // One card of rows, as on the options page.
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth()
-                .clip(CardShape)
-                .background(MaterialTheme.colorScheme.sheetCard)
-        ) {
+        // One group of rows, as on the options page.
+        Section(title = null, modifier = Modifier.padding(horizontal = 16.dp), ground = MaterialTheme.colorScheme.sheetCard) {
             ReportReason.entries.forEachIndexed { index, reason ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.hairline
-                    )
-                }
+                if (index > 0) RowDivider()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(role = Role.Button) { onReason(reason) }
                         .heightIn(min = 56.dp)
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = GROUP_ROW_INSET),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = stringResource(reason.labelRes()), style = MaterialTheme.typography.titleMedium)

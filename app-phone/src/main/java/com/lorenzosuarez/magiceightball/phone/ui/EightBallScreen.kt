@@ -842,9 +842,8 @@ private fun BallBar(
                             ),
                             onClick = onReport,
                             enabled = !answered.reported,
-                            tint = if (answered.reported) {
-                                MaterialTheme.colorScheme.primary
-                            } else MaterialTheme.colorScheme.onSurface
+                            // Reported, its mark is filled: said by the mark, in the page's own colour.
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     BarButton(
@@ -1445,7 +1444,7 @@ private fun Actions(
                     FilledTonalButton(
                         onClick = onAllowMicrophone,
                         modifier = Modifier.heightIn(min = 48.dp),
-                        shape = ButtonShape
+                        shape = CircleShape
                     ) {
                         Text(stringResource(R.string.settings_voice_allow_microphone), fontWeight = FontWeight.SemiBold)
                     }
@@ -1470,7 +1469,7 @@ private fun Actions(
                         FilledTonalButton(
                             onClick = { onAskWho(whoQuestion) },
                             modifier = Modifier.heightIn(min = 48.dp),
-                            shape = ButtonShape,
+                            shape = CircleShape,
                             // On the ground of the chip beside it: the two are one row of things to touch.
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA),
@@ -1513,7 +1512,7 @@ private fun AnswerActions(
         TextButton(
             onClick = onShare,
             modifier = Modifier.heightIn(min = 48.dp),
-            shape = ButtonShape,
+            shape = CircleShape,
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
         ) {
             Icon(
@@ -1550,7 +1549,7 @@ private fun RateButton(good: Boolean, chosen: Boolean?, label: String, onClick: 
         else -> R.drawable.ic_thumb_down
     }
     // The one not chosen keeps its full contrast: it can still be chosen instead.
-    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         modifier = Modifier
             .size(48.dp)

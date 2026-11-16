@@ -317,7 +317,7 @@ internal fun CharacterEditorContent(
                 capitalization = KeyboardCapitalization.Words,
                 imeAction = ImeAction.Next
             ),
-            shape = ButtonShape
+            shape = FieldShape
         )
         // On a keyboard with keys, in the description: the key that would break the line is
         // done, as on the screen's, and the key that would type a gap goes on to the picks.
@@ -355,7 +355,7 @@ internal fun CharacterEditorContent(
                 imeAction = ImeAction.Done
             ),
             keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),
-            shape = ButtonShape
+            shape = FieldShape
         )
         PickerLabel(stringResource(R.string.character_colour), top = 4.dp)
         ColourRow(chosen = draft.colour, enabled = !busy, onChosen = { draft.colour = it })
@@ -392,42 +392,28 @@ internal fun CharacterEditorContent(
             style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
             color = if (trouble != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Button(
+        PrimaryButton(
+            text = stringResource(R.string.action_save),
             onClick = { if (name != null && description != null) onSave(name, description) },
-            modifier = Modifier
-                .padding(start = 16.dp, top = 8.dp, end = 16.dp)
-                .fillMaxWidth()
-                .heightIn(min = 48.dp),
-            enabled = !busy && ready,
-            shape = ButtonShape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(BrandPalette.ACCENT_DEEP),
-                contentColor = Color(BrandPalette.ON_ACCENT)
-            )
-        ) {
-            BusyRing(busy)
-            Text(stringResource(R.string.action_save), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-        }
-        TextButton(
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp).fillMaxWidth(),
+            enabled = ready,
+            busy = busy
+        )
+        QuietButton(
+            text = stringResource(R.string.action_cancel),
             onClick = onCancel,
-            modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp).fillMaxWidth().heightIn(min = 48.dp),
-            enabled = !busy,
-            shape = ButtonShape,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.sheetAction)
-        ) {
-            Text(stringResource(R.string.action_cancel), textAlign = TextAlign.Center)
-        }
+            modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp).fillMaxWidth(),
+            enabled = !busy
+        )
         if (onDelete != null) {
             // Last, and in the colour of a warning: what cannot be taken back.
-            TextButton(
+            QuietButton(
+                text = stringResource(R.string.character_delete),
                 onClick = onDelete,
-                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().heightIn(min = 48.dp),
+                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
                 enabled = !busy,
-                shape = ButtonShape,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text(stringResource(R.string.character_delete), textAlign = TextAlign.Center)
-            }
+                danger = true
+            )
         }
     }
 }
@@ -462,7 +448,7 @@ private fun CharacterPreview(draft: CharacterDraft) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
-            .clip(CardShape)
+            .clip(RoundedCornerShape(GROUP_CORNER))
             .background(ground)
             .padding(start = 8.dp, end = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

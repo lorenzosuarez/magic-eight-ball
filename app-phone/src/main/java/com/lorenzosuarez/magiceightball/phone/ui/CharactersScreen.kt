@@ -447,35 +447,9 @@ private fun Said(
         }
         if (action != null) {
             Spacer(Modifier.height(20.dp))
-            PillButton(text = action, onClick = onAction)
+            PrimaryButton(text = action, onClick = onAction)
         }
         if (icon != null) Spacer(Modifier.weight(3f))
-    }
-}
-
-/**
- * The one thing to do, where there is one: a pill filled with the text's colour, as the shelf in
- * view and every other thing chosen is.
- */
-@Composable
-internal fun PillButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    val scheme = MaterialTheme.colorScheme
-    Box(
-        modifier = modifier
-            .heightIn(min = 48.dp)
-            .clip(CircleShape)
-            .background(if (enabled) scheme.onSurface else scheme.onSurface.copy(alpha = TILE_ALPHA))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = if (enabled) scheme.surface else scheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
     }
 }
 
@@ -717,7 +691,7 @@ internal fun CharacterDetail(
                 )
             }
         } else {
-            PillButton(
+            PrimaryButton(
                 text = stringResource(R.string.character_use),
                 onClick = onUse,
                 modifier = Modifier.padding(top = 20.dp).fillMaxWidth().heightIn(min = 52.dp)
