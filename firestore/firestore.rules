@@ -98,14 +98,14 @@ service cloud.firestore {
     function isCharacter(data) {
       return data.keys().hasOnly(['name', 'description', 'colour', 'emblem'])
         && data.keys().hasAll(['name', 'description', 'colour', 'emblem'])
-        // Sixteen characters and two hundred and eighty, as the app counts them: twice as many
+        // Sixteen characters and five hundred, as the app counts them: twice as many
         // here, where a character from beyond the common ones counts as two.
         && data.name is string
         && data.name.size() >= 1
         && data.name.size() <= 32
         && data.description is string
         && data.description.size() >= 1
-        && data.description.size() <= 560
+        && data.description.size() <= 1000
         && data.colour is string
         && data.colour.matches('^[a-z]{1,16}$')
         && data.emblem is string
