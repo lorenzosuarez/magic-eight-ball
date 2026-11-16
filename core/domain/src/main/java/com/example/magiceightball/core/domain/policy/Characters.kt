@@ -19,6 +19,16 @@ import com.example.magiceightball.core.domain.model.Magic8BallPersonality
  * @property never what it never says or does.
  * @property angles what it may bring up when nothing was asked: things it does or holds against
  * the asker, never props from its world.
+ * @property rhythm how its sentences are built: their length, their punctuation, what comes first.
+ * @property lexicon the fields of its world its words come from, named as fields and never as
+ * words to repeat.
+ * @property tics the two or three turns of construction it comes back to, short of a catchphrase.
+ * @property instead what it does in place of what it [never] does: a thing to do is followed
+ * better than a thing to avoid.
+ *
+ * The last four are told only when the sheet has them, and no sheet the app uses has them yet: a
+ * sheet without them is told word for word as it was before they existed. A sheet that has them
+ * may leave [habits] empty, when they say all of how it talks.
  */
 data class CharacterSheet(
     val who: String,
@@ -28,7 +38,11 @@ data class CharacterSheet(
     val dodge: String,
     val habits: String,
     val never: String,
-    val angles: List<String>
+    val angles: List<String>,
+    val rhythm: String = "",
+    val lexicon: String = "",
+    val tics: String = "",
+    val instead: String = ""
 )
 
 /** The classic style has no character: it answers like the toy. */
@@ -296,12 +310,16 @@ internal fun characterOf(personality: Magic8BallPersonality): CharacterSheet? = 
 /**
  * Lines a character has said in one language, written by hand: what the AI service is shown of
  * the voice, and never an English line for an answer in another language.
+ *
+ * @property deflections what it has said to something that had no yes or no to it, in place of
+ * an answer. No character the app uses has any yet, and then none is shown.
  */
 data class CharacterLines(
     val yes: List<String>,
     val no: List<String>,
     val maybe: List<String>,
-    val remarks: List<SampleRemark>
+    val remarks: List<SampleRemark>,
+    val deflections: List<String> = emptyList()
 ) {
     fun saying(verdict: Verdict): List<String> = when (verdict) {
         Verdict.YES -> yes

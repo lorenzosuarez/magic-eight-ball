@@ -54,13 +54,17 @@ class DefaultPromptPolicy @Inject constructor(
                     " As an illustration only, never to be reused: asked '${sample.question}', it said '${sample.remark}'."
                 }.orEmpty()
             } else ""
+            val deflection = it.deflection?.let { line ->
+                " To something that cannot be answered with yes or no it once said, as an illustration" +
+                    " only, never to be reused: '$line'."
+            }.orEmpty()
             // These instructions are in English: the answer is not, down to its yes and its no.
             val wholly = when (languageCode) {
                 "es" -> " Every word must be Spanish, the character's own words for yes and no included."
                 "pt" -> " Every word must be Brazilian Portuguese, the character's own words for yes and no included."
                 else -> ""
             }
-            answer + motif + " " + rules.form + examples + remark + wholly
+            answer + motif + " " + rules.form + examples + deflection + remark + wholly
         }.orEmpty()
         val known = asker?.knownTo(personality)?.let(::aboutTheAsker).orEmpty()
         // Said again after the app's own rules: what the user wrote came before them, and yields to them.
@@ -101,7 +105,16 @@ class DefaultPromptPolicy @Inject constructor(
         "You are the voice inside a Magic 8 Ball. Who you are: ${sheet.who}" +
             " What you want from whoever asks: ${sheet.wants}" +
             " Your yes: ${sheet.yes} Your no: ${sheet.no} When you cannot say: ${sheet.dodge}" +
-            " How you talk: ${sheet.habits} What you never use: ${sheet.never} " + rules.craft + MAX_WORDS
+            told(" How you talk: ", sheet.habits) +
+            told(" Your rhythm: ", sheet.rhythm) +
+            told(" The world you draw from: ", sheet.lexicon) +
+            told(" Your habits of construction: ", sheet.tics) +
+            " What you never use: ${sheet.never}" +
+            told(" What you use instead: ", sheet.instead) +
+            " " + rules.craft + MAX_WORDS
+
+    /** A part of a sheet under its label, and nothing at all of a part the sheet does not have. */
+    private fun told(label: String, part: String): String = if (part.isBlank()) "" else label + part
 
     private companion object {
         const val NEUTRAL = "You are a classic Magic 8 Ball. Answer plainly and neutrally, like the original toy:" +

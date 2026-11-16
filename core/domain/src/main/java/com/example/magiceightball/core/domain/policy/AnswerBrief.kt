@@ -17,6 +17,7 @@ import kotlin.random.Random
  * @property examples lines the character has said for this verdict, in the language of the
  * answer. They show the voice; drawn anew each time so that none is seen often enough to be copied.
  * @property remarkExample a comeback the character has made to some other question.
+ * @property deflection what the character once said to something that had no yes or no to it.
  */
 data class AnswerBrief(
     val verdict: Verdict,
@@ -24,7 +25,8 @@ data class AnswerBrief(
     val withRemark: Boolean = false,
     val detailed: Boolean = false,
     val examples: List<String> = emptyList(),
-    val remarkExample: SampleRemark? = null
+    val remarkExample: SampleRemark? = null,
+    val deflection: String? = null
 ) {
     companion object {
         /**
@@ -57,7 +59,10 @@ data class AnswerBrief(
                 examples = lines?.saying(verdict).orEmpty().shuffled(random).take(EXAMPLES_SHOWN),
                 remarkExample = if (remarked && !detailed) {
                     lines?.remarks?.filterNot { it.question.isMuchLike(question) }?.randomOrNull(random)
-                } else null
+                } else null,
+                // Drawn last, and from nothing when the character has none: what was drawn before
+                // there were any is drawn the same. Only a question can turn out not to be one.
+                deflection = if (hasQuestion) lines?.deflections?.randomOrNull(random) else null
             )
         }
 
