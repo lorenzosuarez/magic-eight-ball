@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.offset
 import com.example.magiceightball.core.domain.model.look
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.foundation.verticalScroll
@@ -481,6 +482,37 @@ private fun ListedFace(listing: CharacterListing, size: androidx.compose.ui.unit
 }
 
 /**
+ * The face of [listing] in a row: of somebody else's, with its maker's own face small on its
+ * corner, ringed in the row's ground so that it stands off the face it is on. That, before any
+ * word is read, is what says a character is somebody's and whose.
+ */
+@Composable
+private fun RowFace(listing: CharacterListing, chosen: Boolean) {
+    if (listing !is CharacterListing.Community) {
+        ListedFace(listing, ROW_FACE, chosen)
+        return
+    }
+    // The face stays where every other row has its own: the mark hangs off its corner, into the row's own room.
+    Box(modifier = Modifier.size(ROW_FACE)) {
+        ListedFace(listing, ROW_FACE, chosen)
+        // On the corner the ball does not come in from, and out past it: on the other it would cover
+        // the ball's own face, and nearer in it would be read with the number as one word.
+        AccountAvatar(
+            name = listing.author,
+            photoUrl = listing.authorPhotoUrl,
+            size = MAKER_BADGE,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = -MAKER_OUT, y = MAKER_OUT)
+                .border(MAKER_RING, MaterialTheme.colorScheme.pageCard, CircleShape)
+                .padding(MAKER_RING),
+            small = true,
+            told = true
+        )
+    }
+}
+
+/**
  * A character in the list: its face, its name and a line about it, and at the end of the row
  * the mark of the one that answers. A touch opens it, and what can be done with it is there.
  */
@@ -505,7 +537,7 @@ private fun ListedRow(
             .padding(horizontal = GROUP_ROW_INSET, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ListedFace(listing, ROW_FACE, chosen)
+        RowFace(listing, chosen)
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp, end = 8.dp)) {
             Text(
                 text = title,
@@ -646,7 +678,7 @@ internal fun CharacterDetail(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (listing is CharacterListing.Community) {
-                AccountAvatar(name = listing.author, photoUrl = listing.authorPhotoUrl, size = MAKER_FACE, small = true)
+                AccountAvatar(name = listing.author, photoUrl = listing.authorPhotoUrl, size = MAKER_FACE, small = true, told = true)
             }
             Text(
                 text = when (listing) {
@@ -744,6 +776,11 @@ private val SHEET_FACE = 88.dp
 
 /** The picture of whoever made a character, beside their name. */
 private val MAKER_FACE = 22.dp
+
+/** The maker's face on the corner of a character's in a row: how large, how far past the corner, and the ring round it. */
+private val MAKER_BADGE = 16.dp
+private val MAKER_OUT = 6.dp
+private val MAKER_RING = 2.dp
 
 /** How tall a shelf is drawn; its touch takes more. */
 private val SHELF_HEIGHT = 36.dp

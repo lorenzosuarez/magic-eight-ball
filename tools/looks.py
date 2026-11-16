@@ -18,6 +18,7 @@ The rules, so that thirty looks read as one family:
 - ears and horns grow from behind the ball; hats and what is held sit over it, with a rim of the ground round them.
 """
 import math
+import re
 import subprocess
 import sys
 
@@ -167,8 +168,137 @@ def taper(x1, y1, w1, x2, y2, w2):
     return poly([(x1 + px * w1 / 2, y1 + py * w1 / 2), (x2 + px * w2 / 2, y2 + py * w2 / 2), (x2 - px * w2 / 2, y2 - py * w2 / 2), (x1 - px * w1 / 2, y1 - py * w1 / 2)])
 
 
+def turned(d, cx, cy, degrees, scale=1.0):
+    """A path turned about a point, and made larger or smaller about it: only for paths of M, L, Q, C and Z with absolute numbers."""
+    c, s = math.cos(math.radians(degrees)) * scale, math.sin(math.radians(degrees)) * scale
+    out, pair, letter = [], [], ''
+    for token in re.findall(r'[A-Za-z]|-?[0-9.]+', d):
+        if token.isalpha():
+            assert token in 'MLQCZ', d
+            if token == 'Z':
+                out[-1] += 'Z'
+            else:
+                letter = token
+            continue
+        pair.append(float(token))
+        if len(pair) == 2:
+            x, y = pair[0] - cx, pair[1] - cy
+            out.append('%s%s %s' % (letter, f(cx + x * c - y * s), f(cy + x * s + y * c)))
+            pair, letter = [], ''
+    return ' '.join(out)
+
+
+def curve(points, n=24):
+    """Points along a curve drawn through control points: two make a line, three a quadratic, four a cubic."""
+    out = []
+    for k in range(n + 1):
+        t = k / n
+        level = list(points)
+        while len(level) > 1:
+            level = [(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t) for a, b in zip(level, level[1:])]
+        out.append(level[0])
+    return out
+
+
+def ribbon(points, w0, w1=None, caps=(True, True)):
+    """A strip that follows points, as wide as [w0] at its start and [w1] at its end, round at the ends that are capped."""
+    w1 = w0 if w1 is None else w1
+    left, right = [], []
+    last = len(points) - 1
+    for k, (x, y) in enumerate(points):
+        ax, ay = points[max(k - 1, 0)]
+        bx, by = points[min(k + 1, last)]
+        n = math.hypot(bx - ax, by - ay)
+        px, py = (by - ay) / n, -(bx - ax) / n
+        w = (w0 + (w1 - w0) * k / last) / 2
+        left.append((x + px * w, y + py * w))
+        right.append((x - px * w, y - py * w))
+
+    def cap(a, b):
+        """Half a turn from one edge of an end to the other, bulging away from the strip."""
+        mx, my = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        r = math.hypot(a[0] - b[0], a[1] - b[1]) / 2
+        start = math.atan2(a[1] - my, a[0] - mx)
+        return [(mx + r * math.cos(start + math.pi * k / 10), my + r * math.sin(start + math.pi * k / 10)) for k in range(1, 10)]
+
+    out = list(left)
+    if caps[1]:
+        out += cap(left[-1], right[-1])
+    out += list(reversed(right))
+    if caps[0]:
+        out += cap(right[0], left[0])
+    return poly(out)
+
+
+def pill(cx, cy, w, h, degrees=0.0):
+    """A rounded bar about its middle, [w] across and [h] long, turned."""
+    half = (h - w) / 2
+    c, s = math.cos(math.radians(degrees)), math.sin(math.radians(degrees))
+    return ribbon([(cx + s * half * (1 - 2 * k / 6), cy - c * half * (1 - 2 * k / 6)) for k in range(7)], w)
+
+
+def heart(cx, cy, w, h, degrees=0.0):
+    """A heart about its middle, [w] across and [h] tall, leaning by [degrees]: round lobes and a soft dip."""
+    pts = []
+    for k in range(64):
+        t = 2 * math.pi * k / 64
+        pts.append((16 * math.sin(t) ** 3, -(13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t))))
+    top, bottom = min(y for _, y in pts), max(y for _, y in pts)
+    c, s = math.cos(math.radians(degrees)), math.sin(math.radians(degrees))
+    out = []
+    for x, y in pts:
+        x, y = x / 32 * w, (y - (top + bottom) / 2) / (bottom - top) * h
+        out.append((cx + x * c - y * s, cy + x * s + y * c))
+    return poly(out)
+
+
+def on_ball(angle, out=0.0):
+    """A point on the ball's edge, [angle] degrees from its crown towards the right, and [out] past the edge."""
+    a = math.radians(angle)
+    return (BX + (BR + out) * math.sin(a), BY - (BR + out) * math.cos(a))
+
+
+def band_on_ball(top, thick, bow, inset=1.6, n=36):
+    """A band across the ball, from edge to edge and kept [inset] within it: its top edge at [top] on the ball's axis and [bow] lower by the sides."""
+    reach = BR - inset
+
+    def edge(level):
+        pts = []
+        for k in range(n + 1):
+            x = BX - reach + 2 * reach * k / n
+            y = level + bow * ((x - BX) / reach) ** 2
+            if (x - BX) ** 2 + (y - BY) ** 2 <= reach * reach:
+                pts.append((x, y))
+        # Where the curve meets the circle it is kept within, found by halving.
+        def meet(sign):
+            lo, hi = 0.0, reach
+            for _ in range(40):
+                mid = (lo + hi) / 2
+                y = level + bow * (mid / reach) ** 2
+                if mid * mid + (y - BY) ** 2 <= reach * reach:
+                    lo = mid
+                else:
+                    hi = mid
+            return (BX + sign * lo, level + bow * (lo / reach) ** 2)
+        return [meet(-1)] + pts + [meet(1)]
+
+    upper, lower = edge(top), edge(top + thick)
+
+    def along(a, b):
+        """The circle's own edge between two points on it, the short way."""
+        a0, a1 = math.atan2(a[1] - BY, a[0] - BX), math.atan2(b[1] - BY, b[0] - BX)
+        return [(BX + reach * math.cos(a0 + (a1 - a0) * k / 6), BY + reach * math.sin(a0 + (a1 - a0) * k / 6)) for k in range(1, 6)]
+
+    return poly(upper + along(upper[-1], lower[-1]) + list(reversed(lower)) + along(lower[0], upper[0]))
+
+
 QUOTE = 'M%s 16 a8.2 8.2 0 1 1 16.4 0 q0 12 -12 18.6 q4.4 -6.6 2.8 -11 a8.2 8.2 0 0 1 -7.2 -7.6Z'
 CLOUD = [(37, 20, 9), (47, 14.5, 10), (58.5, 15.5, 9.5), (64.5, 22.5, 8.5), (53, 24, 9.5), (43, 25, 8.5)]
+# The crest a punk wears: spikes from brow to nape, tallest in the middle, their feet behind the ball.
+CREST = ([on_ball(-46, -5)] +
+         [point for k, (tip, tall) in enumerate([(-34, 12), (-17, 18.5), (0, 22), (17, 18.5), (34, 12)])
+          for point in ([on_ball(tip - 8.5, 2.6)] if k else []) + [on_ball(tip, tall)]] +
+         [on_ball(46, -5)] + [on_ball(angle, -7) for angle in range(40, -41, -10)])
 PETALS = [(59 + 9.6 * math.cos(math.radians(a)), 29 + 9.6 * math.sin(math.radians(a))) for a in range(-90, 270, 60)]
 
 # name: (colour for the sheet, {layer: [paths]})
@@ -179,9 +309,9 @@ LOOKS = {
     'sarcastic': ('#FFDD33', {'ink': [QUOTE % '27', QUOTE % '55.6']}),
     'mystical': ('#C9B6FF', {'ink': [crescent((44, 19.5), 14.5, (52, 15), 12), star4(69, 17, 8, 0.38)]}),
     'grandma': ('#FFC2D1', {
-        # A ball of wool with the needles in it: she knits.
-        'ink': [bar(50, 30, 66.5, 13.5, 4), circ(67.5, 12.5, 4), bar(57, 35, 73.5, 19.5, 4), circ(74.5, 18.5, 4), circ(46, 28, 13.5)],
-        'white': ['M34.5 24.5 Q46 16 57.5 24.5 L57.5 29.1 Q46 20.6 34.5 29.1Z', 'M35.5 32 Q46 24.5 56.5 32 L55.5 36.4 Q46 29.2 36.5 36.4Z'],
+        # A ball of wool with the needles in it, sunk well into the crown: she knits.
+        'ink': [bar(50, 32.5, 66.5, 16, 4), circ(67.3, 15.2, 3.4), bar(55, 36.5, 71.5, 21, 4), circ(72.3, 20.2, 3.4), circ(46, 30.5, 13.5)],
+        'white': ['M35.23 26.48 Q46 19.02 56.77 26.48 L57.45 31.56 Q46 23.14 34.55 31.56Z', 'M35.28 34.66 Q46 26.84 56.72 34.66 L54.54 38.21 Q46 32.39 37.46 38.21Z'],
     }),
     'pirate': ('#5FD6C9', {
         # Pulled down onto the crown: floating over it, its rim cut the ball flat.
@@ -190,66 +320,86 @@ LOOKS = {
         'dot': [circ(47.1, 26, 2.1), circ(52.9, 26, 2.1)],
     }),
     'philosopher': ('#E3D5B8', {
-        'ink': [circ(x, y, r) for x, y, r in CLOUD] + [circ(31, 33, 3.6)],
+        'ink': [circ(x, y, r) for x, y, r in CLOUD] + [circ(29.5, 35.5, 3.6)],
         'white': [circ(41, 19.5, 3), circ(51, 19.5, 3), circ(61, 19.5, 3)],
     }),
     'coach': ('#FF8A3D', {
-        'ink': ['M29 46 Q27 17 51 17 Q74 17 72 46 Q51 38 29 46Z', 'M34 36 Q18 37 8 43 Q5 49 12 50 Q24 46.5 37 45.5Z', circ(51, 16.5, 3.2)],
-        'white': ['M37 33.5 Q52 29 69.5 34.5 L70.2 39.4 Q52 33.4 36 38.4Z'],
+        # A cap, its peak towards the words: the crown, the button on it, and one stripe that runs with its
+        # lower edge, as far from one side of it as from the other. The peak's underside runs into that edge.
+        'ink': ['M29 45.5 Q27 18.5 51 18.5 Q75 18.5 73.6 45 Q51 37.5 29 45.5Z',
+                'M34.5 38.5 Q21 38 9.5 43.5 Q6.5 47 10.5 48.8 Q20 46.4 29 45.5 L36 42Z', circ(51, 17.6, 2.8)],
+        'white': [ribbon(curve([(36, 37.4), (51, 31.2), (66, 37.4)]), 4.6)],
     }),
-    'lovestruck': ('#FF7A9C', {'ink': ['M50 43 C22 25 30 2 50 15.5 C70 2 78 25 50 43Z']}),
+    # Hearts in the air over it, a large one and a small one, each leaning its own way.
+    'lovestruck': ('#FF7A9C', {'ink': [heart(46.5, 22.5, 26, 23.5, -6), heart(68.5, 13.5, 12, 10.9, 16)]}),
     'drama': ('#FF5A4F', {
         'ink': ['M30 45 L26 19.5 L39.5 30 L50 11 L60.5 30 L74 19.5 L70 45 Q50 37.5 30 45Z', circ(26, 17.5, 4), circ(50, 9.5, 4.2), circ(74, 17.5, 4)],
         'white': [circ(50, 32, 3.6), circ(37, 37.5, 2.6), circ(63, 37.5, 2.6)],
     }),
     'robot': ('#B8C4D0', {
-        'ink': [bar(50, 41, 50, 21, 5.5, cap=False), circ(50, 15.5, 7.5)],
-        'white': [circ(50, 15.5, 3.2)],
+        # An aerial that grows from behind the ball, as ears do, broad where it leaves it: nothing stuck into it.
+        'behind': ['M40.5 42 Q47.6 37.5 47.5 27 L52.5 27 Q52.4 37.5 59.5 42Z', bar(50, 29, 50, 19, 5, cap=False), circ(50, 13, 7.4)],
+        'white': [circ(50, 13, 3.2)],
     }),
     'detective': ('#D6C68A', {
-        'ink': ['M18 42 Q50 30 82 42 Q84.5 46.5 79.5 47 Q50 37.5 20.5 47 Q15.5 46.5 18 42Z', 'M30 40 Q27.5 15 40 13 Q50 18.5 60 13 Q72.5 15 70 40 Q50 34 30 40Z'],
-        'white': ['M30.2 29.5 Q50 25.5 69.8 29.5 L70 35.4 Q50 31.2 30 35.4Z'],
+        # The brim round at its ends, the pinch of the crown soft.
+        'ink': [ribbon(curve([(18.5, 44.6), (50, 33.4), (81.5, 44.6)]), 5.8),
+                'M30 40 Q27.8 17.5 37.5 13.6 Q40 12.7 42.2 14 Q50 18 57.8 14 Q60 12.7 62.5 13.6 Q72.2 17.5 70 40 Q50 34 30 40Z'],
+        'white': ['M29.66 29.5 Q50 25.5 70.34 29.5 L70.35 35.4 Q50 31.2 29.65 35.4Z'],
     }),
     'conspiracy': ('#9BE564', {
-        'ink': ['M30.7 33 Q26.5 33 29 29.1 L47.4 6.9 Q50 4.1 52.6 6.9 L71 29.1 Q73.5 33 69.3 33Z'],
-        'white': ['M38.5 24.3 Q50 14.1 61.5 24.3 Q50 32.5 38.5 24.3Z'],
-        'dot': [circ(50, 23.8, 3.6)],
+        # Upright over the tipped ball, as a thing in the air is: tipped with it, it was a wedge. The pupil is
+        # cut by both lids.
+        'ink': [turned('M30.7 32 Q26.5 32 29 28.1 L47.4 5.9 Q50 3.1 52.6 5.9 L71 28.1 Q73.5 32 69.3 32Z', 50, 20, 18)],
+        'white': [turned('M38.5 23.3 Q50 13.1 61.5 23.3 Q50 31.5 38.5 23.3Z', 50, 20, 18)],
+        'dot': [circ(49.13, 22.66, 4.9)],
     }),
     'cat': ('#FFB86B', {
         'behind': both('M22 56 L28.5 16.5 Q43 26 50 44Z'),
         'white': both('M30 37 L32.3 25.5 Q38.5 29.5 42 36Z'),
     }),
     'zoomer': ('#D4FF4F', {
-        # Worn on the crown, both cups in sight: round the whole ball, one of them was always off the round.
-        'ink': [arc_band(50, 32, 15.5, 20.5, 180, 360), rrect(26.5, 28, 11, 18, 5), rrect(62.5, 28, 11, 18, 5)],
+        # Made to the ball: the band over its crown and a cup at each side, lying along it where ears would
+        # be and clear of the face. The far one runs off with the ball.
+        'fitted': True,
+        'ink': [ribbon([on_ball(a, 3.6) for a in range(-58, 59, 4)], 4.2, caps=(False, False)),
+                pill(*on_ball(-64, 1.4), 9.5, 19, 26), pill(*on_ball(64, 1.4), 9.5, 19, 154)],
+        # The pad of each cup: what tells a cup from the ball where it lies over it.
+        'white': [pill(*on_ball(-64, 1.4), 4.5, 11.5, 26), pill(*on_ball(64, 1.4), 4.5, 11.5, 154)],
     }),
     'villain': ('#B58CFF', {'behind': both('M23 54 Q7 31 33 9 Q21 30 35 45Z')}),
-    'poet': ('#BFD9FF', {'ink': quill((45, 41), (69.5, 9.5))}),
+    # Tucked behind the ball and broad: planted on it, its shaft stood in a socket.
+    'poet': ('#BFD9FF', {'behind': quill((43.5, 45), (68.5, 11), widest=8.4, shaft=0.37)}),
     'astro': ('#8FA8FF', {
-        'ink': [circ(50, 21, 13), ell_ring(50, 21, 24, 6.8, 5, rot=-18)],
-        'white': [ell_ring(50, 21, 24, 6.8, 4.6, rot=-18, t0=57, t1=123, n=24)],
+        # A planet and its ring: the ring is ink where it is past the planet and white where it crosses in
+        # front of it, cut by the planet's own edge.
+        'ink': [circ(50, 21, 12.5), ell_ring(50, 21, 24, 6.8, 4.8, rot=-20)],
+        'white': [poly(ellipse_points(50, 21, 26.4, 9.2, -20, 70.5, 109.5, 20) + list(reversed(ellipse_points(50, 21, 21.6, 4.4, -20, 59, 121, 20))))],
     }),
     'therapist': ('#BFE8D2', {
-        'ink': [ring(37, 31, 12.5, 7), ring(63, 31, 12.5, 7), bar(47.5, 29.5, 52.5, 29.5, 4.5, cap=False), bar(25.5, 28.5, 18.5, 25.5, 4.5), bar(74.5, 28.5, 81.5, 25.5, 4.5)],
+        # Glasses pushed up onto the crown, their arms short and level.
+        'ink': [ring(37, 32.5, 12.5, 7.2), ring(63, 32.5, 12.5, 7.2), bar(47.5, 31, 52.5, 31, 4.4, cap=False), bar(25.5, 31, 19.5, 31, 4.4), bar(74.5, 31, 80.5, 31, 4.4)],
     }),
-    # Ears that hang over the ball, told from it by their rim: behind it they made one shape with it.
+    # A bone in the air over it: what says dog at any size, where ears on a ball said bear.
     'dog': ('#F0B878', {
-        'ink': both('M37.5 42 Q30 33 22.5 38 Q12 48 15 63 Q17 70 22.5 68 Q29 59 32 48Z'),
-        # The inside of each ear, as the cat has: without it they are ink on ink at the size of a row.
-        'white': both('M28.2 48.4 Q25.1 44.6 21.9 46.7 Q17.5 50.9 18.8 57.2 Q19.6 60.1 21.9 59.3 Q24.7 55.5 25.9 50.9Z'),
+        'ink': [ribbon([(32, 26), (68, 26)], 8, caps=(False, False)), circ(31, 21.5, 6), circ(31, 30.5, 6), circ(69, 21.5, 6), circ(69, 30.5, 6)],
     }),
     # No character of the app's wears these: they are there to be picked.
     'singer': ('#FFC2D1', {
-        'ink': [circ(62, 19, 10), taper(53.9, 28.1, 9, 43.1, 40.3, 6.5)],
-        'white': [bar(56.4, 14, 67.6, 24, 4.6, cap=False)],
+        # In the air over it, head and handle one piece, its collar cut by the head's own edge.
+        'ink': [circ(63.5, 16, 10), taper(59.2, 20.9, 8.6, 49.2, 32.1, 6.2)],
+        'white': ['M54.24 12.61 L54.03 13.23 L53.86 13.88 L53.73 14.56 L53.64 15.29 L53.61 16.06 L53.64 16.89 L53.75 17.79 L53.98 18.79 L61.88 25.79 L62.9 25.89 L63.81 25.89 L64.64 25.82 L65.4 25.7 L66.11 25.53 L66.78 25.31 L67.4 25.06 L67.99 24.78Z'],
     }),
-    'rockstar': ('#B58CFF', {'ink': ['M58 6 L33 29 L47 29 L40.5 45 L67.5 20 L53.5 20Z']}),
+    # In the air over it and broad: stuck into the ball, its point was a spike in a socket.
+    'rockstar': ('#B58CFF', {'ink': ['M59.5 2.5 L33.5 22.5 L47 22.5 L40.5 34.5 L66.5 14.5 L53 14.5Z']}),
     'chef': ('#F2EEE3', {
         'ink': [circ(38.6, 21.6, 9.7), circ(50, 17.2, 11), circ(61.4, 21.6, 9.7), rrect(35, 24.3, 30, 17.6, 2.6)],
         'white': [rrect(37.2, 34.2, 25.6, 5, 2.5)],
     }),
     'wizard': ('#8FA8FF', {
-        'ink': ['M31 41 L48.5 9 Q52 4.5 57 8.5 L53.5 15 L69 41Z', 'M16 41 Q50 30 84 41 Q86.5 46 81.5 46.5 Q50 37 18.5 46.5 Q13.5 46 16 41Z'],
+        # Its point flops over; its brim is round at the ends.
+        'ink': ['M31 41 Q41.5 27 46 12 Q48.5 4.5 55.5 6 Q61.5 7.5 64 14 Q59 11.5 55.5 15.5 Q60.5 29 69 41Z',
+                ribbon(curve([(16.5, 43.8), (50, 32.4), (83.5, 43.8)]), 6)],
         'white': [star4(50, 28, 7)],
     }),
     'cowboy': ('#F0B878', {
@@ -261,15 +411,18 @@ LOOKS = {
         'white': ['M34.6 26.5 L65.4 26.5 L64.9 32.6 L35.1 32.6Z'],
     }),
     'ninja': ('#FF5A4F', {
-        # Tied on the side that is in sight, its ends blown up and back.
+        # A band tied round the ball, clear of its face, running off with it: knotted on the shoulder that is
+        # in sight, the knot and its two ends behind the ball and blown one way.
         'fitted': True,
-        'white': ['M32 44.5 Q50 36 68 44.5 L73 50 Q50 41 27 50Z'],
-        'ink': [circ(26, 47, 4.4), 'M24.5 44.5 Q18.5 41 16 34 L12 36.5 Q14.5 45 21.5 49.5Z', 'M26 44 Q21 37.5 22.5 29 L27 30.5 Q26.5 37 30 41.5Z'],
+        'behind': [ribbon(curve([on_ball(-33, 1.4), (29, 39.5), (26, 29.5), (18.5, 30.5)]), 3.8, 5.0, caps=(True, False)),
+                   ribbon(curve([on_ball(-33, 1.4), (29.5, 44), (25.5, 38.5), (20.5, 41)]), 3.8, 4.6, caps=(True, False)),
+                   circ(*on_ball(-33, 1.4), 4.2)],
+        'white': [ribbon([on_ball(a, -min(5.5, 3.4 + 0.14 * (a + 27))) for a in range(-27, 127, 3)], 4.6)],
     }),
     'angel': ('#BFD9FF', {'ink': [ell_ring(50, 21, 21, 8, 5.6)]}),
     'graduate': ('#BFE8D2', {
-        'ink': ['M31.5 30 L31.5 41 Q50 47 68.5 41 L68.5 30 L50 38Z', 'M50 9 L86 24 L50 39 L14 24Z', bar(77.5, 25.5, 77.5, 40, 3.6), rrect(74.3, 38.5, 6.4, 9, 2)],
-        'white': [circ(50, 24, 3.6), bar(50, 24, 76, 24.8, 3.6)],
+        'ink': ['M31.5 30 L31.5 41 Q50 47 68.5 41 L68.5 30 L50 38Z', 'M50 9 L86 24 L50 39 L14 24Z', bar(77.5, 25.5, 77.5, 34.5, 3.6), rrect(74.3, 32.5, 6.4, 9, 2)],
+        'white': [circ(50, 24, 3.6), bar(50, 24, 75.2, 24.8, 4.6)],
     }),
     'flower': ('#FFB86B', {
         'ink': [circ(x, y, 6.4) for x, y in PETALS] + [circ(59, 29, 6)],
@@ -278,6 +431,36 @@ LOOKS = {
     'party': ('#D4FF4F', {
         'ink': ['M31 42 L48.5 14 Q50 11.5 51.5 14 L69 42 Q50 36.5 31 42Z', circ(50, 11, 5.5)],
         'white': ['M43.9 22 L56.1 22 L59.3 27 L40.7 27Z', 'M37.8 31.5 L62.2 31.5 L65.5 36.5 L34.5 36.5Z'],
+    }),
+    # More to pick among, each worn or grown and none in the air.
+    # A gourd of mate, whole, over its crown: the gourd, the metal round its mouth in white, cut by the
+    # mouth's own edges, and the straw, straight.
+    'mate': ('#9BE564', {
+        'ink': ['M36 15 L58 15 L58.8 23 C63 25.2 64 29 64 32.5 C64 40.5 56.5 46 47 46 C37.5 46 30 40.5 30 32.5 C30 29 31 25.2 35.2 23Z',
+                bar(47, 16.5, 62.5, 5.5, 4.2)],
+        'white': [poly([(35.74, 17.6), (58.26, 17.6), (58.8, 23), (35.2, 23)])],
+    }),
+    # A bottle that has all but fallen over on its crown, and what rises from it, larger as it rises.
+    'bottle': ('#BFE8D2', {
+        'ink': [turned('M42.1 43.2 Q39.5 43.2 39.5 40.6 L39.5 25.5 Q39.5 20.9 44 19.4 L44 11.2 L51 11.2 L51 19.4 Q55.5 20.9 55.5 25.5 L55.5 40.6 Q55.5 43.2 52.9 43.2Z', 47.5, 43.2, -20),
+                turned(poly([(42.6, 9.2), (52.4, 9.2), (52.4, 13.2), (42.6, 13.2)]), 47.5, 43.2, -20),
+                circ(41.4, 4.5, 2.8), circ(50.6, 3.8, 3.7)],
+        'white': [turned(poly([(42.1, 27), (52.9, 27), (52.9, 35.7), (42.1, 35.7)]), 47.5, 43.2, -20)],
+    }),
+    # A fin: behind the ball, and so part of its outline.
+    'shark': ('#8FA8FF', {'behind': ['M38 48 Q42 26 64 12 Q57 28 65.5 46Z']}),
+    # A crest of spikes from brow to nape, made to the ball.
+    'punk': ('#FF7A9C', {'fitted': True, 'behind': [poly(CREST)]}),
+    # A helmet with its two horns and the band round its edge.
+    'viking': ('#D6C68A', {
+        'ink': ['M30 45 Q28 20.5 50 20.5 Q72 20.5 70 45 Q50 37.5 30 45Z'] + both('M34 37 Q14 38 21.5 15 Q23.5 27 35 28Z'),
+        'white': [ribbon(curve([(36.5, 38.2), (50, 33.4), (63.5, 38.2)]), 4.6)],
+    }),
+    # Two eyes on top of it, large and wide apart, looking where its face looks.
+    'frog': ('#9BE564', {
+        'behind': [circ(34.5, 35, 12.5), circ(65.5, 35, 12.5)],
+        'white': [circ(34.5, 33.6, 7.6), circ(65.5, 33.6, 7.6)],
+        'dot': [circ(30.5, 35.9, 4), circ(61.5, 35.9, 4)],
     }),
 }
 

@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.geometry.Rect
 import kotlin.math.sin
 import kotlin.math.cos
 import kotlin.math.PI
@@ -77,20 +79,37 @@ private fun String.toPath(): Path = PathParser().parsePathString(this).toPath()
  * @param rim the colour of the ground, to draw the rim round what is worn in; null to cut the
  * rim through whatever has been drawn on this layer, where the ground is under the layer.
  */
-internal fun DrawScope.drawFigure(look: CharacterLook, ink: Color, centre: Offset, radius: Float, rim: Color?) {
-    val paths = lookPaths(look)
+internal fun DrawScope.drawFigure(look: CharacterLook, ink: Color, centre: Offset, radius: Float, rim: Color?) =
+    drawFigure(listOf(Worn(lookPaths(look))), ink, centre, radius, rim)
+
+/**
+ * Something the figure wears, as it is drawn at one moment.
+ *
+ * @property grown how large it is beside its own size: under one while it arrives or goes.
+ * @property shown how much of it shows, from none to all of it.
+ */
+private class Worn(val paths: LookPaths, val grown: Float = 1f, val shown: Float = 1f)
+
+/** The figure wearing each of [worn], one over the other: more than one only while one gives way to the next. */
+private fun DrawScope.drawFigure(worn: List<Worn>, ink: Color, centre: Offset, radius: Float, rim: Color?) {
     val unit = radius / LOOK_BALL_RADIUS
-    // What is worn is a size down beside the board it is drawn on, about the crown it sits on.
-    val worn = if (paths.fitted) 1f else FIGURE_WORN
     val crown = Offset(LOOK_BALL_X, LOOK_BALL_Y - LOOK_BALL_RADIUS)
     val middle = Offset(LOOK_BALL_X, LOOK_BALL_Y)
+    // What is worn is a size down beside the board it is drawn on, about the crown it sits on.
+    fun Worn.size() = (if (paths.fitted) 1f else FIGURE_WORN) * grown
+    // What is made to the ball's own measure is round the ball, and grows about its middle.
+    fun Worn.pivot() = if (paths.fitted) middle else crown
     withTransform({
         translate(centre.x, centre.y)
         rotate(FIGURE_TILT, pivot = Offset.Zero)
         scale(unit, unit, pivot = Offset.Zero)
         translate(-LOOK_BALL_X, -LOOK_BALL_Y)
     }) {
-        withTransform({ scale(worn, worn, pivot = crown) }) { paths.behind.forEach { drawPath(it, ink) } }
+        worn.forEach { one ->
+            if (one.paths.behind.isNotEmpty()) {
+                faded(one.shown) { withTransform({ scale(one.size(), one.size(), pivot = one.pivot()) }) { one.paths.behind.forEach { drawPath(it, ink) } } }
+            }
+        }
         drawCircle(ink, radius = LOOK_BALL_RADIUS, center = middle)
         val face = Size(LOOK_BALL_RADIUS * FACE_WIDE * 2, LOOK_BALL_RADIUS * FACE_TALL * 2)
         drawOval(
@@ -102,15 +121,36 @@ internal fun DrawScope.drawFigure(look: CharacterLook, ink: Color, centre: Offse
             size = face
         )
         drawPath(eight, ink)
-        withTransform({ scale(worn, worn, pivot = crown) }) {
-            // Every rim before any of the ink: a shape's rim never cuts into the shape beside it.
-            val round = Stroke(width = LOOK_RIM, join = StrokeJoin.Round)
-            paths.ink.forEach { shape ->
-                if (rim == null) drawPath(shape, Color.Black, style = round, blendMode = BlendMode.Clear) else drawPath(shape, rim, style = round)
+        worn.forEach { one ->
+            faded(one.shown) {
+                withTransform({ scale(one.size(), one.size(), pivot = one.pivot()) }) {
+                    // Every rim before any of the ink: a shape's rim never cuts into the shape beside it.
+                    val round = Stroke(width = LOOK_RIM, join = StrokeJoin.Round)
+                    one.paths.ink.forEach { shape ->
+                        if (rim == null) drawPath(shape, Color.Black, style = round, blendMode = BlendMode.Clear) else drawPath(shape, rim, style = round)
+                    }
+                    one.paths.ink.forEach { drawPath(it, ink) }
+                    one.paths.white.forEach { drawPath(it, Color.White) }
+                    one.paths.dot.forEach { drawPath(it, ink) }
+                }
             }
-            paths.ink.forEach { drawPath(it, ink) }
-            paths.white.forEach { drawPath(it, Color.White) }
-            paths.dot.forEach { drawPath(it, ink) }
+        }
+    }
+}
+
+/**
+ * What [draw] draws, as one thing that shows by [shown]: drawn apart and then laid down, so that
+ * shapes lying over each other fade as the one thing they make and not each by itself.
+ */
+private inline fun DrawScope.faded(shown: Float, draw: DrawScope.() -> Unit) {
+    when {
+        shown <= 0f -> Unit
+        shown >= 1f -> draw()
+        else -> {
+            val canvas = drawContext.canvas
+            canvas.saveLayer(Rect(-LOOK_BOX, -LOOK_BOX, LOOK_BOX * 2, LOOK_BOX * 2), Paint().apply { alpha = shown })
+            draw()
+            canvas.restore()
         }
     }
 }
@@ -127,6 +167,50 @@ internal fun DrawScope.drawFace(look: CharacterLook, ink: Color, rim: Color? = n
     val unit = size.minDimension / LOOK_BOX
     drawFigure(look = look, ink = ink, centre = Offset(FIGURE_X * unit, FIGURE_Y * unit), radius = FIGURE_RADIUS * unit, rim = rim)
 }
+
+/**
+ * The face while what it wears is changed: the ball stays where it is, what it wore draws in
+ * and goes, and what it wears now grows onto the crown, a little past its size and back.
+ *
+ * @param arrived how far the change has come, from 0 to 1, and past 1 for a moment where it springs.
+ * @param rim the colour of the ground the square is drawn on: there is no cutting through to it here.
+ */
+internal fun DrawScope.drawFaceChanging(left: CharacterLook, worn: CharacterLook, arrived: Float, ink: Color, rim: Color) {
+    val unit = size.minDimension / LOOK_BOX
+    // What goes is gone at once and what comes begins as it has gone: at no moment are both in sight.
+    val going = (arrived / CHANGE_GONE_BY).coerceIn(0f, 1f)
+    val coming = ((arrived - CHANGE_COMES_AT) / (CHANGE_HERE_BY - CHANGE_COMES_AT)).coerceIn(0f, 1f)
+    val leaving = lookPaths(left)
+    val arriving = lookPaths(worn)
+    drawFigure(
+        worn = listOf(
+            // What is round the ball goes outwards from it and comes on from outside: drawn in, it would cross the face.
+            Worn(leaving, grown = if (leaving.fitted) 1f + CHANGE_DRAWN_IN * going else 1f - CHANGE_DRAWN_IN * going, shown = 1f - going),
+            Worn(
+                paths = arriving,
+                grown = if (arriving.fitted) 1f + CHANGE_FITTED_FROM * (1f - arrived.coerceAtMost(1f)) else CHANGE_FROM + (1f - CHANGE_FROM) * arrived,
+                shown = coming
+            )
+        ),
+        ink = ink,
+        centre = Offset(FIGURE_X * unit, FIGURE_Y * unit),
+        radius = FIGURE_RADIUS * unit,
+        rim = rim
+    )
+}
+
+/** When, of the way from one look to the next, the old one is gone, the new one begins to show and is all there. */
+private const val CHANGE_GONE_BY = 0.2f
+private const val CHANGE_COMES_AT = 0.2f
+private const val CHANGE_HERE_BY = 0.45f
+
+/**
+ * How far what goes draws in, from what size what comes grows, so that it is seen to land and
+ * spring once past its size, and how far outside its place what is round the ball comes on from.
+ */
+private const val CHANGE_DRAWN_IN = 0.1f
+private const val CHANGE_FROM = 0.5f
+private const val CHANGE_FITTED_FROM = 0.12f
 
 /**
  * Where the figure of [look] is: points along the edge of the ball and of all it wears, each as
@@ -198,6 +282,12 @@ internal fun CharacterLook.labelRes(): Int = when (this) {
     CharacterLook.GRADUATE -> R.string.look_graduate
     CharacterLook.FLOWER -> R.string.look_flower
     CharacterLook.PARTY -> R.string.look_party
+    CharacterLook.MATE -> R.string.look_mate
+    CharacterLook.BOTTLE -> R.string.look_bottle
+    CharacterLook.SHARK -> R.string.look_shark
+    CharacterLook.PUNK -> R.string.look_punk
+    CharacterLook.VIKING -> R.string.look_viking
+    CharacterLook.FROG -> R.string.look_frog
 }
 
 /** The box a look is drawn in, and the ball in it. */

@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,9 +38,19 @@ import java.net.URL
  * screen read out: the name beside it does.
  *
  * @param small where it stands beside a line of text rather than over a name.
+ * @param told whether it is one face among many and has to be told from the others at a glance:
+ * without a picture it is then a letter on a colour of its own, the same every time for the
+ * same name, and not on the grey every account of one's own has.
  */
 @Composable
-internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: Modifier = Modifier, small: Boolean = false) {
+internal fun AccountAvatar(
+    name: String,
+    photoUrl: String?,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    small: Boolean = false,
+    told: Boolean = false
+) {
     val cache = LocalContext.current.applicationContext.cacheDir
     val pixels = with(LocalDensity.current) { size.roundToPx() }
     // Shown before, it is shown at once: no letter in its place for a moment each time the row comes back.
@@ -48,7 +61,7 @@ internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: 
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
+            .background(if (told) makerColor(name) else MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
             .clearAndSetSemantics {},
         contentAlignment = Alignment.Center
     ) {
@@ -59,14 +72,38 @@ internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: 
             Text(
                 text = name.trim().take(1).uppercase(),
                 // Beside a line of text it is a letter of that line's size.
-                style = if (small) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                // And of that line's weight on the page: it is a mark beside a name, not the name.
-                color = if (small) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                // On the corner of another face it is as small as still reads; beside a line of text
+                // it is a letter of that line's size.
+                style = when {
+                    size < TINY_BELOW -> MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 9.sp)
+                    small -> MaterialTheme.typography.labelMedium
+                    else -> MaterialTheme.typography.titleMedium
+                },
+                fontWeight = if (told) FontWeight.Bold else FontWeight.SemiBold,
+                color = when {
+                    told -> Color.White
+                    // Of that line's weight on the page: it is a mark beside a name, not the name.
+                    small -> MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
         }
     }
 }
+
+/**
+ * The colour a maker with no picture is told by: one of a few quiet ones, always the same for
+ * the same name. Deep enough for a white letter, and none of them a colour a character has.
+ */
+internal fun makerColor(name: String): Color = MAKER_COLORS[name.hashCode().mod(MAKER_COLORS.size)]
+
+private val MAKER_COLORS = listOf(
+    Color(0xFF5B6B7A), Color(0xFF6B5B8C), Color(0xFF3F7A6B), Color(0xFFB5562B),
+    Color(0xFF4A6FA5), Color(0xFFA8485E), Color(0xFF55773F), Color(0xFF8A6A2F)
+)
+
+/** Under this size a face is a mark on the corner of another. */
+private val TINY_BELOW = 20.dp
 
 /**
  * The pictures of accounts: fetched once, at the size they are shown, and kept among what the

@@ -330,5 +330,11 @@
     <string name="look_graduate">Graduate</string>
     <string name="look_flower">Flower</string>
     <string name="look_party">Party</string>
+    <string name="look_mate">Mate</string>
+    <string name="look_bottle">Bottle</string>
+    <string name="look_shark">Shark</string>
+    <string name="look_punk">Punk</string>
+    <string name="look_viking">Viking</string>
+    <string name="look_frog">Frog</string>
     <string name="character_how">How it answers</string>
 </resources>

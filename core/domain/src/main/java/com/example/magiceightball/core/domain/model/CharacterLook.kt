@@ -40,7 +40,13 @@ enum class CharacterLook {
     ANGEL,
     GRADUATE,
     FLOWER,
-    PARTY;
+    PARTY,
+    MATE,
+    BOTTLE,
+    SHARK,
+    PUNK,
+    VIKING,
+    FROG;
 
     companion object {
         /** The look kept under [name], in whatever case; [NEUTRAL] for none and for one not known here. */

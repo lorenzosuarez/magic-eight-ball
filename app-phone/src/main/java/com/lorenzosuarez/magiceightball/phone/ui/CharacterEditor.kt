@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.ui.graphics.graphicsLayer
@@ -12,16 +16,10 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -44,8 +42,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -58,13 +54,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,7 +82,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.magiceightball.core.common.BrandPalette
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -471,16 +464,22 @@ private fun CharacterPreview(draft: CharacterDraft) {
                 color = ShareInk
             )
         }
-        // The figure as the card and every face show it, coming in from the card's lower corner. What
-        // was picked comes over what was worn, which only then goes: fading both at once would let
-        // the card show through the ball between the two.
-        AnimatedContent(
-            targetState = draft.emblem,
-            modifier = Modifier.align(Alignment.BottomEnd),
-            transitionSpec = { fadeIn(tween(CHOICE_MS / 2)) togetherWith fadeOut(tween(CHOICE_MS / 2, delayMillis = CHOICE_MS / 2)) },
-            label = "preview emblem"
-        ) { worn ->
-            Canvas(Modifier.size(PREVIEW_FIGURE).clearAndSetSemantics {}) { drawFace(worn, ShareInk, rim = ground) }
+        // The figure as the card and every face show it, coming in from the card's lower corner.
+        // A pick changes what the ball wears and nothing else: the ball stays where it is while
+        // what it wore draws in and goes and what was picked grows onto its crown, with a little spring.
+        var worn by remember { mutableStateOf(draft.emblem) }
+        var left by remember { mutableStateOf(draft.emblem) }
+        val arrived = remember { Animatable(1f) }
+        LaunchedEffect(draft.emblem) {
+            if (draft.emblem != worn) {
+                left = worn
+                worn = draft.emblem
+                arrived.snapTo(0f)
+                arrived.animateTo(1f, spring(dampingRatio = CHANGE_DAMPING, stiffness = CHANGE_STIFFNESS))
+            }
+        }
+        Canvas(Modifier.align(Alignment.BottomEnd).size(PREVIEW_FIGURE).clearAndSetSemantics {}) {
+            drawFaceChanging(left = left, worn = worn, arrived = arrived.value, ink = ShareInk, rim = ground)
         }
     }
 }
@@ -632,6 +631,10 @@ private const val DESCRIPTION_MIN_LINES = 3
 private const val DESCRIPTION_MAX_LINES = 5
 /** The square the figure is drawn in on the card that shows a character before it is saved: as tall as the card. */
 private val PREVIEW_FIGURE = 112.dp
+
+/** How what the ball wears on that card settles when it is changed: quick, and once past its place and back. */
+private const val CHANGE_DAMPING = 0.5f
+private const val CHANGE_STIFFNESS = 200f
 private const val UNNAMED_ALPHA = 0.5f
 
 /** Where a row of picks starts, as the cards and the fields do. */
@@ -658,6 +661,9 @@ private val COLOURS = CustomCharacter.LOOKS - Magic8BallPersonality.PHILOSOPHER
 internal val EMBLEMS = listOf(
     CharacterLook.NEUTRAL,
     CharacterLook.CAT,
+    CharacterLook.FROG,
+    CharacterLook.MATE,
+    CharacterLook.PUNK,
     CharacterLook.ROCKSTAR,
     CharacterLook.SINGER,
     CharacterLook.DRAMA,
@@ -666,6 +672,9 @@ internal val EMBLEMS = listOf(
     CharacterLook.ZOOMER,
     CharacterLook.CHEF,
     CharacterLook.COWBOY,
+    CharacterLook.VIKING,
+    CharacterLook.SHARK,
+    CharacterLook.BOTTLE,
     CharacterLook.NINJA,
     CharacterLook.DETECTIVE,
     CharacterLook.MAGICIAN,

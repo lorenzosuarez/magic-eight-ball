@@ -322,5 +322,11 @@
     <string name="look_graduate">Graduado</string>
     <string name="look_flower">Flor</string>
     <string name="look_party">Fiesta</string>
+    <string name="look_mate">Mate</string>
+    <string name="look_bottle">Botella</string>
+    <string name="look_shark">Tiburón</string>
+    <string name="look_punk">Punk</string>
+    <string name="look_viking">Vikingo</string>
+    <string name="look_frog">Rana</string>
     <string name="character_how">Cómo responde</string>
 </resources>
