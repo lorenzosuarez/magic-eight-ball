@@ -427,7 +427,7 @@ fun EightBallScreen(
                         // The system's own page for this app's notifications: it works whether or
                         // not the permission can still be asked for.
                         onAllowNotifications = {
-                            context.startActivity(
+                            context.open(
                                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                                     .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -982,6 +982,7 @@ private fun Stage(
                     state = state,
                     voiceLevel = voiceLevel,
                     still = still,
+                    answerSmall = answerSmall,
                     onAsk = onAsk,
                     onHoldStart = onHoldStart,
                     onHoldEnd = onHoldEnd,
@@ -1064,7 +1065,11 @@ private fun Stage(
                 // The room is the ball's with an answer on it. Without one the ball is smaller
                 // than its room, and what is written over it comes down to it.
                 val slack = if (state.phase is BallPhase.Answered) 0f else (seen - ball.height * fit) / 2f
-                title.place((width - title.width) / 2, (top + slack - breath - title.height).roundToInt())
+                // While it listens the ball has rings around it: what is written over it stands clear of
+                // them as they are at rest, and never over what is at the top of the page.
+                val rings = if (state.phase is BallPhase.Listening) ball.height * fit / 2f * RING_REST_REACH else 0f
+                val over = (top + slack - breath - rings - title.height).coerceAtLeast(status.height.toFloat())
+                title.place((width - title.width) / 2, over.roundToInt())
                 ball.placeWithLayer(
                     x = (width - ball.width) / 2,
                     y = (top + seen / 2f - ball.height / 2f).roundToInt()
@@ -1090,6 +1095,7 @@ private fun Ball(
     state: EightBallUiState,
     voiceLevel: () -> Float,
     still: Boolean,
+    answerSmall: Boolean,
     onAsk: () -> Unit,
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
@@ -1146,7 +1152,8 @@ private fun Ball(
             is BallPhase.Thinking -> BallMode.Thinking
             is BallPhase.Answered -> BallMode.Answered
         },
-        answer = answer,
+        // Too small to be read on the die, it is written under the ball and not on it: specks say nothing.
+        answer = if (answerSmall) answer?.let { "" } else answer,
         pressed = pressed,
         voiceLevel = voiceLevel,
         still = still,
@@ -1666,11 +1673,18 @@ private fun Context.hasMicrophonePermission(): Boolean =
 private fun Context.mayShowMicrophoneDialog(): Boolean =
     findActivity()?.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) ?: true
 
-private fun Context.openAppSettings() {
-    startActivity(
-        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    )
+private fun Context.openAppSettings() = open(
+    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+)
+
+/** One of the system's own pages. A device that has no such page opens nothing, and nothing breaks. */
+private fun Context.open(page: Intent) {
+    try {
+        startActivity(page)
+    } catch (_: ActivityNotFoundException) {
+        // Nothing to open it with.
+    }
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {

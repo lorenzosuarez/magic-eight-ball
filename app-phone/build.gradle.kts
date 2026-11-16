@@ -19,6 +19,9 @@ if (file("google-services.json").isFile) {
 // AdMob identifiers come from the git-ignored root local.properties (ADMOB_APP_ID and
 // ADMOB_INTERSTITIAL_ID). Without them the build uses Google's public test identifiers, which
 // only ever serve test ads: a build meant for the store needs the real ones.
+/** The account every one of Google's public test identifiers belongs to. */
+val ADMOB_TEST_PUBLISHER = "ca-app-pub-3940256099942544"
+
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.isFile) file.inputStream().use(::load)
@@ -32,6 +35,23 @@ val admobInterstitialId: String =
 // such ad at all: see AdMobAdsController.
 val admobRewardedId: String =
     localProperties.getProperty("ADMOB_REWARDED_ID", "ca-app-pub-3940256099942544/5224354917").trim()
+
+// A bundle or an APK for the store is not packaged from the stand-ins above: it would show Google's
+// test ads, or know nothing of the Firebase project, and nothing else would say so.
+val storeInputsMissing: List<String> = listOfNotNull(
+    "app-phone/google-services.json".takeUnless { file("google-services.json").isFile },
+    "ADMOB_APP_ID in local.properties".takeIf { admobAppId.startsWith(ADMOB_TEST_PUBLISHER) },
+    "ADMOB_INTERSTITIAL_ID in local.properties".takeIf { admobInterstitialId.startsWith(ADMOB_TEST_PUBLISHER) }
+)
+val checkStoreInputs = tasks.register("checkStoreInputs") {
+    val missing = storeInputsMissing
+    doLast {
+        if (missing.isNotEmpty()) {
+            throw GradleException("A release of :app-phone needs " + missing.joinToString(", ") + ": without them it is not a build for the store.")
+        }
+    }
+}
+tasks.matching { it.name == "packageRelease" || it.name == "packageReleaseBundle" }.configureEach { dependsOn(checkStoreInputs) }
 
 // Same upload key as :app-wear; see the script for where the credentials are read from.
 apply(from = rootProject.file("gradle/release-signing.gradle"))

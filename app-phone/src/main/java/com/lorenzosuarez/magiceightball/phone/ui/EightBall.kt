@@ -744,6 +744,9 @@ internal const val ANSWER_GROWTH = 0.3f
 /** Rings while listening: how far each one stands from the next, relative to the ball's radius. */
 private const val RING_COUNT = 3
 private const val RING_STEP = 0.16f
+
+/** How far past the ball its rings reach while nobody speaks, in ball radii. */
+internal const val RING_REST_REACH = RING_STEP * RING_COUNT
 private const val RING_REST = 0.6f
 private const val RING_BREATH_LAG = 0.16f
 private const val RING_VOICE_REACH = 0.4f

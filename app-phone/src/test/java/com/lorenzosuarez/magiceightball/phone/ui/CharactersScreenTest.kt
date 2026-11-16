@@ -127,7 +127,7 @@ class CharactersScreenTest {
 
         compose.onNodeWithText("Dog").performClick()
         // Said as what is so: there is nothing to ask for, and no button that would do nothing.
-        compose.onNodeWithText("Answering now").assertIsDisplayed()
+        compose.onNodeWithText("In use").assertIsDisplayed()
         assertEquals(0, count("Use this character"))
     }
 

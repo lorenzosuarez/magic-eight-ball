@@ -19,6 +19,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lorenzosuarez.magiceightball.phone.account.Shop
 import com.lorenzosuarez.magiceightball.phone.ads.AdsController
 import com.lorenzosuarez.magiceightball.phone.ui.EightBallScreen
 import com.lorenzosuarez.magiceightball.phone.ui.MagicEightBallPhoneTheme
@@ -32,6 +33,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var ads: AdsController
+
+    @Inject
+    lateinit var shop: Shop
 
     // Portrait is a product decision for phones only: R.bool.portrait_only is false from 600dp
     // of width up, so tablets and foldables keep rotating freely, which is what the check asks for.
@@ -80,6 +84,11 @@ class MainActivity : ComponentActivity() {
         ads.start(this)
         holdFirstFrameUntilSettingsAreRead()
         showDailyVerdictFrom(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        shop.opened()
     }
 
     override fun onNewIntent(intent: Intent) {

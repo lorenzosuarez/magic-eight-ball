@@ -221,8 +221,7 @@ internal fun SettingsContent(
                             // What stands in its way, when something does; a row that leads somewhere says nothing else.
                             supporting = aiNote,
                             onClick = { nav.section = OptionsSection.ANSWERS },
-                            icon = R.drawable.ic_sparkles,
-                            alert = aiSpent
+                            icon = R.drawable.ic_sparkles
                         )
                         RowDivider()
                         ActionRow(
@@ -285,20 +284,6 @@ internal fun SettingsContent(
                             )
                             RowDivider()
                         }
-                        // The way to Google Play's own page for a subscription, for as long as one is
-                        // sold and whatever the app knows of it: one on hold or paused, one whose
-                        // payment is not confirmed yet, one held by another account of the app or by
-                        // an account since deleted is still being paid for, and is cancelled there.
-                        // Whoever is known to subscribe has the way on the tile over these groups.
-                        if (state.config.premiumEnabled && !state.subscribed) {
-                            ActionRow(
-                                title = stringResource(R.string.account_subscription),
-                                supporting = null,
-                                onClick = { context.manageSubscription() },
-                                icon = R.drawable.ic_crown
-                            )
-                            RowDivider()
-                        }
                         ActionRow(
                             title = stringResource(R.string.settings_privacy_policy),
                             supporting = null,
@@ -346,8 +331,7 @@ internal fun SettingsContent(
                         note = aiNote,
                         checked = state.usesAiAnswers && !classic,
                         enabled = state.aiAnswersAvailable && !classic,
-                        onCheckedChange = onAiAnswersChange,
-                        alert = aiSpent
+                        onCheckedChange = onAiAnswersChange
                     )
                     // The day's AI answers are used up and there is an ad to watch for more: the user's
                     // choice. Not offered to whoever has paid to see no ads.
