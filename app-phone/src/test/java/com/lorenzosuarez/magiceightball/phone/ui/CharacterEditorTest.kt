@@ -41,6 +41,7 @@ import com.example.magiceightball.core.domain.model.UserSettings
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
+import com.lorenzosuarez.magiceightball.phone.account.BillingPeriod
 import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.CharacterSave
 import com.lorenzosuarez.magiceightball.phone.account.Offer
@@ -239,7 +240,7 @@ class CharacterEditorTest {
             profile = profile,
             characters = characters,
             premium = premium,
-            offer = price?.let(::Offer)
+            offer = price?.let { Offer(it, BillingPeriod(1, BillingPeriod.Unit.MONTH)) }
         )
         compose.setContent {
             MagicEightBallPhoneTheme {
@@ -411,9 +412,8 @@ class CharacterEditorTest {
         // Said before the button: what saying no costs, which is nothing.
         compose.onNodeWithText("Los personajes de la\u00A0app siguen siendo gratis.").assertIsDisplayed()
         // The store has not named its price: the button is there, buys nothing, and says why.
-        compose.onNodeWithText("Obtener Premium").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithText("Suscribirme").assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithText("Buscando el precio en Google\u00A0Play…").assertIsDisplayed()
-        compose.onNodeWithText("Un solo pago, sin suscripción.\nQueda en tu cuenta de la\u00A0app.").assertIsDisplayed()
         assertEquals(0, count("Nuevo personaje"))
 
         compose.onNodeWithText("Ahora no").performClick()
@@ -437,6 +437,11 @@ class CharacterEditorTest {
         }
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
 
+        // With the price, what the store asks for it and how: each month, until it is cancelled, and where that is done.
+        compose.onNodeWithText(
+            "2,99\u00A0€ al mes, cobrado por Google\u00A0Play. Se renueva automáticamente hasta que canceles.\n" +
+                "Cancela cuando quieras en Google\u00A0Play o desde Cuenta, en\u00A0Opciones."
+        ).assertIsDisplayed()
         compose.onNodeWithText(BUY).assertIsEnabled().performClick()
         compose.waitForIdle()
         assertEquals(1, asked)
@@ -668,11 +673,11 @@ class CharacterEditorTest {
         compose.waitForIdle()
 
         compose.onNodeWithText(
-            "Premium ya se compró con esta cuenta de Google\u00A0Play, en otra cuenta de la app. " +
+            "El Premium de esta cuenta de Google\u00A0Play lo tiene otra cuenta de la app. " +
                 "No se te cobró de nuevo. Cierra sesión y entra con\u00A0esa"
         ).assertIsDisplayed()
         assertEquals(0, count(BUY))
-        assertEquals(0, count("Obtener Premium"))
+        assertEquals(0, count("Suscribirme"))
 
         compose.onNodeWithText("Cerrar").performClick()
         compose.waitForIdle()
@@ -758,6 +763,6 @@ class CharacterEditorTest {
         const val OFFER = "Sin anuncios y más respuestas con IA"
 
         /** The button once the store has named its price: the price never breaks off its line. */
-        const val BUY = "Obtener Premium por\u00A02,99\u00A0€"
+        const val BUY = "Suscribirme por 2,99\u00A0€ al mes"
     }
 }

@@ -21,6 +21,8 @@ import androidx.compose.foundation.background
 import com.lorenzosuarez.magiceightball.phone.config.AppConfig
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.Bought
+import com.lorenzosuarez.magiceightball.phone.account.MONTHLY
+import com.lorenzosuarez.magiceightball.phone.account.Offer
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import java.time.LocalDate
@@ -1357,9 +1359,10 @@ class EightBallScreenshotTest {
                         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                         color = MaterialTheme.colorScheme.sheetGround
                     ) {
+                        val price = Offer("0,99 €", MONTHLY).worded()
                         PremiumContent(
-                            price = "0,99 €",
-                            terms = stringResource(R.string.premium_terms),
+                            price = price,
+                            terms = stringResource(R.string.premium_terms, price),
                             wanted = PremiumFor.EVERYTHING,
                             onUpgrade = {},
                             onNotNow = {},
@@ -1385,9 +1388,10 @@ class EightBallScreenshotTest {
             MagicEightBallPhoneTheme(dark = dark) {
                 ProvideAppLanguage(language) {
                     Surface(color = MaterialTheme.colorScheme.sheetGround) {
+                        val worded = price?.let { Offer(it, MONTHLY).worded() }
                         PremiumContent(
-                            price = price,
-                            terms = stringResource(R.string.premium_terms),
+                            price = worded,
+                            terms = worded?.let { stringResource(R.string.premium_terms, it) },
                             ended = ended,
                             busy = busy,
                             wanted = wanted,

@@ -3,6 +3,7 @@ package com.lorenzosuarez.magiceightball.phone.ui
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -71,6 +72,7 @@ import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
+import com.lorenzosuarez.magiceightball.phone.account.subscriptionPage
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -94,6 +96,7 @@ internal fun AccountSection(
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
     onOpenPrivacyPolicy: () -> Unit = {},
     premium: Boolean = false,
+    subscribed: Boolean = false,
     loading: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
@@ -187,6 +190,8 @@ internal fun AccountSection(
             profile = profile,
             profileLoading = loading && patient,
             premium = premium,
+            // Whoever pays for a subscription is given the way to where it is cancelled.
+            onManageSubscription = if (subscribed) ({ host.manageSubscription() }) else null,
             failed = failure != null,
             busy = busy,
             // One sheet at a time: the account's gives way to the profile's.
@@ -237,6 +242,15 @@ private fun Context.addGoogleAccount() {
         startActivity(intent)
     } catch (_: ActivityNotFoundException) {
         // A device with no such page has nothing to open; the line above still says what is missing.
+    }
+}
+
+/** Google Play's own page for the subscription, where it is cancelled or its payment changed. */
+private fun Context.manageSubscription() {
+    try {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(subscriptionPage(packageName))))
+    } catch (_: ActivityNotFoundException) {
+        // A device with nothing to open it has no Google Play to have subscribed through.
     }
 }
 
@@ -303,6 +317,7 @@ private fun AccountSheet(
     profile: Profile?,
     profileLoading: Boolean,
     premium: Boolean,
+    onManageSubscription: (() -> Unit)?,
     failed: Boolean,
     busy: Boolean,
     onEditProfile: () -> Unit,
@@ -335,6 +350,7 @@ private fun AccountSheet(
                 profile = profile,
                 profileLoading = profileLoading,
                 premium = premium,
+                onManageSubscription = onManageSubscription,
                 failed = failed,
                 busy = busy,
                 onEditProfile = { scope.launch { sheetState.hide() }.invokeOnCompletion { onEditProfile() } },
@@ -347,7 +363,10 @@ private fun AccountSheet(
     if (confirmingDelete) {
         // The dialog is a window of its own too: its texts are read here, in the app's language.
         val title = stringResource(R.string.account_delete_title)
-        val text = stringResource(R.string.account_delete_text)
+        // Deleting the account ends no subscription: whoever pays for one is told so first.
+        val text = stringResource(
+            if (onManageSubscription != null) R.string.account_delete_text_subscribed else R.string.account_delete_text
+        )
         val confirm = stringResource(R.string.account_delete)
         val cancel = stringResource(R.string.action_cancel)
         AlertDialog(
@@ -376,6 +395,8 @@ private fun AccountSheet(
  *
  * @param premium whether this account holds what is sold: said under whose it is, so that
  * whoever paid can see that it is here, and on which of their accounts.
+ * @param onManageSubscription opens Google Play's page for the subscription; null for whoever
+ * has none, and then there is no row for it.
  * @param profileLoading while the profile has not been heard of yet: its row holds its place,
  * so that the rows under it do not move when it comes.
  */
@@ -390,6 +411,7 @@ internal fun AccountSheetContent(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     premium: Boolean = false,
+    onManageSubscription: (() -> Unit)? = null,
     profileLoading: Boolean = false
 ) {
     val name = account.name.ifBlank { account.email }
@@ -466,6 +488,15 @@ internal fun AccountSheetContent(
                     )
                     WaitingRing(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                RowDivider()
+            }
+            if (onManageSubscription != null) {
+                ActionRow(
+                    title = stringResource(R.string.account_subscription),
+                    supporting = stringResource(R.string.account_subscription_hint),
+                    onClick = onManageSubscription,
+                    enabled = !busy
+                )
                 RowDivider()
             }
             ActionRow(

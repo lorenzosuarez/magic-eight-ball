@@ -196,6 +196,7 @@ internal fun SettingsContent(
                             onSaveProfile = onSaveProfile,
                             onOpenPrivacyPolicy = onOpenPrivacyPolicy,
                             premium = state.premium,
+                            subscribed = state.subscribed,
                             // Only of someone signed in: signed out there is no profile to wait for, and
                             // the wait would be over before it began.
                             loading = signedIn && state.profile == ProfileState.Unknown

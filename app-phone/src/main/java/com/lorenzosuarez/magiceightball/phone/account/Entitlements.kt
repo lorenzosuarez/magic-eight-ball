@@ -26,7 +26,8 @@ import kotlinx.coroutines.flow.stateIn
 
 /**
  * What whoever is using the app has paid for. One thing is sold: Premium, which is making
- * characters of one's own, more answers from the AI in a day, and no ads.
+ * characters of one's own, more answers from the AI in a day, and no ads. It is a subscription,
+ * theirs for as long as it is paid for; whoever bought it when it was sold once has it for good.
  *
  * The app never takes its own word for it, nor Google Play's as the device tells it: an app
  * that did could be told anything. What counts is what the project's server wrote down after
@@ -42,6 +43,12 @@ interface Entitlements {
      */
     val known: StateFlow<Boolean> get() = HEARD
 
+    /**
+     * Whether what they have is a subscription, which goes on being paid for until they cancel
+     * it in Google Play: they are then shown the way there. False of Premium bought once.
+     */
+    val subscribed: StateFlow<Boolean> get() = NOT
+
     /** For builds with nothing to sign in to, and for tests: nobody has paid for anything. */
     object Nobody : Entitlements {
         override val premium: StateFlow<Boolean> = MutableStateFlow(false)
@@ -50,13 +57,15 @@ interface Entitlements {
     private companion object {
         /** Where there is no server to hear from, what is said is all there is to know. */
         val HEARD: StateFlow<Boolean> = MutableStateFlow(true)
+        val NOT: StateFlow<Boolean> = MutableStateFlow(false)
     }
 }
 
 /**
  * [Entitlements] as the server keeps them: `users/{id}/grants/premium` is there for an account
- * that holds a purchase, and is not for any other. The project's rules let the account read it
- * and let nobody write it; only the server does.
+ * that holds a purchase, and is not for any other. The server takes it away when a subscription
+ * ends, so here it is only ever there or not: the device's clock decides nothing. The project's
+ * rules let the account read it and let nobody write it; only the server does.
  */
 @Singleton
 class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Account) : Entitlements {
@@ -65,7 +74,7 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
 
     /** What the server says of whoever is signed in: null until it has been heard from. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val heard: StateFlow<Boolean?> = account.state
+    private val heard: StateFlow<Held?> = account.state
         .map { (it as? AccountState.SignedIn)?.id }
         .distinctUntilChanged()
         .flatMapLatest { id ->
@@ -74,22 +83,32 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
             }
             // Signed out, nothing is theirs, and that much is known: what the last account had
             // is not shown to the next. Of an account just signed in, nothing is known yet.
-            grant?.let { held(it).onStart { emit(null) } } ?: flowOf(false)
+            grant?.let { held(it).onStart { emit(null) } } ?: flowOf(Held.NOTHING)
         }
         .stateIn(scope, SharingStarted.Eagerly, null)
 
     override val premium: StateFlow<Boolean> =
-        heard.map { it == true }.stateIn(scope, SharingStarted.Eagerly, false)
+        heard.map { it == Held.FOR_GOOD || it == Held.SUBSCRIBED }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    override val subscribed: StateFlow<Boolean> =
+        heard.map { it == Held.SUBSCRIBED }.stateIn(scope, SharingStarted.Eagerly, false)
 
     override val known: StateFlow<Boolean> =
         heard.map { it != null }.stateIn(scope, SharingStarted.Eagerly, false)
 
-    private fun held(grant: DocumentReference): Flow<Boolean?> = callbackFlow<Boolean?> {
+    private fun held(grant: DocumentReference): Flow<Held?> = callbackFlow<Held?> {
         val listening = grant.addSnapshotListener { snapshot, failure ->
             if (failure != null || snapshot == null) {
                 close(failure ?: IllegalStateException("No grant and no reason"))
             } else {
-                trySend(snapshot.exists())
+                trySend(
+                    when {
+                        !snapshot.exists() -> Held.NOTHING
+                        // Only a subscription is written down with an end.
+                        snapshot.contains(UNTIL) -> Held.SUBSCRIBED
+                        else -> Held.FOR_GOOD
+                    }
+                )
             }
         }
         awaitClose { listening.remove() }
@@ -100,8 +119,12 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
         true
     }
 
+    /** What the server has written down for an account. */
+    private enum class Held { NOTHING, FOR_GOOD, SUBSCRIBED }
+
     private companion object {
         const val TAG = "Entitlements"
+        const val UNTIL = "until"
         const val GRANTS = "grants"
         const val PREMIUM = "premium"
         const val RETRY_FIRST_MS = 2_000L

@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import android.app.Application
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -82,6 +83,7 @@ class AccountSectionTest {
 
     /** Whether they hold what is sold. */
     private var premium = false
+    private var subscribed = false
     private val snackbars = SnackbarHostState()
 
     private fun show(
@@ -95,7 +97,8 @@ class AccountSectionTest {
             aiAnswersAvailable = true,
             config = AppConfig(accountEnabled = true),
             account = account,
-            premium = premium
+            premium = premium,
+            subscribed = subscribed
         )
         CompositionLocalProvider(
             LocalDensity provides Density(LocalDensity.current.density, fontScale),
@@ -237,6 +240,36 @@ class AccountSectionTest {
         assertEquals(0, count("Tienes Premium"))
         compose.onNodeWithText("Lorena Suárez").performClick()
         compose.onNodeWithText("Tienes Premium").assertIsDisplayed()
+    }
+
+    @Test
+    fun `whoever pays for a subscription is shown the way to cancel it, and told that deleting the account does not`() {
+        account = LORENA
+        premium = true
+        subscribed = true
+        show()
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        compose.onNodeWithText("Gestionar suscripción").performClick()
+        val opened = shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity
+        assertEquals(Intent.ACTION_VIEW, opened.action)
+        assertEquals(
+            "https://play.google.com/store/account/subscriptions?sku=premium_subscription" +
+                "&package=${ApplicationProvider.getApplicationContext<Application>().packageName}",
+            opened.dataString
+        )
+
+        compose.onNodeWithText("Eliminar cuenta").performClick()
+        compose.onNodeWithText("Tu suscripción a Premium no se cancela", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `Premium bought once has nothing to cancel`() {
+        account = LORENA
+        premium = true
+        show()
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        compose.onNodeWithText("Tienes Premium").assertIsDisplayed()
+        assertEquals(0, count("Gestionar suscripción"))
     }
 
     @Test

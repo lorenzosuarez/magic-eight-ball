@@ -23,6 +23,8 @@ import com.google.firebase.functions.FirebaseFunctionsException
 import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.MessageDigest
+import java.time.Period
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -49,9 +51,79 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * What is sold, as the store has it for whoever is using the app.
  *
- * @property price as the store words it for them, in their currency: never worked out here.
+ * @property price what each payment comes to, as the store words it for them, in their
+ * currency: never worked out here.
+ * @property period how often it is paid, as the store has it: never assumed here.
  */
-data class Offer(val price: String)
+data class Offer(val price: String, val period: BillingPeriod)
+
+/** How often a subscription is paid for: every [count] of [unit]. */
+data class BillingPeriod(val count: Int, val unit: Unit) {
+    enum class Unit { WEEK, MONTH, YEAR }
+
+    companion object {
+        /**
+         * From the store's own wording of it, as in "P1M", "P4W" or "P1Y". Null for whatever is
+         * not a whole number of weeks, of months or of years: the store sells by nothing else,
+         * and what cannot be said plainly is not offered.
+         */
+        fun of(text: String): BillingPeriod? {
+            val period = try {
+                Period.parse(text)
+            } catch (_: DateTimeParseException) {
+                return null
+            }
+            val (years, months, days) = Triple(period.years, period.months, period.days)
+            return when {
+                years > 0 && months == 0 && days == 0 -> BillingPeriod(years, Unit.YEAR)
+                months > 0 && years == 0 && days == 0 -> BillingPeriod(months, Unit.MONTH)
+                days > 0 && days % 7 == 0 && years == 0 && months == 0 -> BillingPeriod(days / 7, Unit.WEEK)
+                else -> null
+            }
+        }
+    }
+}
+
+/**
+ * One way of paying for the subscription, as the store lists it, down to what choosing among
+ * them needs.
+ *
+ * @property offer the discount it is sold at; null for the base plan at its own price.
+ * @property token what the store is handed to sell this one.
+ */
+internal data class Plan(val basePlan: String, val offer: String?, val token: String, val phases: List<Phase>)
+
+/** A stretch of a plan: what a payment comes to, how often, and whether it goes on until cancelled. */
+internal data class Phase(val price: String, val period: String, val renews: Boolean)
+
+/**
+ * The plan that is sold, with its terms: [BASE_PLAN] at its own price, paid again each period
+ * until it is cancelled. A trial or a discount the store may list beside it is passed over, and
+ * so is a plan that ends by itself: the sheet that sells Premium says one price and that it
+ * renews, and nothing is sold on other terms than those said.
+ */
+internal fun List<Plan>.sold(): Pair<Plan, Offer>? {
+    val plan = firstOrNull { it.basePlan == BASE_PLAN && it.offer == null } ?: return null
+    val phase = plan.phases.singleOrNull()?.takeIf { it.renews } ?: return null
+    return BillingPeriod.of(phase.period)?.let { plan to Offer(phase.price, it) }
+}
+
+/**
+ * Google Play's own page for the subscription, where it is cancelled or its payment changed, at
+ * the address Google gives for it.
+ */
+fun subscriptionPage(packageName: String): String =
+    "https://play.google.com/store/account/subscriptions?sku=$SUBSCRIPTION&package=$packageName"
+
+/**
+ * The subscription and its one base plan in Google Play, made in Play Console under these ids:
+ * see docs/REMOTE_CONFIG.md. The first is also what the server looks a token up as.
+ */
+internal const val SUBSCRIPTION = "premium_subscription"
+internal const val BASE_PLAN = "monthly"
+
+/** What Premium was first sold as, bought once. It is sold no more, and whoever bought it keeps it. */
+internal const val ONE_TIME = "premium"
 
 /** How buying ended. */
 enum class Bought {
@@ -75,7 +147,8 @@ enum class Bought {
 }
 
 /**
- * Where what is sold is bought. One thing is: Premium, paid for once.
+ * Where what is sold is bought. One thing is: Premium, a subscription paid for again each
+ * period until it is cancelled in Google Play.
  *
  * A purchase is the store's word for it, and counts only once the project's own server has
  * checked that word with the store and written it down: see [Entitlements]. What the server
@@ -108,7 +181,8 @@ interface Shop {
  * anything bought before is checked at once, and again until it can be: what this account does
  * not hold yet, after a new phone, a payment that was pending or a check that could not be made
  * when it was paid for, and what Google Play was never told had been delivered, which it would
- * give the money back for after three days. Whoever does not have it yet is told the price too.
+ * give the money back for after three days. That goes for Premium bought once too, from when it
+ * was sold that way. Whoever does not have it yet is told the price too.
  */
 @Singleton
 class PlayShop @Inject constructor(
@@ -146,12 +220,14 @@ class PlayShop @Inject constructor(
                 if (!open) return@collectLatest
                 coroutineScope {
                     // What was paid for and could not be checked is tried until it can be.
-                    launch { until { restore() != Bought.UNCONFIRMED } }
+                    // So is asking Google Play what is held: a subscription that came back from
+                    // being on hold or paused is theirs again only once it is claimed here.
+                    launch { until { held()?.let { settle(it) != Bought.UNCONFIRMED } == true } }
                     // Until the store has said: without a price nothing can be bought at all.
                     if (!premium) {
                         launch {
                             until {
-                                offered.value = details()?.oneTimePurchaseOfferDetails?.let { Offer(it.formattedPrice) }
+                                offered.value = details()?.plans()?.sold()?.second
                                 offered.value != null
                             }
                         }
@@ -177,11 +253,12 @@ class PlayShop @Inject constructor(
         restore().takeIf { it != Bought.FAILED }?.let { return it }
         // Asked for afresh: what the store said a while ago is not what it sells now.
         val details = details() ?: return Bought.FAILED
-        val price = details.oneTimePurchaseOfferDetails ?: return Bought.FAILED
+        val (plan, _) = details.plans().sold() ?: return Bought.FAILED
         // Whatever ended before this one started is not this one's ending.
         while (ended.tryReceive().isSuccess) Unit
-        val product = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(details)
-        price.offerToken.orEmpty().takeIf { it.isNotEmpty() }?.let(product::setOfferToken)
+        val product = BillingFlowParams.ProductDetailsParams.newBuilder()
+            .setProductDetails(details)
+            .setOfferToken(plan.token)
         val shown = client.launchBillingFlow(
             activity,
             BillingFlowParams.newBuilder()
@@ -229,33 +306,50 @@ class PlayShop @Inject constructor(
     }
 
     /** What Google Play holds as bought on this device, checked for this account. */
-    private suspend fun restore(): Bought {
-        if (!connected()) return Bought.FAILED
-        val held = client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(ProductType.INAPP).build())
-        if (held.billingResult.responseCode != BillingResponseCode.OK) return Bought.FAILED
-        return settle(held.purchasesList)
+    private suspend fun restore(): Bought = held()?.let { settle(it) } ?: Bought.FAILED
+
+    /** What Google Play holds as bought on this device; null when it could not be asked. */
+    private suspend fun held(): List<Purchase>? {
+        if (!connected()) return null
+        // A subscription on hold or paused is not among them: it gives nothing until it is back.
+        return listOf(ProductType.SUBS, ProductType.INAPP).flatMap { type ->
+            val asked = client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(type).build())
+            if (asked.billingResult.responseCode != BillingResponseCode.OK) return null
+            asked.purchasesList
+        }
     }
 
+    /**
+     * Bought once first, since that one is theirs for good; and if that does not make Premium
+     * theirs, as when another account holds it, the subscription is not left unclaimed for it.
+     */
     private suspend fun settle(purchases: List<Purchase>): Bought {
-        val purchase = purchases.firstOrNull { PRODUCT in it.products } ?: return Bought.FAILED
+        val outcomes = listOf(ONE_TIME, SUBSCRIPTION).mapNotNull { product ->
+            val purchase = purchases.firstOrNull { product in it.products } ?: return@mapNotNull null
+            settle(purchase, product).also { if (it == Bought.DONE) return it }
+        }
+        return outcomes.firstOrNull() ?: Bought.FAILED
+    }
+
+    private suspend fun settle(purchase: Purchase, product: String): Bought {
         return when (purchase.purchaseState) {
             // Theirs already, and Google Play knows it was delivered: nothing is left to do. Until
             // Google Play knows, the server is asked again, which is what tells it.
             Purchase.PurchaseState.PURCHASED ->
-                if (entitlements.premium.value && purchase.isAcknowledged) Bought.DONE else claim(purchase.purchaseToken)
+                if (entitlements.premium.value && purchase.isAcknowledged) Bought.DONE else claim(purchase.purchaseToken, product)
             Purchase.PurchaseState.PENDING -> Bought.PENDING
             else -> Bought.FAILED
         }
     }
 
     /**
-     * Has the server check a purchase and write it down for whoever is signed in. An answer that
+     * Has the server check a purchase of [product] and write it down for whoever is signed in. An answer that
      * does not come in time, or is not one of those agreed, leaves it as Google Play has it:
      * paid for, and not yet checked.
      */
-    private suspend fun claim(token: String): Bought = try {
+    private suspend fun claim(token: String, product: String): Bought = try {
         val answer = withTimeoutOrNull(CLAIM_TIMEOUT_MS) {
-            FirebaseFunctions.getInstance(REGION).getHttpsCallable(CLAIM).call(mapOf(TOKEN to token)).await()
+            FirebaseFunctions.getInstance(REGION).getHttpsCallable(CLAIM).call(mapOf(TOKEN to token, PRODUCT to product)).await()
         }
         when ((answer?.data as? Map<*, *>)?.get(OUTCOME)) {
             SAID_GRANTED -> {
@@ -284,8 +378,8 @@ class PlayShop @Inject constructor(
                 .setProductList(
                     listOf(
                         QueryProductDetailsParams.Product.newBuilder()
-                            .setProductId(PRODUCT)
-                            .setProductType(ProductType.INAPP)
+                            .setProductId(SUBSCRIPTION)
+                            .setProductType(ProductType.SUBS)
                             .build()
                     )
                 )
@@ -295,7 +389,18 @@ class PlayShop @Inject constructor(
             Log.w(TAG, "Could not ask what is sold: ${asked.billingResult.responseCode}")
             return null
         }
-        return asked.productDetailsList?.firstOrNull { it.productId == PRODUCT }
+        return asked.productDetailsList?.firstOrNull { it.productId == SUBSCRIPTION }
+    }
+
+    private fun ProductDetails.plans(): List<Plan> = subscriptionOfferDetails.orEmpty().map { plan ->
+        Plan(
+            basePlan = plan.basePlanId,
+            offer = plan.offerId,
+            token = plan.offerToken,
+            phases = plan.pricingPhases.pricingPhaseList.map {
+                Phase(it.formattedPrice, it.billingPeriod, it.recurrenceMode == ProductDetails.RecurrenceMode.INFINITE_RECURRING)
+            }
+        )
     }
 
     /** True once Google Play answers. After the first time it finds its own way back. */
@@ -321,13 +426,11 @@ class PlayShop @Inject constructor(
     private companion object {
         const val TAG = "Shop"
 
-        /** The product in Google Play, and what the server looks a token up as. */
-        const val PRODUCT = "premium"
-
         /** Where the project's functions run, next to its data. */
         const val REGION = "europe-west1"
         const val CLAIM = "claimPremium"
         const val TOKEN = "token"
+        const val PRODUCT = "product"
         const val OUTCOME = "outcome"
         const val SAID_GRANTED = "granted"
         const val SAID_PENDING = "pending"

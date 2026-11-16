@@ -43,8 +43,8 @@ data class GeminiSettings(
         const val DEFAULT_DAILY_LIMIT = 20
 
         /**
-         * Twice as many for whoever paid. Not more: it is paid for once, and every answer costs
-         * something every day after that.
+         * Twice as many for whoever has Premium. Not more: what it is sold for is little, and
+         * every answer costs something.
          */
         const val DEFAULT_PREMIUM_DAILY_LIMIT = 40
     }

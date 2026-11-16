@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { type Play, type VoidedPage, voidedFrom, voidedSince } from "./play";
+import { type Play, type VoidedPage, notified, voidedFrom, voidedSince } from "./play";
 
 /**
  * A Play that answers with these pages and remembers what it was asked. A page is asked for by
@@ -10,6 +10,7 @@ function fake(pages: VoidedPage[]) {
   const asked: Array<[number | undefined, string | undefined]> = [];
   const play: Play = {
     purchase: async () => ({}),
+    subscription: async () => ({}),
     acknowledge: async () => {},
     voided: async (since, page) => {
       asked.push([since, page]);
@@ -89,4 +90,35 @@ test("last asked further back than it keeps, it starts as far back as it goes", 
 
 test("last asked just within what it keeps, it starts from there", () => {
   assert.equal(voidedFrom(NOW - 28 * DAY, NOW), NOW - 28 * DAY - HOUR);
+});
+
+const PACKAGE = "com.lorenzosuarez.magiceightball";
+
+test("a notification about a subscription gives its token, whatever it says has happened", () => {
+  for (const notificationType of [1, 2, 3, 4, 5, 6, 7, 10, 12, 13, 99]) {
+    const message = { version: "1.0", packageName: PACKAGE, subscriptionNotification: { version: "1.0", notificationType, purchaseToken: "a" } };
+    assert.equal(notified(message), "a");
+  }
+});
+
+test("so does one about a subscription Play took back", () => {
+  const voidedPurchaseNotification = { purchaseToken: "a", orderId: "GPA.1", productType: 1, refundType: 1 };
+  assert.equal(notified({ packageName: PACKAGE, voidedPurchaseNotification }), "a");
+});
+
+test("one about a purchase bought once gives none: those are read from Play's list", () => {
+  const voidedPurchaseNotification = { purchaseToken: "a", orderId: "GPA.1", productType: 2, refundType: 1 };
+  assert.equal(notified({ packageName: PACKAGE, voidedPurchaseNotification }), undefined);
+  assert.equal(notified({ packageName: PACKAGE, oneTimeProductNotification: { purchaseToken: "a", sku: "premium" } }), undefined);
+});
+
+test("nor does the test message Play Console sends, or one about another app", () => {
+  assert.equal(notified({ packageName: PACKAGE, testNotification: { version: "1.0" } }), undefined);
+  assert.equal(notified({ packageName: "com.example", subscriptionNotification: { purchaseToken: "a" } }), undefined);
+});
+
+test("nor does anything that is no notification at all", () => {
+  for (const message of [undefined, null, "a", 5, [], {}, { packageName: PACKAGE }]) assert.equal(notified(message), undefined);
+  assert.equal(notified({ packageName: PACKAGE, subscriptionNotification: { purchaseToken: "" } }), undefined);
+  assert.equal(notified({ packageName: PACKAGE, subscriptionNotification: { purchaseToken: 5 } }), undefined);
 });
