@@ -566,3 +566,56 @@ Objetivo: decidir con datos si las fichas nuevas mejoran la voz y la variedad si
 - Diversidad léxica con personas: https://arxiv.org/html/2505.17390v2
 - Práctica de campo (anecdótica) sobre personajes que repiten frases: https://phasespace-co.pages.dev/blog/why-your-llm-npcs-sound-the-same
 - Práctica de campo (anecdótica) sobre reglas frente a descripción: https://aibusiness-insights.beehiiv.com/p/stop-describing-characters-start-encoding-rules
+
+---
+
+## Cómo medir
+
+El piloto de la sección 7 está montado: cuatro personajes (Sarcástico, Pirata, Coach y Filósofo; el Coach sale en el informe como «Entrenador», su nombre en la app), ficha actual frente a propuesta, solo en español. La app sigue usando las fichas de siempre: las propuestas viven en `ProposedCharacters.kt`, que nada de la app lee, y un test (`ShippedPromptsTest`) fija que el prompt de todos los personajes es, byte a byte, el de antes.
+
+**Órdenes, desde la raíz del repositorio.**
+
+1. Escribir los prompts con el código real de la app (deja `build/eval/prompts.json`):
+
+   ```
+   ./gradlew :core:domain:test --tests '*PilotPromptsTest' --rerun
+   ```
+
+2. Comprobar la herramienta sin modelo ni red. La segunda orden hace el recorrido entero con un sustituto y deja `build/eval/report.fake.md`, que no dice nada de las fichas:
+
+   ```
+   node --test functions/tools/eval.test.mjs
+   node functions/tools/eval.mjs --fake
+   ```
+
+3. Medir de verdad. La clave se lee solo de la variable de entorno `GEMINI_API_KEY` y no se imprime ni se guarda; con `read -rs` tampoco queda en el historial de la terminal:
+
+   ```
+   read -rs GEMINI_API_KEY && export GEMINI_API_KEY
+   node functions/tools/eval.mjs
+   ```
+
+   Deja `build/eval/results.json` (todo lo que respondió el modelo) y `build/eval/report.md`. Si se corta (red, cuota, Ctrl-C), la misma orden sigue donde quedó: no vuelve a pedir lo que ya está en `results.json`. Opciones: `--rpm 12` (peticiones por minuto), `--judge 30` (respuestas por personaje y ficha que se atribuyen a ciegas; `0` para ninguna) y `--model`, por si Remote Config (`gemini_model`) nombra otro modelo que el del código.
+
+**Qué cuesta en llamadas.**
+
+- Respuestas: 4 personajes × 2 fichas × 30 preguntas × 3 repeticiones = **720**.
+- Reintentos: uno como mucho por respuesta y solo si la primera línea rompe la regla de longitud, como en la app: entre 0 y 720.
+- Atribución a ciegas: 4 × 2 × 30 = **240** como mucho (menos si alguna respuesta sale vacía, bloqueada o demasiado larga).
+- Total: **960** si no hay reintentos y nunca más de 1.680. A 12 por minuto, entre 80 y 140 minutos. Con los precios de la sección 3 (sin volver a comprobarlos), como mucho unos 0,0009 USD por llamada: alrededor de 1,5 USD en el peor caso.
+- Con una clave del nivel gratuito el límite diario de peticiones puede cortar la ejecución: se para con el error del servicio y otro día sigue donde quedó.
+
+**Cómo leer el informe.**
+
+- Empieza por «Dónde la ficha propuesta no es mejor»: para los cuatro juntos y para cada personaje, lista todo lo que sale *peor*, *sin diferencia clara* o *sin datos*, con la cifra de la propuesta frente a la de la actual. Lo que no aparece ahí es lo único en que la propuesta gana.
+- *Sin diferencia clara* quiere decir que la diferencia cabe en el ruido de la muestra. Con 90 respuestas por personaje y ficha, dos porcentajes pueden diferir hasta unos 15 puntos sin que se distingan (menos cuanto más cerca estén de 0 o de 100 %); con las 360 de los cuatro juntos, hasta unos 7. Las conclusiones firmes están en la fila de los cuatro juntos.
+- La atribución a ciegas se hace sobre una muestra: con `--judge 30` distingue diferencias a partir de unos 13 puntos para los cuatro juntos y de unos 26 por personaje. El criterio de «+15 puntos» de la sección 6.5 no se puede decidir personaje a personaje ni juzgando las 90 (`--judge 90`, 720 llamadas en lugar de 240): solo para los cuatro juntos.
+- «Largo del prompt» sale siempre peor para la propuesta: mide de mediana 3.489 caracteres frente a 3.210 (unas 45 palabras más, lo previsto en 4.2). Es el coste, no un fallo.
+- El resto de columnas se explica al final del propio informe.
+
+**Lo que este piloto hace distinto de las secciones 4 a 6, y lo que no mide.**
+
+- No hay un prompt por personaje sino uno por llamada, sorteado como lo sortea el teléfono ante una pregunta (veredicto, dos ejemplos, réplica) y con el mismo sorteo para las dos fichas.
+- Las 7 líneas nuevas de cada personaje se suman a las 10 que ya tenía (17 en total): solas serían un fondo más pequeño que el actual, con las mismas dos líneas para cada sí. La línea para lo que no es pregunta de sí o no se enseña aparte, y solo cuando hay pregunta.
+- La ficha propuesta no lleva `habits`: su ritmo, léxico y tics lo sustituyen, y la etiqueta «How you talk» no se escribe.
+- Solo se mide la primera línea, la que se ve en la bola. No se mide la réplica, ni si el veredicto escrito es el sorteado, ni la guardia ante preguntas sensibles, ni inglés o portugués.
