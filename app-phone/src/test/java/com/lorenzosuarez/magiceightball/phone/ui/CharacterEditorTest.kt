@@ -91,6 +91,60 @@ class CharacterEditorTest {
 
     private fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
 
+    /** The whole sheet, as the app shows it, telling when it is taken down. */
+    private fun showSheet(character: CustomCharacter? = null, onClose: () -> Unit) =
+        compose.setContent {
+            MagicEightBallPhoneTheme {
+                ProvideAppLanguage(AppLanguage.SPANISH) {
+                    CharacterEditorSheet(
+                        character = character,
+                        onSave = { _, _, _, _ -> CharacterSave.Failed },
+                        onDelete = null,
+                        onClose = onClose
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun `what was written is not thrown away without asking, and is kept when the answer is no`() {
+        var closed = 0
+        showSheet(onClose = { closed++ })
+        compose.onNodeWithText("Nombre").performTextInput("Capitán")
+
+        compose.onNodeWithText("Cancelar").performScrollTo().performClick()
+        compose.onNodeWithText("¿Descartar lo que escribiste?").assertIsDisplayed()
+        assertEquals(0, closed)
+        compose.onNodeWithText("Seguir editando").performClick()
+        compose.waitForIdle()
+        assertEquals(0, closed)
+        compose.onNodeWithText("Capitán").assertExists()
+
+        compose.onNodeWithText("Cancelar").performScrollTo().performClick()
+        compose.onNodeWithText("Descartar").performClick()
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `with nothing written the sheet goes at once, and one opened and left as it was goes too`() {
+        var closed = 0
+        showSheet(character = NEMO, onClose = { closed++ })
+        compose.onNodeWithText("Cancelar").performScrollTo().performClick()
+        compose.waitForIdle()
+        assertEquals(0, count("¿Descartar lo que escribiste?"))
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `a draft knows whether anything in it is other than it was`() {
+        assertEquals(false, CharacterDraft().changedFrom(null))
+        assertEquals(false, CharacterDraft(NEMO).changedFrom(NEMO))
+        assertEquals(true, CharacterDraft().apply { typeName("a") }.changedFrom(null))
+        assertEquals(true, CharacterDraft(NEMO).apply { emblem = CharacterLook.BUNNY }.changedFrom(NEMO))
+        assertEquals(true, CharacterDraft(NEMO).apply { typeDescription("otra cosa") }.changedFrom(NEMO))
+    }
+
     private fun showEditor(draft: CharacterDraft, isNew: Boolean = true, onSave: (String, String) -> Unit = { _, _ -> }, onDelete: (() -> Unit)? = null) =
         compose.setContent {
             MagicEightBallPhoneTheme {

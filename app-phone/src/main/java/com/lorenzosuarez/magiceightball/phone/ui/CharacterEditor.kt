@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.material3.SheetValue
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
@@ -108,12 +111,26 @@ internal fun CharacterEditorSheet(
     onClose: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val draft = rememberSaveable(saver = CharacterDraft.Saver) { CharacterDraft(character) }
     var busy by remember { mutableStateOf(false) }
     var trouble by rememberSaveable { mutableStateOf<CharacterTrouble?>(null) }
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
+    // What was written is not lost to a finger that slid down the sheet without meaning to, nor
+    // to a touch beside it: with anything changed, the sheet stays, and asks whether it is to be
+    // thrown away. Only an answer to that, or saving, takes it down.
+    var confirmingDiscard by rememberSaveable { mutableStateOf(false) }
+    var leaving by remember { mutableStateOf(false) }
+    val opened by rememberUpdatedState(character)
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { to ->
+            val kept = to == SheetValue.Hidden && !leaving && draft.changedFrom(opened)
+            if (kept) confirmingDiscard = true
+            !kept
+        }
+    )
     fun leave() {
+        leaving = true
         scope.launch { sheetState.hide() }.invokeOnCompletion { onClose() }
     }
     // One thing at a time: a second touch while the first is still being answered does nothing.
@@ -141,6 +158,8 @@ internal fun CharacterEditorSheet(
         tonalElevation = 0.dp
     ) {
         InAppLanguage(language) {
+            // Back, like the slide and the touch beside the sheet, asks before it throws anything away.
+            BackHandler(enabled = !busy && draft.changedFrom(character)) { confirmingDiscard = true }
             CharacterEditorContent(
                 draft = draft,
                 isNew = character == null,
@@ -157,10 +176,31 @@ internal fun CharacterEditorSheet(
                         }
                     }
                 },
-                onCancel = ::leave,
+                onCancel = { if (draft.changedFrom(character)) confirmingDiscard = true else leave() },
                 onDelete = if (onDelete == null) null else ({ confirmingDelete = true })
             )
         }
+    }
+
+    if (confirmingDiscard) {
+        val title = stringResource(R.string.character_discard_title)
+        val discard = stringResource(R.string.character_discard_yes)
+        val keep = stringResource(R.string.character_discard_no)
+        AlertDialog(
+            onDismissRequest = { confirmingDiscard = false },
+            title = { Text(title) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmingDiscard = false
+                        leave()
+                    }
+                ) {
+                    Text(discard, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmingDiscard = false }) { Text(keep) } }
+        )
     }
 
     if (confirmingDelete && character != null && onDelete != null) {
@@ -217,6 +257,13 @@ internal class CharacterDraft(character: CustomCharacter? = null) {
     /** A description is one paragraph: the key for a new line says it is done instead. */
     fun typeDescription(typed: String) {
         description = paragraph(typed)
+    }
+
+    /** Whether anything here is other than it was when [character] was opened, or, of a new one, than nothing. */
+    fun changedFrom(character: CustomCharacter?): Boolean {
+        val untouched = CharacterDraft(character)
+        return name != untouched.name || description != untouched.description ||
+            colour != untouched.colour || emblem != untouched.emblem
     }
 
     val nameToSave: String? get() = CustomCharacter.nameOrNull(name)
@@ -649,6 +696,7 @@ private val COLOURS = CustomCharacter.LOOKS - Magic8BallPersonality.PHILOSOPHER
 internal val EMBLEMS = listOf(
     CharacterLook.NEUTRAL,
     CharacterLook.CAT,
+    CharacterLook.GAMER,
     CharacterLook.BUNNY,
     CharacterLook.MOUSE,
     CharacterLook.BIRD,

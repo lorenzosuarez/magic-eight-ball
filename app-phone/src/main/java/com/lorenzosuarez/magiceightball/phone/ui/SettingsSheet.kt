@@ -283,6 +283,20 @@ internal fun SettingsContent(
                             )
                             RowDivider()
                         }
+                        // The way to Google Play's own page for a subscription, for as long as one is
+                        // sold and whatever the app knows of it: one on hold or paused, one whose
+                        // payment is not confirmed yet, one held by another account of the app or by
+                        // an account since deleted is still being paid for, and is cancelled there.
+                        // Whoever is known to subscribe has the way on the tile over these groups.
+                        if (state.config.premiumEnabled && !state.subscribed) {
+                            ActionRow(
+                                title = stringResource(R.string.account_subscription),
+                                supporting = null,
+                                onClick = { context.manageSubscription() },
+                                icon = R.drawable.ic_crown
+                            )
+                            RowDivider()
+                        }
                         ActionRow(
                             title = stringResource(R.string.settings_privacy_policy),
                             supporting = null,

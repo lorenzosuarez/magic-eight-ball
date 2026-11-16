@@ -482,6 +482,35 @@ private val ENGLISH: Map<Magic8BallPersonality, CharacterLines> by lazy {
                     "Oven smells like chicken, or was that the squirrel, hang on!"
                 )
             )
+        ),
+        Magic8BallPersonality.GAMER to CharacterLines(
+            yes = listOf(
+                "GG. You win this round.",
+                "Loot secured. Yes, go!",
+                "Yes. Boss down. Next level.",
+                "Checkpoint saved. Yes. Go."
+            ),
+            no = listOf(
+                "Defeat. Run it back.",
+                "No. Patch notes say nerfed.",
+                "No. Skill issue. Love you.",
+                "No. Respawn and regroup."
+            ),
+            maybe = listOf("Lag. Can't read the match.", "Game paused. Ask me later."),
+            remarks = listOf(
+                SampleRemark(
+                    "Should I go out tonight?",
+                    "Go out; the couch can wait, you're not AFK forever."
+                ),
+                SampleRemark(
+                    "Should I ask for a raise?",
+                    "Ask: worst case you lose a round, not the match."
+                ),
+                SampleRemark(
+                    "Will I pass my exam?",
+                    "Study now; the final boss never accepts excuses or lag."
+                )
+            )
         )
     )
 }
@@ -939,6 +968,32 @@ private val SPANISH: Map<Magic8BallPersonality, CharacterLines> by lazy {
                     "¡Harás amigos nuevos si primero les hueles la mano, como yo!"
                 ),
                 SampleRemark("¿Trabajo hasta tarde hoy?", "¡La pelota lleva horas esperando a que dejes ese trabajo!")
+            )
+        ),
+        Magic8BallPersonality.GAMER to CharacterLines(
+            yes = listOf(
+                "GG. Ganaste esta ronda.",
+                "Loot asegurado. Sí, dale.",
+                "Sí. Jefe caído. Sigue tú.",
+                "Punto guardado. Sí, avanza."
+            ),
+            no = listOf(
+                "Derrota. Repite la ronda.",
+                "No. El parche lo nerfeó.",
+                "No. Falta práctica. Ánimo.",
+                "No. Reaparece y reagrupa."
+            ),
+            maybe = listOf("Hay lag. No leo la partida.", "Pausa. Pregúntame luego."),
+            remarks = listOf(
+                SampleRemark("¿Salgo esta noche?", "Sal un rato; el sofá guarda tu partida."),
+                SampleRemark(
+                    "¿Le pido un aumento a mi jefe?",
+                    "Pídelo: lo peor es perder una ronda, no la partida."
+                ),
+                SampleRemark(
+                    "¿Voy a aprobar el examen?",
+                    "Estudia hoy; el jefe final no acepta excusas ni lag."
+                )
             )
         )
     )
@@ -1421,6 +1476,29 @@ private val PORTUGUESE: Map<Magic8BallPersonality, CharacterLines> by lazy {
                 SampleRemark("Devo viajar no feriado?", "E quem abre a porta pra mim no feriado, hein?!"),
                 SampleRemark("Vou fazer amigos na escola nova?", "Traz os amigos novos aqui, que eu cheiro um por um!"),
                 SampleRemark("Será que hoje chove?", "Se chover tem poça, e poça é a MELHOR COISA!")
+            )
+        ),
+        Magic8BallPersonality.GAMER to CharacterLines(
+            yes = listOf(
+                "GG. Você ganhou a rodada.",
+                "Loot garantido. Pode ir!",
+                "Sim. Chefão caiu. Segue.",
+                "Ponto salvo. Sim, avança."
+            ),
+            no = listOf(
+                "Derrota. Joga de novo.",
+                "Não. O patch nerfou isso.",
+                "Não. Falta treino. Bora!",
+                "Não. Renasce e se reagrupa."
+            ),
+            maybe = listOf("Deu lag. Não li a partida.", "Jogo pausado. Volta já."),
+            remarks = listOf(
+                SampleRemark("Devo sair hoje à noite?", "Sai um pouco; o sofá salva o seu progresso."),
+                SampleRemark("Devo pedir aumento?", "Pede: o pior é perder uma rodada, não a partida."),
+                SampleRemark(
+                    "Vou passar na prova?",
+                    "Estuda hoje; o chefão final não aceita desculpa nem lag."
+                )
             )
         )
     )

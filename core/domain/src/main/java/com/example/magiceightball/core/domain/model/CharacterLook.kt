@@ -52,7 +52,10 @@ enum class CharacterLook {
     PROPELLER,
     BOW,
     MUSHROOM,
-    APPLE;
+    APPLE,
+
+    // The look of one of the app's own again, added after those: a name keeps its place.
+    GAMER;
 
     companion object {
         /** The look kept under [name], in whatever case; [NEUTRAL] for none and for one not known here. */

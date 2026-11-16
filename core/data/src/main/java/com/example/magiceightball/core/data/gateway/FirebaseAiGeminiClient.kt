@@ -1,5 +1,8 @@
 package com.example.magiceightball.core.data.gateway
 
+import com.google.firebase.ai.type.SafetySetting
+import com.google.firebase.ai.type.HarmCategory
+import com.google.firebase.ai.type.HarmBlockThreshold
 import android.content.Context
 import android.util.Log
 import com.example.magiceightball.core.data.config.GeminiSettings
@@ -60,6 +63,11 @@ class FirebaseAiGeminiClient @Inject constructor(
                 modelName = settings.modelId,
                 // Sampling parameters are left to the model defaults: Gemini 3.x and later ignore them.
                 generationConfig = generationConfig { this.maxOutputTokens = maxOutputTokens },
+                // Said here and not left to the service: what it does with a kind of harm nobody
+                // named is nothing at all. A character is described by whoever made it, so the
+                // words that ask are not all the app's own; what is blocked is answered from the
+                // answers the app carries, as any reply that does not come is.
+                safetySettings = SAFETY,
                 systemInstruction = content { text(systemInstruction) }
             ).generateContent(userText).toReply()
         } catch (e: Exception) {
@@ -73,6 +81,14 @@ class FirebaseAiGeminiClient @Inject constructor(
 
     private companion object {
         const val TAG = "FirebaseAiGeminiClient"
+
+        /** Every kind of harm the service names, each stopped from the middle of its scale up. */
+        val SAFETY = listOf(
+            HarmCategory.HARASSMENT,
+            HarmCategory.HATE_SPEECH,
+            HarmCategory.SEXUALLY_EXPLICIT,
+            HarmCategory.DANGEROUS_CONTENT
+        ).map { SafetySetting(it, HarmBlockThreshold.MEDIUM_AND_ABOVE) }
     }
 }
 

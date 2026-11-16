@@ -203,6 +203,12 @@
           "BIRTHDAY! YES! YES! CAKE?",
           "Your birthday! Park? Yes!"
         ]
+      },
+      "gamer": {
+        "birthday": [
+          "Happy birthday! Level up!",
+          "Birthday loot: it's a yes."
+        ]
       }
     }
   },
@@ -409,6 +415,12 @@
           "¡CUMPLEAÑOS! ¡SÍ! ¡SÍ!",
           "¡Tu cumple! ¿Parque? ¡Sí!"
         ]
+      },
+      "gamer": {
+        "birthday": [
+          "¡Cumple! ¡Subiste de nivel!",
+          "Loot de cumple: es un sí."
+        ]
       }
     }
   },
@@ -613,6 +625,12 @@
         "birthday": [
           "ANIVERSÁRIO! SIM! SIM!",
           "Parabéns! Passeio? Sim!"
+        ]
+      },
+      "gamer": {
+        "birthday": [
+          "Niver! Você subiu de nível!",
+          "Drop de aniversário: é sim."
         ]
       }
     }

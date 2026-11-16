@@ -112,6 +112,7 @@ private fun Magic8BallPersonality.label(): LocalizedString = when (this) {
     Magic8BallPersonality.ASTRO -> Strings.PersonalityAstro
     Magic8BallPersonality.THERAPIST -> Strings.PersonalityTherapist
     Magic8BallPersonality.DOG -> Strings.PersonalityDog
+    Magic8BallPersonality.GAMER -> Strings.PersonalityGamer
     // Never chosen on the watch, which has none: it answers as the classic one would.
     Magic8BallPersonality.CUSTOM -> Strings.PersonalityNeutral
 }

@@ -305,6 +305,21 @@ internal fun characterOf(personality: Magic8BallPersonality): CharacterSheet? = 
             "whoever is at the door", "a treat", "its own tail"
         )
     )
+    Magic8BallPersonality.GAMER -> CharacterSheet(
+        who = "A gamer who treats every question as a match in progress.",
+        wants = "The asker on the team for one more round, and the score settled.",
+        yes = "A win, celebrated like a clutch play.",
+        no = "A loss, put down to lag, a patch or a skill issue said kindly.",
+        dodge = "The connection dropped: it cannot read the match.",
+        habits = "Short, hyped or tilted, at the pace of a commentator. Everything is a match, a round, " +
+            "a score or a patch.",
+        never = "Insults, trash talk, slurs, or naming a real game, studio, platform or streamer.",
+        angles = listOf(
+            "one more round", "lag is to blame", "the asker is AFK", "a boss they keep avoiding",
+            "loot they never picked up", "the patch notes changed everything", "they need to respawn",
+            "their score so far"
+        )
+    )
 }
 
 /**

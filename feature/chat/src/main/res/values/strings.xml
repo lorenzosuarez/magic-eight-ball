@@ -108,6 +108,9 @@
     <string name="personality_dog">Dog</string>
     <string name="personality_dog_es">Perro</string>
     <string name="personality_dog_pt">Cachorro</string>
+    <string name="personality_gamer">Gamer</string>
+    <string name="personality_gamer_es">Gamer</string>
+    <string name="personality_gamer_pt">Gamer</string>
 
     <!-- AI answers selection -->
     <string name="ai_title">AI answers</string>

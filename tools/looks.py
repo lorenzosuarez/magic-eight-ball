@@ -541,10 +541,16 @@ LOOKS = {
                 bar(22, 33, 79, 33, 3.6, cap=False), poly([(27.5, 26.8), (14.5, 33), (27.5, 39.2)]),
                 poly([(72.5, 33), (77, 27), (85.5, 27), (81.5, 33), (85.5, 39), (77, 39)])],
     }),
+    # A gamepad held up beside its face, with its two sticks: half over the ball, told from it by its rim.
+    'gamer': ('#4DD9FF', {
+        'fitted': True,
+        'ink': [seen(turned('M12 60.5 Q12 56.5 16.5 56.5 L32.5 56.5 Q37 56.5 37 60.5 L38 70.5 Q38.4 75 34.8 75 Q32.4 75 30.9 71.8 L29.6 69 L19.4 69 L18.1 71.8 Q16.6 75 14.2 75 Q10.6 75 11 70.5Z', 24.5, 65, 8))],
+        'white': [seen(turned(disc(18.6, 62.6, 2.9), 24.5, 65, 8)), seen(turned(disc(30.4, 62.6, 2.9), 24.5, 65, 8))],
+    }),
 }
 
 ORIGINALS = ['neutral', 'sarcastic', 'mystical', 'grandma', 'pirate', 'philosopher', 'coach', 'lovestruck', 'drama', 'robot',
-             'detective', 'conspiracy', 'cat', 'zoomer', 'villain', 'poet', 'astro', 'therapist', 'dog']
+             'detective', 'conspiracy', 'cat', 'zoomer', 'villain', 'poet', 'astro', 'therapist', 'dog', 'gamer']
 
 
 def eight(cx, cy, k=1.0, squeeze=1.0):

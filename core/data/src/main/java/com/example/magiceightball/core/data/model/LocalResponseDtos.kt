@@ -29,7 +29,8 @@ data class PersonalityResponsesDto(
     val poet: List<String> = emptyList(),
     val astro: List<String> = emptyList(),
     val therapist: List<String> = emptyList(),
-    val dog: List<String> = emptyList()
+    val dog: List<String> = emptyList(),
+    val gamer: List<String> = emptyList()
 ) {
     /** Only what can be shown on the ball: see [Magic8BallDataDto.usable]. */
     fun usable(): PersonalityResponsesDto = PersonalityResponsesDto(
@@ -51,7 +52,8 @@ data class PersonalityResponsesDto(
         poet = poet.usableAnswers(),
         astro = astro.usableAnswers(),
         therapist = therapist.usableAnswers(),
-        dog = dog.usableAnswers()
+        dog = dog.usableAnswers(),
+        gamer = gamer.usableAnswers()
     )
 
     /** These lists, with every one that [other] fills taking the place of this one's. */
@@ -75,7 +77,8 @@ data class PersonalityResponsesDto(
         poet = other.poet.ifEmpty { poet },
         astro = other.astro.ifEmpty { astro },
         therapist = other.therapist.ifEmpty { therapist },
-        dog = other.dog.ifEmpty { dog }
+        dog = other.dog.ifEmpty { dog },
+        gamer = other.gamer.ifEmpty { gamer }
     )
 
     private fun List<String>.usableAnswers(): List<String> = map { it.trim() }
@@ -105,6 +108,7 @@ data class PersonalityResponsesDto(
         Magic8BallPersonality.ASTRO -> astro
         Magic8BallPersonality.THERAPIST -> therapist
         Magic8BallPersonality.DOG -> dog
+        Magic8BallPersonality.GAMER -> gamer
         // Nothing is written in advance for a character the user made up: it answers as the toy does.
         Magic8BallPersonality.CUSTOM -> neutral
     }
