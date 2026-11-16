@@ -146,14 +146,12 @@ private fun HistoryRow(
     last: Boolean,
     modifier: Modifier = Modifier
 ) {
-    // The rows are one card, as on the options page: the first and the last round its corners.
-    val top = if (first) CARD_CORNER else 0.dp
-    val bottom = if (last) CARD_CORNER else 0.dp
+    // The rows are one group, as wherever the app lists: tiles a hair apart, rounded as one thing.
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom))
+            .padding(start = 16.dp, end = 16.dp, bottom = if (last) 0.dp else GROUP_GAP)
+            .clip(groupedShape(first, last))
             .background(MaterialTheme.colorScheme.pageCard)
     ) {
     Row(
@@ -210,13 +208,6 @@ private fun HistoryRow(
             description = stringResource(R.string.history_delete),
             onClick = { onDelete(entry) },
             tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-    if (!last) {
-        HorizontalDivider(
-            modifier = Modifier.padding(start = 16.dp),
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.hairline
         )
     }
     }
@@ -288,4 +279,3 @@ private const val EMPTY_ABOVE = 2f
 private const val EMPTY_BELOW = 3f
 private const val EMPTY_ART_ALPHA = 0.6f
 
-private val CARD_CORNER = 16.dp

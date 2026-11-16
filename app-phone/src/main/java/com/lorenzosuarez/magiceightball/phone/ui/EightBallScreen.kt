@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import android.graphics.Bitmap
@@ -664,20 +665,26 @@ internal fun EightBallContent(
                           val toBall = { scope.launch { pagerState.animateScrollToPage(BALL_PAGE) }; Unit }
                           // On the options, with a subject open: the subject's name, and the way back to the options.
                           val open = section.takeIf { page == OPTIONS_PAGE }
-                          BarIconButton(
+                          // A plain mark, on a page that is a flat ground to read on: its picture stands
+                          // where the page's rows begin, and its touch takes the room around it.
+                          AppIconButton(
                               icon = if (page == HISTORY_PAGE) R.drawable.ic_arrow_forward else R.drawable.ic_arrow_back,
                               description = stringResource(if (open != null) R.string.action_back else R.string.action_back_to_ball),
                               onClick = open?.onBack ?: toBall,
-                              modifier = Modifier.align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
+                              modifier = Modifier
+                                  .align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
+                                  .offset(x = if (page == HISTORY_PAGE) BAR_MARK_OUT else -BAR_MARK_OUT)
                           )
                           Text(
                             text = open?.title ?: stringResource(
                                 if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
                             ),
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = PAGE_TITLE_TOP)
-                                .semantics { heading() },
+                            // A page is named over its dots; a subject, which is on no page, beside its way back.
+                            modifier = (if (open != null) {
+                                Modifier.align(Alignment.CenterStart).padding(start = BAR_TITLE_START)
+                            } else {
+                                Modifier.align(Alignment.TopCenter).padding(top = PAGE_TITLE_TOP)
+                            }).semantics { heading() },
                             // The bar has one line's room over the dots: the name grows with the
                             // system's font only as far as that room goes.
                             style = MaterialTheme.typography.titleMedium.let {
@@ -1717,6 +1724,12 @@ private val BALL_SWAY = 12.dp
 internal class SectionBar(val title: String, val onBack: () -> Unit)
 
 internal val TOP_BAR_HEIGHT = 72.dp
+
+/** How far a plain mark at the top of a page is moved out, so that its picture stands on the page's margin. */
+internal val BAR_MARK_OUT = 12.dp
+
+/** Where a name beside such a mark begins, from the bar's own edge. */
+internal val BAR_TITLE_START = 40.dp
 
 /** Where a page's name and the dots stand in the bar: one over the other, with the bar's middle between them. */
 private val PAGE_TITLE_TOP = 15.dp

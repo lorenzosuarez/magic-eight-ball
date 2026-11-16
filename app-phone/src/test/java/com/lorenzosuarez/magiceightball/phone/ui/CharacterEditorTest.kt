@@ -319,7 +319,10 @@ class CharacterEditorTest {
         // Their shelf, and over the first cards the name of their group.
         assertEquals(2, count("Tuyos"))
 
-        compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
+        // Corrected from where it is opened.
+        compose.onNodeWithText("Capitán Nemo").performClick()
+        compose.onNodeWithText("Editar").performClick()
+        compose.waitForIdle()
         compose.onNodeWithText("Tu personaje").assertIsDisplayed()
         compose.onNodeWithText("Guardar").performScrollTo().performClick()
         compose.waitForIdle()
@@ -416,7 +419,10 @@ class CharacterEditorTest {
         compose.waitForIdle()
         assertEquals(0, count("Tus propios personajes, con Premium"))
         // What was made before is still theirs to choose and to correct.
-        compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
+        // Corrected from where it is opened.
+        compose.onNodeWithText("Capitán Nemo").performClick()
+        compose.onNodeWithText("Editar").performClick()
+        compose.waitForIdle()
         compose.onNodeWithText("Tu personaje").assertIsDisplayed()
     }
 
@@ -577,7 +583,6 @@ class CharacterEditorTest {
         compose.waitForIdle()
         assertEquals(0, count("Privacidad de anuncios"))
         assertEquals(1, count("Opciones de privacidad"))
-        assertEquals(1, count("Revisa lo que permitiste"))
     }
 
     @Test

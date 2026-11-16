@@ -109,7 +109,6 @@
     <string name="party_who">¿Quién del grupo…?</string>
     <string name="widget_description">Magic AI Ball. Toca para ver una respuesta</string>
     <string name="settings_party">Modo fiesta</string>
-    <string name="settings_party_off">Añade nombres para jugar por turnos</string>
     <string name="party_dialog_note">La bola anuncia el turno de cada persona y puede elegir a alguien del grupo.</string>
     <string name="party_turn_off">Desactivar</string>
     <string name="party_name_hint">Nombre</string>
@@ -123,7 +122,6 @@
     <string name="settings_spoken">Respuestas en voz alta</string>
     <string name="settings_spoken_on">La bola también dice su respuesta</string>
     <string name="settings_share_app">Compartir la app</string>
-    <string name="settings_share_app_hint">Cuéntale a alguien sobre Magic AI Ball</string>
     <string name="share_app_text">Pregúntale lo que quieras a Magic AI Ball: %1$s</string>
     <string name="report_done">Reportada. Gracias.</string>
     <string name="report_label">Reportar esta respuesta</string>
@@ -137,9 +135,7 @@
     <string name="share_answer_text">Mira lo que me dijo Magic AI Ball. Hazle tu pregunta: %1$s</string>
     <string name="share_failed">No se pudo preparar la imagen. Inténtalo de nuevo</string>
     <string name="settings_privacy_policy">Política de privacidad</string>
-    <string name="settings_privacy_policy_hint">Qué hace la app con tus datos</string>
     <string name="settings_ad_privacy">Privacidad de anuncios</string>
-    <string name="settings_ad_privacy_hint">Revisa lo que permitiste para los anuncios</string>
     <string name="notifications_channel">Novedades y recordatorios</string>
     <string name="daily_verdict_title">Veredicto del día</string>
     <string name="settings_daily">Veredicto del día</string>
@@ -169,10 +165,8 @@
     <string name="report_reason_other">Otra cosa</string>
     <string name="report_hint">Elige una opción y se envía</string>
     <string name="settings_voice_allow_hint">Para preguntar en voz alta</string>
-    <string name="action_create">Crear</string>
     <string name="characters_create">Crear un personaje</string>
     <string name="styles_group_yours">Tuyos</string>
-    <string name="character_edit">Editar %1$s</string>
     <string name="character_new_title">Nuevo personaje</string>
     <string name="character_edit_title">Tu personaje</string>
     <string name="character_hint">Un nombre, cómo responde y qué lleva puesto</string>
@@ -218,7 +212,6 @@
     <string name="premium_all_note">La app sigue siendo gratis, con anuncios.</string>
     <string name="characters_no_google_text">No hay ninguna cuenta de Google en este dispositivo. Añade una en los ajustes del dispositivo e inténtalo de nuevo.</string>
     <string name="settings_privacy_choices">Opciones de privacidad</string>
-    <string name="settings_privacy_choices_hint">Revisa lo que permitiste</string>
     <string name="premium_account_title">Para obtener Premium necesitas una cuenta</string>
     <string name="premium_account_text">Entra con Google y quedará en tu cuenta. La app sigue funcionando igual sin cuenta.</string>
     <string name="premium_upgrade">Obtener Premium</string>
@@ -233,7 +226,6 @@
     <string name="premium_busy">Un momento…</string>
     <string name="premium_price_failed">No se pudo obtener el precio. Revisa tu conexión</string>
     <string name="premium_check_again">Comprobar de nuevo</string>
-    <string name="options_account">Cuenta</string>
     <string name="account_title">Respuestas a tu medida</string>
     <string name="account_hint">Entra y los personajes sabrán quién pregunta</string>
     <string name="account_continue_google">Continuar con Google</string>
@@ -296,12 +288,11 @@
     <string name="characters_community_account_title">Para usar este personaje necesitas una cuenta</string>
     <string name="characters_community_account_text">Lo que está escrito sobre un personaje de la comunidad se envía al servicio de IA para que responda con su voz. Entra con tu cuenta para aceptarlo.</string>
     <string name="options_voice">Voz</string>
-    <string name="options_voice_hint">Pregunta hablando y escucha la respuesta</string>
     <string name="options_notifications">Notificaciones</string>
     <string name="options_about">Información</string>
     <string name="options_licenses">Licencias de código abierto</string>
-    <string name="options_licenses_hint">Lo que la app usa hecho por otros</string>
     <string name="license_icons">Iconos</string>
     <string name="license_font">La letra del botón de Google</string>
     <string name="action_back">Atrás</string>
+    <string name="premium_banner_cta">Obtener</string>
 </resources>

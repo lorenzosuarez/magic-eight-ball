@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.Layout
@@ -157,6 +160,8 @@ internal fun SettingsContent(
     val voiceDenied = state.voice == VoiceStatus.PermissionDenied
     // On, and yet nothing would arrive: the system is not letting the app notify.
     val dailyBlocked = state.settings.dailyVerdictEnabled && !notificationsAllowed
+    // Where the page was read to: kept while a subject is open, so the way back leads to the row it was left by.
+    val pageScroll = rememberScrollState()
     // One at a time: a subject comes in from the side it lies on, and goes back there.
     AnimatedContent(
         targetState = nav.section,
@@ -168,10 +173,13 @@ internal fun SettingsContent(
         },
         label = "options"
     ) { section ->
+        // Said to whoever has the screen read out: what was touched is gone, and this is what came.
+        val pane = stringResource(section?.title ?: R.string.settings_title)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .semantics { paneTitle = pane }
+                .verticalScroll(if (section == null) pageScroll else rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
         ) {
             when (section) {
@@ -194,21 +202,12 @@ internal fun SettingsContent(
                     }
                     // What is sold, said once on the page and only to whoever does not have it. It is kept
                     // with an account: whoever has none is first shown the way to one.
-                    if (state.offersPremium) {
-                        Section(stringResource(R.string.options_premium)) {
-                            ActionRow(
-                                title = stringResource(R.string.premium_row_title),
-                                supporting = stringResource(R.string.premium_row_hint),
-                                onClick = onAskPremium,
-                                icon = R.drawable.ic_crown
-                            )
-                        }
-                    }
+                    if (state.offersPremium) PremiumBanner(onClick = onAskPremium)
                     Section(stringResource(R.string.options_answers)) {
                         ActionRow(
                             title = stringResource(R.string.settings_ai),
-                            // What stands in its way, when something does; else what it is.
-                            supporting = aiNote ?: stringResource(R.string.settings_ai_on),
+                            // What stands in its way, when something does; a row that leads somewhere says nothing else.
+                            supporting = aiNote,
                             onClick = { nav.section = OptionsSection.ANSWERS },
                             icon = R.drawable.ic_sparkles,
                             alert = aiSpent
@@ -219,7 +218,7 @@ internal fun SettingsContent(
                             supporting = when (state.voice) {
                                 VoiceStatus.Unsupported -> stringResource(R.string.settings_voice_unsupported)
                                 VoiceStatus.PermissionDenied -> stringResource(R.string.settings_voice_denied)
-                                else -> stringResource(R.string.options_voice_hint)
+                                else -> null
                             },
                             onClick = { nav.section = OptionsSection.VOICE },
                             icon = R.drawable.ic_mic,
@@ -228,11 +227,8 @@ internal fun SettingsContent(
                         RowDivider()
                         ActionRow(
                             title = stringResource(R.string.settings_party),
-                            supporting = if (state.settings.isParty) {
-                                state.settings.partyNames.joinToString(", ")
-                            } else {
-                                stringResource(R.string.settings_party_off)
-                            },
+                            // Who is playing, when anyone is.
+                            supporting = state.settings.partyNames.joinToString(", ").takeIf { state.settings.isParty },
                             onClick = { editingParty = true },
                             icon = R.drawable.ic_party
                         )
@@ -242,9 +238,7 @@ internal fun SettingsContent(
                         if (state.config.dailyVerdictEnabled) {
                             ActionRow(
                                 title = stringResource(R.string.options_notifications),
-                                supporting = stringResource(
-                                    if (dailyBlocked) R.string.settings_daily_blocked else R.string.settings_daily_on
-                                ),
+                                supporting = stringResource(R.string.settings_daily_blocked).takeIf { dailyBlocked },
                                 onClick = { nav.section = OptionsSection.NOTIFICATIONS },
                                 icon = R.drawable.ic_bell,
                                 alert = dailyBlocked
@@ -260,7 +254,7 @@ internal fun SettingsContent(
                         RowDivider()
                         ActionRow(
                             title = stringResource(R.string.settings_share_app),
-                            supporting = stringResource(R.string.settings_share_app_hint),
+                            supporting = null,
                             onClick = onShareApp,
                             icon = R.drawable.ic_share
                         )
@@ -273,9 +267,7 @@ internal fun SettingsContent(
                                 title = stringResource(
                                     if (state.premium) R.string.settings_privacy_choices else R.string.settings_ad_privacy
                                 ),
-                                supporting = stringResource(
-                                    if (state.premium) R.string.settings_privacy_choices_hint else R.string.settings_ad_privacy_hint
-                                ),
+                                supporting = null,
                                 onClick = onShowAdPrivacyOptions,
                                 icon = R.drawable.ic_shield
                             )
@@ -283,14 +275,14 @@ internal fun SettingsContent(
                         }
                         ActionRow(
                             title = stringResource(R.string.settings_privacy_policy),
-                            supporting = stringResource(R.string.settings_privacy_policy_hint),
+                            supporting = null,
                             onClick = onOpenPrivacyPolicy,
                             icon = R.drawable.ic_terms
                         )
                         RowDivider()
                         ActionRow(
                             title = stringResource(R.string.options_licenses),
-                            supporting = stringResource(R.string.options_licenses_hint),
+                            supporting = null,
                             onClick = { nav.section = OptionsSection.LICENSES },
                             icon = R.drawable.ic_licenses
                         )
@@ -432,6 +424,75 @@ internal fun SettingsContent(
     }
 }
 
+/**
+ * What is sold, said once on the page and unlike anything else on it: a tile of its own, under
+ * no name, with the one coloured button the page has. The whole tile is the button.
+ */
+@Composable
+private fun PremiumBanner(onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    // At large type the button goes under the words rather than squeeze them into a column of syllables.
+    val stacked = LocalDensity.current.fontScale >= 1.3f
+    val button = @Composable {
+        Box(
+            modifier = Modifier
+                .heightIn(min = 36.dp)
+                .clip(CircleShape)
+                .background(scheme.primary)
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.premium_banner_cta),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                maxLines = 1
+            )
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(GROUP_CORNER))
+            .background(scheme.pageCard)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_crown),
+            contentDescription = null,
+            modifier = Modifier.padding(end = 16.dp).size(24.dp),
+            tint = scheme.onSurface
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                // Its short name: the long one is the title of what the touch opens.
+                text = stringResource(R.string.options_premium),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = scheme.onSurface
+            )
+            Text(
+                text = stringResource(R.string.premium_row_title),
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant
+            )
+            if (stacked) {
+                Spacer(Modifier.height(12.dp))
+                button()
+            }
+        }
+        if (!stacked) {
+            Spacer(Modifier.width(12.dp))
+            button()
+        }
+    }
+}
+
 /** A subject of the options that has a page of its own, and what the page is called. */
 internal enum class OptionsSection(@StringRes val title: Int) {
     ANSWERS(R.string.settings_ai),
@@ -542,7 +603,7 @@ internal fun Section(
             }
         }
         if (y > from) found += from..y
-        if (found != tiles) tiles = found
+        tiles = found
         layout(constraints.maxWidth, y) {
             var top = 0
             placeables.forEach { placeable ->
@@ -615,19 +676,18 @@ private fun SwitchRow(
             )
             .heightIn(min = 72.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp),
-        // By the title, wherever the row ends: a third line under it does not move the switch.
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
         SettingText(title, supporting, enabled, Modifier.weight(1f), alert, note)
         Spacer(Modifier.width(16.dp))
         Switch(
             checked = checked,
             onCheckedChange = null,
-            modifier = Modifier.padding(top = 6.dp),
             enabled = enabled,
+            // On is the text's colour, as everything chosen is: the page keeps its one colour for what is sold.
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = MaterialTheme.colorScheme.primary
+                checkedThumbColor = MaterialTheme.colorScheme.surface,
+                checkedTrackColor = MaterialTheme.colorScheme.onSurface
             )
         )
     }
@@ -645,7 +705,7 @@ private fun SwitchRow(
 @Composable
 internal fun ActionRow(
     title: String,
-    supporting: String,
+    supporting: String?,
     onClick: () -> Unit,
     danger: Boolean = false,
     opens: Boolean = true,
@@ -657,8 +717,9 @@ internal fun ActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            // A name alone makes a shorter row than a name with a line under it.
+            .heightIn(min = if (supporting == null) 56.dp else 70.dp)
+            .padding(horizontal = GROUP_ROW_INSET, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
@@ -683,7 +744,7 @@ internal fun ActionRow(
 @Composable
 internal fun SettingText(
     title: String,
-    supporting: String,
+    supporting: String?,
     enabled: Boolean,
     modifier: Modifier = Modifier,
     alert: Boolean = false,
@@ -702,12 +763,14 @@ internal fun SettingText(
             color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
         )
         // What the setting does: said once, and the same whichever way the switch is.
-        Text(
-            text = supporting,
-            style = MaterialTheme.typography.bodyMedium,
-            // On a row that only leads somewhere, this line is where what is wrong there is said.
-            color = if (wrong) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (supporting != null) {
+            Text(
+                text = supporting,
+                style = MaterialTheme.typography.bodyMedium,
+                // On a row that only leads somewhere, this line is where what is wrong there is said.
+                color = if (wrong) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         // What stands in its way just now, when something does: a line of its own, so that the
         // line above never changes. Quiet when it only explains, not when something is wrong.
         if (note != null) {
@@ -749,11 +812,7 @@ private fun AppLanguage.labelRes(): Int = when (this) {
 internal val CardShape = RoundedCornerShape(16.dp)
 internal val ButtonShape = RoundedCornerShape(10.dp)
 
-/** Where a row's text starts, and so where the hairline under it does. */
-private val ROW_TEXT_START = 16.dp
 
-/** Material's emphasis for disabled content. */
-private const val DISABLED_ALPHA = 0.38f
 
 /** A choice that is not the chosen one: a touch of the text's colour, so it suits both themes. */
 internal const val TILE_ALPHA = 0.08f

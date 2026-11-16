@@ -38,8 +38,9 @@ import java.net.URL
 internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: Modifier = Modifier) {
     val cache = LocalContext.current.applicationContext.cacheDir
     val pixels = with(LocalDensity.current) { size.roundToPx() }
-    val picture by produceState<ImageBitmap?>(initialValue = null, photoUrl, pixels) {
-        value = photoUrl?.let { withContext(Dispatchers.IO) { Avatars.load(cache, it, pixels) } }
+    // Shown before, it is shown at once: no letter in its place for a moment each time the row comes back.
+    val picture by produceState(initialValue = photoUrl?.let { Avatars.shown(it, pixels) }, photoUrl, pixels) {
+        if (value == null) value = photoUrl?.let { withContext(Dispatchers.IO) { Avatars.load(cache, it, pixels) } }
     }
     Box(
         modifier = modifier
@@ -76,6 +77,9 @@ internal object Avatars {
     fun sized(url: String, pixels: Int): String =
         if (GOOGLE_SIZE.containsMatchIn(url)) url.replace(GOOGLE_SIZE, "=s$pixels-c") else url
 
+    /** The picture at [url] if it has been loaded since the app started. */
+    fun shown(url: String, pixels: Int): ImageBitmap? = synchronized(loaded) { loaded[sized(url, pixels)] }
+
     /** The picture at [url], from [cache] when it is there; null when it cannot be had, which is never worth a word. */
     fun load(cache: File, url: String, pixels: Int): ImageBitmap? = runCatching {
         val address = sized(url, pixels)
@@ -84,10 +88,10 @@ internal object Avatars {
         val kept = File(cache, "avatar-" + address.hashCode().toUInt().toString(16))
         if (!kept.exists()) {
             val connection = URL(address).openConnection() as HttpURLConnection
+            val arriving = File(cache, kept.name + ".part")
             try {
                 connection.connectTimeout = TIMEOUT_MS
                 connection.readTimeout = TIMEOUT_MS
-                val arriving = File(cache, kept.name + ".part")
                 connection.inputStream.use { from ->
                     arriving.outputStream().use { to ->
                         // A picture of a face at this size is a few thousand bytes: what is far more is not one.
@@ -105,10 +109,27 @@ internal object Avatars {
                 arriving.renameTo(kept)
             } finally {
                 connection.disconnect()
+                // Cut short, what had arrived is no use to anyone.
+                arriving.delete()
             }
         }
-        BitmapFactory.decodeFile(kept.path)?.asImageBitmap()
+        // Read no larger than it is shown: one served at another size than was asked for is brought down to it.
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(kept.path, bounds)
+        var sample = 1
+        while (minOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= pixels) sample *= 2
+        val picture = BitmapFactory.decodeFile(kept.path, BitmapFactory.Options().apply { inSampleSize = sample })
+        if (picture == null) {
+            // Not a picture: not kept, so that it is asked for again another time.
+            kept.delete()
+            null
+        } else {
+            picture.asImageBitmap().also { synchronized(loaded) { loaded[address] = it } }
+        }
     }.getOrNull()
+
+    /** What has been loaded since the app started: an account or two, so nothing is ever let go of. */
+    private val loaded = mutableMapOf<String, ImageBitmap>()
 
     private val GOOGLE_SIZE = Regex("=s\\d+(-c)?$")
     private const val TIMEOUT_MS = 6_000

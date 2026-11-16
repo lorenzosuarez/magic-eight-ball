@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Typography
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.LocalIndication
@@ -150,12 +152,27 @@ val Backdrop: Brush
     @ReadOnlyComposable
     get() = LocalBackdrop.current
 
+/** Material's type with nothing added between its letters, which is what sets it apart from the system's own. */
+private val AppTypography = Typography().run {
+    copy(
+        titleLarge = titleLarge.copy(letterSpacing = 0.sp),
+        titleMedium = titleMedium.copy(letterSpacing = 0.sp),
+        titleSmall = titleSmall.copy(letterSpacing = 0.sp),
+        bodyLarge = bodyLarge.copy(letterSpacing = 0.sp),
+        bodyMedium = bodyMedium.copy(letterSpacing = 0.sp),
+        bodySmall = bodySmall.copy(letterSpacing = 0.sp),
+        labelLarge = labelLarge.copy(letterSpacing = 0.sp),
+        labelMedium = labelMedium.copy(letterSpacing = 0.sp),
+        labelSmall = labelSmall.copy(letterSpacing = 0.sp)
+    )
+}
+
 @Composable
 fun MagicEightBallPhoneTheme(
     dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(colorScheme = if (dark) DarkColors else LightColors) {
+    MaterialTheme(colorScheme = if (dark) DarkColors else LightColors, typography = AppTypography) {
         CompositionLocalProvider(
             // Rows and everything else that is simply clickable answer a touch the same way.
             LocalIndication provides PressHighlight,

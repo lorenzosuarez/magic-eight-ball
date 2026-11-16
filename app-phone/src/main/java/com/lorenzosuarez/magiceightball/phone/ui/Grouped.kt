@@ -19,7 +19,7 @@ internal fun groupedShape(first: Boolean, last: Boolean): Shape = RoundedCornerS
 )
 
 /** The corner of a group, the corner where two of its tiles meet, and the hair between them. */
-internal val GROUP_CORNER = 20.dp
+internal val GROUP_CORNER = 24.dp
 internal val GROUP_SEAM = 4.dp
 internal val GROUP_GAP = 2.dp
 

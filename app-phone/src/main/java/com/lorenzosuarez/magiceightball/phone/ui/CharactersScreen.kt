@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.foundation.verticalScroll
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
@@ -145,11 +147,12 @@ internal fun CharactersScreen(
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
                 .fillMaxWidth()
                 .height(TOP_BAR_HEIGHT)
-                .padding(horizontal = EDGE),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                // Plain marks, whose pictures stand on the page's margins.
+                .padding(horizontal = EDGE - BAR_MARK_OUT),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BarIconButton(
+            AppIconButton(
                 icon = R.drawable.ic_close,
                 description = stringResource(R.string.action_close),
                 onClick = onClose
@@ -168,13 +171,25 @@ internal fun CharactersScreen(
                 overflow = TextOverflow.Ellipsis
             )
             if (onCreate != null) {
-                BarTextButton(
-                    icon = R.drawable.ic_add,
-                    label = stringResource(R.string.action_create),
-                    description = stringResource(R.string.characters_create),
-                    onClick = onCreate,
-                    busy = creating
-                )
+                // While what it started is on its way, a ring turns where its mark is: it has heard.
+                if (creating) {
+                    val create = stringResource(R.string.characters_create)
+                    Box(
+                        modifier = Modifier.size(48.dp).semantics {
+                            contentDescription = create
+                            disabled()
+                        },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        WaitingRing(color = MaterialTheme.colorScheme.onSurface)
+                    }
+                } else {
+                    AppIconButton(
+                        icon = R.drawable.ic_add,
+                        description = stringResource(R.string.characters_create),
+                        onClick = onCreate
+                    )
+                }
             }
         }
         if (shelves.size > 1) Shelves(shelf = shelf, shelves = shelves, onShelf = onShelf)
@@ -252,8 +267,7 @@ internal fun CharactersScreen(
                                 chosen = chosen == row.listing.key,
                                 // More on their way carry the group on: it is not rounded off under them.
                                 shape = groupedShape(first, last && rows.loadState.append !is LoadState.Loading),
-                                onClick = { opened = row.listing },
-                                onEdit = onEdit
+                                onClick = { opened = row.listing }
                             )
                             null -> CharacterRowPlace(shape = groupedShape(first, last))
                         }
@@ -365,7 +379,7 @@ private fun GroupTitle(text: String, top: Boolean) {
     Text(
         text = text,
         modifier = Modifier
-            .padding(start = GROUP_ROW_INSET, top = if (top) 22.dp else 8.dp, bottom = 6.dp)
+            .padding(start = GROUP_ROW_INSET, top = if (top) 22.dp else 8.dp, bottom = 8.dp)
             .semantics { heading() },
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -443,7 +457,7 @@ private fun Said(
  * view and every other thing chosen is.
  */
 @Composable
-private fun PillButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+internal fun PillButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val scheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
@@ -493,19 +507,17 @@ private fun ListedFace(listing: CharacterListing, size: androidx.compose.ui.unit
 
 /**
  * A character in the list: its face, its name and a line about it, and at the end of the row
- * the mark of the one that answers. A touch opens it.
+ * the mark of the one that answers. A touch opens it, and what can be done with it is there.
  */
 @Composable
 private fun ListedRow(
     listing: CharacterListing,
     chosen: Boolean,
     shape: Shape,
-    onClick: () -> Unit,
-    onEdit: ((CharacterListing.Yours) -> Unit)?
+    onClick: () -> Unit
 ) {
     val title = listing.title()
     val scheme = MaterialTheme.colorScheme
-    val editable = listing is CharacterListing.Yours && onEdit != null
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -515,7 +527,7 @@ private fun ListedRow(
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { selected = chosen }
             .heightIn(min = GROUP_ROW_HEIGHT)
-            .padding(start = GROUP_ROW_INSET, top = 10.dp, end = if (editable) 4.dp else GROUP_ROW_INSET, bottom = 10.dp),
+            .padding(horizontal = GROUP_ROW_INSET, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         ListedFace(listing, ROW_FACE, chosen)
@@ -536,31 +548,13 @@ private fun ListedRow(
             )
         }
         if (chosen) {
+            // Said by the row, which says it is the one: the mark is for the eye.
             Icon(
                 painter = painterResource(R.drawable.ic_check),
-                contentDescription = stringResource(R.string.character_answering),
+                contentDescription = null,
                 modifier = Modifier.size(22.dp),
                 tint = scheme.onSurface
             )
-        }
-        if (listing is CharacterListing.Yours && onEdit != null) {
-            val edit = stringResource(R.string.character_edit, title)
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    // Named once, by what it says it is: said again as what a touch does, it is heard twice.
-                    .clickable(role = Role.Button) { onEdit(listing) }
-                    .semantics { contentDescription = edit },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_edit),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = scheme.onSurfaceVariant
-                )
-            }
         }
     }
 }
@@ -655,6 +649,8 @@ internal fun CharacterDetail(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            // On a short screen, or with much written of it at large type, it is read by scrolling.
+            .verticalScroll(rememberScrollState())
             .navigationBarsPadding()
             .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -699,12 +695,33 @@ internal fun CharacterDetail(
                 color = scheme.onSurface
             )
         }
-        PillButton(
-            text = stringResource(if (answering) R.string.character_answering else R.string.character_use),
-            onClick = onUse,
-            modifier = Modifier.padding(top = 20.dp).fillMaxWidth().heightIn(min = 52.dp),
-            enabled = !answering
-        )
+        if (answering) {
+            // Nothing to ask for: said as what is so, not as a button that does nothing.
+            Row(
+                modifier = Modifier.padding(top = 20.dp).heightIn(min = 52.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_check),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = scheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.character_answering),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = scheme.onSurfaceVariant
+                )
+            }
+        } else {
+            PillButton(
+                text = stringResource(R.string.character_use),
+                onClick = onUse,
+                modifier = Modifier.padding(top = 20.dp).fillMaxWidth().heightIn(min = 52.dp)
+            )
+        }
         if (onEdit != null) {
             Box(
                 modifier = Modifier

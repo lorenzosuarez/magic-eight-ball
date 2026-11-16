@@ -131,7 +131,8 @@ internal fun AccountSection(
         }
     }
 
-    Section(stringResource(R.string.options_account)) {
+    // First on the page and under no name: whose it is says what it is.
+    Section(null) {
         if (account is AccountState.SignedIn) {
             AccountIdentity(
                 account = account,
@@ -255,17 +256,19 @@ private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, on
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { if (loading) stateDescription = waiting }
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .heightIn(min = 88.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AccountAvatar(name = name, photoUrl = account.photoUrl, size = 48.dp)
+        AccountAvatar(name = name, photoUrl = account.photoUrl, size = 56.dp)
         // One line each here, where the row has to stay a row: both are in full on the sheet.
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = name,
-                style = MaterialTheme.typography.titleMedium,
+                // The one name on the page that is somebody's: a size over the names of its rows.
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -281,13 +284,8 @@ private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, on
                 )
             }
         }
-        // The row is whole and opens as ever: the ring is beside its arrow, not in its place.
+        // The row is whole and opens as ever: the ring only says that more of it is on its way.
         if (loading) WaitingRing(color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Icon(
-            painter = painterResource(R.drawable.ic_chevron_right),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

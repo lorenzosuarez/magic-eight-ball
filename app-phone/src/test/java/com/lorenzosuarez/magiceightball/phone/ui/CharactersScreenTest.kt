@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasScrollToNodeAction
@@ -127,23 +126,22 @@ class CharactersScreenTest {
         compose.onNodeWithText("Cat").assertIsNotSelected()
 
         compose.onNodeWithText("Dog").performClick()
-        compose.onNodeWithText("Answering now").assertIsDisplayed().assertIsNotEnabled()
+        // Said as what is so: there is nothing to ask for, and no button that would do nothing.
+        compose.onNodeWithText("Answering now").assertIsDisplayed()
+        assertEquals(0, count("Use this character"))
     }
 
     @Test
-    fun `one of the user's own says what they wrote of it, and is corrected by its pencil or from where it is opened`() {
+    fun `one of the user's own says what they wrote of it, and is corrected from where it is opened`() {
         show(query = CharactersQuery(yours = listOf(nemo)), chosenNow = CharacterListing.Yours(nemo).key)
         compose.onNodeWithText("Capitán Nemo").assertIsSelected()
         compose.onNodeWithText("Un capitán gruñón.").assertIsDisplayed()
-
-        compose.onNodeWithContentDescription("Edit Capitán Nemo").performClick()
-        assertEquals(listOf(CharacterListing.Yours(nemo)), edited)
 
         compose.onNodeWithText("Capitán Nemo").performClick()
         compose.onNodeWithText("Made by you").assertIsDisplayed()
         compose.onNodeWithText("Edit").performClick()
         compose.waitForIdle()
-        assertEquals(2, edited.size)
+        assertEquals(listOf(CharacterListing.Yours(nemo)), edited)
         assertTrue(used.isEmpty())
     }
 
