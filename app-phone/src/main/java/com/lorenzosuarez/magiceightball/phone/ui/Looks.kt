@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import kotlin.math.sin
+import kotlin.math.cos
+import kotlin.math.PI
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.annotation.StringRes
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -72,18 +76,8 @@ private fun String.toPath(): Path = PathParser().parsePathString(this).toPath()
  *
  * @param rim the colour of the ground, to draw the rim round what is worn in; null to cut the
  * rim through whatever has been drawn on this layer, where the ground is under the layer.
- * @param tilt how far the figure is tipped: none where what it is drawn in is tipped already.
- * @param number whether the number is drawn on the disc: not where it is set there in type.
  */
-internal fun DrawScope.drawFigure(
-    look: CharacterLook,
-    ink: Color,
-    centre: Offset,
-    radius: Float,
-    rim: Color?,
-    tilt: Float = FIGURE_TILT,
-    number: Boolean = true
-) {
+internal fun DrawScope.drawFigure(look: CharacterLook, ink: Color, centre: Offset, radius: Float, rim: Color?) {
     val paths = lookPaths(look)
     val unit = radius / LOOK_BALL_RADIUS
     // What is worn is a size down beside the board it is drawn on, about the crown it sits on.
@@ -92,7 +86,7 @@ internal fun DrawScope.drawFigure(
     val middle = Offset(LOOK_BALL_X, LOOK_BALL_Y)
     withTransform({
         translate(centre.x, centre.y)
-        rotate(tilt, pivot = Offset.Zero)
+        rotate(FIGURE_TILT, pivot = Offset.Zero)
         scale(unit, unit, pivot = Offset.Zero)
         translate(-LOOK_BALL_X, -LOOK_BALL_Y)
     }) {
@@ -107,7 +101,7 @@ internal fun DrawScope.drawFigure(
             ),
             size = face
         )
-        if (number) drawPath(eight, ink)
+        drawPath(eight, ink)
         withTransform({ scale(worn, worn, pivot = crown) }) {
             // Every rim before any of the ink: a shape's rim never cuts into the shape beside it.
             val round = Stroke(width = LOOK_RIM, join = StrokeJoin.Round)
@@ -133,6 +127,43 @@ internal fun DrawScope.drawFace(look: CharacterLook, ink: Color, rim: Color? = n
     val unit = size.minDimension / LOOK_BOX
     drawFigure(look = look, ink = ink, centre = Offset(FIGURE_X * unit, FIGURE_Y * unit), radius = FIGURE_RADIUS * unit, rim = rim)
 }
+
+/**
+ * Where the figure of [look] is: points along the edge of the ball and of all it wears, each as
+ * how far across and how far down it is from the middle of the ball, in the ball's own radius,
+ * and tipped as the figure is. For whoever has to keep something clear of it.
+ */
+internal fun figureOutline(look: CharacterLook): FloatArray = outlines.getOrPut(look) {
+    val paths = lookPaths(look)
+    val worn = if (paths.fitted) 1f else FIGURE_WORN
+    val crown = LOOK_BALL_Y - LOOK_BALL_RADIUS
+    val tipped = Math.toRadians(FIGURE_TILT.toDouble())
+    val across = cos(tipped).toFloat()
+    val down = sin(tipped).toFloat()
+    val points = ArrayList<Float>()
+    fun add(x: Float, y: Float) {
+        points += (x * across - y * down) / LOOK_BALL_RADIUS
+        points += (x * down + y * across) / LOOK_BALL_RADIUS
+    }
+    (paths.behind + paths.ink).forEach { path ->
+        // Each point comes as how far along the path it is, then where.
+        val along = path.asAndroidPath().approximate(OUTLINE_WITHIN)
+        for (at in along.indices step 3) {
+            add((along[at + 1] - LOOK_BALL_X) * worn, crown + (along[at + 2] - crown) * worn - LOOK_BALL_Y)
+        }
+    }
+    repeat(OUTLINE_OF_BALL) { step ->
+        val angle = 2 * PI * step / OUTLINE_OF_BALL
+        add(LOOK_BALL_RADIUS * cos(angle).toFloat(), LOOK_BALL_RADIUS * sin(angle).toFloat())
+    }
+    points.toFloatArray()
+}
+
+private val outlines = HashMap<CharacterLook, FloatArray>()
+
+/** How near the points follow a curve, in the box's measure, and how many there are round the ball. */
+private const val OUTLINE_WITHIN = 0.5f
+private const val OUTLINE_OF_BALL = 72
 
 /** What a look is called where one is picked: the app's characters lend theirs their names. */
 @StringRes

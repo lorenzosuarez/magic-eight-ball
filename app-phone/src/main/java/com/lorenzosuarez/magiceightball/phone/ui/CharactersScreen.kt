@@ -684,7 +684,9 @@ internal fun CharacterDetail(
                     is CharacterListing.Community -> listing.description
                 },
                 style = MaterialTheme.typography.bodyLarge,
-                color = scheme.onSurface
+                color = scheme.onSurface,
+                // A line alone would make a pill of the card, like the button under it: it has the room of two.
+                minLines = 2
             )
         }
         if (answering) {

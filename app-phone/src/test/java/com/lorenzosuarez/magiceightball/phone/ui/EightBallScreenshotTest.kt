@@ -951,7 +951,7 @@ class EightBallScreenshotTest {
             MagicEightBallPhoneTheme(dark = dark) {
                 Surface(color = MaterialTheme.colorScheme.pageGround) {
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CharacterLook.entries.chunked(5).forEach { row ->
+                        CharacterLook.entries.chunked(4).forEach { row ->
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 row.forEach { look ->
                                     val colour = CustomCharacter.LOOKS[look.ordinal % CustomCharacter.LOOKS.size]
@@ -1196,12 +1196,12 @@ class EightBallScreenshotTest {
     }
 
     /**
-     * The tightest card: an answer on three lines under a question, signed with the widest name and
-     * with one of the length people give, under the tallest things a ball wears.
+     * The tightest cards: an answer on three lines under a question, signed with the widest name and
+     * with one of the length people give, under the tallest and the widest things a ball wears.
      */
     @Test
     fun share_card_of_the_user_s_own_at_its_tightest() = listOf("Wwwwwwwwwwwwwwww" to "widest", "Mi ex a las 3am" to "usual").forEach { (name, called) ->
-        listOf(CharacterLook.CAT, CharacterLook.WIZARD, CharacterLook.ZOOMER, CharacterLook.CHEF).forEach { worn ->
+        TIGHT_LOOKS.forEach { worn ->
             captureRoboImage(filePath = path("phone_75_share_card_yours_tight_${called}_${worn.name.lowercase()}")) {
                 ShareCard(
                     question = "¿Me va a escribir esta noche?",
@@ -1213,6 +1213,22 @@ class EightBallScreenshotTest {
                     look = CustomCharacter("1", name, "W", Magic8BallPersonality.ZOOMER, worn)
                 )
             }
+        }
+    }
+
+    /** And the name at its lowest: a question on two lines over an answer set large on three. */
+    @Test
+    fun share_card_signed_at_its_lowest() = TIGHT_LOOKS.forEach { worn ->
+        captureRoboImage(filePath = path("phone_115_share_card_signed_lowest_${worn.name.lowercase()}")) {
+            ShareCard(
+                question = "¿Debería pedir pizza esta noche o me hago algo con lo que queda en la heladera?",
+                answer = "No. Ni lo sueñes, querido.",
+                layer = rememberGraphicsLayer(),
+                visible = true,
+                styleLabel = "Wwwwwwwwwwwwwwww",
+                personality = Magic8BallPersonality.CUSTOM,
+                look = CustomCharacter("1", "Wwwwwwwwwwwwwwww", "W", Magic8BallPersonality.GRANDMA, worn)
+            )
         }
     }
 
@@ -1500,6 +1516,12 @@ class EightBallScreenshotTest {
 }
 
 /** 1080 x 1920 px. */
+/** What reaches highest on a ball, and what reaches furthest towards the words. */
+private val TIGHT_LOOKS = listOf(
+    CharacterLook.GRANDMA, CharacterLook.PHILOSOPHER, CharacterLook.SARCASTIC, CharacterLook.WIZARD,
+    CharacterLook.CAT, CharacterLook.COACH, CharacterLook.PIRATE, CharacterLook.CHEF
+)
+
 private const val PHONE = "w432dp-h768dp-400dpi"
 
 /** 720 x 1280 px, a small phone. */

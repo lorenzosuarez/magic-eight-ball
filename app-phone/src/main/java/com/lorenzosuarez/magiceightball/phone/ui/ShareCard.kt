@@ -1,6 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.isUnspecified
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.onPlaced
@@ -38,7 +40,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import com.example.magiceightball.core.domain.model.CustomCharacter
@@ -49,7 +50,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -123,11 +123,12 @@ internal fun ShareCard(
             ) {
                 // Anything written under the answer needs the room: the ball steps back into the corner for it.
                 val reading = remark != null && remark.length > SHARE_LONG_REMARK
-                // And for a name signed low and wide enough to reach what the ball wears it draws in
-                // towards the corner, by as much as keeps it under the name. Where the name ends is
-                // known once the words are placed, and the ball is placed after them: it is read in
-                // the same frame, with nothing composed again for it. Nought: no name reaches it.
-                var signedTo by remember { mutableFloatStateOf(0f) }
+                // And for a name written across what the ball wears it draws in towards the corner,
+                // by as much as leaves the name clear. Where the name ends is known once the words
+                // are placed, and the ball is placed after them: it is read in the same frame,
+                // with nothing composed again for it.
+                var signed by remember { mutableStateOf(Offset.Unspecified) }
+                val figure = remember(emblem) { figureFromCorner(emblem) }
                 Column(modifier = Modifier.fillMaxSize().padding(SHARE_MARGIN)) {
                     if (question.isNotBlank()) {
                         Text(
@@ -194,11 +195,14 @@ internal fun ShareCard(
                                 .padding(top = 12.dp)
                                 .fillMaxWidth()
                                 .onPlaced {
-                                    // Measured from the card's own edges: the words are set in from them.
-                                    signedTo = with(density) {
+                                    // Measured from the card's own edges, with some air: the words are set in from them.
+                                    signed = with(density) {
                                         val margin = SHARE_MARGIN.toPx()
-                                        val wide = margin + written > SHARE_WORN_REACH_LEFT.toPx()
-                                        if (wide) margin + it.positionInParent().y + it.size.height + SHARE_SIGNED_CLEAR.toPx() else 0f
+                                        val air = SHARE_SIGNED_CLEAR.toPx()
+                                        Offset(
+                                            (margin + written + air).toDp().value,
+                                            (margin + it.positionInParent().y + it.size.height + air).toDp().value
+                                        )
                                     }
                                 }
                         ) {
@@ -250,19 +254,14 @@ internal fun ShareCard(
                                 // Less far down than across: the white disc stays whole on the card.
                                 translationY = SHARE_FIGURE_IN.toPx() + SHARE_BALL_BACK_DROP.toPx()
                             } else {
-                                // About the corner of its own room, which is past the card's: what
-                                // is in sight of the ball stays the same part of it at any size.
-                                val corner = (SHARE_BALL_TOP + SHARE_BALL_SIZE).toPx()
-                                val drawn = if (styleLabel == null || signedTo == 0f) {
-                                    1f
-                                } else {
-                                    ((corner - signedTo) / SHARE_WORN_REACH.toPx()).coerceIn(SHARE_BALL_DRAWN_IN, 1f)
-                                }
-                                val moved = SHARE_BALL_SIZE.toPx() / 2 * (1 - drawn) + SHARE_FIGURE_IN.toPx() * drawn
+                                // About the card's corner: what is in sight of the ball stays the
+                                // same part of it at any size, its white disc whole.
+                                val drawn = if (styleLabel == null || signed.isUnspecified) 1f else drawnInFor(figure, signed)
+                                val middle = SHARE_BALL_SIZE / 2
                                 scaleX = SHARE_FIGURE * drawn
                                 scaleY = SHARE_FIGURE * drawn
-                                translationX = moved
-                                translationY = moved
+                                translationX = (SHARE_WIDTH - SHARE_BALL_LEFT - middle).toPx() * (1 - drawn) + SHARE_FIGURE_IN.toPx() * drawn
+                                translationY = (SHARE_HEIGHT - SHARE_BALL_TOP - middle).toPx() * (1 - drawn) + SHARE_FIGURE_IN.toPx() * drawn
                             }
                         }
                 )
@@ -288,29 +287,45 @@ private fun DrawScope.drawBubble() {
     )
 }
 
-/**
- * The ball with nothing but its two colours. It has one axis, tipped towards the words: what
- * it wears sits on top of that axis, the white disc is turned along it and the number stands
- * on it, so the three agree on where the ball is looking.
- */
+/** The figure, with nothing but its two colours, drawn about the middle of the room it is given. */
 @Composable
 private fun FlatBall(look: CharacterLook, rim: Color, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.rotate(FIGURE_TILT)) {
-        // The figure itself, upright: the box it is drawn in is what is tipped, and the number is set in type over it.
-        Canvas(Modifier.fillMaxSize()) {
-            drawFigure(look = look, ink = SHARE_INK, centre = center, radius = size.minDimension / 2, rim = rim, tilt = 0f, number = false)
+    Canvas(modifier) { drawFigure(look = look, ink = SHARE_INK, centre = center, radius = size.minDimension / 2, rim = rim) }
+}
+
+/**
+ * Where the figure of [look] is on the card at its full size: each point of its edge as how far
+ * left of the card's lower right corner it is, then how far above it, in dp. What is past the
+ * card's edges is left out: nothing is written there.
+ */
+private fun figureFromCorner(look: CharacterLook): FloatArray {
+    val outline = figureOutline(look)
+    val radius = SHARE_BALL_SIZE.value / 2 * SHARE_FIGURE
+    val left = SHARE_WIDTH.value - SHARE_BALL_LEFT.value - SHARE_BALL_SIZE.value / 2 - SHARE_FIGURE_IN.value
+    val up = SHARE_HEIGHT.value - SHARE_BALL_TOP.value - SHARE_BALL_SIZE.value / 2 - SHARE_FIGURE_IN.value
+    val points = ArrayList<Float>(outline.size)
+    for (at in outline.indices step 2) {
+        val x = left - outline[at] * radius
+        val y = up - outline[at + 1] * radius
+        if (x > 0f && y > 0f) {
+            points += x
+            points += y
         }
-        Text(
-            text = "8",
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(x = SHARE_BALL_SIZE / 2 * FACE_X, y = SHARE_BALL_SIZE / 2 * FACE_Y)
-                .graphicsLayer { scaleX = FACE_WIDE / FACE_TALL },
-            style = MaterialTheme.typography.displayLarge.copy(fontSize = 52.sp, lineHeight = 52.sp),
-            fontWeight = FontWeight.Black,
-            color = SHARE_INK
-        )
     }
+    return points.toFloatArray()
+}
+
+/**
+ * How far the figure is drawn in towards the card's corner so that none of it is under what is
+ * written as far as [signed], which is where the name ends and where its foot is, in dp: each
+ * point of [figure] has to be past the name's end or below its foot.
+ */
+private fun drawnInFor(figure: FloatArray, signed: Offset): Float {
+    val beside = SHARE_WIDTH.value - signed.x
+    val under = SHARE_HEIGHT.value - signed.y
+    var drawn = 1f
+    for (at in figure.indices step 2) drawn = minOf(drawn, maxOf(beside / figure[at], under / figure[at + 1]))
+    return drawn.coerceAtLeast(SHARE_BALL_DRAWN_IN)
 }
 
 /**
@@ -476,16 +491,13 @@ private const val SHARE_LONG_REMARK = 120
 /** How far the ball steps back for them: its size, and how far towards the corner. */
 private const val SHARE_BALL_BACK = 0.7f
 private val SHARE_BALL_BACK_SHIFT = 30.dp
-private val SHARE_BALL_BACK_DROP = 16.dp
+private val SHARE_BALL_BACK_DROP = 11.dp
 /**
- * How far up from the corner of the ball's room the tallest thing a ball wears reaches at its full
- * size, and how far left anything it wears does: a name that ends past the one is kept above the
- * other, with this much air under it, by drawing the ball in. Never further in than this: a name
- * signed lower than any answer leaves it is rather written over a hat than beside a dot.
+ * How much air a name has between it and the figure, and how far in the ball is drawn at the
+ * most for it: a name signed lower than any answer leaves it is rather written over a hat than
+ * beside a dot.
  */
-private val SHARE_WORN_REACH = 273.dp
-private val SHARE_WORN_REACH_LEFT = 196.dp
-private val SHARE_SIGNED_CLEAR = 4.dp
+private val SHARE_SIGNED_CLEAR = 6.dp
 private const val SHARE_BALL_DRAWN_IN = 0.6f
 /** With them, the answer gives up some of its size and the text some of its margin. */
 private const val SHARE_READING_ANSWER = 38

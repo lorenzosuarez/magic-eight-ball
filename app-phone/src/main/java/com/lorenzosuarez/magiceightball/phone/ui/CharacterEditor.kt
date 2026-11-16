@@ -416,13 +416,13 @@ internal fun CharacterEditorContent(
     }
 }
 
-/** How much of the room is taken, at the end of the line under a field: in the colour of a warning once it is all taken. */
+/** How much of the room is taken, at the end of the line under a field: in the text's own colour once it is all taken, which is full and not wrong. */
 @Composable
 private fun Counter(length: Int, most: Int) {
     Text(
         text = "$length/$most",
         modifier = Modifier.fillMaxWidth(),
-        color = if (length >= most) MaterialTheme.colorScheme.error else Color.Unspecified,
+        color = if (length >= most) MaterialTheme.colorScheme.onSurface else Color.Unspecified,
         textAlign = TextAlign.End
     )
 }
@@ -500,7 +500,7 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
             modifier = Modifier
                 .fillMaxWidth()
                 .fadingRow(rememberScrollState(start), PICK_EDGE)
-                .padding(start = PICK_EDGE)
+                .padding(horizontal = PICK_EDGE)
                 .selectableGroup()
         ) {
             OnCardColours {
@@ -511,9 +511,10 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
                     val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "colour picked")
                     // The touch takes the dot and the gap after it: the dots stay where the edge is.
                     // The light of the touch is the dot's alone: to the eye, it is what was touched.
+                    // The last has no gap after it: the row ends as far from the edge as it begins.
                     Box(
                         modifier = Modifier
-                            .size(width = step, height = 48.dp)
+                            .size(width = if (look == COLOURS.last()) SWATCH else step, height = 48.dp)
                             .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
                             .semantics { contentDescription = label },
                         contentAlignment = Alignment.CenterStart
@@ -565,7 +566,7 @@ private fun EmblemRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .fadingRow(rememberScrollState(start), PICK_EDGE)
-                .padding(start = PICK_EDGE)
+                .padding(horizontal = PICK_EDGE)
                 .selectableGroup()
         ) {
             OnCardColours {
@@ -579,8 +580,8 @@ private fun EmblemRow(
                     // goes as the face fills out again.
                     Box(
                         modifier = Modifier
-                            // The gap after it is its own: the faces stay where the edge is.
-                            .padding(end = step - EMBLEM_RING)
+                            // The gap after it is its own: the faces stay where the edge is. The last has none.
+                            .padding(end = if (look == EMBLEMS.last()) 0.dp else step - EMBLEM_RING)
                             .size(EMBLEM_RING)
                             .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), CircleShape)
                             .clip(CircleShape)

@@ -233,7 +233,11 @@ LOOKS = {
         'ink': [ring(37, 31, 12.5, 7), ring(63, 31, 12.5, 7), bar(47.5, 29.5, 52.5, 29.5, 4.5, cap=False), bar(25.5, 28.5, 18.5, 25.5, 4.5), bar(74.5, 28.5, 81.5, 25.5, 4.5)],
     }),
     # Ears that hang over the ball, told from it by their rim: behind it they made one shape with it.
-    'dog': ('#F0B878', {'ink': both('M37.5 42 Q30 33 22.5 38 Q12 48 15 63 Q17 70 22.5 68 Q29 59 32 48Z')}),
+    'dog': ('#F0B878', {
+        'ink': both('M37.5 42 Q30 33 22.5 38 Q12 48 15 63 Q17 70 22.5 68 Q29 59 32 48Z'),
+        # The inside of each ear, as the cat has: without it they are ink on ink at the size of a row.
+        'white': both('M28.2 48.4 Q25.1 44.6 21.9 46.7 Q17.5 50.9 18.8 57.2 Q19.6 60.1 21.9 59.3 Q24.7 55.5 25.9 50.9Z'),
+    }),
     # No character of the app's wears these: they are there to be picked.
     'singer': ('#FFC2D1', {
         'ink': [circ(62, 19, 10), taper(53.9, 28.1, 9, 43.1, 40.3, 6.5)],
