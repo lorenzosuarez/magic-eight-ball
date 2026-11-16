@@ -172,7 +172,7 @@ private fun PredictionTrianglePreview() {
         contentAlignment = Alignment.Center
     ) {
         PredictionTriangle(
-            text = "Signs point to yes",
+            text = "The odds are with you",
             modifier = Modifier.size(width = 136.dp, height = 120.dp)
         )
     }

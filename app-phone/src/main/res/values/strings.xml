@@ -44,7 +44,7 @@
     <string name="action_ask">Ask</string>
     <string name="action_ask_by_voice">Ask by voice</string>
     <string name="action_finish_question">Finish the question</string>
-    <string name="answer_fallback">Ask again later.</string>
+    <string name="answer_fallback">Try again in a moment.</string>
 
     <!-- Settings -->
     <string name="settings_title">Options</string>
@@ -74,7 +74,7 @@
     <string name="style_gamer">Gamer</string>
     <string name="style_sarcastic_sample">In your dreams.</string>
     <string name="style_mystical_sample">The moon says no.</string>
-    <string name="style_neutral_sample">It is certain.</string>
+    <string name="style_neutral_sample">I\'d say yes.</string>
     <string name="style_grandma_sample">Yes. Take a sweater.</string>
     <string name="style_pirate_sample">Rum for everyone!</string>
     <string name="style_philosopher_sample">Define yes first.</string>

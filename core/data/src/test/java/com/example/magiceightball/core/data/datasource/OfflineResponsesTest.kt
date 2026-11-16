@@ -86,7 +86,7 @@ class OfflineResponsesTest {
                     assertEquals(bundled.messagesFor(language, Magic8BallPersonality.NEUTRAL), messages)
                     continue
                 }
-                // The classic style is the toy's twenty answers, no more and no fewer.
+                // The classic style has twenty answers of its own, no more and no fewer.
                 if (personality == Magic8BallPersonality.NEUTRAL) {
                     assertEquals(20, messages.size)
                 } else {

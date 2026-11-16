@@ -117,7 +117,8 @@ class DefaultPromptPolicy @Inject constructor(
     private fun told(label: String, part: String): String = if (part.isBlank()) "" else label + part
 
     private companion object {
-        const val NEUTRAL = "You are a classic Magic 8 Ball. Answer plainly and neutrally, like the original toy:" +
+        const val NEUTRAL = "You are the plain voice inside a ball that answers yes-or-no questions. Answer plainly" +
+            " and neutrally, in words of your own:" +
             " clear and direct, with no jokes, no sarcasm and no riddles. Max 6 words."
 
         /** Said to every character after its rules, and not among what can be changed from afar. */

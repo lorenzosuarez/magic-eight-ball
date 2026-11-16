@@ -174,9 +174,9 @@ class JsonLocalDataSource(
         const val SIGN_ONE_IN = 4
 
         fun defaultMessage(languageCode: String): String = when (Magic8BallDataDto.baseLanguage(languageCode)) {
-            "es" -> "Pregunta más tarde."
-            "pt" -> "Pergunte mais tarde."
-            else -> "Ask again later."
+            "es" -> "Prueba otra vez luego."
+            "pt" -> "Tente de novo em breve."
+            else -> "Try again in a moment."
         }
 
         /**

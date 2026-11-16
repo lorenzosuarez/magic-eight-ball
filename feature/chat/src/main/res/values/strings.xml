@@ -26,9 +26,9 @@
     <string name="listening">Listening…</string>
     <string name="listening_es">Te escucho…</string>
     <string name="listening_pt">Estou ouvindo…</string>
-    <string name="answer_fallback">Ask again later.</string>
-    <string name="answer_fallback_es">Pregunta más tarde.</string>
-    <string name="answer_fallback_pt">Pergunte mais tarde.</string>
+    <string name="answer_fallback">Try again in a moment.</string>
+    <string name="answer_fallback_es">Prueba otra vez luego.</string>
+    <string name="answer_fallback_pt">Tente de novo em breve.</string>
     <string name="report">Report</string>
     <string name="report_es">Reportar</string>
     <string name="report_pt">Denunciar</string>

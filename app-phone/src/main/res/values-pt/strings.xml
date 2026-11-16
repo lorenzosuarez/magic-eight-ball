@@ -42,7 +42,7 @@
     <string name="action_ask">Perguntar</string>
     <string name="action_ask_by_voice">Perguntar por voz</string>
     <string name="action_finish_question">Terminar a pergunta</string>
-    <string name="answer_fallback">Pergunte mais tarde.</string>
+    <string name="answer_fallback">Tente de novo em breve.</string>
 
     <!-- Settings -->
     <string name="settings_title">Opções</string>
@@ -69,7 +69,7 @@
     <string name="style_gamer">Gamer</string>
     <string name="style_sarcastic_sample">Nem em sonho.</string>
     <string name="style_mystical_sample">A lua diz não.</string>
-    <string name="style_neutral_sample">É certo.</string>
+    <string name="style_neutral_sample">Eu diria que sim.</string>
     <string name="style_grandma_sample">Sim. E leva casaco.</string>
     <string name="style_pirate_sample">Rum para todos!</string>
     <string name="style_philosopher_sample">Penso, logo sim.</string>
