@@ -129,6 +129,9 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:motion"))
 
+    // The characters are listed a page at a time: there may be any number of them.
+    implementation(libs.paging.compose)
+
     debugImplementation(libs.ui.tooling)
 
     testImplementation(libs.junit)
@@ -137,6 +140,7 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.ui.test.junit4)
+    testImplementation(libs.paging.testing)
 }
 
 kotlin {

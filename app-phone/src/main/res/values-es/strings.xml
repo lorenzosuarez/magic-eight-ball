@@ -274,4 +274,13 @@
     <string name="age_notice_text_pending">No se guardó nada de lo que escribiste. La cuenta aún no se pudo eliminar: la app lo volverá a intentar al abrirse. En este dispositivo la bola sigue respondiendo, sin cuenta y sin IA.</string>
     <string name="action_understood">Entendido</string>
     <string name="privacy_account">Con tu cuenta, a Gemini también le llegan tu nombre, tu signo y que es tu cumpleaños (solo ese día).</string>
+    <string name="characters_shelf_all">Todos</string>
+    <string name="characters_shelf_originals">Originales</string>
+    <string name="characters_shelf_community">Comunidad</string>
+    <string name="characters_by">de %1$s</string>
+    <string name="characters_empty_yours">Aún no has creado ninguno</string>
+    <string name="characters_empty">No hay personajes aquí</string>
+    <string name="characters_load_failed">No se pudieron cargar. Revisa tu conexión</string>
+    <string name="characters_loading_more">Cargando más personajes</string>
+    <string name="action_retry">Reintentar</string>
 </resources>

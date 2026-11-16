@@ -13,6 +13,13 @@ import com.example.magiceightball.core.domain.model.AskerFacts
 import java.time.LocalDate
 import com.example.magiceightball.core.domain.gateway.ReportReason
 import androidx.lifecycle.ViewModel
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.example.magiceightball.core.domain.model.CharacterShelf
+import com.example.magiceightball.core.domain.repository.NoCommunityCharacters
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterPages
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
+import com.lorenzosuarez.magiceightball.phone.characters.CharactersQuery
 import androidx.lifecycle.viewModelScope
 import com.example.magiceightball.core.domain.model.Streak
 import com.example.magiceightball.core.domain.gateway.AiAllowance
@@ -81,8 +88,26 @@ class EightBallViewModel @Inject constructor(
     private val aiAllowance: AiAllowance,
     private val appConfig: AppConfigSource,
     private val reports: AnswerReports = AnswerReports.None,
-    private val membership: Membership = Membership()
+    private val membership: Membership = Membership(),
+    private val pages: CharacterPages = CharacterPages(NoCommunityCharacters)
 ) : ViewModel() {
+
+    /** Which shelves of characters there are to look at. */
+    val characterShelves: List<CharacterShelf> get() = pages.shelves
+
+    /** The pages last asked for, and what they were asked with: kept, so a turn of the screen loads nothing again. */
+    private var lastPages: Pair<CharactersQuery, Flow<PagingData<CharacterRow>>>? = null
+
+    /**
+     * The characters of [query], a page at a time, for as long as this lives.
+     *
+     * ponytail: one query's pages are kept. Asked with another, as when one of the user's own is
+     * corrected, they load from the first again: what is at hand is instant, and other people's
+     * are fetched anew. Keep those apart from what is at hand if that ever shows.
+     */
+    fun characterPages(query: CharactersQuery): Flow<PagingData<CharacterRow>> =
+        lastPages?.takeIf { it.first == query }?.second
+            ?: pages.flow(query).cachedIn(viewModelScope).also { lastPages = query to it }
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
     private val notice = MutableStateFlow<Notice?>(null)

@@ -15,6 +15,8 @@ import com.lorenzosuarez.magiceightball.phone.usage.FirebaseUsageTracker
 import com.example.magiceightball.core.domain.gateway.AnswerReports
 import com.example.magiceightball.core.domain.gateway.UsageTracker
 import com.lorenzosuarez.magiceightball.phone.usage.FirebaseAnswerReports
+import com.example.magiceightball.core.domain.repository.CommunityCharacters
+import com.example.magiceightball.core.domain.repository.NoCommunityCharacters
 import dagger.Module
 import dagger.Provides
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -50,6 +52,11 @@ object PhoneModule {
     @Provides
     @Singleton
     fun provideClock(): Clock = Clock.systemUTC()
+
+    /** Nobody else's characters yet: the list is ready for them, and there are none. */
+    @Provides
+    @Singleton
+    fun provideCommunityCharacters(): CommunityCharacters = NoCommunityCharacters
 
     @Provides
     @Singleton

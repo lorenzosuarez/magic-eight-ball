@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.lorenzosuarez.magiceightball.phone.ui
 
 import androidx.compose.material3.SnackbarHost
@@ -244,7 +246,7 @@ class CharacterEditorTest {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
                         // As on the screen itself: what the page has to say in passing is shown over it.
                         val snackbars = remember { SnackbarHostState() }
-                        CompositionLocalProvider(LocalSnackbars provides snackbars) {
+                        CompositionLocalProvider(LocalSnackbars provides snackbars, LocalGridPrefetch provides NoPrefetch) {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
@@ -287,10 +289,17 @@ class CharacterEditorTest {
         compose.waitForIdle()
     }
 
+    /** What is on the page of options is touched there: the screen of characters, which covers it, is put away. */
+    private fun onThePage() {
+        asked.browsing = false
+        compose.waitForIdle()
+    }
+
     @Test
     fun `whoever has no account is shown the way to one, and told when it led nowhere`() {
         showOptions(AccountState.SignedOut, characters = null)
-        assertEquals(0, count("Tuyos"))
+        // Their shelf, with nothing on it: no group of theirs among the cards.
+        assertEquals(1, count("Tuyos"))
 
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
         compose.onNodeWithText("Para crear personajes necesitas una cuenta").assertIsDisplayed()
@@ -307,7 +316,8 @@ class CharacterEditorTest {
     @Test
     fun `signed in, create opens on a new character, and yours are listed first with the way to correct each`() {
         showOptions(SIGNED_IN, characters = listOf(NEMO))
-        compose.onNodeWithText("Tuyos").assertIsDisplayed()
+        // Their shelf, and over the first cards the name of their group.
+        assertEquals(2, count("Tuyos"))
 
         compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
         compose.onNodeWithText("Tu personaje").assertIsDisplayed()
@@ -462,6 +472,7 @@ class CharacterEditorTest {
     @Test
     fun `asked for from the page, all of it is said, and buying it leaves them where they were`() {
         showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, price = "2,99 €") { Bought.DONE }
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
 
         compose.onNodeWithText("Magic AI Ball Premium").assertIsDisplayed()
@@ -484,6 +495,7 @@ class CharacterEditorTest {
     @Test
     fun `a payment that came through elsewhere closes the sheet and says so once`() {
         showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, price = "2,99 €")
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
         compose.onNodeWithText("Magic AI Ball Premium").assertIsDisplayed()
 
@@ -497,6 +509,7 @@ class CharacterEditorTest {
     @Test
     fun `with nobody signed in, what is sold leads to an account first`() {
         showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
 
         compose.onNodeWithText("Para obtener Premium necesitas una cuenta").assertIsDisplayed()
@@ -524,6 +537,7 @@ class CharacterEditorTest {
     @Test
     fun `signing in for it and turning out to have it opens nothing`() {
         showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
         signInEnds = AccountOutcome.DONE
         compose.onAllNodesWithText("Continuar con Google")[1].performClick()
@@ -538,6 +552,7 @@ class CharacterEditorTest {
     @Test
     fun `a device with no Google account is told so, and not to check its connection`() {
         showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
         signInEnds = AccountOutcome.NO_GOOGLE_ACCOUNT
         compose.onAllNodesWithText("Continuar con Google")[1].performClick()
@@ -702,7 +717,9 @@ class CharacterEditorTest {
         compose.setContent {
             MagicEightBallPhoneTheme {
                 ProvideAppLanguage(AppLanguage.SPANISH) {
-                    CharacterFlows(state = state, asked = asked, onPersonalitySelected = {})
+                    CompositionLocalProvider(LocalGridPrefetch provides NoPrefetch) {
+                        CharacterFlows(state = state, asked = asked, onPersonalitySelected = {})
+                    }
                 }
             }
         }

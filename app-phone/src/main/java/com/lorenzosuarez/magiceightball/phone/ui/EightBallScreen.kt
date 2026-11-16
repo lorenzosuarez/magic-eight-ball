@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.BlendMode
@@ -334,10 +335,13 @@ fun EightBallScreen(
             EightBallContent(
                 state = current,
                 onPickCharacter = { flowsAsked.browsing = true },
+                covered = flowsAsked.browsing,
                 flows = {
                     CharacterFlows(
                         state = current,
                         asked = flowsAsked,
+                        shelves = viewModel.characterShelves,
+                        pages = viewModel::characterPages,
                         onPersonalitySelected = {
                             tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
                             viewModel.setPersonality(it)
@@ -509,6 +513,7 @@ internal fun EightBallContent(
     onSpeakAnswer: () -> Unit = {},
     onPickCharacter: () -> Unit = {},
     flows: @Composable () -> Unit = {},
+    covered: Boolean = false,
     options: @Composable () -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
@@ -530,8 +535,6 @@ internal fun EightBallContent(
     val reportedMessage = stringResource(R.string.report_done)
     // Reporting asks one thing first, what is wrong, and the answer to that sends it.
     var reporting by rememberSaveable { mutableStateOf(false) }
-    // What the flows have to say once they are done is said by the screen, as the options' is.
-    CompositionLocalProvider(LocalSnackbars provides snackbars) { flows() }
     if (reporting && state.phase is BallPhase.Answered) {
         ReportSheet(
             onReason = { reason ->
@@ -596,9 +599,11 @@ internal fun EightBallContent(
                 )
             }
         }
+        // Under a screen that covers it, a page is not there for whoever has it read out.
+        val unread = if (covered) Modifier.clearAndSetSemantics {} else Modifier
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().then(unread),
             userScrollEnabled = atRest
         ) { page ->
             val pageName = stringResource(
@@ -730,13 +735,6 @@ internal fun EightBallContent(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbars,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-        )
-
         // Over every page, and the one thing up here that stays put while they slide under it:
         // where the user is. It gives way to a question, which has nowhere else to go.
         if (atRest) {
@@ -746,6 +744,7 @@ internal fun EightBallContent(
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .fillMaxWidth()
                     .height(TOP_BAR_HEIGHT)
+                    .then(unread)
             ) {
                 PageDots(
                     position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
@@ -753,6 +752,16 @@ internal fun EightBallContent(
                 )
             }
         }
+
+        // What the flows open is over every page, and what they have to say once they are done
+        // is said by the screen, as the options' is: over that too.
+        CompositionLocalProvider(LocalSnackbars provides snackbars) { flows() }
+        SnackbarHost(
+            hostState = snackbars,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+        )
     }
 }
 

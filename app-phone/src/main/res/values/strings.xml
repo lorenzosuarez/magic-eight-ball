@@ -282,4 +282,13 @@
     <string name="age_notice_text_pending">Nothing you typed was kept. The account could not be deleted yet: the app will try again when it is opened. On this device the ball keeps answering, without an account and without AI.</string>
     <string name="action_understood">Got it</string>
     <string name="privacy_account">With your account, Gemini is also told your first name, your sign and that it\'s your birthday (only on the day).</string>
+    <string name="characters_shelf_all">All</string>
+    <string name="characters_shelf_originals">Originals</string>
+    <string name="characters_shelf_community">Community</string>
+    <string name="characters_by">by %1$s</string>
+    <string name="characters_empty_yours">You haven\'t made any yet</string>
+    <string name="characters_empty">No characters here</string>
+    <string name="characters_load_failed">Couldn\'t load them. Check your connection</string>
+    <string name="characters_loading_more">Loading more characters</string>
+    <string name="action_retry">Try again</string>
 </resources>

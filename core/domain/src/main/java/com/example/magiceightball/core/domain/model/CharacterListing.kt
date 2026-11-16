@@ -1,0 +1,65 @@
+package com.example.magiceightball.core.domain.model
+
+/**
+ * A character as it is listed where characters are chosen among: one of the app's own, one the
+ * user made, or one somebody else made and gave to everyone.
+ *
+ * The three are kept apart because they are not the same thing to the app: its own are known by
+ * heart and named in the app's languages, the user's are kept with their account, and the
+ * others' come from afar, a few at a time, and there may be any number of them.
+ */
+sealed interface CharacterListing {
+    /** What tells this listing from every other, of whatever kind: fit to key a list by. */
+    val key: String
+
+    /** One of the app's own. */
+    data class Original(val style: Magic8BallPersonality) : CharacterListing {
+        override val key: String get() = "o:${style.name}"
+    }
+
+    /** One the user made. */
+    data class Yours(val character: CustomCharacter) : CharacterListing {
+        override val key: String get() = "y:${character.id}"
+    }
+
+    /**
+     * One somebody else made.
+     *
+     * @property sample something it would say, in the words of whoever made it.
+     * @property author the name its maker goes by, as it is shown.
+     * @property uses how many times it has been chosen, by anyone.
+     */
+    data class Community(
+        val id: String,
+        val name: String,
+        val sample: String,
+        val colour: Magic8BallPersonality,
+        val emblem: Magic8BallPersonality,
+        val author: String,
+        val uses: Long = 0
+    ) : CharacterListing {
+        override val key: String get() = "c:$id"
+    }
+}
+
+/** Which characters are being looked at. */
+enum class CharacterShelf {
+    /** Every one: the user's, the app's, and then everyone else's. */
+    ALL,
+
+    /** The app's own. */
+    ORIGINALS,
+
+    /** What other people made. */
+    COMMUNITY,
+
+    /** What the user made. */
+    YOURS
+}
+
+/**
+ * Some of the characters other people made, in the order they are listed.
+ *
+ * @property next what to ask for the ones after these with; null when these are the last.
+ */
+data class CharacterPage(val items: List<CharacterListing.Community>, val next: String?)

@@ -274,4 +274,13 @@
     <string name="age_notice_text_pending">Nada do que você digitou foi salvo. A conta ainda não pôde ser excluída: o app vai tentar de novo ao ser aberto. Neste dispositivo a bola continua respondendo, sem conta e sem IA.</string>
     <string name="action_understood">Entendi</string>
     <string name="privacy_account">Com sua conta, o Gemini também recebe seu nome, seu signo e que é seu aniversário (só no dia).</string>
+    <string name="characters_shelf_all">Todos</string>
+    <string name="characters_shelf_originals">Originais</string>
+    <string name="characters_shelf_community">Comunidade</string>
+    <string name="characters_by">de %1$s</string>
+    <string name="characters_empty_yours">Você ainda não criou nenhum</string>
+    <string name="characters_empty">Não há personagens aqui</string>
+    <string name="characters_load_failed">Não foi possível carregar. Verifique sua conexão</string>
+    <string name="characters_loading_more">Carregando mais personagens</string>
+    <string name="action_retry">Tentar de novo</string>
 </resources>

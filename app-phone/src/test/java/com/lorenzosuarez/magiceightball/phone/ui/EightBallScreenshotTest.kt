@@ -1,5 +1,12 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.lorenzosuarez.magiceightball.phone.characters.atHand
+import com.lorenzosuarez.magiceightball.phone.characters.CharactersQuery
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
+import com.example.magiceightball.core.domain.repository.NoCommunityCharacters
+import com.example.magiceightball.core.domain.repository.CommunityCharacters
+import com.example.magiceightball.core.domain.model.CharacterShelf
+import com.example.magiceightball.core.domain.model.CharacterListing
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -871,14 +878,13 @@ class EightBallScreenshotTest {
     }
 
     @Test
-    fun `a style taken out from afar leaves the sheet, unless it is the one in use`() {
+    fun `a style taken out from afar is not listed`() {
         val hidden = setOf(Magic8BallPersonality.CAT, Magic8BallPersonality.DOG)
 
-        val shown = styleGroups(Magic8BallPersonality.SARCASTIC, hidden).flatMap { it.styles }
+        val shown = CharactersQuery(hidden = hidden).atHand()
+            .mapNotNull { ((it as? CharacterRow.Card)?.listing as? CharacterListing.Original)?.style }
         assertTrue(Magic8BallPersonality.CAT !in shown && Magic8BallPersonality.DOG !in shown)
         assertEquals(CustomCharacter.LOOKS.size - 2, shown.size)
-
-        assertTrue(Magic8BallPersonality.CAT in styleGroups(Magic8BallPersonality.CAT, hidden).flatMap { it.styles })
     }
 
     /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */
@@ -910,29 +916,71 @@ class EightBallScreenshotTest {
         withCreate: Boolean = false,
         yours: List<CustomCharacter> = emptyList(),
         yoursPlaces: Int = 0,
-        fontScale: Float = 1f
+        fontScale: Float = 1f,
+        shelf: CharacterShelf = CharacterShelf.ALL,
+        community: CommunityCharacters = NoCommunityCharacters
     ) {
         captureRoboImage(filePath = path(name)) {
             WithFontScale(fontScale) {
                 MagicEightBallPhoneTheme(dark = dark) {
                     ProvideAppLanguage(language) {
-                        Surface(color = MaterialTheme.colorScheme.sheetGround) {
-                            StylesContent(
-                                // With characters of the user's own, the first of them is the one that answers.
-                                selected = if (yours.isEmpty()) Magic8BallPersonality.LOVESTRUCK else Magic8BallPersonality.CUSTOM,
-                                onSelected = {},
-                                onClose = {},
-                                onCreate = if (withCreate) ({}) else null,
-                                yours = yours,
-                                chosenOfYours = yours.firstOrNull()?.id,
-                                yoursPlaces = yoursPlaces
-                            )
-                        }
+                        CharactersShown(
+                            query = CharactersQuery(shelf = shelf, yours = yours, yoursPlaces = yoursPlaces),
+                            community = community,
+                            // With characters of the user's own, the first of them is the one that answers.
+                            chosen = yours.firstOrNull()?.let { CharacterListing.Yours(it).key }
+                                ?: CharacterListing.Original(Magic8BallPersonality.LOVESTRUCK).key,
+                            onCreate = if (withCreate) ({}) else null,
+                            onEdit = {}
+                        )
                     }
                 }
             }
         }
     }
+
+    /** Other people's, once there are any: the shelf of them alone, and where they follow the app's. */
+    @Test
+    fun phone_characters_community_dark() = captureStyles(
+        "phone_100_characters_community_dark",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        shelf = CharacterShelf.COMMUNITY,
+        community = FakeCommunity(5_000)
+    )
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_characters_community_large_font() = captureStyles(
+        "phone_101_small_phone_characters_community_large_font",
+        AppLanguage.ENGLISH,
+        dark = false,
+        withCreate = true,
+        shelf = CharacterShelf.COMMUNITY,
+        community = FakeCommunity(5_000),
+        fontScale = 1.5f
+    )
+
+    /** A shelf with nothing on it says so, and how to change that. */
+    @Test
+    fun phone_characters_yours_none() = captureStyles(
+        "phone_102_characters_yours_none",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        shelf = CharacterShelf.YOURS
+    )
+
+    /** Other people's could not be fetched: said, with the way to ask again. */
+    @Test
+    fun phone_characters_community_failed() = captureStyles(
+        "phone_103_characters_community_failed",
+        AppLanguage.SPANISH,
+        dark = false,
+        shelf = CharacterShelf.COMMUNITY,
+        community = FakeCommunity(5_000, failing = true)
+    )
 
     /** The sheet with the characters the user made up, first: as many as there can be, the longest names. */
     @Test
