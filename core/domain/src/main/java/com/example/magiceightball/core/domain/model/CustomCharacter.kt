@@ -52,7 +52,11 @@ data class CustomCharacter(
     companion object {
         const val MAX_COUNT = 5
         const val MAX_NAME_LENGTH = 16
-        const val MAX_DESCRIPTION_LENGTH = 280
+        /**
+         * As much as can be said of how a character answers: room to describe someone, which is
+         * what people use where they make characters, and not the length of a quick message.
+         */
+        const val MAX_DESCRIPTION_LENGTH = 500
 
         /** Where the characters of an account are kept, and so how many there can be. */
         val SLOTS: List<String> = (1..MAX_COUNT).map(Int::toString)

@@ -1162,7 +1162,7 @@ class EightBallScreenshotTest {
             CustomCharacter(
                 id = "2",
                 name = "Dona Florinda XVI",
-                description = "Uma vizinha que sabe de tudo e não perdoa nada. ".repeat(6),
+                description = "Uma vizinha que sabe de tudo e não perdoa nada. ".repeat(11),
                 colour = Magic8BallPersonality.DRAMA,
                 emblem = CharacterLook.DETECTIVE
             )
@@ -1644,7 +1644,7 @@ private val PROFILE = Profile("Lorena", LocalDate.of(1990, 3, 12))
 private val YOURS = listOf(
     CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el fondo del mar.", Magic8BallPersonality.PIRATE, CharacterLook.CAT),
     CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.", Magic8BallPersonality.GRANDMA, CharacterLook.DETECTIVE),
-    CustomCharacter("3", "Wwwwwwwwwwwwwwww", "W".repeat(280), Magic8BallPersonality.ZOOMER, CharacterLook.DRAMA),
+    CustomCharacter("3", "Wwwwwwwwwwwwwwww", "W".repeat(CustomCharacter.MAX_DESCRIPTION_LENGTH), Magic8BallPersonality.ZOOMER, CharacterLook.DRAMA),
     CustomCharacter("4", "Mi jefe", "Responde con frases de reunión.", Magic8BallPersonality.ROBOT, CharacterLook.NEUTRAL),
     CustomCharacter("5", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.SARCASTIC, CharacterLook.THERAPIST)
 )

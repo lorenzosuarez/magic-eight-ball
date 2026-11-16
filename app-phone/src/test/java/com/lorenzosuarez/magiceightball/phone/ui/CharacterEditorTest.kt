@@ -145,14 +145,14 @@ class CharacterEditorTest {
     fun `what is typed is kept to a name's length and a description's, and a name to one line`() {
         val draft = CharacterDraft()
         draft.typeName("Capitán\nNemo el del fondo del mar")
-        draft.typeDescription("a".repeat(400))
+        draft.typeDescription("a".repeat(CustomCharacter.MAX_DESCRIPTION_LENGTH + 120))
 
         assertEquals("Capitán Nemo el ", draft.name)
         assertEquals(CustomCharacter.MAX_DESCRIPTION_LENGTH, draft.descriptionLength)
         assertEquals("Capitán Nemo el", draft.nameToSave)
         assertNull(CharacterDraft().nameToSave)
         // One kept longer than it should be is cut as it is opened, and counted as cut.
-        assertEquals(CustomCharacter.MAX_DESCRIPTION_LENGTH, CharacterDraft(NEMO.copy(description = "b".repeat(300))).descriptionLength)
+        assertEquals(CustomCharacter.MAX_DESCRIPTION_LENGTH, CharacterDraft(NEMO.copy(description = "b".repeat(CustomCharacter.MAX_DESCRIPTION_LENGTH + 20))).descriptionLength)
     }
 
     @Test
