@@ -113,3 +113,17 @@ A value that breaks one of these limits is left out and the app's own is used in
 ## What still needs a release
 
 A new style (its name in three languages, its colour and what the ball wears), the texts of the screens, and anything about how the app looks.
+
+## Premium for the team's own accounts
+
+An account of the team's is given Premium without a purchase by `functions/tools/staff.mjs`:
+
+```
+npm --prefix functions run staff -- list
+npm --prefix functions run staff -- give someone@example.com
+npm --prefix functions run staff -- take someone@example.com
+```
+
+It writes the same grant the server writes for a purchase, `users/{id}/grants/premium`, marked `source: "staff"`, with no end and no purchase: the app treats whoever holds it as it treats whoever paid, and nothing said of a purchase takes it back. It never writes over a grant made for a purchase, and takes back only what it gave (`functions/src/staff.ts`, tested).
+
+It runs with the Google account of whoever runs it (`gcloud auth application-default login`), which has to be allowed to write to the project's database. No key is kept in the repository or on a server, the app cannot write a grant (`firestore/firestore.rules`), and there is no function that gives one.
