@@ -8,12 +8,12 @@ This is not legal advice. Google's forms are the developer's own declarations: r
 
 - **Together with the feature, not before.** The policy and the delete page describe an app with accounts; published earlier they would be false.
 - **"Released" includes closed testing.** The Data safety form covers closed, open and production tracks; only internal testing is exempt. So everything here is due when the first build with accounts leaves internal testing. ([Data safety](https://support.google.com/googleplay/android-developer/answer/10787469), "Which developers need to complete the Data safety form")
-- **Premium.** The texts speak of Premium as something the app "may offer", so they hold with `premium_enabled` off or on. They do assume a build that carries the purchase code: the policy lists the `com.android.vending.BILLING` permission, which Google Play's billing library adds. What has to be true before `premium_enabled` is turned on is in `docs/REMOTE_CONFIG.md`, under "Before Premium is turned on".
+- **Premium.** The texts speak of Premium as a subscription the app "may offer", so they hold with `premium_enabled` off or on, for a build that sells it as one. They do assume a build that carries the purchase code: the policy lists the `com.android.vending.BILLING` permission, which Google Play's billing library adds. What has to be true before `premium_enabled` is turned on is in `docs/REMOTE_CONFIG.md`, under "Before Premium is turned on".
 
 On that day, in this order:
 
 1. Replace `RELEASE-DATE` with the date in `docs/PRIVACY_POLICY.md`, `docs/PRIVACY_POLICY.es.md` and `docs/PRIVACY_POLICY.pt.md`. The site does not build until this is done.
-2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out", "Continue without an account", "Delete all", "You have Premium", the six characters the policy names ("Therapist", "Grandma", "Coach", "Lovestruck", "Horoscope", "Mystical") and their Spanish and Portuguese forms. They were read from the app's strings on the profile branch on 13 November.
+2. Check the words the pages quote from the app against the final strings: "Options", "Account", "Delete account", "Sign out", "Continue without an account", "Delete all", "You have Premium", "Manage subscription", the six characters the policy names ("Therapist", "Grandma", "Coach", "Lovestruck", "Horoscope", "Mystical") and their Spanish and Portuguese forms. They were read from the app's strings on the profile branch on 13 November.
 3. `firebase deploy --only hosting`, then open `/privacy` and `/delete-account` in the three languages.
 4. Send the Play Console changes below.
 5. Roll the build out.
@@ -56,7 +56,7 @@ None of it is "processed ephemerally": it is stored.
 
 | Data type | What it is here | Collected | Shared | Optional or required | Purposes |
 |---|---|---|---|---|---|
-| Financial info → **Purchase history** | That the account bought Premium: the date, Google Play's order number and a fingerprint (SHA-256) of the purchase token, kept by the project's server in Firestore with the account, and which account holds the purchase | Yes | No | Optional | App functionality |
+| Financial info → **Purchase history** | That the account subscribed to Premium, or bought it when it was a single payment: the date, the date a subscription is paid up to, Google Play's order number and a fingerprint (SHA-256) of the purchase token, kept by the project's server in Firestore with the account, and which account holds the purchase | Yes | No | Optional | App functionality |
 
 It is kept with the account and deleted with it, so the answer to the form's question about deletion does not change. Declare it with the first build that carries the purchase code, even while `premium_enabled` is off.
 
@@ -117,7 +117,7 @@ The questionnaire has to be filled in again for "All app updates where there has
 - The app now asks for personal information (name, email address, date of birth) and gives it to no other user.
 - Text is written by generative AI and nobody reads it before it is shown; every such answer has a "Report" button.
 - What a user writes in a character's description changes what the AI writes back to that same user.
-- No location. One digital purchase once Premium is sold: a single payment through Google Play, no subscription.
+- No location. One digital purchase once Premium is sold: a subscription through Google Play that renews until cancelled.
 
 - [ ] Fill it in again if any answer changes. The rating is a separate thing from the target audience: declaring 18 and over does not make the rating 18.
 
@@ -144,13 +144,32 @@ The User Generated Content policy applies to content "visible to or accessible b
 
 No change: the app contains ads.
 
-## 8. Outside Play Console, the same day
+## 8. Subscriptions
+
+([Subscriptions](https://support.google.com/googleplay/android-developer/answer/9900533), read on 16 November 2026)
+
+The policy asks an app to be transparent about its offer, "the automatic renewal terms, whether a subscription is required to use the app" among it, without the user having "to perform any additional action to review the information", and to "clearly disclose how a user can manage or cancel their subscription" with "access to an easy-to-use, online method to cancel the subscription". Where the build answers each:
+
+| Asked | The app |
+|---|---|
+| The cost and how often it is charged | On the sheet that sells Premium, in the sentence over the button and on the button, as Google Play gives them: nothing can be bought until both are shown |
+| That it renews | The same sentence: "Renews automatically until you cancel" |
+| Whether a subscription is needed to use the app | The line before it says what stays free without one |
+| What it brings | The four points of the sheet: no ads, more AI answers a day, characters of one's own |
+| How to cancel | The same sentence, and "Manage subscription" under the account, which opens Google Play's own page for the subscription |
+
+- [ ] Check all five on the build, in the three languages, with the real price.
+- [ ] **The store listing** says that Premium is a subscription, and what the app does without it. The name of the subscription and of its base plan in Play Console say what it is: the policy counts a misleading name against the app.
+- [ ] No free trial or introductory price is set up. The app sells only the base plan at its own price; an offer would need its own wording on the sheet first.
+- [ ] What has to be set up before `premium_enabled` is turned on, the notifications included, is in `docs/REMOTE_CONFIG.md`, under "Before Premium is turned on".
+
+## 9. Outside Play Console, the same day
 
 - [ ] **Google Cloud console, OAuth consent screen:** the app's name, and the privacy policy address. Google asks developers to "list the privacy policy URL in your OAuth client configuration when your application is made available to the public", and says "Don't request access to information that you don't need." ([Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy))
 - [ ] **Firebase console:** the steps in the feature's plan (Blaze plan, Authentication with Google, Firestore and its rules, App Check with Play Integrity). Firestore was created in `eur3`, Google's Europe multi-region (Belgium and the Netherlands, with Finland as witness), and the policy says the profile, the agreement and the characters are kept in the European Union. A database's location cannot be changed afterwards, and a second database anywhere else would make that sentence false. ([Cloud Firestore locations](https://firebase.google.com/docs/firestore/locations)) App Check may be registered without being enforced: the policy says only that its token tells whether a request comes from the app, which holds either way.
-- [ ] **Premium's server:** the three functions run in `europe-west1` (Belgium) and write to the same Firestore database. The policy says a purchase is checked, and its record kept, in the European Union: a function moved to another region would make that false.
+- [ ] **Premium's server:** the five functions run in `europe-west1` (Belgium) and write to the same Firestore database. The policy says a purchase is checked, and its record kept, in the European Union: a function moved to another region would make that false.
 
-## 9. When a deletion request arrives by email
+## 10. When a deletion request arrives by email
 
 The delete page promises an answer to the same address and deletion within 30 days.
 
@@ -160,11 +179,11 @@ The delete page promises an answer to the same address and deletion within 30 da
 4. Authentication → Users: delete the user.
 5. Reply that it is done.
 
-Once Premium's functions are deployed, step 4 is what removes the record of a purchase: `forgetAccount` runs when the user is deleted, and deletes everything under `users/{UID}`, the grant at `users/{UID}/grants/premium` included, and the `purchases` documents whose `uid` is that one. Afterwards, check in Firestore that both are gone. The purchase itself stays in the buyer's Google Play account, and nothing here refunds it.
+Once Premium's functions are deployed, step 4 is what removes the record of a purchase: `forgetAccount` runs when the user is deleted, and deletes everything under `users/{UID}`, the grant at `users/{UID}/grants/premium` included, and the `purchases` documents whose `uid` is that one. Afterwards, check in Firestore that both are gone. The purchase itself stays in the buyer's Google Play account, and nothing here refunds it or cancels a subscription: say so in the reply, with the address where it is cancelled, `https://play.google.com/store/account/subscriptions`.
 
 The policy also says that the developer deletes by hand the accounts left without a profile, which is what remains when the app is closed on the profile screen and never opened again. Now and then: Authentication → Users, and delete the users created more than a day ago that have no `users/{UID}` document in Firestore.
 
-## 10. Age laws: not settled here
+## 11. Age laws: not settled here
 
 For a lawyer, not for this list. Facts from Google's pages to bring to that conversation:
 

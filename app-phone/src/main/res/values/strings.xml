@@ -4,6 +4,7 @@
 
     <!-- The one line under the ball -->
     <string name="character_now">%1$s answers</string>
+    <string name="character_answers_as">Answers as</string>
     <string name="hint_hold">Tap or shake to ask.\nHold to speak.</string>
     <string name="hint_tap">Tap or shake to ask</string>
     <string name="hint_listening">Listening…</string>
@@ -220,13 +221,25 @@
     <string name="settings_privacy_choices">Privacy choices</string>
     <string name="premium_account_title">You need an account to get Premium</string>
     <string name="premium_account_text">Sign in with Google and it stays with your account. The app works just the same without one.</string>
-    <string name="premium_upgrade">Get Premium</string>
-    <string name="premium_upgrade_priced">Get Premium for&#160;%1$s</string>
+    <string name="premium_upgrade">Subscribe</string>
+    <string name="premium_upgrade_priced">Subscribe for %1$s</string>
     <string name="premium_free_note">The app\'s own characters stay free.</string>
-    <string name="premium_terms">One payment, no subscription.\nIt stays with your app&#160;account.</string>
+    <string name="premium_terms">%1$s, billed through Google&#160;Play. Renews automatically until you cancel.\nCancel anytime in Google&#160;Play, or from Premium in&#160;Options.</string>
+    <plurals name="premium_per_weeks">
+        <item quantity="one">%2$s a week</item>
+        <item quantity="other">%2$s every %1$d weeks</item>
+    </plurals>
+    <plurals name="premium_per_months">
+        <item quantity="one">%2$s a month</item>
+        <item quantity="other">%2$s every %1$d months</item>
+    </plurals>
+    <plurals name="premium_per_years">
+        <item quantity="one">%2$s a year</item>
+        <item quantity="other">%2$s every %1$d years</item>
+    </plurals>
     <string name="premium_no_price">Getting the price from Google&#160;Play…</string>
     <string name="premium_pending">Google&#160;Play is waiting for the payment. Premium turns on automatically once it goes&#160;through</string>
-    <string name="premium_taken">Premium was already bought with this Google&#160;Play account, on another account in this app. You weren\'t charged again. Sign out and sign in with that&#160;one</string>
+    <string name="premium_taken">Premium on this Google&#160;Play account is held by another account in this app. You weren\'t charged again. Sign out and sign in with that&#160;one</string>
     <string name="premium_unconfirmed">Your payment went through, but we couldn\'t confirm it. Check again: you won\'t be charged&#160;again</string>
     <string name="premium_failed">Couldn\'t complete the purchase. Try again</string>
     <string name="premium_busy">One moment…</string>
@@ -251,6 +264,11 @@
     <string name="account_loading">Loading your account</string>
     <string name="characters_loading">Loading your characters</string>
     <string name="account_premium">You have Premium</string>
+    <string name="premium_held">Active</string>
+    <string name="premium_held_subscribed">Active · Manage in Google&#160;Play</string>
+    <string name="account_subscription">Manage subscription</string>
+    <string name="account_subscription_hint">Cancel or change it in Google&#160;Play</string>
+    <string name="account_delete_text_subscribed">Your account and everything in it are erased. This can\'t be undone. Your Premium subscription is not cancelled: cancel it in Google&#160;Play, or it keeps renewing. Your recent answers stay on this device. Google may ask you to pick your account to confirm.</string>
     <string name="account_profile">Your profile</string>
     <string name="profile_title_new">Who\'s asking?</string>
     <string name="profile_title_edit">Your profile</string>

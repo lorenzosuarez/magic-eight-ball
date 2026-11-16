@@ -1,8 +1,11 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,7 +20,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -71,6 +73,7 @@ import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import com.lorenzosuarez.magiceightball.phone.account.ProfileOutcome
+import com.lorenzosuarez.magiceightball.phone.account.subscriptionPage
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -94,6 +97,7 @@ internal fun AccountSection(
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
     onOpenPrivacyPolicy: () -> Unit = {},
     premium: Boolean = false,
+    subscribed: Boolean = false,
     loading: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
@@ -136,6 +140,7 @@ internal fun AccountSection(
         if (account is AccountState.SignedIn) {
             AccountIdentity(
                 account = account,
+                premium = premium,
                 loading = loading && patient,
                 onClick = {
                     failure = null
@@ -187,6 +192,8 @@ internal fun AccountSection(
             profile = profile,
             profileLoading = loading && patient,
             premium = premium,
+            // Whoever pays for a subscription is given the way to where it is cancelled.
+            onManageSubscription = if (subscribed) ({ host.manageSubscription() }) else null,
             failed = failure != null,
             busy = busy,
             // One sheet at a time: the account's gives way to the profile's.
@@ -240,15 +247,25 @@ private fun Context.addGoogleAccount() {
     }
 }
 
+/** Google Play's own page for the subscription, where it is cancelled or its payment changed. */
+internal fun Context.manageSubscription() {
+    try {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(subscriptionPage(packageName))))
+    } catch (_: ActivityNotFoundException) {
+        // A device with nothing to open it has no Google Play to have subscribed through.
+    }
+}
+
 /**
  * Who is signed in, as the row that opens the account: a letter for a face, the name, and the
  * address that tells one account from another.
  *
+ * @param premium whether this account holds what is sold: marked beside its name.
  * @param loading while what is kept with the account has not been heard of yet: a ring turns
  * beside the arrow, and the row says so to whoever cannot see it.
  */
 @Composable
-private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, onClick: () -> Unit) {
+private fun AccountIdentity(account: AccountState.SignedIn, premium: Boolean, loading: Boolean, onClick: () -> Unit) {
     val name = account.name.ifBlank { account.email }
     val waiting = stringResource(R.string.account_loading)
     Row(
@@ -264,15 +281,29 @@ private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, on
         AccountAvatar(name = name, photoUrl = account.photoUrl, size = 56.dp)
         // One line each here, where the row has to stay a row: both are in full on the sheet.
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = name,
-                // The one name on the page that is somebody's: a size over the names of its rows.
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = name,
+                    // What is held comes whole after the name, which gives way to it.
+                    modifier = Modifier.weight(1f, fill = false),
+                    // The one name on the page that is somebody's: a size over the names of its rows.
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                // The crown alone here, where the name needs the line: what it stands for is
+                // written out on the row under this card, and said to whoever cannot see it.
+                if (premium) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_crown),
+                        contentDescription = stringResource(R.string.account_premium),
+                        modifier = Modifier.size(with(LocalDensity.current) { 18.sp.toDp() }),
+                        tint = MaterialTheme.colorScheme.sheetAction
+                    )
+                }
+            }
             // Under a name, the address; when the account gave no name, the address is the name.
             if (account.name.isNotBlank() && account.email.isNotBlank()) {
                 Text(
@@ -303,6 +334,7 @@ private fun AccountSheet(
     profile: Profile?,
     profileLoading: Boolean,
     premium: Boolean,
+    onManageSubscription: (() -> Unit)?,
     failed: Boolean,
     busy: Boolean,
     onEditProfile: () -> Unit,
@@ -335,6 +367,7 @@ private fun AccountSheet(
                 profile = profile,
                 profileLoading = profileLoading,
                 premium = premium,
+                onManageSubscription = onManageSubscription,
                 failed = failed,
                 busy = busy,
                 onEditProfile = { scope.launch { sheetState.hide() }.invokeOnCompletion { onEditProfile() } },
@@ -347,7 +380,10 @@ private fun AccountSheet(
     if (confirmingDelete) {
         // The dialog is a window of its own too: its texts are read here, in the app's language.
         val title = stringResource(R.string.account_delete_title)
-        val text = stringResource(R.string.account_delete_text)
+        // Deleting the account ends no subscription: whoever pays for one is told so first.
+        val text = stringResource(
+            if (onManageSubscription != null) R.string.account_delete_text_subscribed else R.string.account_delete_text
+        )
         val confirm = stringResource(R.string.account_delete)
         val cancel = stringResource(R.string.action_cancel)
         AlertDialog(
@@ -376,6 +412,8 @@ private fun AccountSheet(
  *
  * @param premium whether this account holds what is sold: said under whose it is, so that
  * whoever paid can see that it is here, and on which of their accounts.
+ * @param onManageSubscription opens Google Play's page for the subscription; null for whoever
+ * has none, and then there is no row for it.
  * @param profileLoading while the profile has not been heard of yet: its row holds its place,
  * so that the rows under it do not move when it comes.
  */
@@ -390,6 +428,7 @@ internal fun AccountSheetContent(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     premium: Boolean = false,
+    onManageSubscription: (() -> Unit)? = null,
     profileLoading: Boolean = false
 ) {
     val name = account.name.ifBlank { account.email }
@@ -423,15 +462,8 @@ internal fun AccountSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        if (premium) {
-            // Apart from the address and heavier than it: something about the account, not a line of it.
-            Text(
-                text = stringResource(R.string.account_premium),
-                modifier = Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        // Apart from the address: something about the account, not a line of it.
+        if (premium) PremiumBadge(modifier = Modifier.padding(start = 32.dp, top = 10.dp, end = 32.dp))
         // One group of rows, as on the options page.
         Section(
             title = null,
@@ -466,6 +498,15 @@ internal fun AccountSheetContent(
                     )
                     WaitingRing(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                RowDivider()
+            }
+            if (onManageSubscription != null) {
+                ActionRow(
+                    title = stringResource(R.string.account_subscription),
+                    supporting = stringResource(R.string.account_subscription_hint),
+                    onClick = onManageSubscription,
+                    enabled = !busy
+                )
                 RowDivider()
             }
             ActionRow(
@@ -593,3 +634,41 @@ private const val BUSY_ALPHA = 0.6f
 
 /** How long what is kept with an account is said to be on its way before it is taken to be out of reach. */
 private const val LOADING_PATIENCE_MS = 8_000L
+
+/**
+ * The mark of an account that holds what is sold, on the account opened: the crown what is sold
+ * is offered under, and its name. A tag and not a pill, in the app's colour as faintly as still
+ * reads, so that it is not taken for one of the app's buttons; said in full to whoever cannot
+ * see it.
+ */
+@Composable
+internal fun PremiumBadge(modifier: Modifier = Modifier) {
+    val ink = MaterialTheme.colorScheme.sheetAction
+    val said = stringResource(R.string.account_premium)
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(ink.copy(alpha = BADGE_GROUND_ALPHA))
+            .clearAndSetSemantics { contentDescription = said }
+            .padding(start = 6.dp, top = 2.dp, end = 8.dp, bottom = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // As large as the word beside it, at any size of type.
+        Icon(
+            painter = painterResource(R.drawable.ic_crown),
+            contentDescription = null,
+            modifier = Modifier.size(with(LocalDensity.current) { 14.sp.toDp() }),
+            tint = ink
+        )
+        Text(
+            text = stringResource(R.string.options_premium),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = ink,
+            maxLines = 1
+        )
+    }
+}
+
+private const val BADGE_GROUND_ALPHA = 0.14f

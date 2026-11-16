@@ -2,6 +2,7 @@
 <resources>
     <!-- The one line under the ball -->
     <string name="character_now">Responde %1$s</string>
+    <string name="character_answers_as">Responde como</string>
     <string name="hint_hold">Toca o agita para preguntar.\nMantén presionado para hablar.</string>
     <string name="hint_tap">Toca o agita para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
@@ -212,13 +213,25 @@
     <string name="settings_privacy_choices">Opciones de privacidad</string>
     <string name="premium_account_title">Para obtener Premium necesitas una cuenta</string>
     <string name="premium_account_text">Entra con Google y quedará en tu cuenta. La app sigue funcionando igual sin cuenta.</string>
-    <string name="premium_upgrade">Obtener Premium</string>
-    <string name="premium_upgrade_priced">Obtener Premium por&#160;%1$s</string>
+    <string name="premium_upgrade">Suscribirme</string>
+    <string name="premium_upgrade_priced">Suscribirme por %1$s</string>
     <string name="premium_free_note">Los personajes de la&#160;app siguen siendo gratis.</string>
-    <string name="premium_terms">Un solo pago, sin suscripción.\nQueda en tu cuenta de la&#160;app.</string>
+    <string name="premium_terms">%1$s, cobrado por Google&#160;Play. Se renueva automáticamente hasta que canceles.\nCancela cuando quieras en Google&#160;Play o desde Premium, en&#160;Opciones.</string>
+    <plurals name="premium_per_weeks">
+        <item quantity="one">%2$s a la semana</item>
+        <item quantity="other">%2$s cada %1$d semanas</item>
+    </plurals>
+    <plurals name="premium_per_months">
+        <item quantity="one">%2$s al mes</item>
+        <item quantity="other">%2$s cada %1$d meses</item>
+    </plurals>
+    <plurals name="premium_per_years">
+        <item quantity="one">%2$s al año</item>
+        <item quantity="other">%2$s cada %1$d años</item>
+    </plurals>
     <string name="premium_no_price">Buscando el precio en Google&#160;Play…</string>
     <string name="premium_pending">Google&#160;Play está esperando el pago. Premium se activará automáticamente cuando se&#160;complete</string>
-    <string name="premium_taken">Premium ya se compró con esta cuenta de Google&#160;Play, en otra cuenta de la app. No se te cobró de nuevo. Cierra sesión y entra con&#160;esa</string>
+    <string name="premium_taken">El Premium de esta cuenta de Google&#160;Play lo tiene otra cuenta de la app. No se te cobró de nuevo. Cierra sesión y entra con&#160;esa</string>
     <string name="premium_unconfirmed">El pago está hecho, pero no pudimos confirmarlo. Comprueba de nuevo: no se te cobrará otra&#160;vez</string>
     <string name="premium_failed">No se pudo completar la compra. Inténtalo de nuevo</string>
     <string name="premium_busy">Un momento…</string>
@@ -243,6 +256,11 @@
     <string name="account_loading">Cargando tu cuenta</string>
     <string name="characters_loading">Cargando tus personajes</string>
     <string name="account_premium">Tienes Premium</string>
+    <string name="premium_held">Activo</string>
+    <string name="premium_held_subscribed">Activo · Gestionar en Google&#160;Play</string>
+    <string name="account_subscription">Gestionar suscripción</string>
+    <string name="account_subscription_hint">Cancélala o cámbiala en Google&#160;Play</string>
+    <string name="account_delete_text_subscribed">Se borran tu cuenta y todo lo que guarda. No se puede deshacer. Tu suscripción a Premium no se cancela: cancélala en Google&#160;Play o se seguirá renovando. Tus respuestas recientes siguen en este dispositivo. Google puede pedirte que elijas tu cuenta para confirmarlo.</string>
     <string name="account_profile">Tu perfil</string>
     <string name="profile_title_new">¿Quién pregunta?</string>
     <string name="profile_title_edit">Tu perfil</string>

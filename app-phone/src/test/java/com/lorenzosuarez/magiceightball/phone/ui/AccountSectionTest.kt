@@ -1,6 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import android.app.Application
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -82,6 +84,7 @@ class AccountSectionTest {
 
     /** Whether they hold what is sold. */
     private var premium = false
+    private var subscribed = false
     private val snackbars = SnackbarHostState()
 
     private fun show(
@@ -95,7 +98,8 @@ class AccountSectionTest {
             aiAnswersAvailable = true,
             config = AppConfig(accountEnabled = true),
             account = account,
-            premium = premium
+            premium = premium,
+            subscribed = subscribed
         )
         CompositionLocalProvider(
             LocalDensity provides Density(LocalDensity.current.density, fontScale),
@@ -122,6 +126,10 @@ class AccountSectionTest {
     }
 
     private fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
+
+    /** How many marks of Premium there are: each is a picture and a word, said as one sentence. */
+    private fun marked() =
+        compose.onAllNodesWithContentDescription("Tienes Premium", useUnmergedTree = true).fetchSemanticsNodes().size
 
     @Test
     fun `a device with no Google account is told so, and shown the way to add one`() {
@@ -230,13 +238,44 @@ class AccountSectionTest {
     }
 
     @Test
-    fun `whoever paid is told so on their account, and nobody else is told anything`() {
+    fun `whoever paid is marked beside their name and on their account, and nobody else is told anything`() {
         account = LORENA
         premium = true
         show()
-        assertEquals(0, count("Tienes Premium"))
+        // Beside the name on the page, before the account is opened; then on the account too.
+        assertEquals(1, marked())
         compose.onNodeWithText("Lorena Suárez").performClick()
-        compose.onNodeWithText("Tienes Premium").assertIsDisplayed()
+        assertEquals(2, marked())
+    }
+
+    @Test
+    fun `whoever pays for a subscription is shown the way to cancel it, and told that deleting the account does not`() {
+        account = LORENA
+        premium = true
+        subscribed = true
+        show()
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        compose.onNodeWithText("Gestionar suscripción").performClick()
+        val opened = shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity
+        assertEquals(Intent.ACTION_VIEW, opened.action)
+        assertEquals(
+            "https://play.google.com/store/account/subscriptions?sku=premium_subscription" +
+                "&package=${ApplicationProvider.getApplicationContext<Application>().packageName}",
+            opened.dataString
+        )
+
+        compose.onNodeWithText("Eliminar cuenta").performClick()
+        compose.onNodeWithText("Tu suscripción a Premium no se cancela", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `Premium bought once has nothing to cancel`() {
+        account = LORENA
+        premium = true
+        show()
+        compose.onNodeWithText("Lorena Suárez").performClick()
+        assertEquals(2, marked())
+        assertEquals(0, count("Gestionar suscripción"))
     }
 
     @Test
@@ -245,7 +284,7 @@ class AccountSectionTest {
         show()
         compose.onNodeWithText("Lorena Suárez").performClick()
         compose.onNodeWithText("Cerrar sesión").assertIsDisplayed()
-        assertEquals(0, count("Tienes Premium"))
+        assertEquals(0, marked())
     }
 
     @Test

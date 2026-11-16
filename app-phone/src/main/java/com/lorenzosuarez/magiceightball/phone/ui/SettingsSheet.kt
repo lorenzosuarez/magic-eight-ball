@@ -196,6 +196,7 @@ internal fun SettingsContent(
                             onSaveProfile = onSaveProfile,
                             onOpenPrivacyPolicy = onOpenPrivacyPolicy,
                             premium = state.premium,
+                            subscribed = state.subscribed,
                             // Only of someone signed in: signed out there is no profile to wait for, and
                             // the wait would be over before it began.
                             loading = signedIn && state.profile == ProfileState.Unknown
@@ -203,7 +204,15 @@ internal fun SettingsContent(
                     }
                     // What is sold, said once on the page and only to whoever does not have it. It is kept
                     // with an account: whoever has none is first shown the way to one.
-                    if (state.offersPremium) PremiumBanner(onClick = onAskPremium)
+                    val context = LocalContext.current
+                    when {
+                        state.offersPremium -> PremiumBanner(onClick = onAskPremium)
+                        // Held, it stands where it was offered: the page is as tall with it as without,
+                        // and whoever pays for it by the month has the way to Google Play's page for it here.
+                        state.premium && signedIn -> PremiumHeld(
+                            onManage = if (state.subscribed) ({ context.manageSubscription() }) else null
+                        )
+                    }
                     Section(stringResource(R.string.options_answers)) {
                         ActionRow(
                             title = stringResource(R.string.settings_ai),
@@ -421,6 +430,66 @@ internal fun SettingsContent(
 
                 OptionsSection.LICENSES -> Licenses()
             }
+        }
+    }
+}
+
+/**
+ * What is sold, once it is held: the tile it was offered on, with the crown in the app's colour
+ * and that it is theirs. Of a subscription it is also the way to where it is cancelled.
+ *
+ * @param onManage what opens Google Play's page for the subscription; null of Premium that is
+ * not one, which has nothing to manage.
+ */
+@Composable
+private fun PremiumHeld(onManage: (() -> Unit)?) {
+    val scheme = MaterialTheme.colorScheme
+    Spacer(Modifier.height(12.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(GROUP_CORNER))
+            .background(scheme.pageCard)
+            .then(
+                if (onManage != null) {
+                    Modifier.clickable(onClickLabel = stringResource(R.string.account_subscription), role = Role.Button, onClick = onManage)
+                } else {
+                    Modifier
+                }
+            )
+            // Said once, as one thing.
+            .semantics(mergeDescendants = true) {}
+            .heightIn(min = GROUP_ROW_HEIGHT + 8.dp)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_crown),
+            contentDescription = null,
+            modifier = Modifier.padding(end = 16.dp).size(24.dp),
+            tint = scheme.sheetAction
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.options_premium),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = scheme.onSurface
+            )
+            Text(
+                text = stringResource(if (onManage != null) R.string.premium_held_subscribed else R.string.premium_held),
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant
+            )
+        }
+        if (onManage != null) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = scheme.onSurfaceVariant
+            )
         }
     }
 }

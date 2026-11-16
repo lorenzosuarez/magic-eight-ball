@@ -1,5 +1,10 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -22,6 +27,7 @@ import com.example.magiceightball.core.common.BrandPalette
  * @param busy while what it started is on its way: a ring turns in it, and it takes no second touch.
  * @param sold whether it is what buys something: then, and only then, it is in the app's colour,
  * which the app keeps for what is sold.
+ * @param short what it says where [text] would not fit on one line: a button is one line.
  */
 @Composable
 internal fun PrimaryButton(
@@ -30,7 +36,8 @@ internal fun PrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     busy: Boolean = false,
-    sold: Boolean = false
+    sold: Boolean = false,
+    short: String? = null
 ) {
     val scheme = MaterialTheme.colorScheme
     Button(
@@ -47,7 +54,18 @@ internal fun PrimaryButton(
         )
     ) {
         BusyRing(busy)
-        Text(text = text, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+        if (short == null) {
+            Text(text = text, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+        } else {
+            // Measured against the room it has, before it is written: never two lines and then one.
+            val measurer = rememberTextMeasurer()
+            val style = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold)
+            BoxWithConstraints(contentAlignment = Alignment.Center) {
+                val room = constraints.maxWidth
+                val fits = remember(text, style, room) { measurer.measure(text, style, softWrap = false).size.width <= room }
+                Text(text = if (fits) text else short, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            }
+        }
     }
 }
 
