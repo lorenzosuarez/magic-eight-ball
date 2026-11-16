@@ -331,6 +331,7 @@
     <string name="options_licenses">Licenças de código aberto</string>
     <string name="license_icons">Ícones</string>
     <string name="license_font">A fonte do botão do Google</string>
+    <string name="license_libraries">Bibliotecas com as quais o app é feito</string>
     <string name="action_back">Voltar</string>
     <string name="premium_banner_cta">Obter</string>
     <string name="look_singer">Cantor</string>

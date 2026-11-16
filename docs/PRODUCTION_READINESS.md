@@ -17,6 +17,8 @@ Todavía no puede salir a producción, y lo que lo impide no está en el código
 - **Dónde.** `docs/PRIVACY_POLICY.md:3`, `docs/PRIVACY_POLICY.es.md:3`, `docs/PRIVACY_POLICY.pt.md:3` siguen con `RELEASE-DATE`, y `site/build.py:191-192` se niega a publicar así.
 - **Arreglo mínimo.** Después del punto 2 (la política nueva afirma en `docs/PRIVACY_POLICY.md:30` que se usa el servicio de pago): poner la fecha en las tres políticas, `firebase deploy --only hosting`, abrir las seis direcciones y comprobar que responden. Debe estar hecho antes de que `account_enabled` esté encendido para alguien fuera de la prueba interna.
 
+- **Publicada el 16 de noviembre de 2026**, antes del punto 2, con la frase que ya tenía la política anterior en lugar de la del servicio de pago: "Según cómo se acceda a la API, Google puede conservar estas solicitudes durante un tiempo y usarlas para prestar y mejorar sus servicios", que es cierta con cualquiera de los dos planes. Con el proyecto ya en Blaze: volver a la frase del servicio de pago en las tres políticas, poner fecha nueva y desplegar otra vez.
+
 ### 2. El proyecto de Firebase está en el plan gratuito: **Falta** mientras siga así (se ve en Firebase console → Uso y facturación)
 
 - **Qué.** Sin cuenta de facturación, la Gemini Developer API que usa Firebase AI Logic es el nivel gratuito. Los términos de la Gemini API (vigentes desde el 23 de marzo de 2026) solo permiten los servicios de pago para apps disponibles en el EEE, Suiza o el Reino Unido; en el servicio no pago Google usa lo enviado para mejorar sus productos, puede leerlo un revisor humano, y se pide no enviar información personal. La app envía el texto de la pregunta dicha por voz de cualquier usuario y, con cuenta, el nombre, el signo y la descripción de los personajes. Además, Cloud Functions no se puede desplegar sin el plan Blaze, así que Premium no tiene servidor.
@@ -46,7 +48,18 @@ Sin ellas la revisión rechaza o la ficha queda en infracción. La lista exacta 
 
 Por orden de valor. Ninguno impide publicar hoy, y los tres primeros deberían ir en el mismo release.
 
-Arreglados en esta misma rama después de la revisión: el 1 (los filtros se indican para las cuatro categorías, `FirebaseAiGeminiClient.kt`), el 2 (la fila está en Opciones mientras se venda una suscripción, `ui/SettingsSheet.kt`) y el 5 (ni se piden ni se muestran anuncios en un dispositivo marcado como menor, ni antes de saber si lo está, `ads/AdMobAdsController.kt`). Se dejan escritos como se encontraron.
+Arreglados después de la revisión, y dejados escritos como se encontraron:
+
+- el 1: los filtros se indican para las cuatro categorías (`FirebaseAiGeminiClient.kt`);
+- el 2: la fila está en Opciones mientras se venda una suscripción (`ui/SettingsSheet.kt`);
+- el 4: el sitio, el README y el Clásico ya no llevan el nombre ni las veinte respuestas del juguete; las instrucciones que solo lee el servicio de IA lo siguen nombrando;
+- el 5: ni se piden ni se muestran anuncios en un dispositivo marcado como menor, ni antes de saber si lo está (`ads/AdMobAdsController.kt`);
+- el 6: `site/static/app-ads.txt`, publicado con el sitio el 16 de noviembre de 2026;
+- el 8: que falte la concesión en una copia que todavía no oyó al servidor no le quita Premium a nadie (`account/Entitlements.kt`, `heldBy`);
+- el 10, en parte: con las animaciones del sistema quitadas, la bola no se mece (`ui/DesignedMotion.kt`, `motionRemoved`); lo que dice dónde está la app se sigue moviendo, que es decisión de producto;
+- el 11: la página de licencias nombra las bibliotecas bajo la Apache License 2.0 y la da entera, sin dependencia nueva.
+
+Quedan el 3, el 7 y el 9.
 
 1. **Filtros de seguridad de Gemini explícitos: Falta.** `core/data/.../gateway/FirebaseAiGeminiClient.kt:53-64` crea el modelo sin `safetySettings`, y la documentación de Firebase AI Logic dice que las categorías no indicadas quedan apagadas (`OFF`). Hoy la única barrera contra acoso, odio, contenido sexual o peligroso es el texto del prompt (`core/domain/.../policy/DefaultPromptPolicy.kt:138-161`), con descripciones de personajes escritas por el usuario y respuestas largas activables. La política de contenido generado por IA hace responsable a la app de impedirlo. El resto ya está: una respuesta bloqueada se convierte en `GeminiReply.Blocked` (`:82-84`, `:95`). Arreglo: pasar `safetySettings` con `HarmBlockThreshold.MEDIUM_AND_ABOVE` para `HATE_SPEECH`, `SEXUALLY_EXPLICIT` y `DANGEROUS_CONTENT`, y `ONLY_HIGH` para `HARASSMENT` (los personajes pinchan a propósito), y volver a pasar las pruebas de personajes.
 2. **"Gestionar suscripción" siempre alcanzable: Falta parcial.** La fila solo aparece cuando el servidor tiene anotada una suscripción vigente (`ui/AccountSection.kt:196`, `ui/SettingsSheet.kt:212-214`, `account/Entitlements.kt:93-94`). No la ve quien tiene el pago retenido o la suscripción en pausa (el servidor borra la concesión, `functions/src/index.ts:162`), quien pagó y quedó sin confirmar, quien la tiene en otra cuenta de la app, ni quien borró la cuenta de la app y sigue pagando. La política pide acceso en la app a una forma sencilla de cancelar. Arreglo: una fila fija en Opciones → Acerca de mientras `premiumEnabled` esté encendido, y el mismo enlace en la hoja de Premium cuando termina en "en otra cuenta" o "sin confirmar", al centro general `https://play.google.com/store/account/subscriptions`.
