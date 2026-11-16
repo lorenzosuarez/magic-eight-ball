@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -988,6 +990,26 @@ class EightBallScreenshotTest {
         assertEquals(CharacterLook.NEUTRAL, CharacterLook.named("somethingnew"))
         // Each of the app's characters wears the look of its own name.
         CustomCharacter.LOOKS.forEach { assertEquals(it.name, it.look.name) }
+    }
+
+    /**
+     * What the ball wears, changed on the card a character is made on, a moment at a time: the ball
+     * stays where it is while what it wore goes and what was picked grows onto its crown.
+     */
+    @Test
+    fun phone_look_changing() = captureRoboImage(filePath = path("phone_121_look_changing")) {
+        MagicEightBallPhoneTheme(dark = false) {
+            val ground = shareColor(Magic8BallPersonality.PIRATE)
+            Column(modifier = Modifier.background(ground).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(CharacterLook.PIRATE to CharacterLook.DRAMA, CharacterLook.CAT to CharacterLook.ZOOMER).forEach { (left, worn) ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        listOf(0f, 0.1f, 0.2f, 0.3f, 0.45f, 1.16f, 1f).forEach { arrived ->
+                            Canvas(Modifier.size(56.dp)) { drawFaceChanging(left = left, worn = worn, arrived = arrived, ink = ShareInk, rim = ground) }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /** A character opened, to be looked at: one of the app's that answers now, and one of other people's. */
