@@ -36,7 +36,7 @@ sealed interface CharacterListing {
         val sample: String,
         val description: String,
         val colour: Magic8BallPersonality,
-        val emblem: Magic8BallPersonality,
+        val emblem: CharacterLook,
         val author: String,
         val uses: Long = 0
     ) : CharacterListing {

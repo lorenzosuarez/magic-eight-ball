@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusDirection
@@ -110,7 +111,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun CharacterEditorSheet(
     character: CustomCharacter?,
-    onSave: suspend (String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave,
+    onSave: suspend (String, String, Magic8BallPersonality, CharacterLook) -> CharacterSave,
     onDelete: (suspend () -> Boolean)?,
     onClose: () -> Unit
 ) {
@@ -214,7 +215,7 @@ internal class CharacterDraft(character: CustomCharacter? = null) {
     var description by mutableStateOf(paragraph(character?.description.orEmpty()))
         private set
     var colour by mutableStateOf(character?.colour ?: FIRST_COLOUR)
-    var emblem by mutableStateOf(character?.emblem ?: Magic8BallPersonality.NEUTRAL)
+    var emblem by mutableStateOf(character?.emblem ?: CharacterLook.NEUTRAL)
 
     /** A name is one line: the key for a new one moves on instead. */
     fun typeName(typed: String) {
@@ -251,7 +252,7 @@ internal class CharacterDraft(character: CustomCharacter? = null) {
                     typeName(name)
                     typeDescription(description)
                     this.colour = CustomCharacter.LOOKS.find { it.name == colour } ?: FIRST_COLOUR
-                    this.emblem = CustomCharacter.LOOKS.find { it.name == emblem } ?: Magic8BallPersonality.NEUTRAL
+                    this.emblem = CharacterLook.named(emblem)
                 }
             }
         )
@@ -359,7 +360,7 @@ internal fun CharacterEditorContent(
         PickerLabel(stringResource(R.string.character_colour), top = 4.dp)
         ColourRow(chosen = draft.colour, enabled = !busy, onChosen = { draft.colour = it })
         // What is worn has a name, said here: the drawings are small, and some need it.
-        val wears = stringResource(if (draft.emblem == Magic8BallPersonality.NEUTRAL) R.string.character_no_emblem else draft.emblem.labelRes())
+        val wears = stringResource(draft.emblem.labelRes())
         PickerLabel(stringResource(R.string.character_emblem) + " · " + wears)
         EmblemRow(chosen = draft.emblem, colour = draft.colour, enabled = !busy, onChosen = { draft.emblem = it })
         // Before the button, and in full: where saving it keeps it, and where it is sent.
@@ -450,7 +451,7 @@ private fun Counter(length: Int, most: Int) {
 private fun CharacterPreview(draft: CharacterDraft) {
     // A ball that wears nothing sits in the middle; one that does leaves the room over it.
     val lift by animateDpAsState(
-        targetValue = if (draft.emblem == Magic8BallPersonality.NEUTRAL) PREVIEW_BARE_LIFT else 0.dp,
+        targetValue = if (draft.emblem == CharacterLook.NEUTRAL) PREVIEW_BARE_LIFT else 0.dp,
         // In step with the cross-fade of what it wears: neither is still going when the other is done.
         animationSpec = choiceTween(),
         label = "preview ball"
@@ -472,11 +473,12 @@ private fun CharacterPreview(draft: CharacterDraft) {
         AnimatedContent(
             targetState = draft.emblem,
             // Moved where it is drawn, not where it is measured: the card keeps its height as the ball rises.
-            modifier = Modifier.offset { IntOffset(0, -lift.roundToPx()) },
+            // What it wears reaches the top of its square: the card keeps a little room over it.
+            modifier = Modifier.padding(vertical = 6.dp).offset { IntOffset(0, -lift.roundToPx()) },
             transitionSpec = { fadeIn(tween(CHOICE_MS / 2)) togetherWith fadeOut(tween(CHOICE_MS / 2, delayMillis = CHOICE_MS / 2)) },
             label = "preview emblem"
         ) { worn ->
-            CharacterBall(emblem = worn, size = PREVIEW_BALL)
+            CharacterBall(emblem = worn, size = PREVIEW_BALL, rim = ground)
         }
         // Clear of the card's edges when a long name and large type make it four lines.
         Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -569,10 +571,10 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
  */
 @Composable
 private fun EmblemRow(
-    chosen: Magic8BallPersonality,
+    chosen: CharacterLook,
     colour: Magic8BallPersonality,
     enabled: Boolean,
-    onChosen: (Magic8BallPersonality) -> Unit
+    onChosen: (CharacterLook) -> Unit
 ) {
     val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
     val start = with(LocalDensity.current) { ((EMBLEM_RING + EMBLEM_GAP) * (at - 1).coerceAtLeast(0)).roundToPx() }
@@ -587,7 +589,7 @@ private fun EmblemRow(
         OnCardColours {
             EMBLEMS.forEach { look ->
                 val picked = look == chosen
-                val label = stringResource(if (look == Magic8BallPersonality.NEUTRAL) R.string.character_no_emblem else look.labelRes())
+                val label = stringResource(look.labelRes())
                 val touch = remember { MutableInteractionSource() }
                 val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
                 // Picked: a ring in the text's colour with the face a little inside it, as a
@@ -643,7 +645,7 @@ private fun PickerLabel(text: String, top: androidx.compose.ui.unit.Dp = 16.dp) 
 private const val DESCRIPTION_MIN_LINES = 3
 private const val DESCRIPTION_MAX_LINES = 5
 private val PREVIEW_BALL = 104.dp
-private val PREVIEW_BARE_LIFT = 10.dp
+private val PREVIEW_BARE_LIFT = 18.dp
 private const val UNNAMED_ALPHA = 0.5f
 
 /** Where a row of picks starts, as the cards and the fields do. */
@@ -663,25 +665,39 @@ private const val EMBLEM_DRAWN_IN = 0.16f
  */
 private val COLOURS = CustomCharacter.LOOKS - Magic8BallPersonality.PHILOSOPHER
 
-/** Nothing first, then what each of the app's characters wears: those that read best at this size before the rest. */
-private val EMBLEMS = listOf(
-    Magic8BallPersonality.NEUTRAL,
-    Magic8BallPersonality.CAT,
-    Magic8BallPersonality.DRAMA,
-    Magic8BallPersonality.PIRATE,
-    Magic8BallPersonality.DETECTIVE,
-    Magic8BallPersonality.VILLAIN,
-    Magic8BallPersonality.ZOOMER,
-    Magic8BallPersonality.ROBOT,
-    Magic8BallPersonality.COACH,
-    Magic8BallPersonality.POET,
-    Magic8BallPersonality.THERAPIST,
-    Magic8BallPersonality.CONSPIRACY,
-    Magic8BallPersonality.DOG,
-    Magic8BallPersonality.LOVESTRUCK,
-    Magic8BallPersonality.ASTRO,
-    Magic8BallPersonality.MYSTICAL,
-    Magic8BallPersonality.PHILOSOPHER,
-    Magic8BallPersonality.SARCASTIC,
-    Magic8BallPersonality.GRANDMA
+/**
+ * Nothing first, and then every look there is: those that read best at this size before the
+ * rest, and what the app's own characters wear among what none of them does.
+ */
+internal val EMBLEMS = listOf(
+    CharacterLook.NEUTRAL,
+    CharacterLook.CAT,
+    CharacterLook.ROCKSTAR,
+    CharacterLook.SINGER,
+    CharacterLook.DRAMA,
+    CharacterLook.PIRATE,
+    CharacterLook.WIZARD,
+    CharacterLook.ZOOMER,
+    CharacterLook.CHEF,
+    CharacterLook.COWBOY,
+    CharacterLook.NINJA,
+    CharacterLook.DETECTIVE,
+    CharacterLook.MAGICIAN,
+    CharacterLook.ROBOT,
+    CharacterLook.GRADUATE,
+    CharacterLook.DOG,
+    CharacterLook.PARTY,
+    CharacterLook.COACH,
+    CharacterLook.FLOWER,
+    CharacterLook.VILLAIN,
+    CharacterLook.ANGEL,
+    CharacterLook.POET,
+    CharacterLook.THERAPIST,
+    CharacterLook.CONSPIRACY,
+    CharacterLook.LOVESTRUCK,
+    CharacterLook.ASTRO,
+    CharacterLook.MYSTICAL,
+    CharacterLook.PHILOSOPHER,
+    CharacterLook.SARCASTIC,
+    CharacterLook.GRANDMA
 )

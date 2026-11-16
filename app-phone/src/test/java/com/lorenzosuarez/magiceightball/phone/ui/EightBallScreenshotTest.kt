@@ -1,5 +1,10 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import com.example.magiceightball.core.domain.model.look
+import com.example.magiceightball.core.domain.model.CharacterLook
 import com.lorenzosuarez.magiceightball.phone.characters.atHand
 import com.lorenzosuarez.magiceightball.phone.characters.CharactersQuery
 import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
@@ -939,6 +944,49 @@ class EightBallScreenshotTest {
         }
     }
 
+    /** Every look there is, at the size of a row and of an opened character, one among many and the one chosen. */
+    @Test
+    fun phone_looks() = listOf("phone_108_looks_dark" to true, "phone_109_looks_light" to false).forEach { (name, dark) ->
+        captureRoboImage(filePath = path(name)) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                Surface(color = MaterialTheme.colorScheme.pageGround) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CharacterLook.entries.chunked(5).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                row.forEach { look ->
+                                    val colour = CustomCharacter.LOOKS[look.ordinal % CustomCharacter.LOOKS.size]
+                                    CharacterFace(colour, look, 28.dp, chosen = { 0f })
+                                    CharacterFace(colour, look, 40.dp, chosen = { 1f })
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(CharacterLook.PIRATE, CharacterLook.ROCKSTAR, CharacterLook.SINGER, CharacterLook.NEUTRAL).forEach { look ->
+                                CharacterFace(Magic8BallPersonality.PIRATE, look, 88.dp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `every look can be picked, is drawn, and is kept under a name the rules take`() {
+        assertEquals(CharacterLook.entries.toSet(), EMBLEMS.toSet())
+        assertEquals(CharacterLook.entries.size, EMBLEMS.size)
+        CharacterLook.entries.forEach { look ->
+            // Kept in small letters, and the rules take small letters only, sixteen at most.
+            assertTrue(look.name, Regex("[a-z]{1,16}").matches(look.name.lowercase()))
+            assertEquals(look, CharacterLook.named(look.name.lowercase()))
+            assertEquals(look.name, look != CharacterLook.NEUTRAL, lookArt(look) != null)
+        }
+        // What an older version does not know wears nothing, rather than break.
+        assertEquals(CharacterLook.NEUTRAL, CharacterLook.named("somethingnew"))
+        // Each of the app's characters wears the look of its own name.
+        CustomCharacter.LOOKS.forEach { assertEquals(it.name, it.look.name) }
+    }
+
     /** A character opened, to be looked at: one of the app's that answers now, and one of other people's. */
     @Test
     fun phone_character_opened() {
@@ -948,7 +996,7 @@ class EightBallScreenshotTest {
             sample = "¡Gooool del sí!",
             description = "Un relator que narra cada respuesta como una jugada de último minuto en una final.",
             colour = Magic8BallPersonality.COACH,
-            emblem = Magic8BallPersonality.ZOOMER,
+            emblem = CharacterLook.ZOOMER,
             author = "marta.r"
         )
         listOf(
@@ -1069,7 +1117,7 @@ class EightBallScreenshotTest {
     @Config(qualifiers = PHONE_TALL)
     fun phone_character_last_picks_spanish() = captureEditor(
         "phone_76_character_last_picks_spanish",
-        CharacterDraft(CustomCharacter("1", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.DOG, Magic8BallPersonality.GRANDMA)),
+        CharacterDraft(CustomCharacter("1", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.DOG, CharacterLook.GRANDMA)),
         AppLanguage.SPANISH,
         dark = false,
         isNew = false
@@ -1092,7 +1140,7 @@ class EightBallScreenshotTest {
                 name = "Dona Florinda XVI",
                 description = "Uma vizinha que sabe de tudo e não perdoa nada. ".repeat(6),
                 colour = Magic8BallPersonality.DRAMA,
-                emblem = Magic8BallPersonality.DETECTIVE
+                emblem = CharacterLook.DETECTIVE
             )
         ),
         AppLanguage.PORTUGUESE,
@@ -1149,7 +1197,7 @@ class EightBallScreenshotTest {
 
     /** The tightest card: the widest name, an answer on three lines, and the tallest things a ball wears. */
     @Test
-    fun share_card_of_the_user_s_own_at_its_tightest() = listOf(Magic8BallPersonality.CAT, Magic8BallPersonality.DRAMA).forEach { worn ->
+    fun share_card_of_the_user_s_own_at_its_tightest() = listOf(CharacterLook.CAT, CharacterLook.WIZARD, CharacterLook.ZOOMER).forEach { worn ->
         captureRoboImage(filePath = path("phone_75_share_card_yours_tight_${worn.name.lowercase()}")) {
             ShareCard(
                 question = "¿Me va a escribir esta noche?",
@@ -1491,11 +1539,11 @@ private val PROFILE = Profile("Lorena", LocalDate.of(1990, 3, 12))
 
 /** As many characters as an account can have, with names and descriptions as long as they come. */
 private val YOURS = listOf(
-    CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el fondo del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT),
-    CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.", Magic8BallPersonality.GRANDMA, Magic8BallPersonality.DETECTIVE),
-    CustomCharacter("3", "Wwwwwwwwwwwwwwww", "W".repeat(280), Magic8BallPersonality.ZOOMER, Magic8BallPersonality.DRAMA),
-    CustomCharacter("4", "Mi jefe", "Responde con frases de reunión.", Magic8BallPersonality.ROBOT, Magic8BallPersonality.NEUTRAL),
-    CustomCharacter("5", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.SARCASTIC, Magic8BallPersonality.THERAPIST)
+    CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el fondo del mar.", Magic8BallPersonality.PIRATE, CharacterLook.CAT),
+    CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.", Magic8BallPersonality.GRANDMA, CharacterLook.DETECTIVE),
+    CustomCharacter("3", "Wwwwwwwwwwwwwwww", "W".repeat(280), Magic8BallPersonality.ZOOMER, CharacterLook.DRAMA),
+    CustomCharacter("4", "Mi jefe", "Responde con frases de reunión.", Magic8BallPersonality.ROBOT, CharacterLook.NEUTRAL),
+    CustomCharacter("5", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.SARCASTIC, CharacterLook.THERAPIST)
 )
 
 private val LONG_ACCOUNT = AccountState.SignedIn(

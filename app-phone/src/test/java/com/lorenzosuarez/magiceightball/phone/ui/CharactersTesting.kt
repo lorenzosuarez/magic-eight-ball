@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.magiceightball.core.domain.model.CharacterListing
+import com.example.magiceightball.core.domain.model.CharacterLook
 import com.example.magiceightball.core.domain.model.CharacterPage
 import com.example.magiceightball.core.domain.model.CharacterShelf
 import com.example.magiceightball.core.domain.model.CustomCharacter
@@ -47,7 +48,7 @@ internal class FakeCommunity(private val count: Int, var failing: Boolean = fals
                     sample = "Lo que diría el número ${number + 1}.",
                     description = "Responde como el personaje número ${number + 1}, con sus manías.",
                     colour = look,
-                    emblem = CustomCharacter.LOOKS[(number * 7) % CustomCharacter.LOOKS.size],
+                    emblem = CharacterLook.entries[(number * 7) % CharacterLook.entries.size],
                     author = "autora${number % 9}"
                 )
             },

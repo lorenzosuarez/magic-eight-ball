@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import com.example.magiceightball.core.domain.model.CharacterListing
 import android.content.Context
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
@@ -261,7 +262,7 @@ class EightBallViewModel @Inject constructor(
         name: String,
         description: String,
         colour: Magic8BallPersonality,
-        emblem: Magic8BallPersonality
+        emblem: CharacterLook
     ): CharacterSave = withContext(NonCancellable) {
         if (replacing == null) {
             // Asked for twice, it is made once: the one already kept is the one meant.

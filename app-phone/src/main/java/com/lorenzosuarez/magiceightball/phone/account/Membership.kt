@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.account
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import android.content.Context
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.CustomCharacter
@@ -181,7 +182,7 @@ class Membership @Inject constructor(
         name: String,
         description: String,
         colour: Magic8BallPersonality,
-        emblem: Magic8BallPersonality
+        emblem: CharacterLook
     ): CharacterSave {
         if (account.state.value !is AccountState.SignedIn || profiles.state.value !is ProfileState.Present || isUnderAge()) {
             return CharacterSave.Failed
@@ -191,7 +192,7 @@ class Membership @Inject constructor(
             name = CustomCharacter.nameOrNull(name) ?: return CharacterSave.Refused,
             description = CustomCharacter.descriptionOrNull(description) ?: return CharacterSave.Refused,
             colour = colour.takeIf { it in CustomCharacter.LOOKS } ?: Magic8BallPersonality.NEUTRAL,
-            emblem = emblem.takeIf { it in CustomCharacter.LOOKS } ?: Magic8BallPersonality.NEUTRAL
+            emblem = emblem
         )
         return characters.save(character, replacing)
     }

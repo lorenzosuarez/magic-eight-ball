@@ -303,4 +303,15 @@
     <string name="license_font">The type on the Google button</string>
     <string name="action_back">Back</string>
     <string name="premium_banner_cta">Get it</string>
+    <string name="look_singer">Singer</string>
+    <string name="look_rockstar">Rock star</string>
+    <string name="look_chef">Chef</string>
+    <string name="look_wizard">Wizard</string>
+    <string name="look_cowboy">Cowboy</string>
+    <string name="look_magician">Magician</string>
+    <string name="look_ninja">Ninja</string>
+    <string name="look_angel">Angel</string>
+    <string name="look_graduate">Graduate</string>
+    <string name="look_flower">Flower</string>
+    <string name="look_party">Party</string>
 </resources>

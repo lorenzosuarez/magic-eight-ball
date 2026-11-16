@@ -2,6 +2,7 @@
 
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -134,7 +135,7 @@ class CharacterEditorTest {
         // What is worn is named, since a small drawing may not say it.
         compose.onNodeWithText("Accesorio \u00b7 Gato").assertIsDisplayed()
         assertEquals(Magic8BallPersonality.PIRATE, draft.colour)
-        assertEquals(Magic8BallPersonality.CAT, draft.emblem)
+        assertEquals(CharacterLook.CAT, draft.emblem)
         // The card follows what is typed.
         compose.onNodeWithText("— Capitán Nemo").assertIsDisplayed()
     }
@@ -750,7 +751,7 @@ class CharacterEditorTest {
             name = "Capitán Nemo",
             description = "Un capitán gruñón que todo lo compara con el mar.",
             colour = Magic8BallPersonality.PIRATE,
-            emblem = Magic8BallPersonality.CAT
+            emblem = CharacterLook.CAT
         )
 
         /** What the page of options says of what is sold. */

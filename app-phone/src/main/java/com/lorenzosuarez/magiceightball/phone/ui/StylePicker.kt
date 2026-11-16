@@ -1,5 +1,10 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.CharacterLook
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.Canvas
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.lerp
@@ -87,9 +92,9 @@ internal val StyleGroups = listOf(
 
 /**
  * The face of a character wherever it is shown small: the ball wearing what is theirs, on their
- * colour, in a round. It is the shared card's own drawing and it is seen as the card shows it,
- * close: the ball runs off the lower corner and what it wears comes to the middle, so that at
- * this size it is a mark, and what is worn is what tells one from another.
+ * colour, in a round. It is drawn for this, not cut out of the shared card: the ball stands
+ * under the middle and what it wears takes the room over it, large enough to be told at the
+ * size of a row, since what is worn is what tells one character from another.
  *
  * The colour is muted, towards a grey of the theme: that much while the character is one among
  * many, and less on the one that is chosen or that answers.
@@ -102,7 +107,7 @@ internal val StyleGroups = listOf(
 @Composable
 internal fun CharacterFace(
     colour: Magic8BallPersonality,
-    emblem: Magic8BallPersonality,
+    emblem: CharacterLook,
     size: Dp,
     modifier: Modifier = Modifier,
     chosen: () -> Float = { 1f },
@@ -121,8 +126,12 @@ internal fun CharacterFace(
                 drawRect(lerp(whole, neutral, FACE_MUTING + (FACE_MUTING_CHOSEN - FACE_MUTING) * chosen()), alpha = ground)
             }
             .border(1.dp, edge, CircleShape)
+            .clearAndSetSemantics {}
     ) {
-        CharacterBall(emblem = emblem, size = size, share = FACE_BALL, right = FACE_BALL_RIGHT, down = FACE_BALL_DOWN)
+        // On a layer of its own: the rim round what is worn is cut through the ball to the ground under it.
+        Canvas(Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
+            drawFace(emblem, ShareInk)
+        }
     }
 }
 
@@ -139,7 +148,7 @@ internal fun CharacterFace(
 internal fun CharacterChip(
     name: String,
     colour: Magic8BallPersonality,
-    emblem: Magic8BallPersonality,
+    emblem: CharacterLook,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     named: Boolean = true
@@ -268,10 +277,6 @@ private val FACE_NEUTRAL_DARK = Color(0xFFAAB2BD)
 private const val FACE_MUTING = 0.7f
 private const val FACE_MUTING_CHOSEN = 0.3f
 
-/** How the ball stands in a face: how much of it the ball takes, and how far its middle is to the right and down, in its own widths. */
-private const val FACE_BALL = 0.8f
-private const val FACE_BALL_RIGHT = 0.1f
-private const val FACE_BALL_DOWN = 0.275f
 
 /** The line round a face. */
 private const val FACE_EDGE_ALPHA = 0.14f

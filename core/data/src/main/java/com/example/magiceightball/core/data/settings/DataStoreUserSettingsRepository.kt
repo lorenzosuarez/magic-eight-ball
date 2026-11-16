@@ -1,5 +1,6 @@
 package com.example.magiceightball.core.data.settings
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
@@ -98,7 +99,7 @@ class DataStoreUserSettingsRepository(
             name = name,
             description = description,
             colour = lookOf(this[CUSTOM_COLOUR]),
-            emblem = lookOf(this[CUSTOM_EMBLEM])
+            emblem = CharacterLook.named(this[CUSTOM_EMBLEM])
         )
     }
 

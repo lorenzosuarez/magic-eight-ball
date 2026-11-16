@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import kotlinx.coroutines.flow.Flow
 import com.lorenzosuarez.magiceightball.phone.characters.CharactersQuery
 import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
@@ -82,7 +83,7 @@ internal fun CharacterFlows(
     pages: (CharactersQuery) -> Flow<PagingData<CharacterRow>> = AtHand::flow,
     onSignIn: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onChooseCharacter: (CustomCharacter) -> Unit = {},
-    onSaveCharacter: suspend (CustomCharacter?, String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave =
+    onSaveCharacter: suspend (CustomCharacter?, String, String, Magic8BallPersonality, CharacterLook) -> CharacterSave =
         { _, _, _, _, _ -> CharacterSave.Failed },
     onDeleteCharacter: suspend (String) -> Boolean = { false },
     onBuyPremium: suspend () -> Bought = { Bought.FAILED }

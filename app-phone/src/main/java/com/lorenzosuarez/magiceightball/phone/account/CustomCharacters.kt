@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.account
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import android.util.Log
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -174,7 +175,7 @@ class FirestoreCustomCharacters @Inject constructor(
             if (id !in CustomCharacter.SLOTS) return null
             val name = (data?.get(NAME) as? String)?.let(CustomCharacter::nameOrNull) ?: return null
             val description = (data[DESCRIPTION] as? String)?.let(CustomCharacter::descriptionOrNull) ?: return null
-            return CustomCharacter(id, name, description, lookOf(data[COLOUR]), lookOf(data[EMBLEM]))
+            return CustomCharacter(id, name, description, lookOf(data[COLOUR]), CharacterLook.named(data[EMBLEM] as? String))
         }
 
         private fun lookOf(name: Any?): Magic8BallPersonality =

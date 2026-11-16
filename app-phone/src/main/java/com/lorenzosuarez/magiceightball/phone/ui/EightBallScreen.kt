@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.look
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
@@ -1460,7 +1461,7 @@ private fun Actions(
                     CharacterChip(
                         name = own?.name ?: stringResource(style.labelRes()),
                         colour = own?.colour ?: style,
-                        emblem = own?.emblem ?: style,
+                        emblem = own?.emblem ?: style.look,
                         onClick = onPickCharacter,
                         named = !party
                     )

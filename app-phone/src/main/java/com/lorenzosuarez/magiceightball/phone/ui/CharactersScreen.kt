@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.look
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.foundation.verticalScroll
 import androidx.annotation.DrawableRes
@@ -499,7 +500,7 @@ private fun CharacterListing.line(): String = when (this) {
 private fun ListedFace(listing: CharacterListing, size: androidx.compose.ui.unit.Dp, chosen: Boolean) {
     val whole: () -> Float = { if (chosen) 1f else 0f }
     when (listing) {
-        is CharacterListing.Original -> CharacterFace(listing.style, listing.style, size, chosen = whole)
+        is CharacterListing.Original -> CharacterFace(listing.style, listing.style.look, size, chosen = whole)
         is CharacterListing.Yours -> CharacterFace(listing.character.colour, listing.character.emblem, size, chosen = whole)
         is CharacterListing.Community -> CharacterFace(listing.colour, listing.emblem, size, chosen = whole)
     }

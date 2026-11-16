@@ -295,4 +295,15 @@
     <string name="license_font">La letra del botón de Google</string>
     <string name="action_back">Atrás</string>
     <string name="premium_banner_cta">Obtener</string>
+    <string name="look_singer">Cantante</string>
+    <string name="look_rockstar">Estrella de rock</string>
+    <string name="look_chef">Chef</string>
+    <string name="look_wizard">Hechicero</string>
+    <string name="look_cowboy">Vaquero</string>
+    <string name="look_magician">Ilusionista</string>
+    <string name="look_ninja">Ninja</string>
+    <string name="look_angel">Ángel</string>
+    <string name="look_graduate">Graduado</string>
+    <string name="look_flower">Flor</string>
+    <string name="look_party">Fiesta</string>
 </resources>

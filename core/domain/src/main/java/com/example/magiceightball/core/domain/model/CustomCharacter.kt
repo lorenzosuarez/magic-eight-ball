@@ -14,14 +14,14 @@ import java.text.Normalizer
  * @property name as the user typed it, tidied: see [nameOrNull].
  * @property description how it answers, as the user typed it, tidied: see [descriptionOrNull].
  * @property colour whose colour its card has, among the app's characters.
- * @property emblem whose accessory its ball wears; [Magic8BallPersonality.NEUTRAL] for none.
+ * @property emblem what its ball wears; [CharacterLook.NEUTRAL] for nothing.
  */
 data class CustomCharacter(
     val id: String,
     val name: String,
     val description: String,
     val colour: Magic8BallPersonality = Magic8BallPersonality.NEUTRAL,
-    val emblem: Magic8BallPersonality = Magic8BallPersonality.NEUTRAL
+    val emblem: CharacterLook = CharacterLook.NEUTRAL
 ) {
     /**
      * The only form in which the name is put in what the AI service is asked: its letters and
@@ -81,7 +81,7 @@ data class CustomCharacter(
         /** Fewer letters than this say nothing about how anyone answers. */
         private const val MIN_DESCRIPTION_LETTERS = 10
 
-        /** Which of the app's characters may lend a colour or an accessory: all but the user's own. */
+        /** Which of the app's characters may lend a colour: all but the user's own. What the ball wears is any [CharacterLook]. */
         val LOOKS: List<Magic8BallPersonality> = Magic8BallPersonality.entries - Magic8BallPersonality.CUSTOM
     }
 }

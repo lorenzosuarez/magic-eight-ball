@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.di
 
 import com.example.magiceightball.core.domain.model.CharacterListing
+import com.example.magiceightball.core.domain.model.CharacterLook
 import com.example.magiceightball.core.domain.model.CharacterPage
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.repository.CommunityCharacters
@@ -45,7 +46,7 @@ private object SampleCommunityCharacters : CommunityCharacters {
             sample = who.sample,
             description = who.description,
             colour = CustomCharacter.LOOKS[(number * 5 + 3) % CustomCharacter.LOOKS.size],
-            emblem = CustomCharacter.LOOKS[(number * 7 + 1) % CustomCharacter.LOOKS.size],
+            emblem = CharacterLook.entries[(number * 7 + 1) % CharacterLook.entries.size],
             author = AUTHORS[number % AUTHORS.size],
             uses = (COUNT - number) * 37L
         )
