@@ -33,6 +33,7 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * @property premium whether whoever is using the app has what is sold: paid for, and checked.
  * @property premiumKnown whether that has been heard from the server; until then [premium] is
  * false without meaning that they do not have it.
+ * @property subscribed whether what they have is a subscription, to be cancelled in Google Play.
  * @property offer what they can buy and for how much; null while the store has not said, or they cannot.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
@@ -56,7 +57,8 @@ data class EightBallUiState(
     val characters: List<CustomCharacter>? = null,
     val premium: Boolean = false,
     val premiumKnown: Boolean = true,
-    val offer: Offer? = null
+    val offer: Offer? = null,
+    val subscribed: Boolean = false
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?

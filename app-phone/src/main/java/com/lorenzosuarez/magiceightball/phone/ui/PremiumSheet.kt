@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.magiceightball.core.common.BrandPalette
 import com.lorenzosuarez.magiceightball.phone.R
+import com.lorenzosuarez.magiceightball.phone.account.BillingPeriod
 import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.Offer
 import kotlinx.coroutines.delay
@@ -53,14 +55,14 @@ import kotlinx.coroutines.launch
 
 /**
  * What is shown to someone who wants what is sold and has not paid for it: what paying brings,
- * what it costs and how it is paid, the way to it, and the way back. It is never shown while
- * nothing is sold.
+ * what it costs and how often, that it renews until it is cancelled and how that is done, the
+ * way to it, and the way back. It is never shown while nothing is sold.
  *
  * @param wanted what brought them here, which is said first.
  * @param held whether it has become theirs meanwhile, here or wherever a payment that was
  * pending came through: the sheet then goes as if it had just been bought.
- * @param offer what it costs, as the store has it; null while the store has not said, and then
- * nothing can be bought.
+ * @param offer what it costs and how often, as the store has it; null while the store has not
+ * said, and then nothing can be bought.
  * @param onBuy the user wants it: shows Google Play's own screen, and tells how that ended.
  * @param onBought it is theirs: what they came for can go on.
  */
@@ -105,10 +107,11 @@ internal fun PremiumSheet(
         tonalElevation = 0.dp
     ) {
         InAppLanguage(language) {
+            val price = offer?.worded()
             PremiumContent(
-                price = offer?.price,
+                price = price,
                 wanted = wanted,
-                terms = stringResource(R.string.premium_terms),
+                terms = price?.let { stringResource(R.string.premium_terms, it) },
                 busy = busy,
                 ended = ended,
                 priceLate = priceLate,
@@ -151,9 +154,10 @@ internal fun PremiumSheet(
  * a payment Google Play is waiting for is only to be understood, one made and not yet checked
  * is to be checked again, and one held by another account cannot be bought here at all.
  *
- * @param price what it costs, as the store words it; null until the store has said.
- * @param terms how it is paid, in a sentence. Nothing can be bought until both are said:
- * without either the button names no price and does not answer.
+ * @param price what it costs and how often, as [worded]; null until the store has said.
+ * @param terms how it is paid, in a sentence: the price again, that it renews until cancelled,
+ * and where it is cancelled. Nothing can be bought until both are said: without either the
+ * button names no price and does not answer.
  * @param busy while a purchase is being made or checked: nothing here answers meanwhile.
  * @param ended how the last try ended, when there is something to say of it.
  * @param priceLate whether the store has been asked its price for long enough to say so.
@@ -293,8 +297,7 @@ internal fun PremiumContent(
                         // Paid for already: what is left is to check it, and the price is not asked again.
                         unchecked -> stringResource(R.string.premium_check_again)
                         offer == null -> stringResource(R.string.premium_upgrade)
-                        // The price is one thing: it goes to a second line whole, or stays on the first.
-                        else -> stringResource(R.string.premium_upgrade_priced, offer.replace(' ', Typography.nbsp))
+                        else -> stringResource(R.string.premium_upgrade_priced, offer)
                     },
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center
@@ -320,6 +323,22 @@ internal fun PremiumContent(
         }
     }
 }
+
+/**
+ * What an offer costs and how often, in the app's language: "0,99 € al mes". The amount is one
+ * thing: it goes to the next line whole, or stays where it is.
+ */
+@Composable
+internal fun Offer.worded(): String = pluralStringResource(
+    when (period.unit) {
+        BillingPeriod.Unit.WEEK -> R.plurals.premium_per_weeks
+        BillingPeriod.Unit.MONTH -> R.plurals.premium_per_months
+        BillingPeriod.Unit.YEAR -> R.plurals.premium_per_years
+    },
+    period.count,
+    period.count,
+    price.replace(' ', Typography.nbsp)
+)
 
 /** How long the store is waited for before its price is said to be missing. */
 private const val PRICE_LATE_MS = 8_000L

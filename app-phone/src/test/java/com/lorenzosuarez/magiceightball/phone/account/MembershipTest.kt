@@ -60,11 +60,15 @@ class MembershipTest {
         shop.sells = Bought.PENDING
         assertEquals(Bought.PENDING, membership.buyPremium(host))
         assertEquals(1, shop.asked)
-        assertEquals(Offer("2,99 €"), membership.who.first().offer)
+        assertEquals(Offer("2,99 €", MONTHLY), membership.who.first().offer)
         assertFalse(membership.who.first().premium)
 
         held.premium.value = true
         assertTrue(membership.who.first().premium)
+        // Bought once, it is not a subscription; paid for each period, it is said to be one.
+        assertFalse(membership.who.first().subscribed)
+        held.subscribed.value = true
+        assertTrue(membership.who.first().subscribed)
 
         marks.underAge.value = true
         assertEquals(Bought.FAILED, membership.buyPremium(host))

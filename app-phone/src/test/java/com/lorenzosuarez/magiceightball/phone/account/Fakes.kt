@@ -142,11 +142,12 @@ class FakeCustomCharacters(initial: List<CustomCharacter>? = emptyList()) : Cust
 /** Stands for what the server holds of a purchase: nothing, until the test says otherwise. */
 class FakeEntitlements(initial: Boolean = false) : Entitlements {
     override val premium = MutableStateFlow(initial)
+    override val subscribed = MutableStateFlow(false)
 }
 
-/** A store driven by the test: what it asks for the thing, and how buying it ends. */
+/** A store driven by the test: what it asks for the thing each month, and how buying it ends. */
 class FakeShop(price: String? = "2,99 €") : Shop {
-    override val offer = MutableStateFlow(price?.let(::Offer))
+    override val offer = MutableStateFlow(price?.let { Offer(it, MONTHLY) })
     var sells = Bought.DONE
 
     /** How many times buying got as far as the store. */
@@ -157,3 +158,5 @@ class FakeShop(price: String? = "2,99 €") : Shop {
         return sells
     }
 }
+
+val MONTHLY = BillingPeriod(1, BillingPeriod.Unit.MONTH)

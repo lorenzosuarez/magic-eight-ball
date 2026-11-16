@@ -1,16 +1,29 @@
-// What the server does for Premium, the one thing the app sells. It asks Google Play whether a
-// purchase is real before granting it to an account, takes it back when Play does, and forgets
-// it with the account. Nothing is granted on the app's word: the app reads its own grant, at
-// users/{the account's id}/grants/premium, and can write none. See firestore/firestore.rules.
+// What the server does for Premium, the one thing the app sells: a subscription, and before
+// that a purchase made once, which whoever made it keeps. It asks Google Play whether a purchase
+// is real before granting it to an account, follows a subscription for as long as it lasts,
+// takes Premium back when Play does, and forgets it with the account. Nothing is granted on the
+// app's word: the app reads its own grant, at users/{the account's id}/grants/premium, and can
+// write none. See firestore/firestore.rules.
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { type DocumentSnapshot, FieldValue, Timestamp, type Transaction, getFirestore } from "firebase-admin/firestore";
 import { logger, setGlobalOptions } from "firebase-functions";
 import { HttpsError, onCall } from "firebase-functions/https";
+import { onMessagePublished } from "firebase-functions/pubsub";
 import { onSchedule } from "firebase-functions/scheduler";
 import { region } from "firebase-functions/v1";
-import { type Outcome, owesAcknowledgement, purchaseId, settle, standing } from "./claim";
-import { play, voidedFrom, voidedSince } from "./play";
+import {
+  ONE_TIME,
+  type Outcome,
+  SUBSCRIPTION,
+  lapsedBefore,
+  owesAcknowledgement,
+  purchaseId,
+  settle,
+  standing,
+  subscribed,
+} from "./claim";
+import { notified, play, voidedFrom, voidedSince } from "./play";
 
 initializeApp();
 const db = getFirestore();
@@ -25,6 +38,9 @@ setGlobalOptions({ region: REGION, maxInstances: 10 });
 // App Check's own figures show the claims arriving verified: before that it would lock out
 // whoever has already paid.
 const ENFORCE_APP_CHECK = false;
+
+// The Pub/Sub topic Play Console is told to publish its notifications to.
+const NOTIFICATIONS = "play-notifications";
 
 const grantOf = (uid: string) => db.doc(`users/${uid}/grants/premium`);
 
@@ -45,10 +61,28 @@ async function isGone(uid: string): Promise<boolean> {
   }
 }
 
-async function claim(uid: string, token: string): Promise<Outcome> {
-  const purchase = await play.purchase(token);
-  const state = standing(purchase);
-  if (state !== "purchased") return state;
+// What Play confirms of a purchase: its order, whether Play is still to be told it was
+// delivered, and, of a subscription, until when it is paid for. Premium bought once has no end.
+interface Confirmed {
+  order: string | null;
+  owed: boolean;
+  until?: number;
+}
+
+async function confirm(token: string, subscription: boolean): Promise<"invalid" | "pending" | Confirmed> {
+  if (subscription) {
+    const answer = await play.subscription(token);
+    const state = subscribed(answer, Date.now());
+    return typeof state === "string" ? state : { ...state, owed: owesAcknowledgement(answer) };
+  }
+  const answer = await play.purchase(token);
+  const state = standing(answer);
+  return state === "purchased" ? { order: answer.orderId ?? null, owed: owesAcknowledgement(answer) } : state;
+}
+
+async function claim(uid: string, token: string, subscription: boolean): Promise<Outcome> {
+  const confirmed = await confirm(token, subscription);
+  if (typeof confirmed === "string") return confirmed;
 
   const id = purchaseId(token);
   const binding = db.doc(`purchases/${id}`);
@@ -59,34 +93,78 @@ async function claim(uid: string, token: string): Promise<Outcome> {
     const owner: string | undefined = bound.get("uid");
     const settlement = settle(uid, owner, owner !== undefined && owner !== uid && (await isGone(owner)));
     if (settlement.outcome === "taken") return settlement.outcome;
-    if (settlement.bind) transaction.set(binding, { uid, at: FieldValue.serverTimestamp() });
+    // An end already written that is later than this one came from a newer answer of Play's,
+    // as when a renewal is told of while this claim is on its way: it is not put back.
+    const written = settlement.bind ? undefined : (bound.get("until") as Timestamp | undefined)?.toMillis();
+    const lasting =
+      confirmed.until === undefined ? {} : { until: Timestamp.fromMillis(Math.max(confirmed.until, written ?? 0)) };
+    if (settlement.bind) transaction.set(binding, { uid, at: FieldValue.serverTimestamp(), ...lasting });
+    // Claimed again by the account that holds it: only how long it lasts is news.
+    else if (confirmed.until !== undefined) transaction.update(binding, lasting);
     if (settlement.strip) transaction.delete(grantOf(settlement.strip));
-    // A grant already there is left as it was made: claiming again does not make it newer.
-    if (!granted.exists) {
+    // A grant for Premium bought once has no end, and is left as it was made: claiming again
+    // does not make it newer, and a subscription does not put an end on it. Any other grant
+    // follows the purchase being claimed, and keeps its date if it was made for this one.
+    const forGood = granted.exists && granted.get("until") === undefined;
+    if (!forGood) {
       transaction.set(grantOf(uid), {
-        since: FieldValue.serverTimestamp(),
+        since: granted.get("purchase") === id ? granted.get("since") : FieldValue.serverTimestamp(),
         purchase: id,
-        order: purchase.orderId ?? null,
+        order: confirmed.order,
+        ...lasting,
       });
     }
     return settlement.outcome;
   });
 
-  if (outcome === "granted" && owesAcknowledgement(purchase)) await tellPlay(token);
+  if (outcome === "granted" && confirmed.owed) await tellPlay(token, subscription);
   return outcome;
 }
 
-// Play is told that what was bought has been delivered. Premium is granted by now, and stays so
-// if Play cannot be told: it is told twice here before giving up, and the app claims the
+// Play is told that what was paid for has been delivered. Premium is granted by now, and stays
+// so if Play cannot be told: it is told twice here before giving up, and the app claims the
 // purchase again every time it starts for as long as Play has not heard.
-async function tellPlay(token: string): Promise<void> {
+async function tellPlay(token: string, subscription: boolean): Promise<void> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      return await play.acknowledge(token);
+      return await play.acknowledge(token, subscription);
     } catch (error) {
       logger.warn("claimPremium: granted, but Play could not be told so", { attempt, ...kindOf(error) });
     }
   }
+}
+
+// A purchase that gives Premium no longer is let go of: the grant made for it, and the note of
+// which account held it. An account's grant goes only if it was made for this purchase, and not
+// for another that is still good.
+async function release(transaction: Transaction, bound: DocumentSnapshot): Promise<void> {
+  const uid: string | undefined = bound.get("uid");
+  if (uid !== undefined) {
+    const grant = await transaction.get(grantOf(uid));
+    if (grant.get("purchase") === bound.id) transaction.delete(grant.ref);
+  }
+  transaction.delete(bound.ref);
+}
+
+// How a subscription stands with Play now is made true of the account that holds it: paid for
+// further, its grant lasts further; over, on hold or paused, the grant goes. One that comes
+// back afterwards is claimed again by the app the next time it starts.
+async function follow(token: string): Promise<void> {
+  const binding = db.doc(`purchases/${purchaseId(token)}`);
+  // Play tells of every subscription, the ones no account has claimed yet among them: nothing
+  // is kept of those, and Play is not asked about them.
+  if (!(await binding.get()).exists) return;
+  const state = subscribed(await play.subscription(token), Date.now());
+  await db.runTransaction(async (transaction) => {
+    const bound = await transaction.get(binding);
+    // Gone meanwhile, or Premium bought once, which nothing said of a subscription can end.
+    if (bound.get("until") === undefined) return;
+    if (typeof state === "string") return release(transaction, bound);
+    const grant = await transaction.get(grantOf(bound.get("uid")));
+    const lasting = { until: Timestamp.fromMillis(state.until) };
+    transaction.update(binding, lasting);
+    if (grant.get("purchase") === bound.id) transaction.update(grant.ref, { ...lasting, order: state.order });
+  });
 }
 
 export const claimPremium = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
@@ -96,13 +174,53 @@ export const claimPremium = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async
   if (typeof token !== "string" || token.length === 0 || token.length > 1000) {
     throw new HttpsError("invalid-argument", "token is not a purchase token.");
   }
+  // What the app says the token is a purchase of, which only chooses how Play is asked: Play
+  // says what it really is. Versions of the app from before the subscription name nothing, and
+  // can only mean Premium bought once.
+  const product: unknown = request.data?.product ?? ONE_TIME;
+  if (product !== SUBSCRIPTION && product !== ONE_TIME) {
+    throw new HttpsError("invalid-argument", "product is not one the app sells.");
+  }
   try {
-    const outcome = await claim(uid, token);
+    const outcome = await claim(uid, token, product === SUBSCRIPTION);
     logger.info("claimPremium", { outcome });
     return { outcome };
   } catch (error) {
     logger.error("claimPremium: Play or Firestore could not be reached", kindOf(error));
     throw new HttpsError("unavailable", "The purchase could not be checked. Try again later.");
+  }
+});
+
+// Play publishes here whenever a subscription changes: renewed, cancelled, expired, on hold,
+// paused, recovered, revoked or refunded. This, and no list of tokens kept to ask about, is how
+// Premium ends when a subscription does: the notification brings the token, which is written
+// nowhere. Tried again if it fails, since Play tells of each change once; following a
+// subscription twice changes nothing more.
+export const playNotified = onMessagePublished({ topic: NOTIFICATIONS, retry: true }, async (event) => {
+  let message: unknown;
+  try {
+    message = event.data.message.json;
+  } catch {
+    // Not one of Play's: trying it again would not make it one.
+    return;
+  }
+  const token = notified(message);
+  if (token !== undefined) await follow(token);
+});
+
+// What keeps Premium from outliving a subscription Play was never heard from about again, as
+// when its notifications are not set up or one was lost: a subscription whose end is well past
+// is let go of. If it was in fact renewed, the app claims it again the next time it starts.
+export const endLapsed = onSchedule("every 24 hours", async () => {
+  const before = Timestamp.fromMillis(lapsedBefore(Date.now()));
+  const lapsed = await db.collection("purchases").where("until", "<", before).get();
+  for (const found of lapsed.docs) {
+    await db.runTransaction(async (transaction) => {
+      const bound = await transaction.get(found.ref);
+      // As it is now, not as it was found: one renewed in the meantime stays.
+      const until: Timestamp | undefined = bound.get("until");
+      if (until !== undefined && until.toMillis() < before.toMillis()) await release(transaction, bound);
+    });
   }
 });
 
@@ -113,13 +231,8 @@ export const revokeVoided = onSchedule("every 24 hours", async () => {
   for await (const token of voidedSince(play, voidedFrom(lastAsked, now))) {
     const binding = db.doc(`purchases/${purchaseId(token)}`);
     await db.runTransaction(async (transaction) => {
-      const uid: string | undefined = (await transaction.get(binding)).get("uid");
-      if (uid === undefined) return;
-      // An account's grant goes only if it was made for this purchase, and not for another
-      // that is still good.
-      const grant = await transaction.get(grantOf(uid));
-      if (grant.get("purchase") === binding.id) transaction.delete(grant.ref);
-      transaction.delete(binding);
+      const bound = await transaction.get(binding);
+      if (bound.exists) await release(transaction, bound);
     });
   }
   // Written only once everything was read and dealt with: a run that fails is made up for by
