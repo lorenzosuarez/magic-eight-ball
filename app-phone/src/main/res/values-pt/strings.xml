@@ -7,7 +7,6 @@
     <string name="hint_tap">Toque ou agite para perguntar</string>
     <string name="hint_listening">Estou ouvindo…</string>
     <string name="hint_speak">Faça uma pergunta de sim ou não</string>
-    <string name="hint_thinking">Pensando…</string>
     <string name="notice_microphone_denied">Para perguntar por voz, permita o acesso ao microfone.</string>
     <string name="notice_voice_unsupported">Este dispositivo não consegue ouvir perguntas.</string>
 
@@ -169,16 +168,14 @@
     <string name="styles_group_yours">Seus</string>
     <string name="character_new_title">Novo personagem</string>
     <string name="character_edit_title">Seu personagem</string>
-    <string name="character_hint">Um nome, como responde e o que usa</string>
     <string name="character_name">Nome</string>
     <string name="character_description">Como responde?</string>
     <string name="character_description_example">Um capitão rabugento que compara tudo com o mar</string>
     <string name="character_colour">Cor</string>
     <string name="character_emblem">Acessório</string>
     <string name="character_no_emblem">Nenhum</string>
-    <string name="character_preview">Assim aparece ao compartilhar</string>
     <string name="character_unnamed">Sem nome</string>
-    <string name="character_sent">Fica na sua conta e é enviado ao Gemini, do Google, quando este personagem responde. Não coloque nada pessoal.</string>
+    <string name="character_sent">É enviado ao Gemini, do Google, para responder. Nada pessoal.</string>
     <string name="character_refused">Confira o nome e como responde</string>
     <string name="character_incomplete">Dê um nome e diga como responde</string>
     <string name="characters_no_sign_in_title">Não foi possível entrar</string>
@@ -327,6 +324,10 @@
     <string name="look_shark">Tubarão</string>
     <string name="look_punk">Punk</string>
     <string name="look_viking">Viking</string>
-    <string name="look_frog">Sapo</string>
+    <string name="look_mouse">Rato</string>
+    <string name="look_bunny">Coelho</string>
+    <string name="look_bird">Passarinho</string>
+    <string name="look_propeller">Boné com hélice</string>
+    <string name="look_bow">Laço</string>
     <string name="character_how">Como responde</string>
 </resources>

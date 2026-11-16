@@ -1253,10 +1253,9 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
                         )
                     }
                 }
-                else -> Text(
-                    text = stringResource(
-                        if (phase is BallPhase.Listening) R.string.hint_listening else R.string.hint_thinking
-                    ),
+                // While it thinks nothing is written: the ball shows it, and says it to whoever cannot see.
+                is BallPhase.Listening -> Text(
+                    text = stringResource(R.string.hint_listening),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -1264,6 +1263,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                else -> Unit
             }
         }
     }

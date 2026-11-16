@@ -2,6 +2,7 @@
 
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.test.hasStateDescription
 import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -113,11 +114,11 @@ class CharacterEditorTest {
         val saved = mutableListOf<Pair<String, String>>()
         showEditor(draft, onSave = { name, description -> saved += name to description })
         compose.onNodeWithText("Guardar").assertIsNotEnabled()
-        // Why it waits is said while it does.
-        compose.onNodeWithText("Ponle un nombre y di cómo responde").assertIsDisplayed()
-        // Before the button, and said in full: where saving keeps it and where it is sent.
-        compose.onNodeWithText("Se guarda en tu cuenta y se envía a Gemini, de Google, cuando este personaje responde. No pongas nada personal.")
-            .assertIsDisplayed()
+        // Why it waits is not written out: it is said to whoever cannot see that the button waits.
+        assertEquals(0, count("Ponle un nombre y di cómo responde"))
+        compose.onNode(hasStateDescription("Ponle un nombre y di cómo responde")).assertExists()
+        // Before the button, in a line: where what is written is sent.
+        compose.onNodeWithText("Se envía a Gemini, de Google, para responder. Nada personal.").assertIsDisplayed()
 
         compose.onNodeWithText("Nombre").performTextInput("Capitán Nemo")
         compose.onNodeWithText("Guardar").assertIsNotEnabled()
@@ -130,7 +131,6 @@ class CharacterEditorTest {
         compose.onAllNodesWithContentDescription("Pirata")[0].performScrollTo().performClick()
         compose.onAllNodesWithContentDescription("Gato")[1].performScrollTo().performClick()
 
-        assertEquals(0, count("Ponle un nombre y di cómo responde"))
         compose.onNodeWithText("Guardar").assertIsEnabled().performClick()
         assertEquals(listOf("Capitán Nemo" to "ok, pero gruñón como el mar"), saved)
         // What is worn is named, since a small drawing may not say it.

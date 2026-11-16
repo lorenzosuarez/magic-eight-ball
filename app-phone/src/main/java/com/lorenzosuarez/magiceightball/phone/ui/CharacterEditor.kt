@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.animation.core.spring
@@ -283,17 +284,12 @@ internal fun CharacterEditorContent(
             .imePadding()
             .padding(bottom = 16.dp)
     ) {
+        // Its name and no more: what there is to do is the fields themselves.
         Text(
             text = stringResource(if (isNew) R.string.character_new_title else R.string.character_edit_title),
-            modifier = Modifier.padding(horizontal = 32.dp).semantics { heading() },
+            modifier = Modifier.padding(start = 32.dp, end = 32.dp, bottom = 16.dp).semantics { heading() },
             style = MaterialTheme.typography.titleMedium.copy(lineBreak = LineBreak.Heading),
             fontWeight = FontWeight.SemiBold
-        )
-        Text(
-            text = stringResource(R.string.character_hint),
-            modifier = Modifier.padding(start = 32.dp, top = 2.dp, end = 32.dp, bottom = 16.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         CharacterPreview(draft)
         OutlinedTextField(
@@ -354,39 +350,36 @@ internal fun CharacterEditorContent(
         val wears = stringResource(draft.emblem.labelRes())
         PickerLabel(stringResource(R.string.character_emblem) + " · " + wears)
         EmblemRow(chosen = draft.emblem, colour = draft.colour, enabled = !busy, onChosen = { draft.emblem = it })
-        // Before the button, and in full: where saving it keeps it, and where it is sent.
+        // Before the button, in a line: where what is written goes. It is the one thing here that
+        // has to be said and cannot be seen.
         Text(
             text = stringResource(R.string.character_sent),
-            modifier = Modifier.padding(start = 32.dp, top = 20.dp, end = 32.dp),
-            style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
+            modifier = Modifier.padding(start = 32.dp, top = 16.dp, end = 32.dp),
+            style = MaterialTheme.typography.bodySmall.copy(lineBreak = LineBreak.Paragraph),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         val ready = name != null && description != null
-        // Why the button waits, said while it does: a button that will not be touched says nothing.
-        val waiting = stringResource(R.string.character_incomplete).takeIf { !ready && trouble == null }
-        val said = trouble ?: waiting
-        // Its room is kept when there is nothing to say, so that the buttons under it stay where
-        // they are as the last letter makes the draft whole: unseen then, and unheard.
-        Text(
-            text = said ?: stringResource(R.string.character_incomplete),
-            modifier = Modifier
-                .padding(start = 32.dp, top = 12.dp, end = 32.dp)
-                .fillMaxWidth()
-                .alpha(if (said == null) 0f else 1f)
-                .then(
-                    if (said == null) {
-                        Modifier.clearAndSetSemantics {}
-                    } else {
-                        Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                    }
-                ),
-            style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
-            color = if (trouble != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // Only what went wrong is written out. That the draft is not whole yet is what the
+        // button's own look says, and is said in words to whoever cannot see it.
+        if (trouble != null) {
+            Text(
+                text = trouble,
+                modifier = Modifier
+                    .padding(start = 32.dp, top = 12.dp, end = 32.dp)
+                    .fillMaxWidth()
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading),
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+        val unfinished = stringResource(R.string.character_incomplete)
         PrimaryButton(
             text = stringResource(R.string.action_save),
             onClick = { if (name != null && description != null) onSave(name, description) },
-            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(start = 16.dp, top = 16.dp, end = 16.dp)
+                .fillMaxWidth()
+                .semantics { if (!ready) stateDescription = unfinished },
             enabled = ready,
             busy = busy
         )
@@ -457,11 +450,6 @@ private fun CharacterPreview(draft: CharacterDraft) {
                 color = ShareInk.copy(alpha = if (named == null) UNNAMED_ALPHA else 1f),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = stringResource(R.string.character_preview),
-                style = MaterialTheme.typography.bodySmall,
-                color = ShareInk
             )
         }
         // The figure as the card and every face show it, coming in from the card's lower corner.
@@ -661,8 +649,12 @@ private val COLOURS = CustomCharacter.LOOKS - Magic8BallPersonality.PHILOSOPHER
 internal val EMBLEMS = listOf(
     CharacterLook.NEUTRAL,
     CharacterLook.CAT,
-    CharacterLook.FROG,
+    CharacterLook.BUNNY,
+    CharacterLook.MOUSE,
+    CharacterLook.BIRD,
     CharacterLook.MATE,
+    CharacterLook.PROPELLER,
+    CharacterLook.BOW,
     CharacterLook.PUNK,
     CharacterLook.ROCKSTAR,
     CharacterLook.SINGER,

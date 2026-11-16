@@ -9,7 +9,6 @@
     <string name="hint_tap">Tap or shake to ask</string>
     <string name="hint_listening">Listening…</string>
     <string name="hint_speak">Ask a yes-or-no question</string>
-    <string name="hint_thinking">Thinking…</string>
     <string name="notice_microphone_denied">To ask by voice, allow microphone access.</string>
     <string name="notice_voice_unsupported">This device can\'t listen to questions.</string>
 
@@ -177,16 +176,14 @@
     <string name="styles_group_yours">Yours</string>
     <string name="character_new_title">New character</string>
     <string name="character_edit_title">Your character</string>
-    <string name="character_hint">A name, how it answers and what it wears</string>
     <string name="character_name">Name</string>
     <string name="character_description">How does it answer?</string>
     <string name="character_description_example">A grumpy captain who compares everything to the sea</string>
     <string name="character_colour">Color</string>
     <string name="character_emblem">Accessory</string>
     <string name="character_no_emblem">None</string>
-    <string name="character_preview">How it looks when shared</string>
     <string name="character_unnamed">No name yet</string>
-    <string name="character_sent">It\'s kept in your account and sent to Google\'s Gemini when this character answers. Don\'t put anything personal.</string>
+    <string name="character_sent">Sent to Gemini, by Google, to answer. Nothing personal.</string>
     <string name="character_refused">Check the name and how it answers</string>
     <string name="character_incomplete">Give it a name and say how it answers</string>
     <string name="characters_no_sign_in_title">Couldn\'t sign in</string>
@@ -335,6 +332,10 @@
     <string name="look_shark">Shark</string>
     <string name="look_punk">Punk</string>
     <string name="look_viking">Viking</string>
-    <string name="look_frog">Frog</string>
+    <string name="look_mouse">Mouse</string>
+    <string name="look_bunny">Bunny</string>
+    <string name="look_bird">Bird</string>
+    <string name="look_propeller">Propeller cap</string>
+    <string name="look_bow">Bow</string>
     <string name="character_how">How it answers</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.di
 
+import com.example.magiceightball.core.domain.model.CharacterListing
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -33,13 +34,20 @@ class SampleCommunityTest {
     }
 
     @Test
-    fun `they are handed out a page at a time, each once, to the last`() = runTest {
-        val first = SampleCommunityCharacters.page(after = null, limit = 24)
-        val second = SampleCommunityCharacters.page(after = first.next, limit = 24)
-        val third = second.next?.let { SampleCommunityCharacters.page(after = it, limit = 24) }
+    fun `they are handed out a page at a time, each once, to the last, and there are several pages of them`() = runTest {
+        val handed = mutableListOf<CharacterListing.Community>()
+        var pages = 0
+        var after: String? = null
+        do {
+            val page = SampleCommunityCharacters.page(after = after, limit = 24)
+            // Every page but the last is full.
+            if (page.next != null) assertEquals(24, page.items.size)
+            handed += page.items
+            after = page.next
+            pages++
+        } while (after != null && pages < 50)
 
-        val handed = first.items + second.items + third?.items.orEmpty()
         assertEquals(all, handed)
-        assertEquals(24, first.items.size)
+        assertTrue("pages $pages", pages >= 4)
     }
 }

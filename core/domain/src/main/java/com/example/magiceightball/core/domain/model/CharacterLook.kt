@@ -46,7 +46,11 @@ enum class CharacterLook {
     SHARK,
     PUNK,
     VIKING,
-    FROG;
+    MOUSE,
+    BUNNY,
+    BIRD,
+    PROPELLER,
+    BOW;
 
     companion object {
         /** The look kept under [name], in whatever case; [NEUTRAL] for none and for one not known here. */
