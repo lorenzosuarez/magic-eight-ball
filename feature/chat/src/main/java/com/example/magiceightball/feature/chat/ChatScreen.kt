@@ -561,7 +561,7 @@ private val ReportBottomPadding = 9.dp
 @Preview(name = "ChatScreen - Wear Round Completed", showBackground = true, widthDp = 192, heightDp = 192)
 @Composable
 private fun ChatScreenPreviewWearRoundCompleted() {
-    ChatScreenPreview(ChatStateMachine.Completed(AnswerText.Plain("Outlook good, but uncertain.")))
+    ChatScreenPreview(ChatStateMachine.Completed(AnswerText.Plain("Could go either way.")))
 }
 
 @Preview(name = "ChatScreen - Wear Round Idle", showBackground = true, widthDp = 192, heightDp = 192)

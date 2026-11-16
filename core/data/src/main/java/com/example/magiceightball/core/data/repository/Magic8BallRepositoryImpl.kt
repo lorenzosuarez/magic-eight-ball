@@ -46,7 +46,7 @@ class Magic8BallRepositoryImpl(
     override suspend fun generateMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         geminiSettings.refresh()
         var allowanceSpent = false
-        // The classic style is the toy's own twenty answers: nothing is written for it. Nor for
+        // The classic style is its own twenty answers: nothing is written for it. Nor for
         // one of the user's own that came without saying who it is: there is no voice to write in.
         val hasVoice = when (request.personality) {
             Magic8BallPersonality.NEUTRAL -> false

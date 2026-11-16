@@ -70,7 +70,7 @@ class ShippedPromptsTest {
         val RECORDED = """
             en/SARCASTIC d0f96ee4bb7413241c42caae2973f47395469113936f548baded5f03e3c0e89b
             en/MYSTICAL 13432b7f0a338b9cb1b57944c7d1a746127a0827084ae6acf6e7b8f9a3f88fc7
-            en/NEUTRAL f39a2e53784016eb3e0792ddbff9610ed547fa2257f135bf632897fd59341b97
+            en/NEUTRAL 86466e2c5d44a4b84d13af3257ffbec2d1aa7d5217f68a916840b381beb4b4c3
             en/GRANDMA b116e8ebf6c88268133fb85a0d10382c289e7d22bf83cd5a0436ad62b7221444
             en/PIRATE 0b164bc8e252bf5f20c8eaf6b12f298d766939c657c4fdc5ed534651e7cb4802
             en/PHILOSOPHER 8c9621f4a2801360b72c5de128e8a36d6f37c89a84d47ca2155c56f43e5005c3
@@ -88,10 +88,10 @@ class ShippedPromptsTest {
             en/THERAPIST bd9c3cb3beecf3b967ffa1c7afd13d40641461078e9cadb03337ef29ef38e733
             en/DOG fe907547686a83d915ecbf52b2720345481ac4ba49a1e60a2d9cdb01884cc0cc
             en/GAMER ff39d378fccf78f9e4e99b2bc2e2a1ceb48a96f60f63b0e39a7730f00d4c088c
-            en/CUSTOM 49a4bc7d104cf6dad79cc89fd954fcffdd7e5dd28431fc38dcea3299f79ed581
+            en/CUSTOM 7b9cde470bfc1ce7a381b1c0e6f0ece1d3c58ca74b37206242c3daa4921d6f3f
             es/SARCASTIC b5d36e869f3e3c18c7b0930885209a72f5b5ed19ea79da52713d97475442d2c5
             es/MYSTICAL 000d808dca739cff2fedb9ea8423514a2de28d6f623a125124b49aaeb5aaa3c0
-            es/NEUTRAL 5f1d3a1ab38e2fe0b6a74f99f2493be9f76e338937f7d2eea5e0ead0e3b1fa2a
+            es/NEUTRAL 740faf57045b37211f510d97ff69e3f86fab7951933ea65c2b2a2a5e8942ff15
             es/GRANDMA 044d37865fb55665a9ea7a584e4aa9932562a132840fe5629313804d6df0c670
             es/PIRATE c369ca4fd816fb493fb58df48f934fb855f3138b29b06a0a491cbcee37298417
             es/PHILOSOPHER a4eb0df0e7aa64ecb25b0b63a75198cc04b678dea156aa6ed6a7465cfa0a19e7
@@ -109,10 +109,10 @@ class ShippedPromptsTest {
             es/THERAPIST 5dd230e98d4897bb3ef6c7a6c109d6739f548162412a01d6320529f548ed6c71
             es/DOG cf10e8ae8e550f8fd79af156ae8e9dba08ea701092411aac0c7dfdfac9ad0728
             es/GAMER 579e8fb3eb8cffe85ed3fbf2a51ea70e72364ab8c1d3d15e9c4cacef86870f2e
-            es/CUSTOM 1e5e28d4ff7a45858bb677b3309e8ab3e09b5f67c1a153d70fc1809b4158b7e3
+            es/CUSTOM deb6a7b40aead345ad26197c8bf0ac582188a0bc908298e1b77b6d59c8b40ee8
             pt/SARCASTIC 0dd9ffe3f7ab6b622e992d46ad9720b332c6c7d3b61dfa17a055d28b9e2a04ad
             pt/MYSTICAL 81bc12a3151ef5509d01a887125de1fa81814d62d86ab650366de6bb1fbfc649
-            pt/NEUTRAL 1da75ad7cb34bf47759137e92c17669496c647db8024c08324263c85fe2b96da
+            pt/NEUTRAL 382b07251313fd02e497c06070a40ca88d62130f89078f7eb81cdbe6453ccac9
             pt/GRANDMA 300b9d7b76fae630b7b037ab58d397561cd10c3c4c009be3c3c3ea5920f5c601
             pt/PIRATE ab3f266f93cd99e720e29bbb18fe0d6d5b867d01a96e40248b4a24107c16af1c
             pt/PHILOSOPHER d14e77354bad506457645f1d12d4b92eb65fb373f0b115a96f5e6e7f5d90a826
@@ -130,7 +130,7 @@ class ShippedPromptsTest {
             pt/THERAPIST ba21bb8ad410c5b7a1c6cd02885bcc969364cb886baf6c2ca6ab31f3c8d5e5b5
             pt/DOG 5aadc292f00082fdc051280f8d60addf3ab7ba171da0ed68e0b134a9fa9e5310
             pt/GAMER 4ed0d41c8c15db84a3b74556d4187affc6c91d53ea5bd06a3be01f6a71853af1
-            pt/CUSTOM 4382f49b972cc7d79a73dcd8daaf06cd1a96ba412803f7b87e47c679ee6b53d8
+            pt/CUSTOM d14a39430e9caef73c32068096a1657660f007bfcbf01ece1dd582208c5261ca
         """.trimIndent()
     }
 }

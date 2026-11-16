@@ -517,7 +517,7 @@ private val SHARE_FIGURE_IN = 8.dp
 
 
 private const val SHARE_DIRECTORY = "share"
-private const val SHARE_FILE = "magic-8-ball"
+private const val SHARE_FILE = "magic-ai-ball"
 
 /** The pictures left where they were saved: the one being shared and the two before it. */
 private const val SHARE_KEPT = 2
