@@ -1,6 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
-import androidx.compose.ui.graphics.drawscope.DrawTransform
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import com.example.magiceightball.core.domain.model.look
 import com.example.magiceightball.core.domain.model.CharacterLook
 import android.content.ActivityNotFoundException
@@ -10,7 +11,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.LineBreak
@@ -31,15 +30,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -48,9 +42,7 @@ import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -64,7 +56,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -135,8 +126,8 @@ internal fun ShareCard(
                         .offset(x = SHARE_BALL_LEFT, y = SHARE_BALL_TOP)
                         .requiredSize(SHARE_BALL_SIZE)
                         .graphicsLayer {
-                            // What a ball wears stands taller over it than the ball is wide by half:
-                            // the figure is a size down and further into the corner, clear of the words.
+                            // The tallest thing a ball wears reaches the name that signs the card: the
+                            // figure is a little down in size and further into the corner, clear of the words.
                             val back = if (remark != null) SHARE_BALL_BACK else 1f
                             scaleX = SHARE_FIGURE * back
                             scaleY = SHARE_FIGURE * back
@@ -302,35 +293,17 @@ private const val BALL_DROP = (LOOK_BALL_Y - LOOK_BOX / 2) / (LOOK_BALL_RADIUS *
  */
 @Composable
 private fun FlatBall(look: CharacterLook, rim: Color, modifier: Modifier = Modifier) {
-    val paths = remember(look) { lookPaths(look) }
-    Box(modifier = modifier.rotate(SHARE_BALL_TILT)) {
+    Box(modifier = modifier.rotate(FIGURE_TILT)) {
+        // The figure itself, upright: the box it is drawn in is what is tipped, and the number is set in type over it.
         Canvas(Modifier.fillMaxSize()) {
-            val radius = size.minDimension / 2
-            // A look is drawn in a box of its own, about a ball of its own: brought here to this one.
-            val unit = radius / LOOK_BALL_RADIUS
-            val onThisBall: DrawTransform.() -> Unit = {
-                translate(center.x - LOOK_BALL_X * unit, center.y - LOOK_BALL_Y * unit)
-                scale(unit, unit, pivot = Offset.Zero)
-            }
-            paths?.behind?.let { behind -> withTransform(onThisBall) { drawPath(behind, SHARE_INK) } }
-            drawCircle(SHARE_INK, radius)
-            val disc = Size(radius * SHARE_DISC_WIDE * 2, radius * SHARE_DISC_TALL * 2)
-            drawOval(
-                Color.White,
-                topLeft = Offset(
-                    center.x + radius * SHARE_DISC_X - disc.width / 2,
-                    center.y + radius * SHARE_DISC_Y - disc.height / 2
-                ),
-                size = disc
-            )
-            if (paths != null) withTransform(onThisBall) { drawWorn(paths, SHARE_INK, rim) }
+            drawFigure(look = look, ink = SHARE_INK, centre = center, radius = size.minDimension / 2, rim = rim, tilt = 0f, number = false)
         }
         Text(
             text = "8",
             modifier = Modifier
                 .align(Alignment.Center)
-                .offset(x = SHARE_BALL_SIZE / 2 * SHARE_DISC_X, y = SHARE_BALL_SIZE / 2 * SHARE_DISC_Y)
-                .graphicsLayer { scaleX = SHARE_DISC_WIDE / SHARE_DISC_TALL },
+                .offset(x = SHARE_BALL_SIZE / 2 * FACE_X, y = SHARE_BALL_SIZE / 2 * FACE_Y)
+                .graphicsLayer { scaleX = FACE_WIDE / FACE_TALL },
             style = MaterialTheme.typography.displayLarge.copy(fontSize = 52.sp, lineHeight = 52.sp),
             fontWeight = FontWeight.Black,
             color = SHARE_INK
@@ -512,17 +485,11 @@ private val SHARE_BUBBLE_TAIL = 9.dp
 private val SHARE_BALL_SIZE = 210.dp
 private val SHARE_BALL_LEFT = 190.dp
 private val SHARE_BALL_TOP = 300.dp
-private const val SHARE_BALL_TILT = -18f
 
 /** How large the ball and what it wears are drawn in the room the ball has, and how far into the corner they are moved for it. */
-private const val SHARE_FIGURE = 0.84f
-private val SHARE_FIGURE_IN = 14.dp
+private const val SHARE_FIGURE = 0.92f
+private val SHARE_FIGURE_IN = 8.dp
 
-/** The white disc, in parts of the ball's radius: off centre and narrowed, as on a sphere. */
-private const val SHARE_DISC_X = -0.23f
-private const val SHARE_DISC_Y = -0.18f
-private const val SHARE_DISC_WIDE = 0.37f
-private const val SHARE_DISC_TALL = 0.42f
 
 private const val SHARE_DIRECTORY = "share"
 private const val SHARE_FILE = "magic-8-ball"

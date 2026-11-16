@@ -9,93 +9,140 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.vector.PathParser
 import com.example.magiceightball.core.domain.model.CharacterLook
 import com.lorenzosuarez.magiceightball.phone.R
 
 /**
- * A look, as it is drawn: SVG paths in a box of [LOOK_BOX] across, in which the ball is a circle
- * of radius [LOOK_BALL_RADIUS] about ([LOOK_BALL_X], [LOOK_BALL_Y]). Bottom to top:
+ * A look, as it is drawn: SVG paths on a ball that stands upright in a box of [LOOK_BOX] across,
+ * a circle of radius [LOOK_BALL_RADIUS] about ([LOOK_BALL_X], [LOOK_BALL_Y]). Each shape is a
+ * path of its own and is drawn by itself, so two that overlap never cut holes in each other.
+ * Bottom to top:
  *
- * @property behind in the ball's ink, under the ball: what stands beside it and runs behind.
+ * @property beside in the ball's ink, under the ball and as large as drawn: what is fixed to
+ * the ball's sides.
+ * @property behind in the ball's ink, under the ball: what grows from behind it, as ears do.
  * @property ink in the ball's ink, over the ball, with a rim of the ground round it so that it
  * is told from the ball it sits on.
  * @property white what is cut out of it in white: the detail that says what the shape is.
  * @property dot in ink again, over the white: the pupil of an eye.
- * @property lift how far up the whole figure stands, in the box's own measure, where the look
- * leaves the room over the ball empty.
+ * @property fitted whether it is made to the ball's own measure, as a band round it is: then it
+ * is drawn as large as it is, where anything else is drawn a size down about the crown.
  */
 internal class LookArt(
-    val behind: String? = null,
-    val ink: String? = null,
-    val white: String? = null,
-    val dot: String? = null,
-    val lift: Float = 0f
+    val beside: List<String> = emptyList(),
+    val behind: List<String> = emptyList(),
+    val ink: List<String> = emptyList(),
+    val white: List<String> = emptyList(),
+    val dot: List<String> = emptyList(),
+    val fitted: Boolean = false
 )
 
 /** A look ready to be drawn: its paths read once, however many times it is drawn after. */
-internal class LookPaths(val behind: Path?, val ink: Path?, val white: Path?, val dot: Path?, val lift: Float)
-
-/** The paths of [look]; null for the one that wears nothing. Read on the thread that draws, and kept. */
-internal fun lookPaths(look: CharacterLook): LookPaths? {
-    if (look in read) return read[look]
-    val paths = lookArt(look)?.let { art ->
-        LookPaths(art.behind?.toPath(), art.ink?.toPath(), art.white?.toPath(), art.dot?.toPath(), art.lift)
-    }
-    read[look] = paths
-    return paths
+internal class LookPaths(
+    val beside: List<Path>,
+    val behind: List<Path>,
+    val ink: List<Path>,
+    val white: List<Path>,
+    val dot: List<Path>,
+    val fitted: Boolean
+) {
+    /** Whether the ball wears nothing at all. */
+    val bare: Boolean get() = beside.isEmpty() && behind.isEmpty() && ink.isEmpty() && white.isEmpty()
 }
 
-private val read = HashMap<CharacterLook, LookPaths?>()
+/** The paths of [look]. Read on the thread that draws, and kept. */
+internal fun lookPaths(look: CharacterLook): LookPaths = read.getOrPut(look) {
+    val art = lookArt(look)
+    LookPaths(
+        beside = art.beside.map { it.toPath() },
+        behind = art.behind.map { it.toPath() },
+        ink = art.ink.map { it.toPath() },
+        white = art.white.map { it.toPath() },
+        dot = art.dot.map { it.toPath() },
+        fitted = art.fitted
+    )
+}
+
+private val read = HashMap<CharacterLook, LookPaths>()
 private val eight by lazy(LazyThreadSafetyMode.NONE) { LOOK_EIGHT.toPath() }
-private val eightPlain by lazy(LazyThreadSafetyMode.NONE) { LOOK_EIGHT_PLAIN.toPath() }
 
 private fun String.toPath(): Path = PathParser().parsePathString(this).toPath()
 
 /**
- * The face of a character, whole: the ball with its number and what it wears, filling the
- * round it is drawn in. The ground is not drawn here; where what is worn lies over the ball a
- * rim is cut through to it, so this is drawn on a layer of its own, over the ground.
+ * The figure every character is: the ball, large and tipped towards the words, its white disc
+ * off to one side as a face, wearing [look] on its tipped crown. Drawn about [centre] with the
+ * ball [radius] across its half; whoever draws it decides how much of it is in sight.
  *
- * A ball that wears nothing takes the round: larger, in the middle, its number plain to read.
+ * @param rim the colour of the ground, to draw the rim round what is worn in; null to cut the
+ * rim through whatever has been drawn on this layer, where the ground is under the layer.
+ * @param tilt how far the figure is tipped: none where what it is drawn in is tipped already.
+ * @param number whether the number is drawn on the disc: not where it is set there in type.
  */
-internal fun DrawScope.drawFace(look: CharacterLook, ink: Color) {
-    val unit = size.minDimension / LOOK_BOX
+internal fun DrawScope.drawFigure(
+    look: CharacterLook,
+    ink: Color,
+    centre: Offset,
+    radius: Float,
+    rim: Color?,
+    tilt: Float = FIGURE_TILT,
+    number: Boolean = true
+) {
     val paths = lookPaths(look)
-    withTransform({ scale(unit, unit, pivot = Offset.Zero) }) {
-        if (paths == null) {
-            drawCircle(ink, radius = 35f, center = Offset(50f, 52f))
-            drawOval(Color.White, topLeft = Offset(35f, 32.5f), size = Size(30f, 33f))
-            drawPath(eightPlain, ink)
-        } else {
-            translate(top = paths.lift) {
-                paths.behind?.let { drawPath(it, ink) }
-                drawCircle(ink, radius = LOOK_BALL_RADIUS, center = Offset(LOOK_BALL_X, LOOK_BALL_Y))
-                drawOval(Color.White, topLeft = Offset(39.5f, 55f), size = Size(21f, 23f))
-                drawPath(eight, ink)
-                drawWorn(paths, ink, rim = null)
+    val unit = radius / LOOK_BALL_RADIUS
+    // What is worn is a size down beside the board it is drawn on, about the crown it sits on.
+    val worn = if (paths.fitted) 1f else FIGURE_WORN
+    val crown = Offset(LOOK_BALL_X, LOOK_BALL_Y - LOOK_BALL_RADIUS)
+    val middle = Offset(LOOK_BALL_X, LOOK_BALL_Y)
+    withTransform({
+        translate(centre.x, centre.y)
+        rotate(tilt, pivot = Offset.Zero)
+        scale(unit, unit, pivot = Offset.Zero)
+        translate(-LOOK_BALL_X, -LOOK_BALL_Y)
+    }) {
+        paths.beside.forEach { drawPath(it, ink) }
+        withTransform({ scale(worn, worn, pivot = crown) }) { paths.behind.forEach { drawPath(it, ink) } }
+        drawCircle(ink, radius = LOOK_BALL_RADIUS, center = middle)
+        val face = Size(LOOK_BALL_RADIUS * FACE_WIDE * 2, LOOK_BALL_RADIUS * FACE_TALL * 2)
+        drawOval(
+            Color.White,
+            topLeft = Offset(
+                middle.x + LOOK_BALL_RADIUS * FACE_X - face.width / 2,
+                middle.y + LOOK_BALL_RADIUS * FACE_Y - face.height / 2
+            ),
+            size = face
+        )
+        if (number) drawPath(eight, ink)
+        withTransform({ scale(worn, worn, pivot = crown) }) {
+            // Every rim before any of the ink: a shape's rim never cuts into the shape beside it.
+            val round = Stroke(width = LOOK_RIM, join = StrokeJoin.Round)
+            paths.ink.forEach { shape ->
+                if (rim == null) drawPath(shape, Color.Black, style = round, blendMode = BlendMode.Clear) else drawPath(shape, rim, style = round)
             }
+            paths.ink.forEach { drawPath(it, ink) }
+            paths.white.forEach { drawPath(it, Color.White) }
+            paths.dot.forEach { drawPath(it, ink) }
         }
     }
 }
 
 /**
- * What [paths] has over the ball, in the box's own measure: its ink with a rim round it, then
- * its white, then what is drawn on the white.
- *
- * @param rim the colour of the ground, to draw the rim in; null to cut the rim through whatever
- * has been drawn on this layer, where the ground is under the layer.
+ * The face of a character in a round: the figure coming into it from its lower corner, as much
+ * of the ball in sight as leaves what it wears whole. A ball that wears nothing has the round
+ * to itself, larger and further in. The ground is not drawn here; the rim round what is worn is
+ * cut through to it, so this is drawn on a layer of its own, over the ground.
  */
-internal fun DrawScope.drawWorn(paths: LookPaths, ink: Color, rim: Color?) {
-    paths.ink?.let { worn ->
-        val round = Stroke(width = LOOK_RIM, join = StrokeJoin.Round)
-        if (rim == null) drawPath(worn, Color.Black, style = round, blendMode = BlendMode.Clear) else drawPath(worn, rim, style = round)
-        drawPath(worn, ink)
-    }
-    paths.white?.let { drawPath(it, Color.White) }
-    paths.dot?.let { drawPath(it, ink) }
+internal fun DrawScope.drawFace(look: CharacterLook, ink: Color) {
+    val unit = size.minDimension / LOOK_BOX
+    val bare = lookPaths(look).bare
+    drawFigure(
+        look = look,
+        ink = ink,
+        centre = Offset((if (bare) BARE_X else FIGURE_X) * unit, (if (bare) BARE_Y else FIGURE_Y) * unit),
+        radius = (if (bare) BARE_RADIUS else FIGURE_RADIUS) * unit,
+        rim = null
+    )
 }
 
 /** What a look is called where one is picked: the app's characters lend theirs their names. */
@@ -136,8 +183,8 @@ internal fun CharacterLook.labelRes(): Int = when (this) {
 /** The box a look is drawn in, and the ball in it. */
 internal const val LOOK_BOX = 100f
 internal const val LOOK_BALL_X = 50f
-internal const val LOOK_BALL_Y = 68f
-internal const val LOOK_BALL_RADIUS = 30f
+internal const val LOOK_BALL_Y = 66f
+internal const val LOOK_BALL_RADIUS = 28f
 
-/** How wide the rim round what is worn is, in the box's measure: a hair at the size of a row's face. */
-private const val LOOK_RIM = 3.4f
+/** How wide the rim round what is worn is, in the box's measure, half of it outside the shape: a hair at the size of a row's face. */
+private const val LOOK_RIM = 5f

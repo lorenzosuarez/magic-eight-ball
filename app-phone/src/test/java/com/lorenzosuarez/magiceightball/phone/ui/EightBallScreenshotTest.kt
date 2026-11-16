@@ -979,7 +979,8 @@ class EightBallScreenshotTest {
             // Kept in small letters, and the rules take small letters only, sixteen at most.
             assertTrue(look.name, Regex("[a-z]{1,16}").matches(look.name.lowercase()))
             assertEquals(look, CharacterLook.named(look.name.lowercase()))
-            assertEquals(look.name, look != CharacterLook.NEUTRAL, lookArt(look) != null)
+            // Only the one that wears nothing is a bare ball.
+            assertEquals(look.name, look == CharacterLook.NEUTRAL, lookPaths(look).bare)
         }
         // What an older version does not know wears nothing, rather than break.
         assertEquals(CharacterLook.NEUTRAL, CharacterLook.named("somethingnew"))
