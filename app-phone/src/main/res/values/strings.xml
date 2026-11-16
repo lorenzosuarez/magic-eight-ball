@@ -224,7 +224,7 @@
     <string name="premium_upgrade">Subscribe</string>
     <string name="premium_upgrade_priced">Subscribe for %1$s</string>
     <string name="premium_free_note">The app\'s own characters stay free.</string>
-    <string name="premium_terms">%1$s, billed through Google&#160;Play. Renews automatically until you cancel.\nCancel anytime in Google&#160;Play, or from Account in&#160;Options.</string>
+    <string name="premium_terms">%1$s, billed through Google&#160;Play. Renews automatically until you cancel.\nCancel anytime in Google&#160;Play, or from Premium in&#160;Options.</string>
     <plurals name="premium_per_weeks">
         <item quantity="one">%2$s a week</item>
         <item quantity="other">%2$s every %1$d weeks</item>
@@ -264,6 +264,8 @@
     <string name="account_loading">Loading your account</string>
     <string name="characters_loading">Loading your characters</string>
     <string name="account_premium">You have Premium</string>
+    <string name="premium_held">Active</string>
+    <string name="premium_held_subscribed">Active · Manage in Google&#160;Play</string>
     <string name="account_subscription">Manage subscription</string>
     <string name="account_subscription_hint">Cancel or change it in Google&#160;Play</string>
     <string name="account_delete_text_subscribed">Your account and everything in it are erased. This can\'t be undone. Your Premium subscription is not cancelled: cancel it in Google&#160;Play, or it keeps renewing. Your recent answers stay on this device. Google may ask you to pick your account to confirm.</string>

@@ -216,7 +216,7 @@
     <string name="premium_upgrade">Suscribirme</string>
     <string name="premium_upgrade_priced">Suscribirme por %1$s</string>
     <string name="premium_free_note">Los personajes de la&#160;app siguen siendo gratis.</string>
-    <string name="premium_terms">%1$s, cobrado por Google&#160;Play. Se renueva automáticamente hasta que canceles.\nCancela cuando quieras en Google&#160;Play o desde Cuenta, en&#160;Opciones.</string>
+    <string name="premium_terms">%1$s, cobrado por Google&#160;Play. Se renueva automáticamente hasta que canceles.\nCancela cuando quieras en Google&#160;Play o desde Premium, en&#160;Opciones.</string>
     <plurals name="premium_per_weeks">
         <item quantity="one">%2$s a la semana</item>
         <item quantity="other">%2$s cada %1$d semanas</item>
@@ -256,6 +256,8 @@
     <string name="account_loading">Cargando tu cuenta</string>
     <string name="characters_loading">Cargando tus personajes</string>
     <string name="account_premium">Tienes Premium</string>
+    <string name="premium_held">Activo</string>
+    <string name="premium_held_subscribed">Activo · Gestionar en Google&#160;Play</string>
     <string name="account_subscription">Gestionar suscripción</string>
     <string name="account_subscription_hint">Cancélala o cámbiala en Google&#160;Play</string>
     <string name="account_delete_text_subscribed">Se borran tu cuenta y todo lo que guarda. No se puede deshacer. Tu suscripción a Premium no se cancela: cancélala en Google&#160;Play o se seguirá renovando. Tus respuestas recientes siguen en este dispositivo. Google puede pedirte que elijas tu cuenta para confirmarlo.</string>

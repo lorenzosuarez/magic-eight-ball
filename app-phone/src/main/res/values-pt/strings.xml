@@ -216,7 +216,7 @@
     <string name="premium_upgrade">Assinar</string>
     <string name="premium_upgrade_priced">Assinar por %1$s</string>
     <string name="premium_free_note">Os personagens do&#160;app continuam grátis.</string>
-    <string name="premium_terms">%1$s, cobrado pelo Google&#160;Play. Renova automaticamente até você cancelar.\nCancele quando quiser no Google&#160;Play ou em Conta, nas&#160;Opções.</string>
+    <string name="premium_terms">%1$s, cobrado pelo Google&#160;Play. Renova automaticamente até você cancelar.\nCancele quando quiser no Google&#160;Play ou em Premium, nas&#160;Opções.</string>
     <plurals name="premium_per_weeks">
         <item quantity="one">%2$s por semana</item>
         <item quantity="other">%2$s a cada %1$d semanas</item>
@@ -256,6 +256,8 @@
     <string name="account_loading">Carregando sua conta</string>
     <string name="characters_loading">Carregando seus personagens</string>
     <string name="account_premium">Você tem o Premium</string>
+    <string name="premium_held">Ativo</string>
+    <string name="premium_held_subscribed">Ativo · Gerenciar no Google&#160;Play</string>
     <string name="account_subscription">Gerenciar assinatura</string>
     <string name="account_subscription_hint">Cancele ou altere no Google&#160;Play</string>
     <string name="account_delete_text_subscribed">Sua conta e tudo o que ela guarda são apagados. Não dá para desfazer. Sua assinatura do Premium não é cancelada: cancele no Google&#160;Play ou ela continua sendo renovada. Suas respostas recentes continuam neste dispositivo. O Google pode pedir que você escolha sua conta para confirmar.</string>

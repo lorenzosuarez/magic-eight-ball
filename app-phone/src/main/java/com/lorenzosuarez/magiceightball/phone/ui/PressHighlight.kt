@@ -137,32 +137,7 @@ internal fun AppIconButton(
 private val ICON_BUTTON_SIZE = 48.dp
 
 /**
- * A button at the top of a screen: [AppIconButton] on a quiet disc, so that it reads as a
- * button with no word beside it. Every screen's top buttons are this one, each at the side
- * that what it leads to lies on.
- */
-@Composable
-internal fun BarIconButton(
-    @DrawableRes icon: Int,
-    description: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSurface,
-    enabled: Boolean = true
-) {
-    AppIconButton(
-        icon = icon,
-        description = description,
-        onClick = onClick,
-        tint = tint,
-        enabled = enabled,
-        modifier = modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA), CircleShape)
-    )
-}
-
-/**
- * A top button that needs a word, as "Create" does: the disc of [BarIconButton] drawn out to
- * hold its name, so the two read as the same kind of thing.
+ * A top button that needs a word, as "Create" does: a quiet disc drawn out to hold its name.
  *
  * @param description what the button does when its name alone does not say it.
  */

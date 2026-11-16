@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.animation.animateColorAsState
 import com.example.magiceightball.core.domain.model.look
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -810,32 +813,29 @@ private fun BallBar(
                 icon = R.drawable.ic_history,
                 description = stringResource(R.string.history_title),
                 onClick = onOpenHistory,
-                modifier = Modifier.align(Alignment.CenterStart)
+                modifier = Modifier.align(Alignment.CenterStart).offset(x = -BAR_MARK_OUT)
             )
             BarButton(
                 icon = R.drawable.ic_settings,
                 description = stringResource(R.string.settings_title),
                 onClick = onOpenOptions,
-                modifier = Modifier.align(Alignment.CenterEnd)
+                modifier = Modifier.align(Alignment.CenterEnd).offset(x = BAR_MARK_OUT)
             )
         } else {
             BarButton(
                 icon = R.drawable.ic_close,
                 description = stringResource(if (busy) R.string.action_cancel else R.string.action_close),
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.CenterStart)
+                modifier = Modifier.align(Alignment.CenterStart).offset(x = -BAR_MARK_OUT)
             )
             // With an answer on the die, what is done about the answer itself from up here: hear
             // it and, since nobody read what the AI wrote before it was shown, report it.
             val answered = state.phase as? BallPhase.Answered
             if (answered != null) {
-                Row(
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(modifier = Modifier.align(Alignment.CenterEnd).offset(x = BAR_MARK_OUT)) {
                     if ((answered.answer as? AnswerText.Plain)?.fromAi == true) {
                         // Once reported it stays marked, and a second press does nothing.
-                        BarIconButton(
+                        AppIconButton(
                             icon = if (answered.reported) R.drawable.ic_flag_filled else R.drawable.ic_flag,
                             description = stringResource(
                                 if (answered.reported) R.string.report_state_done else R.string.report_label
@@ -857,9 +857,13 @@ private fun BallBar(
     }
 }
 
+/**
+ * A mark at the top of the ball's page: plain, as on the pages beside it and at the same place,
+ * so that nothing at the top moves or changes under a swipe from one page to the next.
+ */
 @Composable
 private fun BarButton(icon: Int, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    BarIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
+    AppIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier)
 }
 
 /**
@@ -943,7 +947,9 @@ private fun Stage(
         var dieTooSmall by remember(answerId) { mutableStateOf(false) }
         val answerSmall = dieTooSmall || (answerOnDie != null && answerOnDie < ANSWER_READABLE)
         // On a dark screen a black ball has no outline of its own: a light behind it gives it one.
-        val glow = if (MaterialTheme.colorScheme.onSurface.luminance() > 0.5f) BallGlow else Color.Transparent
+        // While it listens the rings of the voice are its light: one behind them would be one ring too many.
+        val lit = MaterialTheme.colorScheme.onSurface.luminance() > 0.5f && state.phase !is BallPhase.Listening
+        val glow by animateColorAsState(if (lit) BallGlow else BallGlow.copy(alpha = 0f), label = "ball glow")
         val band = Modifier
             .graphicsLayer { alpha = intro() }
             .padding(horizontal = 32.dp)
@@ -978,7 +984,10 @@ private fun Stage(
                                 drawCircle(
                                     brush = Brush.radialGradient(
                                         0f to glow,
-                                        0.5f to glow,
+                                        // Whole to the ball's edge, then eased out: most of it gone a little way off.
+                                        1f / BALL_GLOW_REACH to glow,
+                                        0.75f to glow.copy(alpha = glow.alpha * 0.44f),
+                                        0.9f to glow.copy(alpha = glow.alpha * 0.12f),
                                         1f to Color.Transparent,
                                         center = center,
                                         radius = reach
@@ -1443,8 +1452,13 @@ private fun Actions(
                 if (notice == Notice.MicrophoneDenied) {
                     FilledTonalButton(
                         onClick = onAllowMicrophone,
-                        modifier = Modifier.heightIn(min = 48.dp),
-                        shape = CircleShape
+                        // A little further from who answers than the line over it: it is about the line, not about them.
+                        modifier = Modifier.padding(bottom = 4.dp).heightIn(min = 48.dp),
+                        shape = CircleShape,
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.pageCard,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
                     ) {
                         Text(stringResource(R.string.settings_voice_allow_microphone), fontWeight = FontWeight.SemiBold)
                     }
@@ -1454,7 +1468,9 @@ private fun Actions(
                 val own = state.answeringCustom
                 val style = state.settings.personality
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    // One height for the two at a party, whichever of them needs the more.
+                    modifier = Modifier.height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     CharacterChip(
@@ -1462,17 +1478,18 @@ private fun Actions(
                         colour = own?.colour ?: style,
                         emblem = own?.emblem ?: style.look,
                         onClick = onPickCharacter,
+                        modifier = if (party) Modifier.fillMaxHeight() else Modifier,
                         named = !party
                     )
                     // At a party, the other thing the ball can be asked: to pick one of the players.
                     if (party) {
                         FilledTonalButton(
                             onClick = { onAskWho(whoQuestion) },
-                            modifier = Modifier.heightIn(min = 48.dp),
+                            modifier = Modifier.heightIn(min = 48.dp).fillMaxHeight(),
                             shape = CircleShape,
                             // On the ground of the chip beside it: the two are one row of things to touch.
                             colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA),
+                                containerColor = MaterialTheme.colorScheme.pageCard,
                                 contentColor = MaterialTheme.colorScheme.onSurface
                             )
                         ) {
@@ -1748,11 +1765,10 @@ private val ANSWER_READABLE = 12.dp
  * the text's own grey, enough to give a black ball an edge and no colour of its own to the page.
  */
 private val BallGlow = Color(0xFF9AA7B4).copy(alpha = 0.16f)
-private const val BALL_GLOW_REACH = 1.8f
+private const val BALL_GLOW_REACH = 1.6f
 /** As far as a page's name follows the system's font size. */
 internal const val PAGE_TITLE_MAX_SCALE = 1.3f
 private val ACTIONS_HEIGHT = 80.dp
-/** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3
 
 /** How to ask, under whose turn it is: two sentences, each of which may take two lines at a large size. */

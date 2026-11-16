@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -176,10 +180,18 @@ internal fun PremiumContent(
     priceLate: Boolean = false,
     wanted: PremiumFor = PremiumFor.CHARACTERS
 ) {
+    val scroll = rememberScrollState()
+    // How a try ended is said at the foot, under all there is to read: it is brought into sight.
+    LaunchedEffect(ended) {
+        if (ended != null) {
+            withFrameNanos {}
+            scroll.animateScrollTo(scroll.maxValue)
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scroll)
             .navigationBarsPadding()
             .padding(bottom = 16.dp)
     ) {
@@ -235,19 +247,29 @@ internal fun PremiumContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         // And how it is paid, right over the button and as plain as the rest: it is not small print.
-        if (terms != null) {
-            Text(
-                text = terms,
-                modifier = Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp),
-                style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph)
-            )
+        // Not of what another account holds, which is not sold here: its price is nobody's to read.
+        if (terms != null && ended != Bought.TAKEN) {
+            terms.split('\n').forEachIndexed { index, paragraph ->
+                Text(
+                    text = buildAnnotatedString {
+                        append(paragraph)
+                        // What it costs and how often is the first thing read of how it is paid.
+                        if (index == 0 && price != null && paragraph.startsWith(price)) {
+                            addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), 0, price.length)
+                        }
+                    },
+                    modifier = Modifier.padding(start = 32.dp, top = if (index == 0) 8.dp else 4.dp, end = 32.dp),
+                    style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph)
+                )
+            }
         }
         // A price is an offer only with its terms beside it.
         val offer = price?.takeIf { terms != null }
         // What is going on, how the last try ended, or why the button does not answer: heard by
         // whoever cannot see it.
         val said = when {
-            busy -> R.string.premium_busy
+            // On its way, the button says so itself, turning: a line coming and going would move it.
+            busy -> null
             ended != null -> ended.message
             offer != null -> null
             priceLate -> R.string.premium_price_failed
@@ -264,6 +286,9 @@ internal fun PremiumContent(
                     .fillMaxWidth()
                     .semantics { liveRegion = LiveRegionMode.Polite },
                 style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
+                // While the price is looked for it has most of the room the terms will take, so
+                // that the button hardly moves when they come.
+                minLines = if (terms == null && ended == null) PRICE_WAIT_LINES else 1,
                 fontWeight = if (news) FontWeight.Medium else null,
                 color = when {
                     wrong -> MaterialTheme.colorScheme.error
@@ -273,6 +298,7 @@ internal fun PremiumContent(
             )
         }
         // What has been bought before by another account is not sold here again: no button for it.
+        val working = stringResource(R.string.premium_busy)
         val held = !busy && ended == Bought.TAKEN
         val waiting = !busy && ended == Bought.PENDING
         val unchecked = !busy && ended == Bought.UNCONFIRMED
@@ -288,11 +314,16 @@ internal fun PremiumContent(
                 },
                 // A payment on its way is only to be understood: the button closes.
                 onClick = if (waiting) onNotNow else onUpgrade,
-                modifier = Modifier.padding(start = 16.dp, top = if (said != null) 8.dp else 16.dp, end = 16.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(start = 16.dp, top = if (said != null) 8.dp else 16.dp, end = 16.dp)
+                    .fillMaxWidth()
+                    .semantics { if (busy) stateDescription = working },
                 enabled = waiting || unchecked || offer != null,
                 busy = busy,
                 // What buys is in the app's colour; what only closes is not.
-                sold = !waiting
+                sold = !waiting,
+                // The price is said in full over it: where it would take a second line here, the word alone.
+                short = stringResource(R.string.premium_upgrade).takeIf { offer != null && !waiting && !unchecked }
             )
         }
         if (!waiting) {
@@ -370,3 +401,6 @@ private val Bought.message: Int
         Bought.UNCONFIRMED -> R.string.premium_unconfirmed
         else -> R.string.premium_failed
     }
+
+/** The lines kept for the price while it is looked for. */
+private const val PRICE_WAIT_LINES = 3

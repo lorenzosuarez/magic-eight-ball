@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -248,7 +248,7 @@ private fun Context.addGoogleAccount() {
 }
 
 /** Google Play's own page for the subscription, where it is cancelled or its payment changed. */
-private fun Context.manageSubscription() {
+internal fun Context.manageSubscription() {
     try {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(subscriptionPage(packageName))))
     } catch (_: ActivityNotFoundException) {
@@ -293,7 +293,16 @@ private fun AccountIdentity(account: AccountState.SignedIn, premium: Boolean, lo
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (premium) PremiumBadge()
+                // The crown alone here, where the name needs the line: what it stands for is
+                // written out on the row under this card, and said to whoever cannot see it.
+                if (premium) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_crown),
+                        contentDescription = stringResource(R.string.account_premium),
+                        modifier = Modifier.size(with(LocalDensity.current) { 18.sp.toDp() }),
+                        tint = MaterialTheme.colorScheme.sheetAction
+                    )
+                }
             }
             // Under a name, the address; when the account gave no name, the address is the name.
             if (account.name.isNotBlank() && account.email.isNotBlank()) {
@@ -627,9 +636,10 @@ private const val BUSY_ALPHA = 0.6f
 private const val LOADING_PATIENCE_MS = 8_000L
 
 /**
- * The mark of an account that holds what is sold: the crown what is sold is offered under, and
- * its name. In the app's colour as faintly as still reads, so that it is seen without being
- * taken for something to touch; said in full to whoever cannot see it.
+ * The mark of an account that holds what is sold, on the account opened: the crown what is sold
+ * is offered under, and its name. A tag and not a pill, in the app's colour as faintly as still
+ * reads, so that it is not taken for one of the app's buttons; said in full to whoever cannot
+ * see it.
  */
 @Composable
 internal fun PremiumBadge(modifier: Modifier = Modifier) {
@@ -637,14 +647,20 @@ internal fun PremiumBadge(modifier: Modifier = Modifier) {
     val said = stringResource(R.string.account_premium)
     Row(
         modifier = modifier
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(6.dp))
             .background(ink.copy(alpha = BADGE_GROUND_ALPHA))
             .clearAndSetSemantics { contentDescription = said }
-            .padding(start = 8.dp, top = 3.dp, end = 10.dp, bottom = 3.dp),
+            .padding(start = 6.dp, top = 2.dp, end = 8.dp, bottom = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(painter = painterResource(R.drawable.ic_crown), contentDescription = null, modifier = Modifier.size(14.dp), tint = ink)
+        // As large as the word beside it, at any size of type.
+        Icon(
+            painter = painterResource(R.drawable.ic_crown),
+            contentDescription = null,
+            modifier = Modifier.size(with(LocalDensity.current) { 14.sp.toDp() }),
+            tint = ink
+        )
         Text(
             text = stringResource(R.string.options_premium),
             style = MaterialTheme.typography.labelMedium,

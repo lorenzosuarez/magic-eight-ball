@@ -439,9 +439,9 @@ class CharacterEditorTest {
 
         // With the price, what the store asks for it and how: each month, until it is cancelled, and where that is done.
         compose.onNodeWithText(
-            "2,99\u00A0€ al mes, cobrado por Google\u00A0Play. Se renueva automáticamente hasta que canceles.\n" +
-                "Cancela cuando quieras en Google\u00A0Play o desde Cuenta, en\u00A0Opciones."
+            "2,99\u00A0€ al mes, cobrado por Google\u00A0Play. Se renueva automáticamente hasta que canceles."
         ).assertIsDisplayed()
+        compose.onNodeWithText("Cancela cuando quieras en Google\u00A0Play o desde Premium, en\u00A0Opciones.").assertIsDisplayed()
         compose.onNodeWithText(BUY).assertIsEnabled().performClick()
         compose.waitForIdle()
         assertEquals(1, asked)

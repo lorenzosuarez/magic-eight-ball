@@ -138,10 +138,10 @@ internal fun CharacterFace(
 }
 
 /**
- * Who answers now, under the ball: a chip, their face and their name side by side with the mark
- * of something that opens, on a ground that is barely there. It says who it is and that it can
- * be changed, and no more: the page is the ball's. One touch leads to everyone, to choose among
- * and to make one's own. When who answers changes, the one passes into the other.
+ * Who answers now, under the ball: a pill carded as the rows of the other pages are, with their
+ * face, what it is over who it is, and the mark of something that opens. It is the one thing
+ * on the page besides the ball. One touch leads to everyone, to choose among and to make one's
+ * own. When who answers changes, the one passes into the other.
  *
  * @param named whether the name is written beside the face: beside another button it is not,
  * and is then only said to whoever cannot see the face.
@@ -162,9 +162,9 @@ internal fun CharacterChip(
             // The room of a touch whatever the pill's height: it rests at one height in every state.
             .minimumInteractiveComponentSize()
             .clip(CircleShape)
-            // Alone, it is carded as the rows of the other pages are, one step off the page. Beside
-            // a button it is that button's height and ground: the two are one row of things to touch.
-            .background(if (named) scheme.pageCard else scheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
+            // Carded as the rows of the other pages are, one step off the page; beside a button it is
+            // on that button's ground, which is the same.
+            .background(scheme.pageCard)
             .clickable(onClickLabel = stringResource(R.string.styles_subtitle), role = Role.Button, onClick = onClick)
             // Said once, as a sentence: the name alone would not say what it is the name of.
             .semantics(mergeDescendants = true) { contentDescription = said }
@@ -174,7 +174,13 @@ internal fun CharacterChip(
         horizontalArrangement = Arrangement.spacedBy(if (named) 8.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Crossfade(targetState = Triple(name.takeIf { named }, colour, emblem), animationSpec = choiceTween(), label = "who answers") { (name, colour, emblem) ->
+        Crossfade(
+            targetState = Triple(name.takeIf { named }, colour, emblem),
+            // The name gives way before the mark after it does.
+            modifier = Modifier.weight(1f, fill = false),
+            animationSpec = choiceTween(),
+            label = "who answers"
+        ) { (name, colour, emblem) ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 CharacterFace(colour = colour, emblem = emblem, size = if (name != null) CHIP_FACE else CHIP_FACE_BESIDE, chosen = { 0f })
                 if (name != null) {

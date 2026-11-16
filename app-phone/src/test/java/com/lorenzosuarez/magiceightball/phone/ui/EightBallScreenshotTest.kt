@@ -1254,6 +1254,19 @@ class EightBallScreenshotTest {
         fontScale = 1.5f
     )
 
+    /** A long price at large type on a small phone: the button is one line, with the word alone if the price does not fit. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE_TALL)
+    fun small_phone_premium_long_price_large_font() = listOf(AppLanguage.PORTUGUESE to "R$ 14,90", AppLanguage.SPANISH to "12,99 €").forEach { (language, price) ->
+        capturePremium(
+            "phone_119_small_phone_premium_long_price_${language.name.lowercase()}_large_font",
+            language,
+            dark = false,
+            price = price,
+            fontScale = 1.5f
+        )
+    }
+
     /** A payment on its way: one button, which closes. */
     @Test
     fun phone_premium_pending_spanish() =
@@ -1330,7 +1343,17 @@ class EightBallScreenshotTest {
         1f
     )
 
-    /** And whoever holds it: marked beside their name, with nothing left to offer them. */
+    /** Whoever pays for it by the month has the way to where it is cancelled on the row that says it is theirs. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_options_premium_subscribed_dark() = captureAccountOptions(
+        "phone_120_options_premium_subscribed_dark",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"))
+            .let { it.copy(config = it.config.copy(premiumEnabled = true), premium = true, subscribed = true) },
+        1f
+    )
+
+    /** And whoever holds it: marked beside their name, and said where it was offered. */
     @Test
     fun phone_options_premium_held_spanish() = captureAccountOptions(
         "phone_116_options_premium_held_spanish",
