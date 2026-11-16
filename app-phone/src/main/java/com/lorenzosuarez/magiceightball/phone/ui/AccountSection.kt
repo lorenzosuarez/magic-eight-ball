@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.semantics.contentDescription
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -139,6 +140,7 @@ internal fun AccountSection(
         if (account is AccountState.SignedIn) {
             AccountIdentity(
                 account = account,
+                premium = premium,
                 loading = loading && patient,
                 onClick = {
                     failure = null
@@ -258,11 +260,12 @@ private fun Context.manageSubscription() {
  * Who is signed in, as the row that opens the account: a letter for a face, the name, and the
  * address that tells one account from another.
  *
+ * @param premium whether this account holds what is sold: marked beside its name.
  * @param loading while what is kept with the account has not been heard of yet: a ring turns
  * beside the arrow, and the row says so to whoever cannot see it.
  */
 @Composable
-private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, onClick: () -> Unit) {
+private fun AccountIdentity(account: AccountState.SignedIn, premium: Boolean, loading: Boolean, onClick: () -> Unit) {
     val name = account.name.ifBlank { account.email }
     val waiting = stringResource(R.string.account_loading)
     Row(
@@ -278,15 +281,20 @@ private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, on
         AccountAvatar(name = name, photoUrl = account.photoUrl, size = 56.dp)
         // One line each here, where the row has to stay a row: both are in full on the sheet.
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = name,
-                // The one name on the page that is somebody's: a size over the names of its rows.
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = name,
+                    // What is held comes whole after the name, which gives way to it.
+                    modifier = Modifier.weight(1f, fill = false),
+                    // The one name on the page that is somebody's: a size over the names of its rows.
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (premium) PremiumBadge()
+            }
             // Under a name, the address; when the account gave no name, the address is the name.
             if (account.name.isNotBlank() && account.email.isNotBlank()) {
                 Text(
@@ -445,15 +453,8 @@ internal fun AccountSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        if (premium) {
-            // Apart from the address and heavier than it: something about the account, not a line of it.
-            Text(
-                text = stringResource(R.string.account_premium),
-                modifier = Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        // Apart from the address: something about the account, not a line of it.
+        if (premium) PremiumBadge(modifier = Modifier.padding(start = 32.dp, top = 10.dp, end = 32.dp))
         // One group of rows, as on the options page.
         Section(
             title = null,
@@ -624,3 +625,34 @@ private const val BUSY_ALPHA = 0.6f
 
 /** How long what is kept with an account is said to be on its way before it is taken to be out of reach. */
 private const val LOADING_PATIENCE_MS = 8_000L
+
+/**
+ * The mark of an account that holds what is sold: the crown what is sold is offered under, and
+ * its name. In the app's colour as faintly as still reads, so that it is seen without being
+ * taken for something to touch; said in full to whoever cannot see it.
+ */
+@Composable
+internal fun PremiumBadge(modifier: Modifier = Modifier) {
+    val ink = MaterialTheme.colorScheme.sheetAction
+    val said = stringResource(R.string.account_premium)
+    Row(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(ink.copy(alpha = BADGE_GROUND_ALPHA))
+            .clearAndSetSemantics { contentDescription = said }
+            .padding(start = 8.dp, top = 3.dp, end = 10.dp, bottom = 3.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(painter = painterResource(R.drawable.ic_crown), contentDescription = null, modifier = Modifier.size(14.dp), tint = ink)
+        Text(
+            text = stringResource(R.string.options_premium),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = ink,
+            maxLines = 1
+        )
+    }
+}
+
+private const val BADGE_GROUND_ALPHA = 0.14f

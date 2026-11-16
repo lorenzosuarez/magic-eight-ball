@@ -1330,6 +1330,33 @@ class EightBallScreenshotTest {
         1f
     )
 
+    /** And whoever holds it: marked beside their name, with nothing left to offer them. */
+    @Test
+    fun phone_options_premium_held_spanish() = captureAccountOptions(
+        "phone_116_options_premium_held_spanish",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"))
+            .let { it.copy(config = it.config.copy(premiumEnabled = true), premium = true) },
+        1f
+    )
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_options_premium_held_dark() = captureAccountOptions(
+        "phone_117_options_premium_held_dark",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"))
+            .let { it.copy(config = it.config.copy(premiumEnabled = true), premium = true) },
+        1f
+    )
+
+    /** With a name as long as they come at large type, the mark stays whole and the name gives way. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_options_premium_held_long_name_large_font() = captureAccountOptions(
+        "phone_118_small_phone_options_premium_held_long_name_large_font",
+        accountState(LONG_ACCOUNT).let { it.copy(config = it.config.copy(premiumEnabled = true), premium = true) },
+        1.5f
+    )
+
     /** A sheet over the page it came up from, under the dimming a sheet brings: the two are told apart at a glance. */
     @Test
     fun phone_sheet_over_page_light() = captureSheetOverPage("phone_98_sheet_over_page_light", dark = false)

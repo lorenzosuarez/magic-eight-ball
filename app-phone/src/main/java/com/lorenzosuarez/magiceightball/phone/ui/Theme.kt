@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Typography
 import androidx.compose.material3.ColorScheme
@@ -13,7 +14,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.example.magiceightball.core.common.BrandPalette
@@ -121,36 +121,15 @@ internal val ColorScheme.hairline: Color get() = onSurface.copy(alpha = HAIRLINE
 private val SheetGroundDark = Color(0xFF18212C)
 private const val HAIRLINE_ALPHA = 0.12f
 
-/** How far down the screen stays plain before the colour starts to rise from the bottom. */
-private const val BACKDROP_PLAIN_STOP = 0.45f
-
-/** Where the rising colour is about halfway to its full strength. */
-private const val BACKDROP_RISING_STOP = 0.76f
-
-private val DarkBackdrop = Brush.verticalGradient(
-    0f to Color(0xFF01040A),
-    BACKDROP_PLAIN_STOP to Color(0xFF01040A),
-    BACKDROP_RISING_STOP to Color(0xFF09122E),
-    1f to Color(0xFF14276A)
-)
-
-private val LightBackdrop = Brush.verticalGradient(
-    0f to Color(0xFFFAF9F9),
-    BACKDROP_PLAIN_STOP to Color(0xFFFAF9F9),
-    BACKDROP_RISING_STOP to Color(0xFFE0EFFC),
-    1f to Color(0xFFBCDFFD)
-)
-
-private val LocalBackdrop = staticCompositionLocalOf { DarkBackdrop }
-
 /**
- * What every screen sits on: plain for its upper half, with a glow of blue rising from the
- * bottom edge. Its plain part is the window's own colour, so the launch screen runs into it.
+ * What the ball's own page sits on: the ground of every other page, so that the ball and the
+ * pages beside it are one surface and nothing changes under a swipe from one to the next. The
+ * launch screen is of the same colour and runs into it.
  */
 val Backdrop: Brush
     @Composable
     @ReadOnlyComposable
-    get() = LocalBackdrop.current
+    get() = SolidColor(MaterialTheme.colorScheme.pageGround)
 
 /** Material's type with nothing added between its letters, which is what sets it apart from the system's own. */
 private val AppTypography = Typography().run {
@@ -178,7 +157,6 @@ fun MagicEightBallPhoneTheme(
             LocalIndication provides PressHighlight,
             // What is written straight on the backdrop, and the light of a touch on it.
             LocalContentColor provides MaterialTheme.colorScheme.onSurface,
-            LocalBackdrop provides if (dark) DarkBackdrop else LightBackdrop,
             content = content
         )
     }

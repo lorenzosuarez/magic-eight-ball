@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.Column
 import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -155,49 +157,52 @@ internal fun CharacterChip(
 ) {
     val scheme = MaterialTheme.colorScheme
     val said = stringResource(R.string.character_now, name)
-    // Beside a button it is that button's height and ground: the two are one row of things to touch.
-    // Alone, the faintest that still has an edge, which on a light page takes a little more.
-    val ground = when {
-        !named -> BAR_DISC_ALPHA
-        scheme.isDark -> CHIP_GROUND_ALPHA
-        else -> CHIP_GROUND_ALPHA_LIGHT
-    }
     Row(
         modifier = modifier
             // The room of a touch whatever the pill's height: it rests at one height in every state.
             .minimumInteractiveComponentSize()
             .clip(CircleShape)
-            .background(scheme.onSurface.copy(alpha = ground))
+            // Alone, it is carded as the rows of the other pages are, one step off the page. Beside
+            // a button it is that button's height and ground: the two are one row of things to touch.
+            .background(if (named) scheme.pageCard else scheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
             .clickable(onClickLabel = stringResource(R.string.styles_subtitle), role = Role.Button, onClick = onClick)
             // Said once, as a sentence: the name alone would not say what it is the name of.
             .semantics(mergeDescendants = true) { contentDescription = said }
             // At least: a name in large type makes the pill taller rather than be cut.
             .heightIn(min = if (named) CHIP_HEIGHT else CHIP_HEIGHT_BESIDE)
-            .padding(start = CHIP_INSET, end = CHIP_END),
-        // The mark belongs to the name: nearer to it than the name is to the face.
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(start = CHIP_INSET, top = CHIP_INSET, end = if (named) CHIP_END else CHIP_END_BESIDE, bottom = CHIP_INSET),
+        horizontalArrangement = Arrangement.spacedBy(if (named) 8.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Crossfade(targetState = Triple(name.takeIf { named }, colour, emblem), animationSpec = choiceTween(), label = "who answers") { (name, colour, emblem) ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                // As quiet as a face gets: one among many, and a little of the page through it.
-                CharacterFace(colour = colour, emblem = emblem, size = CHIP_HEIGHT - CHIP_INSET * 2, chosen = { 0f }, ground = CHIP_FACE_GROUND)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                CharacterFace(colour = colour, emblem = emblem, size = if (name != null) CHIP_FACE else CHIP_FACE_BESIDE, chosen = { 0f })
                 if (name != null) {
-                    Text(
-                        text = name,
-                        modifier = Modifier.widthIn(max = CHIP_NAME_WIDEST).clearAndSetSemantics {},
-                        style = MaterialTheme.typography.titleSmall,
-                        color = scheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    // What it is, over who it is: as a row says a name over a line about it, the other way up.
+                    Column(modifier = Modifier.widthIn(max = CHIP_NAME_WIDEST).clearAndSetSemantics {}) {
+                        Text(
+                            text = stringResource(R.string.character_answers_as),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = scheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = scheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
         Icon(
             painter = painterResource(R.drawable.ic_expand_more),
             contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(20.dp),
             tint = scheme.onSurfaceVariant
         )
     }
@@ -258,14 +263,14 @@ internal fun Magic8BallPersonality.sampleRes(): Int = when (this) {
  * the longest name it shows whole, how little of the text's colour its ground has, and how much
  * of its colour's round the face keeps.
  */
-private val CHIP_HEIGHT = 44.dp
+private val CHIP_HEIGHT = 56.dp
 private val CHIP_HEIGHT_BESIDE = 48.dp
 private val CHIP_INSET = 6.dp
-private val CHIP_END = 12.dp
-private val CHIP_NAME_WIDEST = 180.dp
-private const val CHIP_GROUND_ALPHA = 0.06f
-private const val CHIP_GROUND_ALPHA_LIGHT = 0.08f
-private const val CHIP_FACE_GROUND = 0.8f
+private val CHIP_END = 16.dp
+private val CHIP_END_BESIDE = 12.dp
+private val CHIP_FACE = 44.dp
+private val CHIP_FACE_BESIDE = 36.dp
+private val CHIP_NAME_WIDEST = 200.dp
 
 /**
  * What a face's colour is drawn towards, and how far: a cool grey that the ball still reads on,

@@ -763,6 +763,7 @@ class CharacterEditorTest {
         const val OFFER = "Sin anuncios y más respuestas con IA"
 
         /** The button once the store has named its price: the price never breaks off its line. */
-        const val BUY = "Suscribirme por 2,99\u00A0€ al mes"
+        // The price and how often it is charged are one thing: they go to a second line whole.
+        const val BUY = "Suscribirme por 2,99\u00A0€\u00A0al\u00A0mes"
     }
 }

@@ -1743,8 +1743,11 @@ private val CAPTION_HEIGHT = 104.dp
 private val TITLE_ROOM = 48.dp
 /** Under this size on the die, the answer is written under the ball as well. */
 private val ANSWER_READABLE = 12.dp
-/** The light behind the ball on a dark screen, and how far past the ball it reaches. */
-private val BallGlow = Color(0xFF3550C8).copy(alpha = 0.3f)
+/**
+ * The light behind the ball on a dark screen, and how far past the ball it reaches: a little of
+ * the text's own grey, enough to give a black ball an edge and no colour of its own to the page.
+ */
+private val BallGlow = Color(0xFF9AA7B4).copy(alpha = 0.16f)
 private const val BALL_GLOW_REACH = 1.8f
 /** As far as a page's name follows the system's font size. */
 internal const val PAGE_TITLE_MAX_SCALE = 1.3f

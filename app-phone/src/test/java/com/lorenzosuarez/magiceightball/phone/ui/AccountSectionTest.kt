@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import android.app.Application
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -126,6 +127,10 @@ class AccountSectionTest {
 
     private fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
 
+    /** How many marks of Premium there are: each is a picture and a word, said as one sentence. */
+    private fun marked() =
+        compose.onAllNodesWithContentDescription("Tienes Premium", useUnmergedTree = true).fetchSemanticsNodes().size
+
     @Test
     fun `a device with no Google account is told so, and shown the way to add one`() {
         show(fontScale = 1.5f, onSignIn = { AccountOutcome.NO_GOOGLE_ACCOUNT })
@@ -233,13 +238,14 @@ class AccountSectionTest {
     }
 
     @Test
-    fun `whoever paid is told so on their account, and nobody else is told anything`() {
+    fun `whoever paid is marked beside their name and on their account, and nobody else is told anything`() {
         account = LORENA
         premium = true
         show()
-        assertEquals(0, count("Tienes Premium"))
+        // Beside the name on the page, before the account is opened; then on the account too.
+        assertEquals(1, marked())
         compose.onNodeWithText("Lorena Suárez").performClick()
-        compose.onNodeWithText("Tienes Premium").assertIsDisplayed()
+        assertEquals(2, marked())
     }
 
     @Test
@@ -268,7 +274,7 @@ class AccountSectionTest {
         premium = true
         show()
         compose.onNodeWithText("Lorena Suárez").performClick()
-        compose.onNodeWithText("Tienes Premium").assertIsDisplayed()
+        assertEquals(2, marked())
         assertEquals(0, count("Gestionar suscripción"))
     }
 
@@ -278,7 +284,7 @@ class AccountSectionTest {
         show()
         compose.onNodeWithText("Lorena Suárez").performClick()
         compose.onNodeWithText("Cerrar sesión").assertIsDisplayed()
-        assertEquals(0, count("Tienes Premium"))
+        assertEquals(0, marked())
     }
 
     @Test

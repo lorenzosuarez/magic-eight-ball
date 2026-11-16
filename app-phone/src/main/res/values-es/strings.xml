@@ -2,6 +2,7 @@
 <resources>
     <!-- The one line under the ball -->
     <string name="character_now">Responde %1$s</string>
+    <string name="character_answers_as">Responde como</string>
     <string name="hint_hold">Toca o agita para preguntar.\nMantén presionado para hablar.</string>
     <string name="hint_tap">Toca o agita para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
