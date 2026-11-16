@@ -18,8 +18,9 @@ sealed interface AccountState {
      * @property id the account's identifier, which never changes and says nothing about the person.
      * @property name as the account gives it; may be empty.
      * @property email shown so that the user can tell which account this is, and for nothing else.
+     * @property photoUrl where the picture Google has of them is, when it has one: shown beside their name.
      */
-    data class SignedIn(val id: String, val name: String, val email: String) : AccountState
+    data class SignedIn(val id: String, val name: String, val email: String, val photoUrl: String? = null) : AccountState
 }
 
 /** How an attempt to sign in, or to delete the account, ended. */

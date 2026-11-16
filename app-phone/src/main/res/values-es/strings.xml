@@ -295,4 +295,13 @@
     <string name="character_says">«%1$s»</string>
     <string name="characters_community_account_title">Para usar este personaje necesitas una cuenta</string>
     <string name="characters_community_account_text">Lo que está escrito sobre un personaje de la comunidad se envía al servicio de IA para que responda con su voz. Entra con tu cuenta para aceptarlo.</string>
+    <string name="options_voice">Voz</string>
+    <string name="options_voice_hint">Pregunta hablando y escucha la respuesta</string>
+    <string name="options_notifications">Notificaciones</string>
+    <string name="options_about">Información</string>
+    <string name="options_licenses">Licencias de código abierto</string>
+    <string name="options_licenses_hint">Lo que la app usa hecho por otros</string>
+    <string name="license_icons">Iconos</string>
+    <string name="license_font">La letra del botón de Google</string>
+    <string name="action_back">Atrás</string>
 </resources>

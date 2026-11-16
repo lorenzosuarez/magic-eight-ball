@@ -1,5 +1,23 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.Stable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.mutableIntStateOf
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
@@ -79,8 +97,10 @@ import com.lorenzosuarez.magiceightball.phone.VoiceStatus
  *
  * @param onAskPremium what is sold was asked for: see [CharacterFlows].
  *
- * Text and switches, nothing else: one card per subject under a quiet label, its rows separated
- * by hairlines. It scrolls when the font is large or the window is short.
+ * The page itself is a way in: who the account is, and then the subjects in groups, a row to
+ * each with its mark. A subject opens in the page's own place, with the way back at the top,
+ * and there are its switches; [nav] says which one is open, for whoever draws the top of the page.
+ * It scrolls when the font is large or the window is short.
  */
 @Composable
 internal fun SettingsContent(
@@ -104,7 +124,8 @@ internal fun SettingsContent(
     onSignOut: () -> Unit = {},
     onDeleteAccount: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onSaveProfile: suspend (String, LocalDate) -> ProfileOutcome = { _, _ -> ProfileOutcome.FAILED },
-    onAskPremium: () -> Unit = {}
+    onAskPremium: () -> Unit = {},
+    nav: OptionsNav = rememberOptionsNav()
 ) {
     var editingParty by rememberSaveable { mutableStateOf(false) }
     if (editingParty) {
@@ -118,321 +139,456 @@ internal fun SettingsContent(
         )
     }
     val signedIn = state.account is AccountState.SignedIn
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
-    ) {
-        // First on the page where it is offered: who the answers are for comes before how they are given.
-        if (state.offersAccount) {
-            AccountSection(
-                account = state.account,
-                onSignIn = onSignIn,
-                onSignOut = onSignOut,
-                onDeleteAccount = onDeleteAccount,
-                profile = (state.profile as? ProfileState.Present)?.profile,
-                onSaveProfile = onSaveProfile,
-                onOpenPrivacyPolicy = onOpenPrivacyPolicy,
-                premium = state.premium,
-                // Only of someone signed in: signed out there is no profile to wait for, and
-                // the wait would be over before it began.
-                loading = signedIn && state.profile == ProfileState.Unknown
-            )
-        }
-        // What is sold, said once on the page and only to whoever does not have it. It is kept
-        // with an account: whoever has none is first shown the way to one.
-        if (state.offersPremium) {
-            Section(stringResource(R.string.options_premium)) {
-                ActionRow(
-                    title = stringResource(R.string.premium_row_title),
-                    supporting = stringResource(R.string.premium_row_hint),
-                    onClick = onAskPremium
-                )
-            }
-        }
-        Section(stringResource(R.string.options_answers)) {
-            // The classic style never asks the AI service, and neither does one of the user's own
-            // while it is not theirs to use: the switch says so rather than promise it.
-            val classic = state.answersAsClassic
-            val waiting = classic && state.settings.personality == Magic8BallPersonality.CUSTOM
-            SwitchRow(
-                title = stringResource(R.string.settings_ai),
-                supporting = stringResource(R.string.settings_ai_on),
-                note = when {
-                    // Not "for now": on a device given an under-age date of birth it is for good.
-                    state.underAge -> stringResource(R.string.settings_ai_unavailable_here)
-                    !state.aiAnswersAvailable -> stringResource(R.string.settings_ai_unavailable)
-                    waiting -> stringResource(R.string.settings_ai_custom_waiting)
-                    classic -> stringResource(R.string.settings_ai_classic)
-                    state.usesAiAnswers && state.aiAllowanceSpent -> stringResource(R.string.settings_ai_spent)
-                    else -> null
-                },
-                checked = state.usesAiAnswers && !classic,
-                enabled = state.aiAnswersAvailable && !classic,
-                onCheckedChange = onAiAnswersChange,
-                // The one thing on this page that is not as the user set it: today's are used up.
-                alert = state.usesAiAnswers && !classic && state.aiAllowanceSpent
-            )
-            // The day's AI answers are used up and there is an ad to watch for more: the user's
-            // choice. Not offered to whoever has paid to see no ads.
-            if (state.usesAiAnswers && !classic && state.aiAllowanceSpent && !state.premium && onGetMoreAiAnswers != null) {
-                RowDivider()
-                ActionRow(
-                    title = stringResource(R.string.settings_ai_more),
-                    supporting = stringResource(R.string.settings_ai_more_hint),
-                    onClick = onGetMoreAiAnswers
-                )
-            }
-            RowDivider()
-            // How much the ball says: only what the AI writes can be longer.
-            SwitchRow(
-                title = stringResource(R.string.settings_detailed),
-                supporting = stringResource(R.string.settings_detailed_on),
-                // Dimmed, it says why.
-                note = if (!state.usesAiAnswers || classic) stringResource(R.string.settings_detailed_needs_ai) else null,
-                checked = state.settings.detailedAnswers && state.usesAiAnswers && !classic,
-                enabled = state.usesAiAnswers && !classic,
-                onCheckedChange = onDetailedAnswersChange
-            )
-            RowDivider()
-            SwitchRow(
-                title = stringResource(R.string.settings_spoken),
-                supporting = stringResource(R.string.settings_spoken_on),
-                checked = state.settings.spokenAnswersEnabled,
-                enabled = true,
-                onCheckedChange = onSpokenAnswersChange
-            )
-        }
-
-        Section(stringResource(R.string.options_asking)) {
-            // Refused, the switch is still the switch and still off: what stands in its way is
-            // said under it, and the way out is a row of its own, as for notifications.
-            val denied = state.voice == VoiceStatus.PermissionDenied
-            SwitchRow(
-                title = stringResource(R.string.settings_voice),
-                supporting = stringResource(R.string.settings_voice_on),
-                note = when (state.voice) {
-                    VoiceStatus.Unsupported -> stringResource(R.string.settings_voice_unsupported)
-                    VoiceStatus.PermissionDenied -> stringResource(R.string.settings_voice_denied)
-                    else -> null
-                },
-                checked = state.voice.isReady,
-                enabled = state.voice != VoiceStatus.Unsupported,
-                onCheckedChange = { if (denied) onAllowMicrophone() else onVoiceQuestionsChange(it) },
-                alert = denied
-            )
-            if (denied) {
-                RowDivider()
-                ActionRow(
-                    title = stringResource(R.string.settings_voice_allow_microphone),
-                    supporting = stringResource(R.string.settings_voice_allow_hint),
-                    onClick = onAllowMicrophone
-                )
-            }
-            RowDivider()
-            ActionRow(
-                title = stringResource(R.string.settings_party),
-                supporting = if (state.settings.isParty) {
-                    state.settings.partyNames.joinToString(", ")
-                } else {
-                    stringResource(R.string.settings_party_off)
-                },
-                onClick = { editingParty = true }
-            )
-        }
-
-        Section(stringResource(R.string.options_general)) {
-            // Offered only while the developer has it on: a switch that does nothing is a lie.
-            if (state.config.dailyVerdictEnabled) {
-                // On, and yet nothing would arrive: the system is not letting the app notify.
-                val blocked = state.settings.dailyVerdictEnabled && !notificationsAllowed
-                SwitchRow(
-                    title = stringResource(R.string.settings_daily),
-                    supporting = stringResource(R.string.settings_daily_on),
-                    note = if (blocked) stringResource(R.string.settings_daily_blocked) else null,
-                    checked = state.settings.dailyVerdictEnabled,
-                    enabled = true,
-                    onCheckedChange = onDailyVerdictChange,
-                    alert = blocked
-                )
-                if (blocked) {
-                    RowDivider()
-                    ActionRow(
-                        title = stringResource(R.string.settings_daily_allow),
-                        supporting = stringResource(R.string.settings_daily_allow_hint),
-                        onClick = onAllowNotifications
+    // The classic style never asks the AI service, and neither does one of the user's own while
+    // it is not theirs to use: what is said of the AI says so rather than promise it.
+    val classic = state.answersAsClassic
+    val waiting = classic && state.settings.personality == Magic8BallPersonality.CUSTOM
+    val aiNote = when {
+        // Not "for now": on a device given an under-age date of birth it is for good.
+        state.underAge -> stringResource(R.string.settings_ai_unavailable_here)
+        !state.aiAnswersAvailable -> stringResource(R.string.settings_ai_unavailable)
+        waiting -> stringResource(R.string.settings_ai_custom_waiting)
+        classic -> stringResource(R.string.settings_ai_classic)
+        state.usesAiAnswers && state.aiAllowanceSpent -> stringResource(R.string.settings_ai_spent)
+        else -> null
+    }
+    // The one thing here that is not as the user set it: today's are used up.
+    val aiSpent = state.usesAiAnswers && !classic && state.aiAllowanceSpent
+    val voiceDenied = state.voice == VoiceStatus.PermissionDenied
+    // On, and yet nothing would arrive: the system is not letting the app notify.
+    val dailyBlocked = state.settings.dailyVerdictEnabled && !notificationsAllowed
+    // One at a time: a subject comes in from the side it lies on, and goes back there.
+    AnimatedContent(
+        targetState = nav.section,
+        modifier = modifier.fillMaxWidth(),
+        transitionSpec = {
+            val forward = targetState != null
+            (slideInHorizontally(tween(SECTION_MS)) { if (forward) it / 5 else -it / 5 } + fadeIn(tween(SECTION_MS))) togetherWith
+                (slideOutHorizontally(tween(SECTION_MS)) { if (forward) -it / 5 else it / 5 } + fadeOut(tween(SECTION_MS / 2)))
+        },
+        label = "options"
+    ) { section ->
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
+        ) {
+            when (section) {
+                null -> {
+                    // First on the page where it is offered: who the answers are for comes before how they are given.
+                    if (state.offersAccount) {
+                        AccountSection(
+                            account = state.account,
+                            onSignIn = onSignIn,
+                            onSignOut = onSignOut,
+                            onDeleteAccount = onDeleteAccount,
+                            profile = (state.profile as? ProfileState.Present)?.profile,
+                            onSaveProfile = onSaveProfile,
+                            onOpenPrivacyPolicy = onOpenPrivacyPolicy,
+                            premium = state.premium,
+                            // Only of someone signed in: signed out there is no profile to wait for, and
+                            // the wait would be over before it began.
+                            loading = signedIn && state.profile == ProfileState.Unknown
+                        )
+                    }
+                    // What is sold, said once on the page and only to whoever does not have it. It is kept
+                    // with an account: whoever has none is first shown the way to one.
+                    if (state.offersPremium) {
+                        Section(stringResource(R.string.options_premium)) {
+                            ActionRow(
+                                title = stringResource(R.string.premium_row_title),
+                                supporting = stringResource(R.string.premium_row_hint),
+                                onClick = onAskPremium,
+                                icon = R.drawable.ic_crown
+                            )
+                        }
+                    }
+                    Section(stringResource(R.string.options_answers)) {
+                        ActionRow(
+                            title = stringResource(R.string.settings_ai),
+                            // What stands in its way, when something does; else what it is.
+                            supporting = aiNote ?: stringResource(R.string.settings_ai_on),
+                            onClick = { nav.section = OptionsSection.ANSWERS },
+                            icon = R.drawable.ic_sparkles,
+                            alert = aiSpent
+                        )
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.options_voice),
+                            supporting = when (state.voice) {
+                                VoiceStatus.Unsupported -> stringResource(R.string.settings_voice_unsupported)
+                                VoiceStatus.PermissionDenied -> stringResource(R.string.settings_voice_denied)
+                                else -> stringResource(R.string.options_voice_hint)
+                            },
+                            onClick = { nav.section = OptionsSection.VOICE },
+                            icon = R.drawable.ic_mic,
+                            alert = voiceDenied
+                        )
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.settings_party),
+                            supporting = if (state.settings.isParty) {
+                                state.settings.partyNames.joinToString(", ")
+                            } else {
+                                stringResource(R.string.settings_party_off)
+                            },
+                            onClick = { editingParty = true },
+                            icon = R.drawable.ic_party
+                        )
+                    }
+                    Section(stringResource(R.string.options_general)) {
+                        // Offered only while the developer has it on: a switch that does nothing is a lie.
+                        if (state.config.dailyVerdictEnabled) {
+                            ActionRow(
+                                title = stringResource(R.string.options_notifications),
+                                supporting = stringResource(
+                                    if (dailyBlocked) R.string.settings_daily_blocked else R.string.settings_daily_on
+                                ),
+                                onClick = { nav.section = OptionsSection.NOTIFICATIONS },
+                                icon = R.drawable.ic_bell,
+                                alert = dailyBlocked
+                            )
+                            RowDivider()
+                        }
+                        ActionRow(
+                            title = stringResource(R.string.settings_language),
+                            supporting = stringResource(state.settings.language.labelRes()),
+                            onClick = { nav.section = OptionsSection.LANGUAGE },
+                            icon = R.drawable.ic_language
+                        )
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.settings_share_app),
+                            supporting = stringResource(R.string.settings_share_app_hint),
+                            onClick = onShareApp,
+                            icon = R.drawable.ic_share
+                        )
+                    }
+                    Section(stringResource(R.string.options_about)) {
+                        if (onShowAdPrivacyOptions != null) {
+                            // The same choices also decide whether the app's use is measured, so whoever has
+                            // paid to see no ads still has the way back to them: under a name without ads in it.
+                            ActionRow(
+                                title = stringResource(
+                                    if (state.premium) R.string.settings_privacy_choices else R.string.settings_ad_privacy
+                                ),
+                                supporting = stringResource(
+                                    if (state.premium) R.string.settings_privacy_choices_hint else R.string.settings_ad_privacy_hint
+                                ),
+                                onClick = onShowAdPrivacyOptions,
+                                icon = R.drawable.ic_shield
+                            )
+                            RowDivider()
+                        }
+                        ActionRow(
+                            title = stringResource(R.string.settings_privacy_policy),
+                            supporting = stringResource(R.string.settings_privacy_policy_hint),
+                            onClick = onOpenPrivacyPolicy,
+                            icon = R.drawable.ic_terms
+                        )
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.options_licenses),
+                            supporting = stringResource(R.string.options_licenses_hint),
+                            onClick = { nav.section = OptionsSection.LICENSES },
+                            icon = R.drawable.ic_licenses
+                        )
+                    }
+                    Text(
+                        // With a profile, what the AI service is told of it is said here too.
+                        text = stringResource(state.privacyNoteRes()) +
+                            if (state.sendsProfile) " " + stringResource(R.string.privacy_account) else "",
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.brand_name) + " · " +
+                            stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
+                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    // What the app is built on: a name, so always in English.
+                    Text(
+                        text = stringResource(R.string.footer_powered_by),
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
                     )
                 }
-                RowDivider()
-            }
-            ChoiceRow(
-                title = stringResource(R.string.settings_language),
-                options = AppLanguage.entries,
-                selected = state.settings.language,
-                label = { it.labelRes() },
-                onSelected = onLanguageSelected
-            )
-            RowDivider()
-            ActionRow(
-                title = stringResource(R.string.settings_share_app),
-                supporting = stringResource(R.string.settings_share_app_hint),
-                onClick = onShareApp
-            )
-            if (onShowAdPrivacyOptions != null) {
-                RowDivider()
-                // The same choices also decide whether the app's use is measured, so whoever has
-                // paid to see no ads still has the way back to them: under a name without ads in it.
-                ActionRow(
-                    title = stringResource(
-                        if (state.premium) R.string.settings_privacy_choices else R.string.settings_ad_privacy
-                    ),
-                    supporting = stringResource(
-                        if (state.premium) R.string.settings_privacy_choices_hint else R.string.settings_ad_privacy_hint
-                    ),
-                    onClick = onShowAdPrivacyOptions
-                )
-            }
-            RowDivider()
-            ActionRow(
-                title = stringResource(R.string.settings_privacy_policy),
-                supporting = stringResource(R.string.settings_privacy_policy_hint),
-                onClick = onOpenPrivacyPolicy
-            )
-        }
 
+                OptionsSection.ANSWERS -> Section(null) {
+                    SwitchRow(
+                        title = stringResource(R.string.settings_ai),
+                        supporting = stringResource(R.string.settings_ai_on),
+                        note = aiNote,
+                        checked = state.usesAiAnswers && !classic,
+                        enabled = state.aiAnswersAvailable && !classic,
+                        onCheckedChange = onAiAnswersChange,
+                        alert = aiSpent
+                    )
+                    // The day's AI answers are used up and there is an ad to watch for more: the user's
+                    // choice. Not offered to whoever has paid to see no ads.
+                    if (aiSpent && !state.premium && onGetMoreAiAnswers != null) {
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.settings_ai_more),
+                            supporting = stringResource(R.string.settings_ai_more_hint),
+                            onClick = onGetMoreAiAnswers
+                        )
+                    }
+                    RowDivider()
+                    // How much the ball says: only what the AI writes can be longer.
+                    SwitchRow(
+                        title = stringResource(R.string.settings_detailed),
+                        supporting = stringResource(R.string.settings_detailed_on),
+                        // Dimmed, it says why.
+                        note = if (!state.usesAiAnswers || classic) stringResource(R.string.settings_detailed_needs_ai) else null,
+                        checked = state.settings.detailedAnswers && state.usesAiAnswers && !classic,
+                        enabled = state.usesAiAnswers && !classic,
+                        onCheckedChange = onDetailedAnswersChange
+                    )
+                }
+
+                OptionsSection.VOICE -> Section(null) {
+                    // Refused, the switch is still the switch and still off: what stands in its way is
+                    // said under it, and the way out is a row of its own, as for notifications.
+                    SwitchRow(
+                        title = stringResource(R.string.settings_voice),
+                        supporting = stringResource(R.string.settings_voice_on),
+                        note = when (state.voice) {
+                            VoiceStatus.Unsupported -> stringResource(R.string.settings_voice_unsupported)
+                            VoiceStatus.PermissionDenied -> stringResource(R.string.settings_voice_denied)
+                            else -> null
+                        },
+                        checked = state.voice.isReady,
+                        enabled = state.voice != VoiceStatus.Unsupported,
+                        onCheckedChange = { if (voiceDenied) onAllowMicrophone() else onVoiceQuestionsChange(it) },
+                        alert = voiceDenied
+                    )
+                    if (voiceDenied) {
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.settings_voice_allow_microphone),
+                            supporting = stringResource(R.string.settings_voice_allow_hint),
+                            onClick = onAllowMicrophone
+                        )
+                    }
+                    RowDivider()
+                    SwitchRow(
+                        title = stringResource(R.string.settings_spoken),
+                        supporting = stringResource(R.string.settings_spoken_on),
+                        checked = state.settings.spokenAnswersEnabled,
+                        enabled = true,
+                        onCheckedChange = onSpokenAnswersChange
+                    )
+                }
+
+                OptionsSection.NOTIFICATIONS -> Section(null) {
+                    SwitchRow(
+                        title = stringResource(R.string.settings_daily),
+                        supporting = stringResource(R.string.settings_daily_on),
+                        note = if (dailyBlocked) stringResource(R.string.settings_daily_blocked) else null,
+                        checked = state.settings.dailyVerdictEnabled,
+                        enabled = true,
+                        onCheckedChange = onDailyVerdictChange,
+                        alert = dailyBlocked
+                    )
+                    if (dailyBlocked) {
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.settings_daily_allow),
+                            supporting = stringResource(R.string.settings_daily_allow_hint),
+                            onClick = onAllowNotifications
+                        )
+                    }
+                }
+
+                OptionsSection.LANGUAGE -> {
+                    // What was just touched is chosen in the frame of the touch, and follows what is saved.
+                    var touched by remember(state.settings.language) { mutableStateOf(state.settings.language) }
+                    Section(null, modifier = Modifier.selectableGroup()) {
+                        AppLanguage.entries.forEachIndexed { index, language ->
+                            if (index > 0) RowDivider()
+                            CheckRow(
+                                title = stringResource(language.labelRes()),
+                                chosen = language == touched,
+                                onClick = {
+                                    touched = language
+                                    onLanguageSelected(language)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                OptionsSection.LICENSES -> Licenses()
+            }
+        }
+    }
+}
+
+/** A subject of the options that has a page of its own, and what the page is called. */
+internal enum class OptionsSection(@StringRes val title: Int) {
+    ANSWERS(R.string.settings_ai),
+    VOICE(R.string.options_voice),
+    NOTIFICATIONS(R.string.options_notifications),
+    LANGUAGE(R.string.settings_language),
+    LICENSES(R.string.options_licenses)
+}
+
+/** Which subject of the options is open; none is the page itself. */
+@Stable
+internal class OptionsNav(section: OptionsSection? = null) {
+    var section by mutableStateOf(section)
+}
+
+/** Kept through a turn of the screen. */
+@Composable
+internal fun rememberOptionsNav(): OptionsNav = rememberSaveable(
+    saver = Saver<OptionsNav, String>({ it.section?.name ?: "" }, { name -> OptionsNav(OptionsSection.entries.find { it.name == name }) })
+) { OptionsNav() }
+
+/** What the app uses that other people made, and on what terms. */
+@Composable
+private fun Licenses() {
+    val resources = LocalContext.current.resources
+    val lucide = remember { resources.openRawResource(R.raw.license_lucide).bufferedReader().use { it.readText().trim() } }
+    Section(null) {
+        License(name = "Lucide", what = stringResource(R.string.license_icons), terms = lucide)
+        RowDivider()
+        License(
+            name = "Google Sans",
+            what = stringResource(R.string.license_font),
+            terms = "Copyright 2025 The Google Sans Project Authors.\nSIL Open Font License, Version 1.1. https://openfontlicense.org"
+        )
+    }
+}
+
+@Composable
+private fun License(name: String, what: String, terms: String) {
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        SettingText(title = name, supporting = what, enabled = true)
         Text(
-            // With a profile, what the AI service is told of it is said here too.
-            text = stringResource(state.privacyNoteRes()) +
-                if (state.sendsProfile) " " + stringResource(R.string.privacy_account) else "",
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
+            text = terms,
+            modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text(
-            text = stringResource(R.string.brand_name) + " · " +
-                stringResource(R.string.footer_version, BuildConfig.VERSION_NAME),
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        // What the app is built on: a name, so always in English.
-        Text(
-            text = stringResource(R.string.footer_powered_by),
-            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
     }
-}
-
-/** A subject: its name, and under it one card that holds everything about it. */
-@Composable
-internal fun Section(title: String, rows: @Composable () -> Unit) {
-    Text(
-        text = title,
-        modifier = Modifier
-            .padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
-            .semantics { heading() },
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(CardShape)
-            .background(MaterialTheme.colorScheme.pageCard)
-    ) {
-        rows()
-    }
-}
-
-/** The hairline between two rows of a card, starting where their text does. */
-@Composable
-internal fun RowDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = ROW_TEXT_START),
-        thickness = 1.dp,
-        color = MaterialTheme.colorScheme.hairline
-    )
 }
 
 /**
- * One of several, as a row: what is being chosen, and under it the choices as tiles that wrap
- * onto as many lines as they need. The chosen one is filled with the text's own colour.
+ * A group of rows: its name, when it has one, and under it its rows, each on a tile of its own.
+ * Where one row ends and the next begins is said by a [RowDivider] between them: what lies
+ * between two of those is one tile, however many things it is made of. See [groupedShape].
+ *
+ * @param ground what the tiles are filled with: the page's card, or a sheet's on a sheet.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun <T> ChoiceRow(
-    title: String,
-    options: List<T>,
-    selected: T,
-    label: (T) -> Int,
-    onSelected: (T) -> Unit
+internal fun Section(
+    title: String?,
+    modifier: Modifier = Modifier,
+    ground: Color = MaterialTheme.colorScheme.pageCard,
+    rows: @Composable () -> Unit
 ) {
-    // As on the cards of the characters: what was just touched is chosen in the frame of the
-    // touch, and follows what is saved whenever that changes.
-    var touched by remember(selected) { mutableStateOf(selected) }
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+    if (title != null) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        FlowRow(
             modifier = Modifier
-                .padding(top = 12.dp)
-                .fillMaxWidth()
-                .selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            options.forEach { option ->
-                val chosen = option == touched
-                // As on the cards of the characters, right above: the choice passes from one
-                // tile to another, and nothing of either moves.
-                val ground by animateColorAsState(
-                    targetValue = if (chosen) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_ALPHA)
-                    },
-                    animationSpec = choiceTween(),
-                    label = "tile ground"
-                )
-                val ink by animateColorAsState(
-                    targetValue = if (chosen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
-                    animationSpec = choiceTween(),
-                    label = "tile ink"
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(ButtonShape)
-                        .background(ground)
-                        .selectable(
-                            selected = chosen,
-                            role = Role.RadioButton,
-                            onClick = {
-                                touched = option
-                                onSelected(option)
-                            }
-                        )
-                        .heightIn(min = 48.dp)
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(label(option)),
-                        style = MaterialTheme.typography.labelLarge,
-                        // One weight, chosen or not, as on the cards: a tile that changed its
-                        // weight would change its width, and push the others.
-                        fontWeight = FontWeight.SemiBold,
-                        color = ink
+                .padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+                .semantics { heading() },
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        Spacer(Modifier.height(8.dp))
+    }
+    // Where each tile begins and ends, top to bottom: worked out as the rows are laid out, and drawn behind them.
+    var tiles by remember { mutableStateOf(emptyList<IntRange>()) }
+    Layout(
+        content = rows,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(GROUP_CORNER))
+            .drawBehind {
+                val seam = CornerRadius(GROUP_SEAM.toPx())
+                tiles.forEach { tile ->
+                    drawRoundRect(
+                        color = ground,
+                        topLeft = Offset(0f, tile.first.toFloat()),
+                        size = Size(size.width, (tile.last - tile.first).toFloat()),
+                        cornerRadius = seam
                     )
                 }
             }
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minHeight = 0)
+        val placeables = measurables.map { it.measure(loose) }
+        val found = mutableListOf<IntRange>()
+        var y = 0
+        var from = 0
+        placeables.forEachIndexed { index, placeable ->
+            if (measurables[index].layoutId == SEAM) {
+                if (y > from) found += from..y
+                y += placeable.height
+                from = y
+            } else {
+                y += placeable.height
+            }
+        }
+        if (y > from) found += from..y
+        if (found != tiles) tiles = found
+        layout(constraints.maxWidth, y) {
+            var top = 0
+            placeables.forEach { placeable ->
+                placeable.placeRelative(0, top)
+                top += placeable.height
+            }
+        }
+    }
+}
+
+/** Where one row of a group ends and the next begins: the hair between two tiles. */
+@Composable
+internal fun RowDivider() {
+    Spacer(Modifier.layoutId(SEAM).fillMaxWidth().height(GROUP_GAP))
+}
+
+/** What marks a [RowDivider] among the things a [Section] lays out. */
+private const val SEAM = "seam"
+
+/** How long a subject takes to come in, and the page to come back. */
+private const val SECTION_MS = 220
+
+/** One of several, as a row of its own: its name, and a mark at its end when it is the one. */
+@Composable
+private fun CheckRow(title: String, chosen: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = chosen, role = Role.RadioButton, onClick = onClick)
+            .heightIn(min = GROUP_ROW_HEIGHT)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        if (chosen) {
+            Icon(
+                painter = painterResource(R.drawable.ic_check),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
@@ -481,7 +637,10 @@ private fun SwitchRow(
  * Something to do rather than to set: the whole row is the button.
  *
  * @param opens whether the touch opens something, which is what the arrow at the row's end
- *   says; a row that does its work on the touch has none.
+ *   says; a row that does its work on the touch has none, and neither has one with a mark at
+ *   its start, which is a way in by the look of it.
+ * @param icon the mark at its start, on a row that names a subject.
+ * @param alert whether the line under its name says that something is wrong.
  */
 @Composable
 internal fun ActionRow(
@@ -490,7 +649,9 @@ internal fun ActionRow(
     onClick: () -> Unit,
     danger: Boolean = false,
     opens: Boolean = true,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    @DrawableRes icon: Int? = null,
+    alert: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -500,8 +661,16 @@ internal fun ActionRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f), danger = danger)
-        if (opens) {
+        if (icon != null) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.padding(end = 16.dp).size(24.dp),
+                tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        SettingText(title, supporting, enabled = true, modifier = Modifier.weight(1f), danger = danger, wrong = alert)
+        if (opens && icon == null) {
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_right),
                 contentDescription = null,
@@ -519,7 +688,8 @@ internal fun SettingText(
     modifier: Modifier = Modifier,
     alert: Boolean = false,
     note: String? = null,
-    danger: Boolean = false
+    danger: Boolean = false,
+    wrong: Boolean = false
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
@@ -535,7 +705,8 @@ internal fun SettingText(
         Text(
             text = supporting,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            // On a row that only leads somewhere, this line is where what is wrong there is said.
+            color = if (wrong) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
         )
         // What stands in its way just now, when something does: a line of its own, so that the
         // line above never changes. Quiet when it only explains, not when something is wrong.

@@ -332,10 +332,12 @@ fun EightBallScreen(
             // Who answers and the characters of one's own are asked for from the ball's page, and
             // what is sold from the options: see [CharacterFlows].
             val flowsAsked = rememberFlowsAsked()
+            val optionsNav = rememberOptionsNav()
             EightBallContent(
                 state = current,
                 onPickCharacter = { flowsAsked.browsing = true },
                 covered = flowsAsked.browsing,
+                section = optionsNav.section?.let { open -> SectionBar(stringResource(open.title)) { optionsNav.section = null } },
                 flows = {
                     CharacterFlows(
                         state = current,
@@ -447,6 +449,7 @@ fun EightBallScreen(
                         onDeleteAccount = { viewModel.deleteAccount(context) },
                         onSaveProfile = { name, birthDate -> viewModel.saveProfile(name, birthDate, context) },
                         onAskPremium = { flowsAsked.premium = true },
+                        nav = optionsNav,
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
@@ -515,6 +518,7 @@ internal fun EightBallContent(
     onPickCharacter: () -> Unit = {},
     flows: @Composable () -> Unit = {},
     covered: Boolean = false,
+    section: SectionBar? = null,
     options: @Composable () -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
@@ -577,6 +581,11 @@ internal fun EightBallContent(
     }
     // Back closes a question in progress or an answer, like the close button.
     BackHandler(enabled = !atRest, onBack = onDismiss)
+    // With a subject of the options open, back leads to the options, not past them to the ball.
+    val onOptions = pagerState.currentPage == OPTIONS_PAGE
+    BackHandler(enabled = atRest && onOptions && section != null) { section?.onBack?.invoke() }
+    // Away from the options, no subject of theirs stays open behind.
+    LaunchedEffect(onOptions) { if (!onOptions) section?.onBack?.invoke() }
 
     val backdrop = Backdrop
     Box(
@@ -605,7 +614,8 @@ internal fun EightBallContent(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize().then(unread),
-            userScrollEnabled = atRest
+            // A subject of the options is left by its way back, not by a swipe past it.
+            userScrollEnabled = atRest && section == null
         ) { page ->
             val pageName = stringResource(
                 when (page) {
@@ -652,14 +662,16 @@ internal fun EightBallContent(
                         else -> {
                           // The way back to the ball, at the side the ball lies on.
                           val toBall = { scope.launch { pagerState.animateScrollToPage(BALL_PAGE) }; Unit }
+                          // On the options, with a subject open: the subject's name, and the way back to the options.
+                          val open = section.takeIf { page == OPTIONS_PAGE }
                           BarIconButton(
                               icon = if (page == HISTORY_PAGE) R.drawable.ic_arrow_forward else R.drawable.ic_arrow_back,
-                              description = stringResource(R.string.action_back_to_ball),
-                              onClick = toBall,
+                              description = stringResource(if (open != null) R.string.action_back else R.string.action_back_to_ball),
+                              onClick = open?.onBack ?: toBall,
                               modifier = Modifier.align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
                           )
                           Text(
-                            text = stringResource(
+                            text = open?.title ?: stringResource(
                                 if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
                             ),
                             modifier = Modifier
@@ -747,10 +759,13 @@ internal fun EightBallContent(
                     .height(TOP_BAR_HEIGHT)
                     .then(unread)
             ) {
-                PageDots(
-                    position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = PAGE_DOTS_TOP)
-                )
+                // Where the user is among the pages: not said inside a subject, which is on none of them.
+                if (section == null) {
+                    PageDots(
+                        position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = PAGE_DOTS_TOP)
+                    )
+                }
             }
         }
 
@@ -1697,6 +1712,9 @@ private val CAPTION_FADE = 32.dp
 private val BALL_MIN_SEEN = 112.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
+
+/** A subject of the options that is open: what the top of the page calls it, and the way back to the options. */
+internal class SectionBar(val title: String, val onBack: () -> Unit)
 
 internal val TOP_BAR_HEIGHT = 72.dp
 

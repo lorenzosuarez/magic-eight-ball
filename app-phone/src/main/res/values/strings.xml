@@ -303,4 +303,13 @@
     <string name="character_says">“%1$s”</string>
     <string name="characters_community_account_title">You need an account to use this character</string>
     <string name="characters_community_account_text">What is written about a community character is sent to the AI service to answer in its voice. Sign in to agree to that.</string>
+    <string name="options_voice">Voice</string>
+    <string name="options_voice_hint">Ask by voice and hear the answer</string>
+    <string name="options_notifications">Notifications</string>
+    <string name="options_about">About</string>
+    <string name="options_licenses">Open source licences</string>
+    <string name="options_licenses_hint">What the app uses that others made</string>
+    <string name="license_icons">Icons</string>
+    <string name="license_font">The type on the Google button</string>
+    <string name="action_back">Back</string>
 </resources>

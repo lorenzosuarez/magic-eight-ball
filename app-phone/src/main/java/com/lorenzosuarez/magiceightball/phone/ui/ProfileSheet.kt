@@ -376,12 +376,10 @@ internal fun ProfileContent(
             )
         }
         // Before the button, and in full: what agreeing to it means.
-        Column(
-            modifier = Modifier
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp)
-                .fillMaxWidth()
-                .clip(CardShape)
-                .background(MaterialTheme.colorScheme.sheetCard)
+        Section(
+            title = null,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp),
+            ground = MaterialTheme.colorScheme.sheetCard
         ) {
             Text(
                 text = stringResource(R.string.profile_sent_title),

@@ -60,7 +60,8 @@ class FirebaseAccount @Inject constructor(
         return AccountState.SignedIn(
             id = user.uid,
             name = user.displayName.orEmpty(),
-            email = user.email.orEmpty()
+            email = user.email.orEmpty(),
+            photoUrl = user.photoUrl?.toString()
         )
     }
 

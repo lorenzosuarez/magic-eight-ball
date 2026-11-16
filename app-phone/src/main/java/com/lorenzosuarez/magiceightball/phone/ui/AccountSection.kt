@@ -260,21 +260,7 @@ private fun AccountIdentity(account: AccountState.SignedIn, loading: Boolean, on
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA))
-                .clearAndSetSemantics {},
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = name.trim().take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
+        AccountAvatar(name = name, photoUrl = account.photoUrl, size = 48.dp)
         // One line each here, where the row has to stay a row: both are in full on the sheet.
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
@@ -442,14 +428,11 @@ internal fun AccountSheetContent(
                 fontWeight = FontWeight.Medium
             )
         }
-        // One card of rows, as on the options page.
-        Column(
-            modifier = Modifier
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp)
-                .fillMaxWidth()
-                .clip(CardShape)
-                .background(MaterialTheme.colorScheme.sheetCard)
-                .alpha(if (busy) BUSY_ALPHA else 1f)
+        // One group of rows, as on the options page.
+        Section(
+            title = null,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp).alpha(if (busy) BUSY_ALPHA else 1f),
+            ground = MaterialTheme.colorScheme.sheetCard
         ) {
             if (profile != null) {
                 // Who the characters take the user for, and the way to correct it.

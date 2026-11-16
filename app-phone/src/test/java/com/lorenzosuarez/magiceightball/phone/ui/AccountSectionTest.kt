@@ -195,7 +195,9 @@ class AccountSectionTest {
     fun `a choice shows where it was touched at once, before it has been saved`() {
         // Nothing here saves anything: what is chosen stays as it was, however long one waits.
         show()
-        compose.onNodeWithText("English").performScrollTo().performClick()
+        // The language has a page of its own: its row leads there, and says which one it is now.
+        compose.onNodeWithText("Idioma").performScrollTo().performClick()
+        compose.onNodeWithText("English").performClick()
         compose.onNodeWithText("English").assertIsSelected()
         compose.onNodeWithText("Español").assertIsNotSelected()
     }

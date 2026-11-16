@@ -585,6 +585,10 @@ class CharacterEditorTest {
         showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, onGetMoreAiAnswers = {})
         state = state.copy(aiAnswersAvailable = true, aiAllowanceSpent = true)
         compose.waitForIdle()
+        // It is offered where the AI's answers are set, which has a page of its own.
+        onThePage()
+        compose.onNodeWithText("Respuestas con IA").performScrollTo().performClick()
+        compose.waitForIdle()
         assertEquals(1, count("Consigue más respuestas con IA hoy"))
 
         state = state.copy(premium = true)
