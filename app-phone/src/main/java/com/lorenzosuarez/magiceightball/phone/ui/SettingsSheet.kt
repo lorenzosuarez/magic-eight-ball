@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.annotation.RawRes
+import android.content.res.Resources
 import com.example.magiceightball.core.common.BrandPalette
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.platform.LocalDensity
@@ -599,11 +601,21 @@ internal fun rememberOptionsNav(): OptionsNav = rememberSaveable(
     saver = Saver<OptionsNav, String>({ it.section?.name ?: "" }, { name -> OptionsNav(OptionsSection.entries.find { it.name == name }) })
 ) { OptionsNav() }
 
+/** What the app is built with that comes under the Apache License: Google's and JetBrains' own libraries. */
+private const val LIBRARIES = "AndroidX, Jetpack Compose, Kotlin, Dagger Hilt, Firebase"
+
+/** A licence as sentences: its file breaks its lines for a page far wider than a phone's. */
+private fun Resources.licence(@RawRes id: Int): String =
+    openRawResource(id).bufferedReader().use { it.readText() }.trim()
+        .split(Regex("\\n\\s*\\n"))
+        .joinToString("\n\n") { paragraph -> paragraph.lines().joinToString(" ") { it.trim() } }
+
 /** What the app uses that other people made, and on what terms. */
 @Composable
 private fun Licenses() {
     val resources = LocalContext.current.resources
-    val lucide = remember { resources.openRawResource(R.raw.license_lucide).bufferedReader().use { it.readText().trim() } }
+    val lucide = remember { resources.licence(R.raw.license_lucide) }
+    val apache = remember { resources.licence(R.raw.license_apache) }
     Section(null) {
         License(name = "Lucide", what = stringResource(R.string.license_icons), terms = lucide)
         RowDivider()
@@ -612,6 +624,9 @@ private fun Licenses() {
             what = stringResource(R.string.license_font),
             terms = "Copyright 2025 The Google Sans Project Authors.\nSIL Open Font License, Version 1.1. https://openfontlicense.org"
         )
+        RowDivider()
+        // Last, for its length: the licence is given whole, as it asks to be.
+        License(name = LIBRARIES, what = stringResource(R.string.license_libraries), terms = apache)
     }
 }
 

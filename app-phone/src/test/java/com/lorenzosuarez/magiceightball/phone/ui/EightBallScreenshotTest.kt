@@ -368,6 +368,29 @@ class EightBallScreenshotTest {
         }
     }
 
+    /** What the app is built with and on what terms: the icons, the type, and the libraries with their licence whole. */
+    @Test
+    fun phone_licenses_spanish() {
+        val state = EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH))
+        captureRoboImage(filePath = path("phone_115_licenses_spanish")) {
+            MagicEightBallPhoneTheme(dark = true) {
+                ProvideAppLanguage(state.settings.language) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        SettingsContent(
+                            state = state,
+                            onLanguageSelected = {},
+                            onAiAnswersChange = {},
+                            onVoiceQuestionsChange = {},
+                            onAllowMicrophone = {},
+                            onShareApp = {},
+                            nav = OptionsNav(OptionsSection.LICENSES)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     /** The sheet's content on its own: under a font scale the sheet's window is not rendered on the JVM. */
     @Test
     fun phone_settings_spanish_large_font() {

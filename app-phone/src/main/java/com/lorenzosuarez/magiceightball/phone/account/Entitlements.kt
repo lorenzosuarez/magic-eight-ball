@@ -3,6 +3,7 @@ package com.lorenzosuarez.magiceightball.phone.account
 import android.util.Log
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.MetadataChanges
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -97,18 +98,13 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
         heard.map { it != null }.stateIn(scope, SharingStarted.Eagerly, false)
 
     private fun held(grant: DocumentReference): Flow<Held?> = callbackFlow<Held?> {
-        val listening = grant.addSnapshotListener { snapshot, failure ->
+        // Told of the copy becoming the server's own word too: that nothing is held is only
+        // believed once the server has said so, and its saying it changes nothing else.
+        val listening = grant.addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, failure ->
             if (failure != null || snapshot == null) {
                 close(failure ?: IllegalStateException("No grant and no reason"))
             } else {
-                trySend(
-                    when {
-                        !snapshot.exists() -> Held.NOTHING
-                        // Only a subscription is written down with an end.
-                        snapshot.contains(UNTIL) -> Held.SUBSCRIBED
-                        else -> Held.FOR_GOOD
-                    }
-                )
+                heldBy(snapshot.exists(), snapshot.metadata.isFromCache, snapshot.contains(UNTIL))?.let { trySend(it) }
             }
         }
         awaitClose { listening.remove() }
@@ -119,8 +115,6 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
         true
     }
 
-    /** What the server has written down for an account. */
-    private enum class Held { NOTHING, FOR_GOOD, SUBSCRIBED }
 
     private companion object {
         const val TAG = "Entitlements"
@@ -130,4 +124,20 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
         const val RETRY_FIRST_MS = 2_000L
         const val RETRY_DOUBLINGS = 5
     }
+}
+
+/** What the server has written down for an account. */
+internal enum class Held { NOTHING, FOR_GOOD, SUBSCRIBED }
+
+/**
+ * What a reading of the grant says is held, and null when it says nothing. The copy kept on the
+ * device is in memory and starts empty, so a grant missing from it [fromCache] is the server
+ * not having been heard from yet, as without a connection: it takes Premium from nobody.
+ *
+ * @param lasting whether the grant has an end written on it, as only a subscription's has.
+ */
+internal fun heldBy(exists: Boolean, fromCache: Boolean, lasting: Boolean): Held? = when {
+    !exists -> if (fromCache) null else Held.NOTHING
+    lasting -> Held.SUBSCRIBED
+    else -> Held.FOR_GOOD
 }

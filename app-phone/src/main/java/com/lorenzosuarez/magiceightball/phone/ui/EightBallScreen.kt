@@ -938,7 +938,7 @@ private fun Stage(
     onAskWho: (String) -> Unit
 ) {
     // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
-    val swaying = !still && state.config.ballSwayEnabled &&
+    val swaying = !still && state.config.ballSwayEnabled && !motionRemoved() &&
         (state.phase is BallPhase.Idle || state.phase is BallPhase.Thinking)
     val sway = rememberBallSway(active = swaying, ticks = state.phase is BallPhase.Idle)
     val swayStrength by animateFloatAsState(if (swaying) 1f else 0f, tween(durationMillis = 200), label = "sway")

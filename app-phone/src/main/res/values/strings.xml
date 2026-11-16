@@ -339,6 +339,7 @@
     <string name="options_licenses">Open source licences</string>
     <string name="license_icons">Icons</string>
     <string name="license_font">The type on the Google button</string>
+    <string name="license_libraries">Libraries the app is built with</string>
     <string name="action_back">Back</string>
     <string name="premium_banner_cta">Get it</string>
     <string name="look_singer">Singer</string>
