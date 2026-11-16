@@ -1,5 +1,6 @@
 package com.example.magiceightball.core.data.settings
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.CustomCharacter
@@ -116,7 +117,7 @@ class DataStoreUserSettingsRepositoryTest {
             name = "Capitán Nemo",
             description = "Un capitán gruñón.",
             colour = Magic8BallPersonality.PIRATE,
-            emblem = Magic8BallPersonality.CAT
+            emblem = CharacterLook.CAT
         )
         withRepository(deviceLanguageCode = "es") { it.setCustomCharacter(nemo) }
 

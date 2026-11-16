@@ -28,6 +28,8 @@ credentials = "1.6.0"
 googleid = "1.2.1"
 billing = "9.1.0"
 datastore = "1.1.1"
+# The last that builds against the Compose this project is on; 3.4 and later need Compose 1.10.
+paging = "3.3.6"
 googleServices = "4.4.2"
 firebaseCrashlyticsPlugin = "3.0.2"
 
@@ -107,6 +109,9 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "a
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
+paging-testing = { group = "androidx.paging", name = "paging-testing", version.ref = "paging" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

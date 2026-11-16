@@ -1,5 +1,8 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -132,7 +135,7 @@ class CharacterEditorTest {
         // What is worn is named, since a small drawing may not say it.
         compose.onNodeWithText("Accesorio \u00b7 Gato").assertIsDisplayed()
         assertEquals(Magic8BallPersonality.PIRATE, draft.colour)
-        assertEquals(Magic8BallPersonality.CAT, draft.emblem)
+        assertEquals(CharacterLook.CAT, draft.emblem)
         // The card follows what is typed.
         compose.onNodeWithText("— Capitán Nemo").assertIsDisplayed()
     }
@@ -244,7 +247,7 @@ class CharacterEditorTest {
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
                         // As on the screen itself: what the page has to say in passing is shown over it.
                         val snackbars = remember { SnackbarHostState() }
-                        CompositionLocalProvider(LocalSnackbars provides snackbars) {
+                        CompositionLocalProvider(LocalSnackbars provides snackbars, LocalListPrefetch provides NoPrefetch) {
                         SettingsContent(
                             state = state,
                             onLanguageSelected = {},
@@ -287,10 +290,17 @@ class CharacterEditorTest {
         compose.waitForIdle()
     }
 
+    /** What is on the page of options is touched there: the screen of characters, which covers it, is put away. */
+    private fun onThePage() {
+        asked.browsing = false
+        compose.waitForIdle()
+    }
+
     @Test
     fun `whoever has no account is shown the way to one, and told when it led nowhere`() {
         showOptions(AccountState.SignedOut, characters = null)
-        assertEquals(0, count("Tuyos"))
+        // Their shelf, with nothing on it: no group of theirs among the cards.
+        assertEquals(1, count("Tuyos"))
 
         compose.onNodeWithContentDescription("Crear un personaje").performClick()
         compose.onNodeWithText("Para crear personajes necesitas una cuenta").assertIsDisplayed()
@@ -307,9 +317,13 @@ class CharacterEditorTest {
     @Test
     fun `signed in, create opens on a new character, and yours are listed first with the way to correct each`() {
         showOptions(SIGNED_IN, characters = listOf(NEMO))
-        compose.onNodeWithText("Tuyos").assertIsDisplayed()
+        // Their shelf, and over the first cards the name of their group.
+        assertEquals(2, count("Tuyos"))
 
-        compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
+        // Corrected from where it is opened.
+        compose.onNodeWithText("Capitán Nemo").performClick()
+        compose.onNodeWithText("Editar").performClick()
+        compose.waitForIdle()
         compose.onNodeWithText("Tu personaje").assertIsDisplayed()
         compose.onNodeWithText("Guardar").performScrollTo().performClick()
         compose.waitForIdle()
@@ -322,7 +336,10 @@ class CharacterEditorTest {
     fun `one of yours is chosen with a touch`() {
         showOptions(SIGNED_IN, characters = listOf(NEMO))
 
+        // Opened first, to be looked at; it answers once that is asked for.
         compose.onNodeWithText("Capitán Nemo").performClick()
+        assertEquals(emptyList<CustomCharacter>(), chosen)
+        compose.onNodeWithText("Usar este personaje").performClick()
         compose.waitForIdle()
 
         assertEquals(listOf(NEMO), chosen)
@@ -403,7 +420,10 @@ class CharacterEditorTest {
         compose.waitForIdle()
         assertEquals(0, count("Tus propios personajes, con Premium"))
         // What was made before is still theirs to choose and to correct.
-        compose.onNodeWithContentDescription("Editar Capitán Nemo").performClick()
+        // Corrected from where it is opened.
+        compose.onNodeWithText("Capitán Nemo").performClick()
+        compose.onNodeWithText("Editar").performClick()
+        compose.waitForIdle()
         compose.onNodeWithText("Tu personaje").assertIsDisplayed()
     }
 
@@ -462,6 +482,7 @@ class CharacterEditorTest {
     @Test
     fun `asked for from the page, all of it is said, and buying it leaves them where they were`() {
         showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, price = "2,99 €") { Bought.DONE }
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
 
         compose.onNodeWithText("Magic AI Ball Premium").assertIsDisplayed()
@@ -484,6 +505,7 @@ class CharacterEditorTest {
     @Test
     fun `a payment that came through elsewhere closes the sheet and says so once`() {
         showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, price = "2,99 €")
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
         compose.onNodeWithText("Magic AI Ball Premium").assertIsDisplayed()
 
@@ -497,6 +519,7 @@ class CharacterEditorTest {
     @Test
     fun `with nobody signed in, what is sold leads to an account first`() {
         showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
 
         compose.onNodeWithText("Para obtener Premium necesitas una cuenta").assertIsDisplayed()
@@ -524,6 +547,7 @@ class CharacterEditorTest {
     @Test
     fun `signing in for it and turning out to have it opens nothing`() {
         showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
         signInEnds = AccountOutcome.DONE
         compose.onAllNodesWithText("Continuar con Google")[1].performClick()
@@ -538,6 +562,7 @@ class CharacterEditorTest {
     @Test
     fun `a device with no Google account is told so, and not to check its connection`() {
         showOptions(AccountState.SignedOut, characters = null, sold = true, premium = false)
+        onThePage()
         compose.onNodeWithText(OFFER).performClick()
         signInEnds = AccountOutcome.NO_GOOGLE_ACCOUNT
         compose.onAllNodesWithText("Continuar con Google")[1].performClick()
@@ -559,13 +584,16 @@ class CharacterEditorTest {
         compose.waitForIdle()
         assertEquals(0, count("Privacidad de anuncios"))
         assertEquals(1, count("Opciones de privacidad"))
-        assertEquals(1, count("Revisa lo que permitiste"))
     }
 
     @Test
     fun `the ad for more answers is not offered to whoever has paid to see none`() {
         showOptions(SIGNED_IN, characters = emptyList(), sold = true, premium = false, onGetMoreAiAnswers = {})
         state = state.copy(aiAnswersAvailable = true, aiAllowanceSpent = true)
+        compose.waitForIdle()
+        // It is offered where the AI's answers are set, which has a page of its own.
+        onThePage()
+        compose.onNodeWithText("Respuestas con IA").performScrollTo().performClick()
         compose.waitForIdle()
         assertEquals(1, count("Consigue más respuestas con IA hoy"))
 
@@ -702,7 +730,9 @@ class CharacterEditorTest {
         compose.setContent {
             MagicEightBallPhoneTheme {
                 ProvideAppLanguage(AppLanguage.SPANISH) {
-                    CharacterFlows(state = state, asked = asked, onPersonalitySelected = {})
+                    CompositionLocalProvider(LocalListPrefetch provides NoPrefetch) {
+                        CharacterFlows(state = state, asked = asked, onPersonalitySelected = {})
+                    }
                 }
             }
         }
@@ -721,7 +751,7 @@ class CharacterEditorTest {
             name = "Capitán Nemo",
             description = "Un capitán gruñón que todo lo compara con el mar.",
             colour = Magic8BallPersonality.PIRATE,
-            emblem = Magic8BallPersonality.CAT
+            emblem = CharacterLook.CAT
         )
 
         /** What the page of options says of what is sold. */

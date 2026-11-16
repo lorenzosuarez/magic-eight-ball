@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -202,7 +203,7 @@ internal fun PremiumContent(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
-                .clip(CardShape)
+                .clip(RoundedCornerShape(GROUP_CORNER))
                 .background(MaterialTheme.colorScheme.sheetCard)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -213,7 +214,7 @@ internal fun PremiumContent(
                         painter = painterResource(R.drawable.ic_check),
                         contentDescription = null,
                         modifier = Modifier.padding(top = tickInset).size(tickSize),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = stringResource(point),
@@ -272,51 +273,31 @@ internal fun PremiumContent(
         val waiting = !busy && ended == Bought.PENDING
         val unchecked = !busy && ended == Bought.UNCONFIRMED
         if (!held) {
-            Button(
+            PrimaryButton(
+                text = when {
+                    waiting -> stringResource(R.string.action_understood)
+                    // Paid for already: what is left is to check it, and the price is not asked again.
+                    unchecked -> stringResource(R.string.premium_check_again)
+                    offer == null -> stringResource(R.string.premium_upgrade)
+                    // The price is one thing: it goes to a second line whole, or stays on the first.
+                    else -> stringResource(R.string.premium_upgrade_priced, offer.replace(' ', Typography.nbsp))
+                },
                 // A payment on its way is only to be understood: the button closes.
                 onClick = if (waiting) onNotNow else onUpgrade,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = if (said != null) 8.dp else 16.dp, end = 16.dp)
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp),
-                enabled = !busy && (waiting || unchecked || offer != null),
-                shape = ButtonShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(BrandPalette.ACCENT_DEEP),
-                    contentColor = Color(BrandPalette.ON_ACCENT)
-                )
-            ) {
-                BusyRing(busy)
-                Text(
-                    text = when {
-                        waiting -> stringResource(R.string.action_understood)
-                        // Paid for already: what is left is to check it, and the price is not asked again.
-                        unchecked -> stringResource(R.string.premium_check_again)
-                        offer == null -> stringResource(R.string.premium_upgrade)
-                        // The price is one thing: it goes to a second line whole, or stays on the first.
-                        else -> stringResource(R.string.premium_upgrade_priced, offer.replace(' ', Typography.nbsp))
-                    },
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                )
-            }
+                modifier = Modifier.padding(start = 16.dp, top = if (said != null) 8.dp else 16.dp, end = 16.dp).fillMaxWidth(),
+                enabled = waiting || unchecked || offer != null,
+                busy = busy,
+                // What buys is in the app's colour; what only closes is not.
+                sold = !waiting
+            )
         }
         if (!waiting) {
-            TextButton(
+            QuietButton(
+                text = stringResource(if (held) R.string.action_close else R.string.action_not_now),
                 onClick = onNotNow,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = if (held) 8.dp else 4.dp, end = 16.dp)
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp),
-                enabled = !busy,
-                shape = ButtonShape,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.sheetAction)
-            ) {
-                Text(
-                    text = stringResource(if (held) R.string.action_close else R.string.action_not_now),
-                    textAlign = TextAlign.Center
-                )
-            }
+                modifier = Modifier.padding(start = 16.dp, top = if (held) 8.dp else 4.dp, end = 16.dp).fillMaxWidth(),
+                enabled = !busy
+            )
         }
     }
 }

@@ -1,5 +1,17 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import com.example.magiceightball.core.domain.model.look
+import com.example.magiceightball.core.domain.model.CharacterLook
+import com.lorenzosuarez.magiceightball.phone.characters.atHand
+import com.lorenzosuarez.magiceightball.phone.characters.CharactersQuery
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
+import com.example.magiceightball.core.domain.repository.NoCommunityCharacters
+import com.example.magiceightball.core.domain.repository.CommunityCharacters
+import com.example.magiceightball.core.domain.model.CharacterShelf
+import com.example.magiceightball.core.domain.model.CharacterListing
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -871,14 +883,13 @@ class EightBallScreenshotTest {
     }
 
     @Test
-    fun `a style taken out from afar leaves the sheet, unless it is the one in use`() {
+    fun `a style taken out from afar is not listed`() {
         val hidden = setOf(Magic8BallPersonality.CAT, Magic8BallPersonality.DOG)
 
-        val shown = styleGroups(Magic8BallPersonality.SARCASTIC, hidden).flatMap { it.styles }
+        val shown = CharactersQuery(hidden = hidden).atHand()
+            .mapNotNull { ((it as? CharacterRow.Card)?.listing as? CharacterListing.Original)?.style }
         assertTrue(Magic8BallPersonality.CAT !in shown && Magic8BallPersonality.DOG !in shown)
         assertEquals(CustomCharacter.LOOKS.size - 2, shown.size)
-
-        assertTrue(Magic8BallPersonality.CAT in styleGroups(Magic8BallPersonality.CAT, hidden).flatMap { it.styles })
     }
 
     /** The sheet of styles on its own: a sheet's window is not rendered on the JVM. */
@@ -910,22 +921,99 @@ class EightBallScreenshotTest {
         withCreate: Boolean = false,
         yours: List<CustomCharacter> = emptyList(),
         yoursPlaces: Int = 0,
-        fontScale: Float = 1f
+        fontScale: Float = 1f,
+        shelf: CharacterShelf = CharacterShelf.ALL,
+        community: CommunityCharacters = NoCommunityCharacters
     ) {
         captureRoboImage(filePath = path(name)) {
             WithFontScale(fontScale) {
                 MagicEightBallPhoneTheme(dark = dark) {
                     ProvideAppLanguage(language) {
+                        CharactersShown(
+                            query = CharactersQuery(shelf = shelf, yours = yours, yoursPlaces = yoursPlaces),
+                            community = community,
+                            // With characters of the user's own, the first of them is the one that answers.
+                            chosen = yours.firstOrNull()?.let { CharacterListing.Yours(it).key }
+                                ?: CharacterListing.Original(Magic8BallPersonality.LOVESTRUCK).key,
+                            onCreate = if (withCreate) ({}) else null,
+                            onEdit = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /** Every look there is, at the size of a row and of an opened character, one among many and the one chosen. */
+    @Test
+    fun phone_looks() = listOf("phone_108_looks_dark" to true, "phone_109_looks_light" to false).forEach { (name, dark) ->
+        captureRoboImage(filePath = path(name)) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                Surface(color = MaterialTheme.colorScheme.pageGround) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CharacterLook.entries.chunked(4).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                row.forEach { look ->
+                                    val colour = CustomCharacter.LOOKS[look.ordinal % CustomCharacter.LOOKS.size]
+                                    CharacterFace(colour, look, 28.dp, chosen = { 0f })
+                                    CharacterFace(colour, look, 40.dp, chosen = { 1f })
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(CharacterLook.PIRATE, CharacterLook.ROCKSTAR, CharacterLook.SINGER, CharacterLook.NEUTRAL).forEach { look ->
+                                CharacterFace(Magic8BallPersonality.PIRATE, look, 88.dp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `every look can be picked, is drawn, and is kept under a name the rules take`() {
+        assertEquals(CharacterLook.entries.toSet(), EMBLEMS.toSet())
+        assertEquals(CharacterLook.entries.size, EMBLEMS.size)
+        CharacterLook.entries.forEach { look ->
+            // Kept in small letters, and the rules take small letters only, sixteen at most.
+            assertTrue(look.name, Regex("[a-z]{1,16}").matches(look.name.lowercase()))
+            assertEquals(look, CharacterLook.named(look.name.lowercase()))
+            // Only the one that wears nothing is a bare ball.
+            assertEquals(look.name, look == CharacterLook.NEUTRAL, lookPaths(look).bare)
+        }
+        // What an older version does not know wears nothing, rather than break.
+        assertEquals(CharacterLook.NEUTRAL, CharacterLook.named("somethingnew"))
+        // Each of the app's characters wears the look of its own name.
+        CustomCharacter.LOOKS.forEach { assertEquals(it.name, it.look.name) }
+    }
+
+    /** A character opened, to be looked at: one of the app's that answers now, and one of other people's. */
+    @Test
+    fun phone_character_opened() {
+        val theirs = CharacterListing.Community(
+            id = "1",
+            name = "Mi ex a las 3am",
+            description = "responde como mi ex cuando escribe a las 3 de la mañana: \"hola, estas?\", todo en minúscula, se hace el que no pasó nada, mete un \"jaja\" incómodo y al final pregunta si sigo despierta. nunca da una respuesta clara pero se nota lo que quiere",
+            colour = Magic8BallPersonality.LOVESTRUCK,
+            emblem = CharacterLook.LOVESTRUCK,
+            author = "usuario 4"
+        )
+        listOf(
+            Triple("phone_104_character_opened_original_dark", true, CharacterListing.Original(Magic8BallPersonality.PIRATE)),
+            Triple("phone_105_character_opened_community_light", false, theirs),
+            Triple("phone_106_character_opened_yours_dark", true, CharacterListing.Yours(YOURS[0]))
+        ).forEach { (name, dark, listing) ->
+            captureRoboImage(filePath = path(name)) {
+                MagicEightBallPhoneTheme(dark = dark) {
+                    ProvideAppLanguage(AppLanguage.SPANISH) {
                         Surface(color = MaterialTheme.colorScheme.sheetGround) {
-                            StylesContent(
-                                // With characters of the user's own, the first of them is the one that answers.
-                                selected = if (yours.isEmpty()) Magic8BallPersonality.LOVESTRUCK else Magic8BallPersonality.CUSTOM,
-                                onSelected = {},
-                                onClose = {},
-                                onCreate = if (withCreate) ({}) else null,
-                                yours = yours,
-                                chosenOfYours = yours.firstOrNull()?.id,
-                                yoursPlaces = yoursPlaces
+                            CharacterDetail(
+                                listing = listing,
+                                answering = listing is CharacterListing.Original,
+                                onUse = {},
+                                modifier = Modifier.padding(top = 24.dp),
+                                onEdit = if (listing is CharacterListing.Yours) ({}) else null
                             )
                         }
                     }
@@ -933,6 +1021,59 @@ class EightBallScreenshotTest {
             }
         }
     }
+
+    /** Before there are any of other people's: their shelf says they are coming. */
+    @Test
+    fun phone_characters_community_soon() = captureStyles(
+        "phone_107_characters_community_soon",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        shelf = CharacterShelf.COMMUNITY
+    )
+
+    /** Other people's, once there are any: the shelf of them alone, and where they follow the app's. */
+    @Test
+    fun phone_characters_community_dark() = captureStyles(
+        "phone_100_characters_community_dark",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        shelf = CharacterShelf.COMMUNITY,
+        community = FakeCommunity(5_000)
+    )
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_characters_community_large_font() = captureStyles(
+        "phone_101_small_phone_characters_community_large_font",
+        AppLanguage.ENGLISH,
+        dark = false,
+        withCreate = true,
+        shelf = CharacterShelf.COMMUNITY,
+        community = FakeCommunity(5_000),
+        fontScale = 1.5f
+    )
+
+    /** A shelf with nothing on it says so, and how to change that. */
+    @Test
+    fun phone_characters_yours_none() = captureStyles(
+        "phone_102_characters_yours_none",
+        AppLanguage.SPANISH,
+        dark = true,
+        withCreate = true,
+        shelf = CharacterShelf.YOURS
+    )
+
+    /** Other people's could not be fetched: said, with the way to ask again. */
+    @Test
+    fun phone_characters_community_failed() = captureStyles(
+        "phone_103_characters_community_failed",
+        AppLanguage.SPANISH,
+        dark = false,
+        shelf = CharacterShelf.COMMUNITY,
+        community = FakeCommunity(5_000, failing = true)
+    )
 
     /** The sheet with the characters the user made up, first: as many as there can be, the longest names. */
     @Test
@@ -976,7 +1117,7 @@ class EightBallScreenshotTest {
     @Config(qualifiers = PHONE_TALL)
     fun phone_character_last_picks_spanish() = captureEditor(
         "phone_76_character_last_picks_spanish",
-        CharacterDraft(CustomCharacter("1", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.DOG, Magic8BallPersonality.GRANDMA)),
+        CharacterDraft(CustomCharacter("1", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.DOG, CharacterLook.GRANDMA)),
         AppLanguage.SPANISH,
         dark = false,
         isNew = false
@@ -999,7 +1140,7 @@ class EightBallScreenshotTest {
                 name = "Dona Florinda XVI",
                 description = "Uma vizinha que sabe de tudo e não perdoa nada. ".repeat(6),
                 colour = Magic8BallPersonality.DRAMA,
-                emblem = Magic8BallPersonality.DETECTIVE
+                emblem = CharacterLook.DETECTIVE
             )
         ),
         AppLanguage.PORTUGUESE,
@@ -1054,18 +1195,39 @@ class EightBallScreenshotTest {
         }
     }
 
-    /** The tightest card: the widest name, an answer on three lines, and the tallest things a ball wears. */
+    /**
+     * The tightest cards: an answer on three lines under a question, signed with the widest name and
+     * with one of the length people give, under the tallest and the widest things a ball wears.
+     */
     @Test
-    fun share_card_of_the_user_s_own_at_its_tightest() = listOf(Magic8BallPersonality.CAT, Magic8BallPersonality.DRAMA).forEach { worn ->
-        captureRoboImage(filePath = path("phone_75_share_card_yours_tight_${worn.name.lowercase()}")) {
+    fun share_card_of_the_user_s_own_at_its_tightest() = listOf("Wwwwwwwwwwwwwwww" to "widest", "Mi ex a las 3am" to "usual").forEach { (name, called) ->
+        TIGHT_LOOKS.forEach { worn ->
+            captureRoboImage(filePath = path("phone_75_share_card_yours_tight_${called}_${worn.name.lowercase()}")) {
+                ShareCard(
+                    question = "¿Me va a escribir esta noche?",
+                    answer = "Ni con la marea más alta de todo el año entero.",
+                    layer = rememberGraphicsLayer(),
+                    visible = true,
+                    styleLabel = name,
+                    personality = Magic8BallPersonality.CUSTOM,
+                    look = CustomCharacter("1", name, "W", Magic8BallPersonality.ZOOMER, worn)
+                )
+            }
+        }
+    }
+
+    /** And the name at its lowest: a question on two lines over an answer set large on three. */
+    @Test
+    fun share_card_signed_at_its_lowest() = TIGHT_LOOKS.forEach { worn ->
+        captureRoboImage(filePath = path("phone_115_share_card_signed_lowest_${worn.name.lowercase()}")) {
             ShareCard(
-                question = "¿Me va a escribir esta noche?",
-                answer = "Ni con la marea más alta del año.",
+                question = "¿Debería pedir pizza esta noche o me hago algo con lo que queda en la heladera?",
+                answer = "No. Ni lo sueñes, querido.",
                 layer = rememberGraphicsLayer(),
                 visible = true,
                 styleLabel = "Wwwwwwwwwwwwwwww",
                 personality = Magic8BallPersonality.CUSTOM,
-                look = CustomCharacter("1", "Wwwwwwwwwwwwwwww", "W", Magic8BallPersonality.ZOOMER, worn)
+                look = CustomCharacter("1", "Wwwwwwwwwwwwwwww", "W", Magic8BallPersonality.GRANDMA, worn)
             )
         }
     }
@@ -1354,6 +1516,12 @@ class EightBallScreenshotTest {
 }
 
 /** 1080 x 1920 px. */
+/** What reaches highest on a ball, and what reaches furthest towards the words. */
+private val TIGHT_LOOKS = listOf(
+    CharacterLook.GRANDMA, CharacterLook.PHILOSOPHER, CharacterLook.SARCASTIC, CharacterLook.WIZARD,
+    CharacterLook.CAT, CharacterLook.COACH, CharacterLook.PIRATE, CharacterLook.CHEF
+)
+
 private const val PHONE = "w432dp-h768dp-400dpi"
 
 /** 720 x 1280 px, a small phone. */
@@ -1398,11 +1566,11 @@ private val PROFILE = Profile("Lorena", LocalDate.of(1990, 3, 12))
 
 /** As many characters as an account can have, with names and descriptions as long as they come. */
 private val YOURS = listOf(
-    CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el fondo del mar.", Magic8BallPersonality.PIRATE, Magic8BallPersonality.CAT),
-    CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.", Magic8BallPersonality.GRANDMA, Magic8BallPersonality.DETECTIVE),
-    CustomCharacter("3", "Wwwwwwwwwwwwwwww", "W".repeat(280), Magic8BallPersonality.ZOOMER, Magic8BallPersonality.DRAMA),
-    CustomCharacter("4", "Mi jefe", "Responde con frases de reunión.", Magic8BallPersonality.ROBOT, Magic8BallPersonality.NEUTRAL),
-    CustomCharacter("5", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.SARCASTIC, Magic8BallPersonality.THERAPIST)
+    CustomCharacter("1", "Capitán Nemo", "Un capitán gruñón que todo lo compara con el fondo del mar.", Magic8BallPersonality.PIRATE, CharacterLook.CAT),
+    CustomCharacter("2", "Doña Rosa", "Una vecina que lo sabe todo.", Magic8BallPersonality.GRANDMA, CharacterLook.DETECTIVE),
+    CustomCharacter("3", "Wwwwwwwwwwwwwwww", "W".repeat(280), Magic8BallPersonality.ZOOMER, CharacterLook.DRAMA),
+    CustomCharacter("4", "Mi jefe", "Responde con frases de reunión.", Magic8BallPersonality.ROBOT, CharacterLook.NEUTRAL),
+    CustomCharacter("5", "El abuelo Paco", "Todo era mejor antes, y lo dice.", Magic8BallPersonality.SARCASTIC, CharacterLook.THERAPIST)
 )
 
 private val LONG_ACCOUNT = AccountState.SignedIn(

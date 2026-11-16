@@ -1,5 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.look
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.BlendMode
@@ -331,13 +334,19 @@ fun EightBallScreen(
             // Who answers and the characters of one's own are asked for from the ball's page, and
             // what is sold from the options: see [CharacterFlows].
             val flowsAsked = rememberFlowsAsked()
+            val optionsNav = rememberOptionsNav()
             EightBallContent(
                 state = current,
                 onPickCharacter = { flowsAsked.browsing = true },
+                covered = flowsAsked.browsing,
+                section = optionsNav.section?.let { open -> SectionBar(stringResource(open.title)) { optionsNav.section = null } },
                 flows = {
                     CharacterFlows(
                         state = current,
                         asked = flowsAsked,
+                        shelves = viewModel.characterShelves,
+                        communityOpen = viewModel.communityOpen,
+                        pages = viewModel::characterPages,
                         onPersonalitySelected = {
                             tick(HapticFeedbackConstantsCompat.SEGMENT_TICK)
                             viewModel.setPersonality(it)
@@ -442,6 +451,7 @@ fun EightBallScreen(
                         onDeleteAccount = { viewModel.deleteAccount(context) },
                         onSaveProfile = { name, birthDate -> viewModel.saveProfile(name, birthDate, context) },
                         onAskPremium = { flowsAsked.premium = true },
+                        nav = optionsNav,
                         onShowAdPrivacyOptions = onShowAdPrivacyOptions,
                         onGetMoreAiAnswers = onGetMoreAiAnswers,
                     )
@@ -509,6 +519,8 @@ internal fun EightBallContent(
     onSpeakAnswer: () -> Unit = {},
     onPickCharacter: () -> Unit = {},
     flows: @Composable () -> Unit = {},
+    covered: Boolean = false,
+    section: SectionBar? = null,
     options: @Composable () -> Unit = {},
     initialPage: Int = BALL_PAGE,
     intro: () -> Float = { 1f }
@@ -530,8 +542,6 @@ internal fun EightBallContent(
     val reportedMessage = stringResource(R.string.report_done)
     // Reporting asks one thing first, what is wrong, and the answer to that sends it.
     var reporting by rememberSaveable { mutableStateOf(false) }
-    // What the flows have to say once they are done is said by the screen, as the options' is.
-    CompositionLocalProvider(LocalSnackbars provides snackbars) { flows() }
     if (reporting && state.phase is BallPhase.Answered) {
         ReportSheet(
             onReason = { reason ->
@@ -573,6 +583,11 @@ internal fun EightBallContent(
     }
     // Back closes a question in progress or an answer, like the close button.
     BackHandler(enabled = !atRest, onBack = onDismiss)
+    // With a subject of the options open, back leads to the options, not past them to the ball.
+    val onOptions = pagerState.currentPage == OPTIONS_PAGE
+    BackHandler(enabled = atRest && onOptions && section != null) { section?.onBack?.invoke() }
+    // Away from the options, no subject of theirs stays open behind.
+    LaunchedEffect(onOptions) { if (!onOptions) section?.onBack?.invoke() }
 
     val backdrop = Backdrop
     Box(
@@ -596,10 +611,13 @@ internal fun EightBallContent(
                 )
             }
         }
+        // Under a screen that covers it, a page is not there for whoever has it read out.
+        val unread = if (covered) Modifier.clearAndSetSemantics {} else Modifier
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            userScrollEnabled = atRest
+            modifier = Modifier.fillMaxSize().then(unread),
+            // A subject of the options is left by its way back, not by a swipe past it.
+            userScrollEnabled = atRest && section == null
         ) { page ->
             val pageName = stringResource(
                 when (page) {
@@ -646,20 +664,28 @@ internal fun EightBallContent(
                         else -> {
                           // The way back to the ball, at the side the ball lies on.
                           val toBall = { scope.launch { pagerState.animateScrollToPage(BALL_PAGE) }; Unit }
-                          BarIconButton(
+                          // On the options, with a subject open: the subject's name, and the way back to the options.
+                          val open = section.takeIf { page == OPTIONS_PAGE }
+                          // A plain mark, on a page that is a flat ground to read on: its picture stands
+                          // where the page's rows begin, and its touch takes the room around it.
+                          AppIconButton(
                               icon = if (page == HISTORY_PAGE) R.drawable.ic_arrow_forward else R.drawable.ic_arrow_back,
-                              description = stringResource(R.string.action_back_to_ball),
-                              onClick = toBall,
-                              modifier = Modifier.align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
+                              description = stringResource(if (open != null) R.string.action_back else R.string.action_back_to_ball),
+                              onClick = open?.onBack ?: toBall,
+                              modifier = Modifier
+                                  .align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
+                                  .offset(x = if (page == HISTORY_PAGE) BAR_MARK_OUT else -BAR_MARK_OUT)
                           )
                           Text(
-                            text = stringResource(
+                            text = open?.title ?: stringResource(
                                 if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
                             ),
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = PAGE_TITLE_TOP)
-                                .semantics { heading() },
+                            // A page is named over its dots; a subject, which is on no page, beside its way back.
+                            modifier = (if (open != null) {
+                                Modifier.align(Alignment.CenterStart).padding(start = BAR_TITLE_START)
+                            } else {
+                                Modifier.align(Alignment.TopCenter).padding(top = PAGE_TITLE_TOP)
+                            }).semantics { heading() },
                             // The bar has one line's room over the dots: the name grows with the
                             // system's font only as far as that room goes.
                             style = MaterialTheme.typography.titleMedium.let {
@@ -730,13 +756,6 @@ internal fun EightBallContent(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbars,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-        )
-
         // Over every page, and the one thing up here that stays put while they slide under it:
         // where the user is. It gives way to a question, which has nowhere else to go.
         if (atRest) {
@@ -746,13 +765,27 @@ internal fun EightBallContent(
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .fillMaxWidth()
                     .height(TOP_BAR_HEIGHT)
+                    .then(unread)
             ) {
-                PageDots(
-                    position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = PAGE_DOTS_TOP)
-                )
+                // Where the user is among the pages: not said inside a subject, which is on none of them.
+                if (section == null) {
+                    PageDots(
+                        position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = PAGE_DOTS_TOP)
+                    )
+                }
             }
         }
+
+        // What the flows open is over every page, and what they have to say once they are done
+        // is said by the screen, as the options' is: over that too.
+        CompositionLocalProvider(LocalSnackbars provides snackbars) { flows() }
+        SnackbarHost(
+            hostState = snackbars,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+        )
     }
 }
 
@@ -809,9 +842,8 @@ private fun BallBar(
                             ),
                             onClick = onReport,
                             enabled = !answered.reported,
-                            tint = if (answered.reported) {
-                                MaterialTheme.colorScheme.primary
-                            } else MaterialTheme.colorScheme.onSurface
+                            // Reported, its mark is filled: said by the mark, in the page's own colour.
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     BarButton(
@@ -1412,7 +1444,7 @@ private fun Actions(
                     FilledTonalButton(
                         onClick = onAllowMicrophone,
                         modifier = Modifier.heightIn(min = 48.dp),
-                        shape = ButtonShape
+                        shape = CircleShape
                     ) {
                         Text(stringResource(R.string.settings_voice_allow_microphone), fontWeight = FontWeight.SemiBold)
                     }
@@ -1428,7 +1460,7 @@ private fun Actions(
                     CharacterChip(
                         name = own?.name ?: stringResource(style.labelRes()),
                         colour = own?.colour ?: style,
-                        emblem = own?.emblem ?: style,
+                        emblem = own?.emblem ?: style.look,
                         onClick = onPickCharacter,
                         named = !party
                     )
@@ -1437,7 +1469,7 @@ private fun Actions(
                         FilledTonalButton(
                             onClick = { onAskWho(whoQuestion) },
                             modifier = Modifier.heightIn(min = 48.dp),
-                            shape = ButtonShape,
+                            shape = CircleShape,
                             // On the ground of the chip beside it: the two are one row of things to touch.
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = BAR_DISC_ALPHA),
@@ -1480,7 +1512,7 @@ private fun AnswerActions(
         TextButton(
             onClick = onShare,
             modifier = Modifier.heightIn(min = 48.dp),
-            shape = ButtonShape,
+            shape = CircleShape,
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
         ) {
             Icon(
@@ -1517,7 +1549,7 @@ private fun RateButton(good: Boolean, chosen: Boolean?, label: String, onClick: 
         else -> R.drawable.ic_thumb_down
     }
     // The one not chosen keeps its full contrast: it can still be chosen instead.
-    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         modifier = Modifier
             .size(48.dp)
@@ -1688,7 +1720,16 @@ private val BALL_MIN_SEEN = 112.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
 
-private val TOP_BAR_HEIGHT = 72.dp
+/** A subject of the options that is open: what the top of the page calls it, and the way back to the options. */
+internal class SectionBar(val title: String, val onBack: () -> Unit)
+
+internal val TOP_BAR_HEIGHT = 72.dp
+
+/** How far a plain mark at the top of a page is moved out, so that its picture stands on the page's margin. */
+internal val BAR_MARK_OUT = 12.dp
+
+/** Where a name beside such a mark begins, from the bar's own edge. */
+internal val BAR_TITLE_START = 40.dp
 
 /** Where a page's name and the dots stand in the bar: one over the other, with the bar's middle between them. */
 private val PAGE_TITLE_TOP = 15.dp
@@ -1706,7 +1747,7 @@ private val ANSWER_READABLE = 12.dp
 private val BallGlow = Color(0xFF3550C8).copy(alpha = 0.3f)
 private const val BALL_GLOW_REACH = 1.8f
 /** As far as a page's name follows the system's font size. */
-private const val PAGE_TITLE_MAX_SCALE = 1.3f
+internal const val PAGE_TITLE_MAX_SCALE = 1.3f
 private val ACTIONS_HEIGHT = 80.dp
 /** Small text on the coloured end of the backdrop: enough ink to pass 4.5:1 in both themes. */
 private const val CAPTION_MAX_LINES = 3

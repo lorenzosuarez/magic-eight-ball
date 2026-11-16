@@ -345,7 +345,7 @@ internal fun ProfileContent(
                 capitalization = KeyboardCapitalization.Words,
                 imeAction = ImeAction.Next
             ),
-            shape = ButtonShape
+            shape = FieldShape
         )
         // One date, typed as its three numbers, each under its own name: no calendar to page
         // back through for decades, and no doubt about which number is the month.
@@ -376,12 +376,10 @@ internal fun ProfileContent(
             )
         }
         // Before the button, and in full: what agreeing to it means.
-        Column(
-            modifier = Modifier
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp)
-                .fillMaxWidth()
-                .clip(CardShape)
-                .background(MaterialTheme.colorScheme.sheetCard)
+        Section(
+            title = null,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp),
+            ground = MaterialTheme.colorScheme.sheetCard
         ) {
             Text(
                 text = stringResource(R.string.profile_sent_title),
@@ -422,40 +420,20 @@ internal fun ProfileContent(
         if (trouble != null) {
             Trouble(trouble, Modifier.padding(start = 32.dp, top = 12.dp, end = 32.dp))
         }
-        Button(
+        PrimaryButton(
+            text = stringResource(if (firstTime) R.string.profile_accept else R.string.action_save),
             onClick = { if (name != null && date != null) onSave(name, date) },
-            modifier = Modifier
-                .padding(start = 16.dp, top = if (trouble != null) 8.dp else 16.dp, end = 16.dp)
-                .fillMaxWidth()
-                .heightIn(min = 48.dp),
-            enabled = !busy && name != null && date != null,
-            shape = ButtonShape,
-            // The brand's deep accent in both themes: white on the dark theme's lighter one is too faint to read.
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(BrandPalette.ACCENT_DEEP),
-                contentColor = Color(BrandPalette.ON_ACCENT)
-            )
-        ) {
-            BusyRing(busy)
-            Text(
-                text = stringResource(if (firstTime) R.string.profile_accept else R.string.action_save),
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
-        }
+            modifier = Modifier.padding(start = 16.dp, top = if (trouble != null) 8.dp else 16.dp, end = 16.dp).fillMaxWidth(),
+            enabled = name != null && date != null,
+            busy = busy
+        )
         // The other way out says what it does: the first time, going on with no account.
-        TextButton(
+        QuietButton(
+            text = stringResource(if (firstTime) R.string.profile_not_now else R.string.action_cancel),
             onClick = onSecondary,
-            modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp).fillMaxWidth().heightIn(min = 48.dp),
-            enabled = !busy,
-            shape = ButtonShape,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.sheetAction)
-        ) {
-            Text(
-                text = stringResource(if (firstTime) R.string.profile_not_now else R.string.action_cancel),
-                textAlign = TextAlign.Center
-            )
-        }
+            modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp).fillMaxWidth(),
+            enabled = !busy
+        )
     }
 }
 
@@ -487,7 +465,7 @@ private fun DateField(
         modifier = modifier,
         enabled = enabled,
         isError = wrong,
-        shape = ButtonShape,
+        shape = FieldShape,
         singleLine = true,
         label = { Text(stringResource(label), maxLines = 1) },
         keyboardOptions = KeyboardOptions(

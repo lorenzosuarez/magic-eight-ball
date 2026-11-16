@@ -1,5 +1,7 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.model.CharacterLook
+import com.example.magiceightball.core.domain.model.CharacterListing
 import android.content.Context
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
@@ -13,6 +15,13 @@ import com.example.magiceightball.core.domain.model.AskerFacts
 import java.time.LocalDate
 import com.example.magiceightball.core.domain.gateway.ReportReason
 import androidx.lifecycle.ViewModel
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.example.magiceightball.core.domain.model.CharacterShelf
+import com.example.magiceightball.core.domain.repository.NoCommunityCharacters
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterPages
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
+import com.lorenzosuarez.magiceightball.phone.characters.CharactersQuery
 import androidx.lifecycle.viewModelScope
 import com.example.magiceightball.core.domain.model.Streak
 import com.example.magiceightball.core.domain.gateway.AiAllowance
@@ -81,8 +90,29 @@ class EightBallViewModel @Inject constructor(
     private val aiAllowance: AiAllowance,
     private val appConfig: AppConfigSource,
     private val reports: AnswerReports = AnswerReports.None,
-    private val membership: Membership = Membership()
+    private val membership: Membership = Membership(),
+    private val pages: CharacterPages = CharacterPages(NoCommunityCharacters)
 ) : ViewModel() {
+
+    /** Which shelves of characters there are to look at. */
+    val characterShelves: List<CharacterShelf> get() = pages.shelves
+
+    /** Whether other people's characters are to be had yet. */
+    val communityOpen: Boolean get() = pages.communityOpen
+
+    /** The pages last asked for, and what they were asked with: kept, so a turn of the screen loads nothing again. */
+    private var lastPages: Pair<CharactersQuery, Flow<PagingData<CharacterRow>>>? = null
+
+    /**
+     * The characters of [query], a page at a time, for as long as this lives.
+     *
+     * ponytail: one query's pages are kept. Asked with another, as when one of the user's own is
+     * corrected, they load from the first again: what is at hand is instant, and other people's
+     * are fetched anew. Keep those apart from what is at hand if that ever shows.
+     */
+    fun characterPages(query: CharactersQuery): Flow<PagingData<CharacterRow>> =
+        lastPages?.takeIf { it.first == query }?.second
+            ?: pages.flow(query).cachedIn(viewModelScope).also { lastPages = query to it }
 
     private val phase = MutableStateFlow<BallPhase>(BallPhase.Idle)
     private val notice = MutableStateFlow<Notice?>(null)
@@ -198,6 +228,8 @@ class EightBallViewModel @Inject constructor(
                 val kept = who.characters
                 when {
                     who.account is AccountState.SignedOut -> userSettingsRepository.setCustomCharacter(null)
+                    // One of other people's: it is nobody's slot, and follows nothing kept with the account.
+                    chosen.id.startsWith(CharacterListing.Community.KEY_PREFIX) -> Unit
                     // Not heard from the server: the copy stands for now.
                     kept == null -> Unit
                     else -> kept.find { it.id == chosen.id }.let { now ->
@@ -230,7 +262,7 @@ class EightBallViewModel @Inject constructor(
         name: String,
         description: String,
         colour: Magic8BallPersonality,
-        emblem: Magic8BallPersonality
+        emblem: CharacterLook
     ): CharacterSave = withContext(NonCancellable) {
         if (replacing == null) {
             // Asked for twice, it is made once: the one already kept is the one meant.

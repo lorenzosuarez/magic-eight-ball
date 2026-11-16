@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone
 
+import com.example.magiceightball.core.domain.model.CharacterLook
 import kotlinx.coroutines.flow.StateFlow
 import android.content.Context
 import android.content.ContextWrapper
@@ -1833,7 +1834,7 @@ class EightBallViewModelTest {
             name = "Capitán Nemo",
             description = "Un capitán gruñón que todo lo compara con el mar.",
             colour = Magic8BallPersonality.PIRATE,
-            emblem = Magic8BallPersonality.CAT
+            emblem = CharacterLook.CAT
         )
     }
 }

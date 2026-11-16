@@ -1,5 +1,24 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import com.example.magiceightball.core.domain.model.CharacterLook
+import kotlinx.coroutines.flow.Flow
+import com.lorenzosuarez.magiceightball.phone.characters.CharactersQuery
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
+import com.lorenzosuarez.magiceightball.phone.characters.CharacterPages
+import com.example.magiceightball.core.domain.repository.NoCommunityCharacters
+import com.example.magiceightball.core.domain.model.CharacterShelf
+import com.example.magiceightball.core.domain.model.CharacterListing
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.PagingData
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.Modifier
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.AnimatedVisibility
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.SnackbarDuration
@@ -36,7 +55,7 @@ import kotlinx.coroutines.launch
  */
 @Stable
 internal class FlowsAsked(browsing: Boolean = false) {
-    /** The characters, to choose among: their sheet is up for as long as this is so. */
+    /** The characters, to choose among: their screen is up for as long as this is so. */
     var browsing by mutableStateOf(browsing)
 
     /** What is sold, asked for from a page: taken up at once, and then no longer asked. */
@@ -59,9 +78,12 @@ internal fun CharacterFlows(
     state: EightBallUiState,
     asked: FlowsAsked,
     onPersonalitySelected: (Magic8BallPersonality) -> Unit,
+    shelves: List<CharacterShelf> = AtHand.shelves,
+    communityOpen: Boolean = AtHand.communityOpen,
+    pages: (CharactersQuery) -> Flow<PagingData<CharacterRow>> = AtHand::flow,
     onSignIn: suspend () -> AccountOutcome = { AccountOutcome.FAILED },
     onChooseCharacter: (CustomCharacter) -> Unit = {},
-    onSaveCharacter: suspend (CustomCharacter?, String, String, Magic8BallPersonality, Magic8BallPersonality) -> CharacterSave =
+    onSaveCharacter: suspend (CustomCharacter?, String, String, Magic8BallPersonality, CharacterLook) -> CharacterSave =
         { _, _, _, _, _ -> CharacterSave.Failed },
     onDeleteCharacter: suspend (String) -> Boolean = { false },
     onBuyPremium: suspend () -> Bought = { Bought.FAILED }
@@ -141,16 +163,68 @@ internal fun CharacterFlows(
             if (editing == null && paying == null && state.profile != ProfileState.Missing) createNow()
         }
     }
-    if (asked.browsing) {
-        StylesSheet(
-            selected = state.settings.personality,
-            hidden = state.config.hiddenStyles,
-            onSelected = onPersonalitySelected,
-            onClose = {
-                asked.browsing = false
-                // A wait that outlived the sheet it was asked on would open something unasked.
-                waitingToCreate = false
+    // Which characters are being looked at: kept while the screen is away, so it comes back as it was left.
+    var shelf by rememberSaveable { mutableStateOf(CharacterShelf.ALL) }
+    val close = {
+        asked.browsing = false
+        // A wait that outlived the screen it was asked on would open something unasked.
+        waitingToCreate = false
+    }
+    // A screen of its own, which comes up from where it was asked for and goes back down there.
+    AnimatedVisibility(
+        visible = asked.browsing,
+        enter = slideInVertically(tween(SCREEN_IN_MS, easing = LinearOutSlowInEasing)) { it },
+        exit = slideOutVertically(tween(SCREEN_OUT_MS, easing = FastOutLinearInEasing)) { it }
+    ) {
+        BackHandler(onBack = close)
+        // Where there are no accounts there are nobody's own, and no shelf for them.
+        val offered = shelves.filter { it != CharacterShelf.YOURS || state.offersAccount }
+        val query = CharactersQuery(
+            shelf = shelf.takeIf { it in offered } ?: CharacterShelf.ALL,
+            yours = state.characters.orEmpty().takeIf { state.offersAccount && signedIn }.orEmpty(),
+            yoursPlaces = yoursPlaces,
+            // The one in use stays listed, wherever it is.
+            hidden = state.config.hiddenStyles - state.settings.personality
+        )
+        val rows = remember(query) { pages(query) }.collectAsLazyPagingItems()
+        CharactersScreen(
+            rows = rows,
+            shelf = query.shelf,
+            shelves = offered,
+            onShelf = { shelf = it },
+            chosen = when (val style = state.settings.personality) {
+                // One of other people's is kept under its own key; one of the user's, under its slot.
+                Magic8BallPersonality.CUSTOM -> state.settings.customCharacter?.let { kept ->
+                    kept.id.takeIf { it.startsWith(CharacterListing.Community.KEY_PREFIX) } ?: CharacterListing.Yours(kept).key
+                }
+                else -> CharacterListing.Original(style).key
             },
+            communityOpen = communityOpen,
+            onUse = { listing ->
+                when (listing) {
+                    is CharacterListing.Original -> {
+                        onPersonalitySelected(listing.style)
+                        close()
+                    }
+                    is CharacterListing.Yours -> {
+                        onChooseCharacter(listing.character)
+                        close()
+                    }
+                    // What is written of it is sent to the AI service, as of one of the user's own:
+                    // it answers for whoever has agreed to that, and anyone else is shown the way.
+                    is CharacterListing.Community -> when {
+                        !signedIn -> notice = CharactersNotice.COMMUNITY_ACCOUNT
+                        !state.canMakeCharacters -> notice = CharactersNotice.UNKNOWN
+                        else -> {
+                            onChooseCharacter(listing.answering())
+                            close()
+                        }
+                    }
+                }
+            },
+            onClose = close,
+            // What is under the screen is not touched through it.
+            modifier = Modifier.pointerInput(Unit) {},
             // Offered wherever an account is: whoever has none yet is shown the way to one.
             onCreate = if (state.offersAccount) {
                 {
@@ -161,12 +235,8 @@ internal fun CharacterFlows(
                     }
                 }
             } else null,
-            yours = state.characters.orEmpty().takeIf { state.offersAccount && signedIn }.orEmpty(),
-            yoursPlaces = yoursPlaces,
             creating = waitingToCreate,
-            chosenOfYours = state.settings.customCharacter?.id,
-            onYoursSelected = onChooseCharacter,
-            onEditYours = { editing = it.id }
+            onEdit = { editing = it.character.id }
         )
     }
     paying?.let { wanted ->
@@ -234,7 +304,8 @@ internal fun CharacterFlows(
         val later = stringResource(R.string.action_not_now)
         val understood = stringResource(R.string.action_understood)
         // What stands in the way is that nobody is signed in: the way there is offered.
-        val signsIn = what == CharactersNotice.ACCOUNT || what == CharactersNotice.PREMIUM_ACCOUNT
+        val signsIn = what == CharactersNotice.ACCOUNT || what == CharactersNotice.PREMIUM_ACCOUNT ||
+            what == CharactersNotice.COMMUNITY_ACCOUNT
         AlertDialog(
             onDismissRequest = { notice = null },
             title = { Text(title) },
@@ -285,8 +356,18 @@ internal enum class CharactersNotice(@StringRes val title: Int, @StringRes val t
     NO_GOOGLE(R.string.characters_no_sign_in_title, R.string.characters_no_google_text),
 
     /** What is sold was asked for with nobody signed in: it is kept with an account. */
-    PREMIUM_ACCOUNT(R.string.premium_account_title, R.string.premium_account_text)
+    PREMIUM_ACCOUNT(R.string.premium_account_title, R.string.premium_account_text),
+
+    /** One of other people's was to answer, with nobody signed in. */
+    COMMUNITY_ACCOUNT(R.string.characters_community_account_title, R.string.characters_community_account_text)
 }
+
+/** The characters where nobody else's are to be had: the app's own and the user's. */
+private val AtHand = CharacterPages(NoCommunityCharacters)
+
+/** How long the screen of characters takes to come up, and to go: going is the quicker. */
+private const val SCREEN_IN_MS = 320
+private const val SCREEN_OUT_MS = 220
 
 /** What [CharacterFlows] calls the editor open on nobody yet. */
 private const val NEW = ""
