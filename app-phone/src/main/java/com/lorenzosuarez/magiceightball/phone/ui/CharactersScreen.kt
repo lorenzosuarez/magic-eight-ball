@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.layout.offset
 import com.example.magiceightball.core.domain.model.look
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.foundation.verticalScroll
@@ -491,15 +492,18 @@ private fun RowFace(listing: CharacterListing, chosen: Boolean) {
         ListedFace(listing, ROW_FACE, chosen)
         return
     }
-    Box(modifier = Modifier.size(ROW_FACE + MAKER_OUT)) {
-        Box(Modifier.align(Alignment.TopEnd)) { ListedFace(listing, ROW_FACE, chosen) }
-        // On the corner the ball does not come in from: on the other it would cover the ball's own face.
+    // The face stays where every other row has its own: the mark hangs off its corner, into the row's own room.
+    Box(modifier = Modifier.size(ROW_FACE)) {
+        ListedFace(listing, ROW_FACE, chosen)
+        // On the corner the ball does not come in from, and out past it: on the other it would cover
+        // the ball's own face, and nearer in it would be read with the number as one word.
         AccountAvatar(
             name = listing.author,
             photoUrl = listing.authorPhotoUrl,
             size = MAKER_BADGE,
             modifier = Modifier
                 .align(Alignment.BottomStart)
+                .offset(x = -MAKER_OUT, y = MAKER_OUT)
                 .border(MAKER_RING, MaterialTheme.colorScheme.pageCard, CircleShape)
                 .padding(MAKER_RING),
             small = true,
@@ -774,8 +778,8 @@ private val SHEET_FACE = 88.dp
 private val MAKER_FACE = 22.dp
 
 /** The maker's face on the corner of a character's in a row: how large, how far past the corner, and the ring round it. */
-private val MAKER_BADGE = 18.dp
-private val MAKER_OUT = 4.dp
+private val MAKER_BADGE = 16.dp
+private val MAKER_OUT = 6.dp
 private val MAKER_RING = 2.dp
 
 /** How tall a shelf is drawn; its touch takes more. */

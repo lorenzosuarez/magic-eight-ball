@@ -296,7 +296,7 @@ QUOTE = 'M%s 16 a8.2 8.2 0 1 1 16.4 0 q0 12 -12 18.6 q4.4 -6.6 2.8 -11 a8.2 8.2 
 CLOUD = [(37, 20, 9), (47, 14.5, 10), (58.5, 15.5, 9.5), (64.5, 22.5, 8.5), (53, 24, 9.5), (43, 25, 8.5)]
 # The crest a punk wears: spikes from brow to nape, tallest in the middle, their feet behind the ball.
 CREST = ([on_ball(-46, -5)] +
-         [point for k, (tip, tall) in enumerate([(-34, 10.5), (-17, 15), (0, 17.5), (17, 15), (34, 10.5)])
+         [point for k, (tip, tall) in enumerate([(-34, 12), (-17, 18.5), (0, 22), (17, 18.5), (34, 12)])
           for point in ([on_ball(tip - 8.5, 2.6)] if k else []) + [on_ball(tip, tall)]] +
          [on_ball(46, -5)] + [on_ball(angle, -7) for angle in range(40, -41, -10)])
 PETALS = [(59 + 9.6 * math.cos(math.radians(a)), 29 + 9.6 * math.sin(math.radians(a))) for a in range(-90, 270, 60)]
@@ -311,7 +311,7 @@ LOOKS = {
     'grandma': ('#FFC2D1', {
         # A ball of wool with the needles in it, sunk well into the crown: she knits.
         'ink': [bar(50, 32.5, 66.5, 16, 4), circ(67.3, 15.2, 3.4), bar(55, 36.5, 71.5, 21, 4), circ(72.3, 20.2, 3.4), circ(46, 30.5, 13.5)],
-        'white': ['M34.5 27 Q46 18.5 57.5 27 L57.5 31.6 Q46 23.1 34.5 31.6Z', 'M35.5 34.5 Q46 27 56.5 34.5 L55.5 38.9 Q46 31.7 36.5 38.9Z'],
+        'white': ['M35.23 26.48 Q46 19.02 56.77 26.48 L57.45 31.56 Q46 23.14 34.55 31.56Z', 'M35.28 34.66 Q46 26.84 56.72 34.66 L54.54 38.21 Q46 32.39 37.46 38.21Z'],
     }),
     'pirate': ('#5FD6C9', {
         # Pulled down onto the crown: floating over it, its rim cut the ball flat.
@@ -327,7 +327,7 @@ LOOKS = {
         # A cap, its peak towards the words: the crown, the button on it, and one stripe that runs with its
         # lower edge, as far from one side of it as from the other. The peak's underside runs into that edge.
         'ink': ['M29 45.5 Q27 18.5 51 18.5 Q75 18.5 73.6 45 Q51 37.5 29 45.5Z',
-                'M34.5 38.5 Q21 38 9.5 43.5 Q6.5 47 10.5 48.8 Q20 46 29.5 45.6 L36 42.5Z', circ(51, 17.6, 2.8)],
+                'M34.5 38.5 Q21 38 9.5 43.5 Q6.5 47 10.5 48.8 Q20 46.4 29 45.5 L36 42Z', circ(51, 17.6, 2.8)],
         'white': [ribbon(curve([(36, 37.4), (51, 31.2), (66, 37.4)]), 4.6)],
     }),
     # Hearts in the air over it, a large one and a small one, each leaning its own way.
@@ -345,7 +345,7 @@ LOOKS = {
         # The brim round at its ends, the pinch of the crown soft.
         'ink': [ribbon(curve([(18.5, 44.6), (50, 33.4), (81.5, 44.6)]), 5.8),
                 'M30 40 Q27.8 17.5 37.5 13.6 Q40 12.7 42.2 14 Q50 18 57.8 14 Q60 12.7 62.5 13.6 Q72.2 17.5 70 40 Q50 34 30 40Z'],
-        'white': ['M30.2 29.5 Q50 25.5 69.8 29.5 L70 35.4 Q50 31.2 30 35.4Z'],
+        'white': ['M29.66 29.5 Q50 25.5 70.34 29.5 L70.35 35.4 Q50 31.2 29.65 35.4Z'],
     }),
     'conspiracy': ('#9BE564', {
         # Upright over the tipped ball, as a thing in the air is: tipped with it, it was a wedge. The pupil is
@@ -433,33 +433,34 @@ LOOKS = {
         'white': ['M43.9 22 L56.1 22 L59.3 27 L40.7 27Z', 'M37.8 31.5 L62.2 31.5 L65.5 36.5 L34.5 36.5Z'],
     }),
     # More to pick among, each worn or grown and none in the air.
-    # A gourd of mate on its crown: round in the belly, narrower at the mouth, its metal rim in white and
-    # the straw in it.
+    # A gourd of mate, whole, over its crown: the gourd, the metal round its mouth in white, cut by the
+    # mouth's own edges, and the straw, straight.
     'mate': ('#9BE564', {
-        'ink': ['M36 44.5 Q27.5 34 35.5 27 Q39.5 23.5 40.5 20.5 L59.5 20.5 Q60.5 23.5 64.5 27 Q72.5 34 64 44.5 Q50 39 36 44.5Z',
-                bar(54, 23, 63.6, 9, 4.4), bar(62.4, 10.8, 68.4, 7.6, 4.4)],
-        'white': [ribbon([(43, 24.4), (57, 24.4)], 4.6)],
+        'ink': ['M36 15 L58 15 L58.8 23 C63 25.2 64 29 64 32.5 C64 40.5 56.5 46 47 46 C37.5 46 30 40.5 30 32.5 C30 29 31 25.2 35.2 23Z',
+                bar(47, 16.5, 62.5, 5.5, 4.2)],
+        'white': [poly([(35.74, 17.6), (58.26, 17.6), (58.8, 23), (35.2, 23)])],
     }),
-    # A bottle that leans on its crown, and what rises from it.
+    # A bottle that has all but fallen over on its crown, and what rises from it, larger as it rises.
     'bottle': ('#BFE8D2', {
-        'ink': [turned('M42 45 L42 27 Q42 21.5 46.6 19 L46.6 9.5 L53.4 9.5 L53.4 19 Q58 21.5 58 27 L58 45Z', 50, 40, 26),
-                turned(poly([(45.4, 4.6), (54.6, 4.6), (54.6, 10.2), (45.4, 10.2)]), 50, 40, 26), circ(72, 6.5, 2.9), circ(78.5, 13.5, 2.3)],
-        'white': [turned(poly([(44.6, 28.5), (55.4, 28.5), (55.4, 37.5), (44.6, 37.5)]), 50, 40, 26)],
+        'ink': [turned('M42.1 43.2 Q39.5 43.2 39.5 40.6 L39.5 25.5 Q39.5 20.9 44 19.4 L44 11.2 L51 11.2 L51 19.4 Q55.5 20.9 55.5 25.5 L55.5 40.6 Q55.5 43.2 52.9 43.2Z', 47.5, 43.2, -20),
+                turned(poly([(42.6, 9.2), (52.4, 9.2), (52.4, 13.2), (42.6, 13.2)]), 47.5, 43.2, -20),
+                circ(41.4, 4.5, 2.8), circ(50.6, 3.8, 3.7)],
+        'white': [turned(poly([(42.1, 27), (52.9, 27), (52.9, 35.7), (42.1, 35.7)]), 47.5, 43.2, -20)],
     }),
     # A fin: behind the ball, and so part of its outline.
-    'shark': ('#8FA8FF', {'behind': ['M32.5 48 Q38.5 23 61.5 8 Q53.5 27 67.5 45Z']}),
+    'shark': ('#8FA8FF', {'behind': ['M38 48 Q42 26 64 12 Q57 28 65.5 46Z']}),
     # A crest of spikes from brow to nape, made to the ball.
     'punk': ('#FF7A9C', {'fitted': True, 'behind': [poly(CREST)]}),
     # A helmet with its two horns and the band round its edge.
     'viking': ('#D6C68A', {
-        'ink': ['M30 45 Q28 20.5 50 20.5 Q72 20.5 70 45 Q50 37.5 30 45Z'] + both('M33.5 34.5 Q20.5 35 16 19.5 Q25.5 26.5 35.5 26Z'),
+        'ink': ['M30 45 Q28 20.5 50 20.5 Q72 20.5 70 45 Q50 37.5 30 45Z'] + both('M34 37 Q14 38 21.5 15 Q23.5 27 35 28Z'),
         'white': [ribbon(curve([(36.5, 38.2), (50, 33.4), (63.5, 38.2)]), 4.6)],
     }),
-    # Two eyes on top of it, looking where its face looks.
+    # Two eyes on top of it, large and wide apart, looking where its face looks.
     'frog': ('#9BE564', {
-        'behind': [circ(36.5, 34, 11.5), circ(63.5, 34, 11.5)],
-        'white': [circ(36.5, 32.5, 6.6), circ(63.5, 32.5, 6.6)],
-        'dot': [circ(34.6, 33.6, 3.1), circ(61.6, 33.6, 3.1)],
+        'behind': [circ(34.5, 35, 12.5), circ(65.5, 35, 12.5)],
+        'white': [circ(34.5, 33.6, 7.6), circ(65.5, 33.6, 7.6)],
+        'dot': [circ(30.5, 35.9, 4), circ(61.5, 35.9, 4)],
     }),
 }
 

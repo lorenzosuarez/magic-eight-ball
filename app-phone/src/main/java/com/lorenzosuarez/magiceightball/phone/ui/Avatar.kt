@@ -98,8 +98,8 @@ internal fun AccountAvatar(
 internal fun makerColor(name: String): Color = MAKER_COLORS[name.hashCode().mod(MAKER_COLORS.size)]
 
 private val MAKER_COLORS = listOf(
-    Color(0xFF5B6B7A), Color(0xFF6B5B8C), Color(0xFF3F7A6B), Color(0xFF8A5A44),
-    Color(0xFF4A6FA5), Color(0xFF7A4F6A), Color(0xFF55773F), Color(0xFF8A6A2F)
+    Color(0xFF5B6B7A), Color(0xFF6B5B8C), Color(0xFF3F7A6B), Color(0xFFB5562B),
+    Color(0xFF4A6FA5), Color(0xFFA8485E), Color(0xFF55773F), Color(0xFF8A6A2F)
 )
 
 /** Under this size a face is a mark on the corner of another. */
