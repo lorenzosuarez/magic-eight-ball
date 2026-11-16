@@ -216,6 +216,12 @@ internal object Strings {
         R.string.personality_dog_es,
         R.string.personality_dog_pt
     )
+    val PersonalityGamer =
+        LocalizedString(
+        R.string.personality_gamer,
+        R.string.personality_gamer_es,
+        R.string.personality_gamer_pt
+    )
 
     val AiTitle = LocalizedString(
         R.string.ai_title,

@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.foundation.layout.offset
 import com.example.magiceightball.core.domain.model.look
 import androidx.compose.ui.semantics.disabled
@@ -691,27 +692,28 @@ internal fun CharacterDetail(
                 textAlign = TextAlign.Center
             )
         }
-        // What it is like: for the app's own, something it would say; for anyone else's, what was
-        // written of it, in its maker's words and as long as they made it.
-        if (listing !is CharacterListing.Original) {
-            Text(
-                text = stringResource(R.string.character_how),
-                modifier = Modifier.padding(start = 16.dp, top = 20.dp).align(Alignment.Start),
-                style = MaterialTheme.typography.labelLarge,
-                color = scheme.onSurfaceVariant
-            )
-        }
-        Box(
+        // What it is like: of the app's own, who it is and how it answers, and under that something
+        // it would say; of anyone else's, what was written of it, in its maker's words and as long
+        // as they made it.
+        Text(
+            text = stringResource(R.string.character_how),
+            modifier = Modifier.padding(start = 16.dp, top = 20.dp).align(Alignment.Start),
+            style = MaterialTheme.typography.labelLarge,
+            color = scheme.onSurfaceVariant
+        )
+        Column(
             modifier = Modifier
-                .padding(top = if (listing is CharacterListing.Original) 20.dp else 8.dp)
+                .padding(top = 8.dp)
                 .fillMaxWidth()
                 .clip(groupedShape(first = true, last = true))
                 .background(scheme.sheetCard)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            val about = (listing as? CharacterListing.Original)?.style?.aboutRes()
             Text(
                 text = when (listing) {
-                    is CharacterListing.Original -> stringResource(R.string.character_says, stringResource(listing.style.sampleRes()))
+                    is CharacterListing.Original -> stringResource(about ?: listing.style.sampleRes())
                     is CharacterListing.Yours -> listing.character.description.ifBlank { stringResource(R.string.style_custom_sample) }
                     is CharacterListing.Community -> listing.description
                 },
@@ -720,6 +722,14 @@ internal fun CharacterDetail(
                 // A line alone would make a pill of the card, like the button under it: it has the room of two.
                 minLines = 2
             )
+            if (listing is CharacterListing.Original && about != null) {
+                // Its own voice, after what is said of it: quieter, and in the hand an answer is signed in.
+                Text(
+                    text = stringResource(R.string.character_says, stringResource(listing.style.sampleRes())),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                    color = scheme.onSurfaceVariant
+                )
+            }
         }
         if (answering) {
             // Nothing to ask for: said as what is so, not as a button that does nothing.

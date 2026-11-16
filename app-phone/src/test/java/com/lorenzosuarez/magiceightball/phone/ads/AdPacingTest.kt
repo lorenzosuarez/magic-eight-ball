@@ -1,6 +1,8 @@
 package com.lorenzosuarez.magiceightball.phone.ads
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AdPacingTest {
@@ -40,5 +42,13 @@ class AdPacingTest {
         // As for anyone who has just opened the app: the answers closed before do not count.
         paid = false
         assertEquals(listOf(false, false, true), List(3) { pacing.answerClosed(0L) })
+    }
+
+    @Test
+    fun `no ad is due to whoever paid nor to a device marked as under age nor before that is known`() {
+        assertTrue(adFreeFor(premium = true, underAge = false))
+        assertTrue(adFreeFor(premium = false, underAge = true))
+        assertTrue(adFreeFor(premium = false, underAge = null))
+        assertFalse(adFreeFor(premium = false, underAge = false))
     }
 }

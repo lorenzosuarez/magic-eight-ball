@@ -17,12 +17,19 @@ import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.FirebaseApp
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.lorenzosuarez.magiceightball.phone.BuildConfig
+import com.lorenzosuarez.magiceightball.phone.account.DeviceMarks
 import com.lorenzosuarez.magiceightball.phone.account.Entitlements
 import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,7 +46,7 @@ import javax.inject.Singleton
  * from the AI service: Remote Config parameters [KEY_REWARDED_ENABLED] and [KEY_REWARDED_ANSWERS].
  *
  * Whoever has Premium is shown neither, and for them none is loaded and the ads SDK is not
- * started. Both are done when an answer is closed and not when the app opens, because only by
+ * started. The same holds on a device that was given the date of birth of someone under age. Both are done when an answer is closed and not when the app opens, because only by
  * then has the account been read and is it known who has paid. The question of consent is
  * still asked of everyone: it also decides whether the app's use is measured.
  *
@@ -50,8 +57,15 @@ class AdMobAdsController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val clock: Clock,
     private val appConfig: AppConfigSource,
-    private val entitlements: Entitlements
+    private val entitlements: Entitlements,
+    marks: DeviceMarks
 ) : AdsController {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    // Not known until the device's marks are read: no ad is asked for meanwhile.
+    private val underAge: StateFlow<Boolean?> =
+        marks.underAge.map<Boolean, Boolean?> { it }.stateIn(scope, SharingStarted.Eagerly, null)
 
     private val consent: ConsentInformation by lazy { UserMessagingPlatform.getConsentInformation(context) }
     private val pacing = AdPacing(
@@ -132,8 +146,11 @@ class AdMobAdsController @Inject constructor(
             consent.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
     }
 
-    /** Whoever has paid for Premium: no ad is shown to them, offered to them or loaded for them. */
-    private fun adFree(): Boolean = entitlements.premium.value
+    /**
+     * Whoever has paid for Premium, and a device marked as under age: no ad is shown to them,
+     * offered to them or loaded for them.
+     */
+    private fun adFree(): Boolean = adFreeFor(entitlements.premium.value, underAge.value)
 
     /**
      * Whether an ad may be asked for now: not for whoever has paid, and not without consent.
@@ -215,3 +232,6 @@ class AdMobAdsController @Inject constructor(
         const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
     }
 }
+
+/** Whether no ad is due: to whoever has paid, and wherever it is not known that an adult is asking. */
+internal fun adFreeFor(premium: Boolean, underAge: Boolean?): Boolean = premium || underAge != false

@@ -2,6 +2,7 @@
 
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.test.hasStateDescription
 import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -90,6 +91,60 @@ class CharacterEditorTest {
 
     private fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
 
+    /** The whole sheet, as the app shows it, telling when it is taken down. */
+    private fun showSheet(character: CustomCharacter? = null, onClose: () -> Unit) =
+        compose.setContent {
+            MagicEightBallPhoneTheme {
+                ProvideAppLanguage(AppLanguage.SPANISH) {
+                    CharacterEditorSheet(
+                        character = character,
+                        onSave = { _, _, _, _ -> CharacterSave.Failed },
+                        onDelete = null,
+                        onClose = onClose
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun `what was written is not thrown away without asking, and is kept when the answer is no`() {
+        var closed = 0
+        showSheet(onClose = { closed++ })
+        compose.onNodeWithText("Nombre").performTextInput("Capitán")
+
+        compose.onNodeWithText("Cancelar").performScrollTo().performClick()
+        compose.onNodeWithText("¿Descartar lo que escribiste?").assertIsDisplayed()
+        assertEquals(0, closed)
+        compose.onNodeWithText("Seguir editando").performClick()
+        compose.waitForIdle()
+        assertEquals(0, closed)
+        compose.onNodeWithText("Capitán").assertExists()
+
+        compose.onNodeWithText("Cancelar").performScrollTo().performClick()
+        compose.onNodeWithText("Descartar").performClick()
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `with nothing written the sheet goes at once, and one opened and left as it was goes too`() {
+        var closed = 0
+        showSheet(character = NEMO, onClose = { closed++ })
+        compose.onNodeWithText("Cancelar").performScrollTo().performClick()
+        compose.waitForIdle()
+        assertEquals(0, count("¿Descartar lo que escribiste?"))
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `a draft knows whether anything in it is other than it was`() {
+        assertEquals(false, CharacterDraft().changedFrom(null))
+        assertEquals(false, CharacterDraft(NEMO).changedFrom(NEMO))
+        assertEquals(true, CharacterDraft().apply { typeName("a") }.changedFrom(null))
+        assertEquals(true, CharacterDraft(NEMO).apply { emblem = CharacterLook.BUNNY }.changedFrom(NEMO))
+        assertEquals(true, CharacterDraft(NEMO).apply { typeDescription("otra cosa") }.changedFrom(NEMO))
+    }
+
     private fun showEditor(draft: CharacterDraft, isNew: Boolean = true, onSave: (String, String) -> Unit = { _, _ -> }, onDelete: (() -> Unit)? = null) =
         compose.setContent {
             MagicEightBallPhoneTheme {
@@ -113,11 +168,11 @@ class CharacterEditorTest {
         val saved = mutableListOf<Pair<String, String>>()
         showEditor(draft, onSave = { name, description -> saved += name to description })
         compose.onNodeWithText("Guardar").assertIsNotEnabled()
-        // Why it waits is said while it does.
-        compose.onNodeWithText("Ponle un nombre y di cómo responde").assertIsDisplayed()
-        // Before the button, and said in full: where saving keeps it and where it is sent.
-        compose.onNodeWithText("Se guarda en tu cuenta y se envía a Gemini, de Google, cuando este personaje responde. No pongas nada personal.")
-            .assertIsDisplayed()
+        // Why it waits is not written out: it is said to whoever cannot see that the button waits.
+        assertEquals(0, count("Ponle un nombre y di cómo responde"))
+        compose.onNode(hasStateDescription("Ponle un nombre y di cómo responde")).assertExists()
+        // Before the button, in a line: where what is written is sent.
+        compose.onNodeWithText("Se envía a Gemini, de Google, para responder. Nada personal.").assertIsDisplayed()
 
         compose.onNodeWithText("Nombre").performTextInput("Capitán Nemo")
         compose.onNodeWithText("Guardar").assertIsNotEnabled()
@@ -130,7 +185,6 @@ class CharacterEditorTest {
         compose.onAllNodesWithContentDescription("Pirata")[0].performScrollTo().performClick()
         compose.onAllNodesWithContentDescription("Gato")[1].performScrollTo().performClick()
 
-        assertEquals(0, count("Ponle un nombre y di cómo responde"))
         compose.onNodeWithText("Guardar").assertIsEnabled().performClick()
         assertEquals(listOf("Capitán Nemo" to "ok, pero gruñón como el mar"), saved)
         // What is worn is named, since a small drawing may not say it.

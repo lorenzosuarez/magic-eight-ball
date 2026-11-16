@@ -46,7 +46,16 @@ enum class CharacterLook {
     SHARK,
     PUNK,
     VIKING,
-    FROG;
+    MOUSE,
+    BUNNY,
+    BIRD,
+    PROPELLER,
+    BOW,
+    MUSHROOM,
+    APPLE,
+
+    // The look of one of the app's own again, added after those: a name keeps its place.
+    GAMER;
 
     companion object {
         /** The look kept under [name], in whatever case; [NEUTRAL] for none and for one not known here. */

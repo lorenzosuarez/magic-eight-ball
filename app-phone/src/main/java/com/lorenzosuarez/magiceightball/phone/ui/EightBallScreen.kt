@@ -821,6 +821,22 @@ private fun BallBar(
                 onClick = onOpenOptions,
                 modifier = Modifier.align(Alignment.CenterEnd).offset(x = BAR_MARK_OUT)
             )
+            // How things stand, where the pages beside this one have their names and on the same
+            // line: a run of days. Said and not named: it is quieter than a page's name, and
+            // nothing is drawn around it, since a touch does nothing.
+            if (state.notice == null && !state.settings.isParty && state.streakDays >= state.config.streakMinDaysShown) {
+                Text(
+                    text = pluralStringResource(R.plurals.streak_days, state.streakDays, state.streakDays),
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = PAGE_TITLE_TOP),
+                    style = MaterialTheme.typography.titleMedium.let {
+                        val fit = (PAGE_TITLE_MAX_SCALE / LocalDensity.current.fontScale).coerceAtMost(1f)
+                        it.copy(fontSize = it.fontSize * fit, lineHeight = it.lineHeight * fit)
+                    },
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
         } else {
             BarButton(
                 icon = R.drawable.ic_close,
@@ -959,7 +975,8 @@ private fun Stage(
         Layout(
             modifier = Modifier.fillMaxSize(),
             content = {
-                Box(modifier = Modifier.graphicsLayer { alpha = intro() }.padding(top = 8.dp)) { Status(state) }
+                // Nothing stands over the ball's band now: how things stand is said in the bar. Its room stays.
+                Spacer(Modifier.height(8.dp))
                 Title(state = state, modifier = band)
                 Ball(
                     state = state,
@@ -1059,23 +1076,6 @@ private fun Stage(
                 actions.place((width - actions.width) / 2, height - actions.height)
             }
         }
-    }
-}
-
-/** How things stand, said once and out of the way: for now, a run of days. */
-@Composable
-private fun Status(state: EightBallUiState) {
-    val shown = state.phase is BallPhase.Idle && state.notice == null && !state.settings.isParty &&
-        state.streakDays >= state.config.streakMinDaysShown
-    if (shown) {
-        // Said, not shown as a button: nothing is drawn around it, since a touch does nothing.
-        Text(
-            text = pluralStringResource(R.plurals.streak_days, state.streakDays, state.streakDays),
-            modifier = Modifier.padding(vertical = 8.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
-        )
     }
 }
 
@@ -1253,10 +1253,9 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
                         )
                     }
                 }
-                else -> Text(
-                    text = stringResource(
-                        if (phase is BallPhase.Listening) R.string.hint_listening else R.string.hint_thinking
-                    ),
+                // While it thinks nothing is written: the ball shows it, and says it to whoever cannot see.
+                is BallPhase.Listening -> Text(
+                    text = stringResource(R.string.hint_listening),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -1264,6 +1263,7 @@ private fun Title(state: EightBallUiState, modifier: Modifier = Modifier) {
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                else -> Unit
             }
         }
     }

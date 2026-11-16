@@ -353,6 +353,7 @@ internal fun shareColor(personality: Magic8BallPersonality): Color = Color(
         Magic8BallPersonality.ASTRO -> 0xFF8FA8FF
         Magic8BallPersonality.THERAPIST -> 0xFFBFE8D2
         Magic8BallPersonality.DOG -> 0xFFF0B878
+        Magic8BallPersonality.GAMER -> 0xFF4DD9FF
         // One of the user's own has the colour it borrowed: this is the card with none chosen.
         Magic8BallPersonality.CUSTOM -> 0xFFF2EEE3
     }

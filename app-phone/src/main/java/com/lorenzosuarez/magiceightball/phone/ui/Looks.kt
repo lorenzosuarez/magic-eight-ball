@@ -287,7 +287,14 @@ internal fun CharacterLook.labelRes(): Int = when (this) {
     CharacterLook.SHARK -> R.string.look_shark
     CharacterLook.PUNK -> R.string.look_punk
     CharacterLook.VIKING -> R.string.look_viking
-    CharacterLook.FROG -> R.string.look_frog
+    CharacterLook.MOUSE -> R.string.look_mouse
+    CharacterLook.BUNNY -> R.string.look_bunny
+    CharacterLook.BIRD -> R.string.look_bird
+    CharacterLook.PROPELLER -> R.string.look_propeller
+    CharacterLook.BOW -> R.string.look_bow
+    CharacterLook.MUSHROOM -> R.string.look_mushroom
+    CharacterLook.APPLE -> R.string.look_apple
+    CharacterLook.GAMER -> R.string.style_gamer
 }
 
 /** The box a look is drawn in, and the ball in it. */

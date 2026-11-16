@@ -87,6 +87,7 @@ internal val StyleGroups = listOf(
             Magic8BallPersonality.ZOOMER,
             Magic8BallPersonality.CAT,
             Magic8BallPersonality.DOG,
+            Magic8BallPersonality.GAMER,
             Magic8BallPersonality.CONSPIRACY
         )
     )
@@ -235,6 +236,7 @@ internal fun Magic8BallPersonality.labelRes(): Int = when (this) {
     Magic8BallPersonality.ASTRO -> R.string.style_astro
     Magic8BallPersonality.THERAPIST -> R.string.style_therapist
     Magic8BallPersonality.DOG -> R.string.style_dog
+    Magic8BallPersonality.GAMER -> R.string.style_gamer
     // What one of the user's own is called where its own name is not known.
     Magic8BallPersonality.CUSTOM -> R.string.style_custom
 }
@@ -261,7 +263,38 @@ internal fun Magic8BallPersonality.sampleRes(): Int = when (this) {
     Magic8BallPersonality.ASTRO -> R.string.style_astro_sample
     Magic8BallPersonality.THERAPIST -> R.string.style_therapist_sample
     Magic8BallPersonality.DOG -> R.string.style_dog_sample
+    Magic8BallPersonality.GAMER -> R.string.style_gamer_sample
     Magic8BallPersonality.CUSTOM -> R.string.style_custom_sample
+}
+
+/**
+ * What a character of the app's is like, said to whoever opens it to look before choosing: who it
+ * is, what it cares about, how it says yes and how it says no. None for one of the user's own,
+ * which is described by whoever made it.
+ */
+@StringRes
+internal fun Magic8BallPersonality.aboutRes(): Int? = when (this) {
+    Magic8BallPersonality.SARCASTIC -> R.string.style_sarcastic_about
+    Magic8BallPersonality.MYSTICAL -> R.string.style_mystical_about
+    Magic8BallPersonality.NEUTRAL -> R.string.style_neutral_about
+    Magic8BallPersonality.GRANDMA -> R.string.style_grandma_about
+    Magic8BallPersonality.PIRATE -> R.string.style_pirate_about
+    Magic8BallPersonality.PHILOSOPHER -> R.string.style_philosopher_about
+    Magic8BallPersonality.COACH -> R.string.style_coach_about
+    Magic8BallPersonality.LOVESTRUCK -> R.string.style_lovestruck_about
+    Magic8BallPersonality.DRAMA -> R.string.style_drama_about
+    Magic8BallPersonality.ROBOT -> R.string.style_robot_about
+    Magic8BallPersonality.DETECTIVE -> R.string.style_detective_about
+    Magic8BallPersonality.CONSPIRACY -> R.string.style_conspiracy_about
+    Magic8BallPersonality.CAT -> R.string.style_cat_about
+    Magic8BallPersonality.ZOOMER -> R.string.style_zoomer_about
+    Magic8BallPersonality.VILLAIN -> R.string.style_villain_about
+    Magic8BallPersonality.POET -> R.string.style_poet_about
+    Magic8BallPersonality.ASTRO -> R.string.style_astro_about
+    Magic8BallPersonality.THERAPIST -> R.string.style_therapist_about
+    Magic8BallPersonality.DOG -> R.string.style_dog_about
+    Magic8BallPersonality.GAMER -> R.string.style_gamer_about
+    Magic8BallPersonality.CUSTOM -> null
 }
 
 /**

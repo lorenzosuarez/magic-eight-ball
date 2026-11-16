@@ -24,6 +24,7 @@ enum class Magic8BallPersonality {
     ASTRO,
     THERAPIST,
     DOG,
+    GAMER,
 
     /**
      * One of the user's own: see [CustomCharacter], which says which one and how it answers.
