@@ -61,7 +61,8 @@ internal fun AccountAvatar(name: String, photoUrl: String?, size: Dp, modifier: 
                 // Beside a line of text it is a letter of that line's size.
                 style = if (small) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                // And of that line's weight on the page: it is a mark beside a name, not the name.
+                color = if (small) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
             )
         }
     }

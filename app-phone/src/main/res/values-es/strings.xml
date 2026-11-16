@@ -130,7 +130,6 @@
     <string name="rate_bad">Mala respuesta</string>
     <string name="action_read_aloud">Leer la respuesta en voz alta</string>
     <string name="options_answers">Respuestas</string>
-    <string name="options_asking">Preguntas</string>
     <string name="options_general">General</string>
     <string name="share_answer_text">Mira lo que me dijo Magic AI Ball. Hazle tu pregunta: %1$s</string>
     <string name="share_failed">No se pudo preparar la imagen. Inténtalo de nuevo</string>
@@ -207,7 +206,6 @@
     <string name="premium_all_title">Magic AI Ball Premium</string>
     <string name="options_premium">Premium</string>
     <string name="premium_row_title">Sin anuncios y más respuestas con IA</string>
-    <string name="premium_row_hint">También tus propios personajes. Un&#160;solo&#160;pago</string>
     <string name="premium_point_tone">Cada personaje responde con el tono que describas</string>
     <string name="premium_all_note">La app sigue siendo gratis, con anuncios.</string>
     <string name="characters_no_google_text">No hay ninguna cuenta de Google en este dispositivo. Añade una en los ajustes del dispositivo e inténtalo de nuevo.</string>

@@ -190,7 +190,7 @@ class CharactersScreenTest {
         assertTrue("fetched $fetched of 5000", fetched in 150..400)
 
         compose.onNodeWithText("Personaje 150").performClick()
-        compose.onNodeWithText("Created by autora5").assertIsDisplayed()
+        compose.onNodeWithText("Created by usuario 6").assertIsDisplayed()
         compose.onNodeWithText("Use this character").performClick()
         compose.waitForIdle()
         assertEquals("c:149", used.single().key)

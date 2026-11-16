@@ -994,9 +994,9 @@ class EightBallScreenshotTest {
         val theirs = CharacterListing.Community(
             id = "1",
             name = "Mi ex a las 3am",
-            description = "responde como mi ex cuando escribe a las 3 de la mañana: \"hola, estás?\", todo en minúscula, se hace el que no pasó nada, mete un \"jaja\" incómodo y al final pregunta si sigo despierta. nunca da una respuesta clara pero se nota lo que quiere",
-            colour = Magic8BallPersonality.COACH,
-            emblem = CharacterLook.ZOOMER,
+            description = "responde como mi ex cuando escribe a las 3 de la mañana: \"hola, estas?\", todo en minúscula, se hace el que no pasó nada, mete un \"jaja\" incómodo y al final pregunta si sigo despierta. nunca da una respuesta clara pero se nota lo que quiere",
+            colour = Magic8BallPersonality.LOVESTRUCK,
+            emblem = CharacterLook.LOVESTRUCK,
             author = "usuario 4"
         )
         listOf(
@@ -1195,19 +1195,24 @@ class EightBallScreenshotTest {
         }
     }
 
-    /** The tightest card: the widest name, an answer on three lines, and the tallest things a ball wears. */
+    /**
+     * The tightest card: an answer on three lines under a question, signed with the widest name and
+     * with one of the length people give, under the tallest things a ball wears.
+     */
     @Test
-    fun share_card_of_the_user_s_own_at_its_tightest() = listOf(CharacterLook.CAT, CharacterLook.WIZARD, CharacterLook.ZOOMER).forEach { worn ->
-        captureRoboImage(filePath = path("phone_75_share_card_yours_tight_${worn.name.lowercase()}")) {
-            ShareCard(
-                question = "¿Me va a escribir esta noche?",
-                answer = "Ni con la marea más alta del año.",
-                layer = rememberGraphicsLayer(),
-                visible = true,
-                styleLabel = "Wwwwwwwwwwwwwwww",
-                personality = Magic8BallPersonality.CUSTOM,
-                look = CustomCharacter("1", "Wwwwwwwwwwwwwwww", "W", Magic8BallPersonality.ZOOMER, worn)
-            )
+    fun share_card_of_the_user_s_own_at_its_tightest() = listOf("Wwwwwwwwwwwwwwww" to "widest", "Mi ex a las 3am" to "usual").forEach { (name, called) ->
+        listOf(CharacterLook.CAT, CharacterLook.WIZARD, CharacterLook.ZOOMER, CharacterLook.CHEF).forEach { worn ->
+            captureRoboImage(filePath = path("phone_75_share_card_yours_tight_${called}_${worn.name.lowercase()}")) {
+                ShareCard(
+                    question = "¿Me va a escribir esta noche?",
+                    answer = "Ni con la marea más alta de todo el año entero.",
+                    layer = rememberGraphicsLayer(),
+                    visible = true,
+                    styleLabel = name,
+                    personality = Magic8BallPersonality.CUSTOM,
+                    look = CustomCharacter("1", name, "W", Magic8BallPersonality.ZOOMER, worn)
+                )
+            }
         }
     }
 

@@ -1,5 +1,9 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import com.example.magiceightball.core.domain.model.look
@@ -119,23 +123,11 @@ internal fun ShareCard(
             ) {
                 // Anything written under the answer needs the room: the ball steps back into the corner for it.
                 val reading = remark != null && remark.length > SHARE_LONG_REMARK
-                FlatBall(
-                    look = emblem,
-                    rim = shareColor(colour),
-                    modifier = Modifier
-                        .offset(x = SHARE_BALL_LEFT, y = SHARE_BALL_TOP)
-                        .requiredSize(SHARE_BALL_SIZE)
-                        .graphicsLayer {
-                            // The tallest thing a ball wears reaches the name that signs the card: the
-                            // figure is a little down in size and further into the corner, clear of the words.
-                            val back = if (remark != null) SHARE_BALL_BACK else 1f
-                            scaleX = SHARE_FIGURE * back
-                            scaleY = SHARE_FIGURE * back
-                            translationX = SHARE_FIGURE_IN.toPx() + if (remark != null) SHARE_BALL_BACK_SHIFT.toPx() else 0f
-                            // Less far down than across: the white disc stays whole on the card.
-                            translationY = SHARE_FIGURE_IN.toPx() + if (remark != null) SHARE_BALL_BACK_DROP.toPx() else 0f
-                        }
-                )
+                // And for a name signed low and wide enough to reach what the ball wears it draws in
+                // towards the corner, by as much as keeps it under the name. Where the name ends is
+                // known once the words are placed, and the ball is placed after them: it is read in
+                // the same frame, with nothing composed again for it. Nought: no name reaches it.
+                var signedTo by remember { mutableFloatStateOf(0f) }
                 Column(modifier = Modifier.fillMaxSize().padding(SHARE_MARGIN)) {
                     if (question.isNotBlank()) {
                         Text(
@@ -194,14 +186,32 @@ internal fun ShareCard(
                             fontStyle = FontStyle.Italic
                         )
                         val measurer = rememberTextMeasurer()
-                        BoxWithConstraints(modifier = Modifier.padding(top = 12.dp).fillMaxWidth()) {
+                        // How wide the name is written, for whoever asks where it ends.
+                        var written by remember { mutableIntStateOf(0) }
+                        val density = LocalDensity.current
+                        BoxWithConstraints(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth()
+                                .onPlaced {
+                                    // Measured from the card's own edges: the words are set in from them.
+                                    signedTo = with(density) {
+                                        val margin = SHARE_MARGIN.toPx()
+                                        val wide = margin + written > SHARE_WORN_REACH_LEFT.toPx()
+                                        if (wide) margin + it.positionInParent().y + it.size.height + SHARE_SIGNED_CLEAR.toPx() else 0f
+                                    }
+                                }
+                        ) {
                             // A name the user gave may be wider than any of the app's: it is
                             // written smaller, a step at a time, before it is cut short.
                             val room = constraints.maxWidth
                             val size = remember(signature, room) {
-                                SIGNATURE_SIZES.firstOrNull {
-                                    measurer.measure(signature, hand.copy(fontSize = it), softWrap = false).size.width <= room
-                                } ?: SIGNATURE_SIZES.last()
+                                val widths = SIGNATURE_SIZES.map {
+                                    it to measurer.measure(signature, hand.copy(fontSize = it), softWrap = false).size.width
+                                }
+                                val fits = widths.firstOrNull { it.second <= room } ?: widths.last()
+                                written = minOf(fits.second, room)
+                                fits.first
                             }
                             Text(
                                 text = signature,
@@ -223,6 +233,39 @@ internal fun ShareCard(
                         color = SHARE_INK.copy(alpha = SHARE_MARK_ALPHA)
                     )
                 }
+                FlatBall(
+                    look = emblem,
+                    rim = shareColor(colour),
+                    modifier = Modifier
+                        // Under the words, though it is placed after them: by then it is known where the name ends.
+                        .zIndex(-1f)
+                        .offset(x = SHARE_BALL_LEFT, y = SHARE_BALL_TOP)
+                        .requiredSize(SHARE_BALL_SIZE)
+                        .graphicsLayer {
+                            if (remark != null) {
+                                // A little down in size and further into the corner, clear of the words.
+                                scaleX = SHARE_FIGURE * SHARE_BALL_BACK
+                                scaleY = SHARE_FIGURE * SHARE_BALL_BACK
+                                translationX = SHARE_FIGURE_IN.toPx() + SHARE_BALL_BACK_SHIFT.toPx()
+                                // Less far down than across: the white disc stays whole on the card.
+                                translationY = SHARE_FIGURE_IN.toPx() + SHARE_BALL_BACK_DROP.toPx()
+                            } else {
+                                // About the corner of its own room, which is past the card's: what
+                                // is in sight of the ball stays the same part of it at any size.
+                                val corner = (SHARE_BALL_TOP + SHARE_BALL_SIZE).toPx()
+                                val drawn = if (styleLabel == null || signedTo == 0f) {
+                                    1f
+                                } else {
+                                    ((corner - signedTo) / SHARE_WORN_REACH.toPx()).coerceIn(SHARE_BALL_DRAWN_IN, 1f)
+                                }
+                                val moved = SHARE_BALL_SIZE.toPx() / 2 * (1 - drawn) + SHARE_FIGURE_IN.toPx() * drawn
+                                scaleX = SHARE_FIGURE * drawn
+                                scaleY = SHARE_FIGURE * drawn
+                                translationX = moved
+                                translationY = moved
+                            }
+                        }
+                )
             }
         }
     }
@@ -244,47 +287,6 @@ private fun DrawScope.drawBubble() {
         Color.White
     )
 }
-
-/**
- * The ball as the card draws it, wearing what [emblem] wears, in a square of [size]: for showing
- * a look where one is picked. It is the card's own drawing at the card's own measures, brought
- * to the size asked for, with room over and beside the ball for what it wears.
- *
- * @param share how much of the square the ball takes, and [right] and [down] how far its
- * middle is from the square's, in the ball's own widths. As given, the whole figure stands in
- * the square; larger and further down and to the right, it is seen close, as on the card
- * itself, where the ball runs off the corner and what it wears comes to the middle.
- */
-@Composable
-internal fun CharacterBall(
-    emblem: CharacterLook,
-    size: Dp,
-    rim: Color,
-    modifier: Modifier = Modifier,
-    share: Float = BALL_IN_SQUARE,
-    right: Float = 0f,
-    down: Float = BALL_DROP
-) {
-    val density = LocalDensity.current.density
-    Box(modifier = modifier.requiredSize(size).clipToBounds().clearAndSetSemantics {}) {
-        CompositionLocalProvider(
-            LocalDensity provides Density(density * (size / SHARE_BALL_SIZE) * share, fontScale = 1f)
-        ) {
-            FlatBall(
-                look = emblem,
-                rim = rim,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .offset(x = SHARE_BALL_SIZE * right, y = SHARE_BALL_SIZE * down)
-                    .requiredSize(SHARE_BALL_SIZE)
-            )
-        }
-    }
-}
-
-/** How much of its square the ball takes, and how far under the middle it sits: as in the box a look is drawn in, so that all of it shows. */
-private const val BALL_IN_SQUARE = LOOK_BALL_RADIUS * 2 / LOOK_BOX
-private const val BALL_DROP = (LOOK_BALL_Y - LOOK_BOX / 2) / (LOOK_BALL_RADIUS * 2)
 
 /**
  * The ball with nothing but its two colours. It has one axis, tipped towards the words: what
@@ -475,6 +477,16 @@ private const val SHARE_LONG_REMARK = 120
 private const val SHARE_BALL_BACK = 0.7f
 private val SHARE_BALL_BACK_SHIFT = 30.dp
 private val SHARE_BALL_BACK_DROP = 16.dp
+/**
+ * How far up from the corner of the ball's room the tallest thing a ball wears reaches at its full
+ * size, and how far left anything it wears does: a name that ends past the one is kept above the
+ * other, with this much air under it, by drawing the ball in. Never further in than this: a name
+ * signed lower than any answer leaves it is rather written over a hat than beside a dot.
+ */
+private val SHARE_WORN_REACH = 273.dp
+private val SHARE_WORN_REACH_LEFT = 196.dp
+private val SHARE_SIGNED_CLEAR = 4.dp
+private const val SHARE_BALL_DRAWN_IN = 0.6f
 /** With them, the answer gives up some of its size and the text some of its margin. */
 private const val SHARE_READING_ANSWER = 38
 private val SHARE_READING_INSET = 48.dp

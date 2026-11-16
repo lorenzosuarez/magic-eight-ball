@@ -48,7 +48,7 @@ internal class FakeCommunity(private val count: Int, var failing: Boolean = fals
                     description = "Responde como el personaje número ${number + 1}, con sus manías.",
                     colour = look,
                     emblem = CharacterLook.entries[(number * 7) % CharacterLook.entries.size],
-                    author = "autora${number % 9}"
+                    author = "usuario ${number % 9 + 1}"
                 )
             },
             next = until.takeIf { it < count }?.toString()

@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.foundation.Canvas
 import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.alpha
@@ -13,7 +14,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -87,7 +86,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.magiceightball.core.common.BrandPalette
@@ -435,39 +433,23 @@ private fun Counter(length: Int, most: Int) {
  */
 @Composable
 private fun CharacterPreview(draft: CharacterDraft) {
-    // A ball that wears nothing sits in the middle; one that does leaves the room over it.
-    val lift by animateDpAsState(
-        targetValue = if (draft.emblem == CharacterLook.NEUTRAL) PREVIEW_BARE_LIFT else 0.dp,
-        // In step with the cross-fade of what it wears: neither is still going when the other is done.
-        animationSpec = choiceTween(),
-        label = "preview ball"
-    )
     // The card follows a pick as the mark of the pick arrives: one colour passes into the next.
     val ground by animateColorAsState(shareColor(draft.colour), choiceTween(), label = "preview colour")
-    Row(
+    Box(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
+            .heightIn(min = PREVIEW_FIGURE)
             .clip(RoundedCornerShape(GROUP_CORNER))
             .background(ground)
-            .padding(start = 8.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        // So does what the ball wears. What was picked comes over what was worn, which only then
-        // goes: fading both at once would let the card show through the ball between the two.
-        AnimatedContent(
-            targetState = draft.emblem,
-            // Moved where it is drawn, not where it is measured: the card keeps its height as the ball rises.
-            // What it wears reaches the top of its square: the card keeps a little room over it.
-            modifier = Modifier.padding(vertical = 6.dp).offset { IntOffset(0, -lift.roundToPx()) },
-            transitionSpec = { fadeIn(tween(CHOICE_MS / 2)) togetherWith fadeOut(tween(CHOICE_MS / 2, delayMillis = CHOICE_MS / 2)) },
-            label = "preview emblem"
-        ) { worn ->
-            CharacterBall(emblem = worn, size = PREVIEW_BALL, rim = ground)
-        }
-        // Clear of the card's edges when a long name and large type make it four lines.
-        Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        // Clear of the figure, and of the card's edges when a long name and large type make it four lines.
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 16.dp, top = 12.dp, end = PREVIEW_FIGURE + 8.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
             // In the card's ink, which is the same in both themes: the card is always light.
             val named = draft.nameToSave
             Text(
@@ -488,6 +470,17 @@ private fun CharacterPreview(draft: CharacterDraft) {
                 style = MaterialTheme.typography.bodySmall,
                 color = ShareInk
             )
+        }
+        // The figure as the card and every face show it, coming in from the card's lower corner. What
+        // was picked comes over what was worn, which only then goes: fading both at once would let
+        // the card show through the ball between the two.
+        AnimatedContent(
+            targetState = draft.emblem,
+            modifier = Modifier.align(Alignment.BottomEnd),
+            transitionSpec = { fadeIn(tween(CHOICE_MS / 2)) togetherWith fadeOut(tween(CHOICE_MS / 2, delayMillis = CHOICE_MS / 2)) },
+            label = "preview emblem"
+        ) { worn ->
+            Canvas(Modifier.size(PREVIEW_FIGURE).clearAndSetSemantics {}) { drawFace(worn, ShareInk, rim = ground) }
         }
     }
 }
@@ -553,7 +546,8 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
 /**
  * What the ball can wear: nothing, or what one of the app's characters wears, as the round faces
  * characters have everywhere else, on the colour picked. The ones that read best come first,
- * and the row opens on the one picked with the one before it in sight.
+ * and the row opens on the one picked with the one before it in sight and, as the colours do,
+ * always shows half of the next.
  */
 @Composable
 private fun EmblemRow(
@@ -562,46 +556,51 @@ private fun EmblemRow(
     enabled: Boolean,
     onChosen: (CharacterLook) -> Unit
 ) {
-    val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
-    val start = with(LocalDensity.current) { ((EMBLEM_RING + EMBLEM_GAP) * (at - 1).coerceAtLeast(0)).roundToPx() }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fadingRow(rememberScrollState(start), PICK_EDGE)
-            .padding(horizontal = PICK_EDGE)
-            .selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(EMBLEM_GAP)
-    ) {
-        OnCardColours {
-            EMBLEMS.forEach { look ->
-                val picked = look == chosen
-                val label = stringResource(look.labelRes())
-                val touch = remember { MutableInteractionSource() }
-                val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
-                // Picked: a ring in the text's colour with the face a little inside it, as a
-                // colour that is picked has. The ring comes as the face draws in from it, and
-                // goes as the face fills out again.
-                Box(
-                    modifier = Modifier
-                        .size(EMBLEM_RING)
-                        .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), CircleShape)
-                        .clip(CircleShape)
-                        .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
-                        .semantics { contentDescription = label },
-                    contentAlignment = Alignment.Center
-                ) {
-                    // The light of the touch is drawn here, over the face's colour: behind it, it would not show.
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val whole = ((maxWidth - PICK_EDGE) / (EMBLEM_RING + EMBLEM_LEAST_GAP) - 0.5f).toInt().coerceAtLeast(1)
+        val step = (maxWidth - PICK_EDGE - EMBLEM_RING / 2) / whole
+        val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
+        val start = with(LocalDensity.current) { (step * (at - 1).coerceAtLeast(0)).roundToPx() }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fadingRow(rememberScrollState(start), PICK_EDGE)
+                .padding(start = PICK_EDGE)
+                .selectableGroup()
+        ) {
+            OnCardColours {
+                EMBLEMS.forEach { look ->
+                    val picked = look == chosen
+                    val label = stringResource(look.labelRes())
+                    val touch = remember { MutableInteractionSource() }
+                    val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
+                    // Picked: a ring in the text's colour with the face a little inside it, as a
+                    // colour that is picked has. The ring comes as the face draws in from it, and
+                    // goes as the face fills out again.
                     Box(
                         modifier = Modifier
-                            .graphicsLayer {
-                                val drawn = 1f - EMBLEM_DRAWN_IN * mark
-                                scaleX = drawn
-                                scaleY = drawn
-                            }
+                            // The gap after it is its own: the faces stay where the edge is.
+                            .padding(end = step - EMBLEM_RING)
+                            .size(EMBLEM_RING)
+                            .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), CircleShape)
                             .clip(CircleShape)
-                            .indication(touch, PressHighlight)
+                            .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
+                            .semantics { contentDescription = label },
+                        contentAlignment = Alignment.Center
                     ) {
-                        CharacterFace(colour = colour, emblem = look, size = EMBLEM_RING, chosen = { mark })
+                        // The light of the touch is drawn here, over the face's colour: behind it, it would not show.
+                        Box(
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    val drawn = 1f - EMBLEM_DRAWN_IN * mark
+                                    scaleX = drawn
+                                    scaleY = drawn
+                                }
+                                .clip(CircleShape)
+                                .indication(touch, PressHighlight)
+                        ) {
+                            CharacterFace(colour = colour, emblem = look, size = EMBLEM_RING, chosen = { mark })
+                        }
                     }
                 }
             }
@@ -630,8 +629,8 @@ private fun PickerLabel(text: String, top: androidx.compose.ui.unit.Dp = 16.dp) 
 
 private const val DESCRIPTION_MIN_LINES = 3
 private const val DESCRIPTION_MAX_LINES = 5
-private val PREVIEW_BALL = 104.dp
-private val PREVIEW_BARE_LIFT = 18.dp
+/** The square the figure is drawn in on the card that shows a character before it is saved: as tall as the card. */
+private val PREVIEW_FIGURE = 112.dp
 private const val UNNAMED_ALPHA = 0.5f
 
 /** Where a row of picks starts, as the cards and the fields do. */
@@ -639,7 +638,7 @@ private val PICK_EDGE = 16.dp
 private val SWATCH = 40.dp
 private val SWATCH_LEAST_GAP = 12.dp
 private const val SWATCH_EDGE_ALPHA = 0.24f
-private val EMBLEM_GAP = 12.dp
+private val EMBLEM_LEAST_GAP = 12.dp
 
 /** A look to pick: how large, ring and all, and how far the face draws in from the ring when it is the one. */
 private val EMBLEM_RING = 56.dp

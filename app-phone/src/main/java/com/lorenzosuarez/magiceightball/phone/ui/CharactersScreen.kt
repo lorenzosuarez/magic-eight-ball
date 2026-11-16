@@ -627,7 +627,7 @@ internal fun CharacterDetail(
             // On a short screen, or with much written of it at large type, it is read by scrolling.
             .verticalScroll(rememberScrollState())
             .navigationBarsPadding()
-            .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+            .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ListedFace(listing, SHEET_FACE, chosen = true)
@@ -690,7 +690,7 @@ internal fun CharacterDetail(
         if (answering) {
             // Nothing to ask for: said as what is so, not as a button that does nothing.
             Row(
-                modifier = Modifier.padding(top = 20.dp).heightIn(min = 52.dp),
+                modifier = Modifier.padding(top = 20.dp).heightIn(min = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -711,26 +711,15 @@ internal fun CharacterDetail(
             PrimaryButton(
                 text = stringResource(R.string.character_use),
                 onClick = onUse,
-                modifier = Modifier.padding(top = 20.dp).fillMaxWidth().heightIn(min = 52.dp)
+                modifier = Modifier.padding(top = 20.dp).fillMaxWidth()
             )
         }
         if (onEdit != null) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .clip(CircleShape)
-                    .clickable(role = Role.Button, onClick = onEdit),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.character_edit_action),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = scheme.sheetAction
-                )
-            }
+            QuietButton(
+                text = stringResource(R.string.character_edit_action),
+                onClick = onEdit,
+                modifier = Modifier.padding(top = 8.dp).fillMaxWidth()
+            )
         }
     }
 }

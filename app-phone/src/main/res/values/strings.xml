@@ -136,7 +136,6 @@
     <string name="action_read_aloud">Read the answer aloud</string>
     <string name="brand_name" translatable="false">Magic AI Ball</string>
     <string name="options_answers">Answers</string>
-    <string name="options_asking">Questions</string>
     <string name="options_general">General</string>
     <string name="share_answer_text">Look what Magic AI Ball told me. Ask your own question: %1$s</string>
     <string name="share_failed">Couldn\'t prepare the picture. Try again</string>
@@ -215,7 +214,6 @@
     <string name="premium_all_title">Magic AI Ball Premium</string>
     <string name="options_premium">Premium</string>
     <string name="premium_row_title">No ads and more AI answers</string>
-    <string name="premium_row_hint">Characters of your own too. One&#160;payment</string>
     <string name="premium_point_tone">Each character answers in the tone you describe</string>
     <string name="premium_all_note">The app stays free, with ads.</string>
     <string name="characters_no_google_text">There is no Google account on this device. Add one in your device\'s settings and try again.</string>

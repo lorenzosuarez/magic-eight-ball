@@ -29,8 +29,6 @@ RIM = 5.0
 # and how large what it wears is drawn beside the board, about the crown. The white disc is off the ball's middle
 # by these parts of its radius, and is so wide and so tall.
 FIGURE = dict(x=64.0, y=78.0, r=36.0, tilt=-18.0, worn=0.8)
-# A ball that wears nothing has the round to itself: larger, and further in.
-BARE = dict(x=59.0, y=73.0, r=41.0)
 FACE = dict(x=-0.23, y=-0.18, wide=0.37, tall=0.42)
 
 
@@ -175,23 +173,24 @@ PETALS = [(59 + 9.6 * math.cos(math.radians(a)), 29 + 9.6 * math.sin(math.radian
 
 # name: (colour for the sheet, {layer: [paths]})
 # Layers, bottom to top: behind (ink, under the ball), ink (over the ball, with a rim of the ground round it),
-# white, dot (ink again, over the white). plain: nothing worn, and the ball takes the round. lift: moved up by.
+# white, dot (ink again, over the white). fitted: made to the ball's own measure, and so not drawn a size down.
 LOOKS = {
     'neutral': ('#F2EEE3', {}),
     'sarcastic': ('#FFDD33', {'ink': [QUOTE % '27', QUOTE % '55.6']}),
     'mystical': ('#C9B6FF', {'ink': [crescent((44, 19.5), 14.5, (52, 15), 12), star4(69, 17, 8, 0.38)]}),
     'grandma': ('#FFC2D1', {
         # A ball of wool with the needles in it: she knits.
-        'ink': [bar(50, 30, 70.5, 9.5, 4), circ(71.5, 8.5, 4), bar(57, 35, 77.5, 15.5, 4), circ(78.5, 14.5, 4), circ(46, 28, 13.5)],
+        'ink': [bar(50, 30, 66.5, 13.5, 4), circ(67.5, 12.5, 4), bar(57, 35, 73.5, 19.5, 4), circ(74.5, 18.5, 4), circ(46, 28, 13.5)],
         'white': ['M34.5 24.5 Q46 16 57.5 24.5 L57.5 29.1 Q46 20.6 34.5 29.1Z', 'M35.5 32 Q46 24.5 56.5 32 L55.5 36.4 Q46 29.2 36.5 36.4Z'],
     }),
     'pirate': ('#5FD6C9', {
-        'ink': ['M9 35 Q14 41 26 39.5 Q50 34 74 39.5 Q86 41 91 35 Q85 33 77 24 Q65 8 50 7 Q35 8 23 24 Q15 33 9 35Z'],
-        'white': [circ(50, 20, 7.2), rrect(45.6, 24, 8.8, 6.5, 2.2)],
-        'dot': [circ(47.1, 20, 2.1), circ(52.9, 20, 2.1)],
+        # Pulled down onto the crown: floating over it, its rim cut the ball flat.
+        'ink': ['M11.9 41 Q16.5 47 27.7 45.5 Q50 40 72.3 45.5 Q83.5 47 88.1 41 Q82.5 39 75.1 30 Q64 14 50 13 Q36 14 24.9 30 Q17.5 39 11.9 41Z'],
+        'white': [circ(50, 26, 7.2), rrect(45.6, 30, 8.8, 6.5, 2.2)],
+        'dot': [circ(47.1, 26, 2.1), circ(52.9, 26, 2.1)],
     }),
     'philosopher': ('#E3D5B8', {
-        'ink': [circ(x, y, r) for x, y, r in CLOUD] + [circ(33.5, 37, 3.6)],
+        'ink': [circ(x, y, r) for x, y, r in CLOUD] + [circ(31, 33, 3.6)],
         'white': [circ(41, 19.5, 3), circ(51, 19.5, 3), circ(61, 19.5, 3)],
     }),
     'coach': ('#FF8A3D', {
@@ -204,7 +203,6 @@ LOOKS = {
         'white': [circ(50, 32, 3.6), circ(37, 37.5, 2.6), circ(63, 37.5, 2.6)],
     }),
     'robot': ('#B8C4D0', {
-        'beside': [rrect(13, 56, 10.5, 20, 4.5), rrect(76.5, 56, 10.5, 20, 4.5)],
         'ink': [bar(50, 41, 50, 21, 5.5, cap=False), circ(50, 15.5, 7.5)],
         'white': [circ(50, 15.5, 3.2)],
     }),
@@ -222,8 +220,8 @@ LOOKS = {
         'white': both('M30 37 L32.3 25.5 Q38.5 29.5 42 36Z'),
     }),
     'zoomer': ('#D4FF4F', {
-        'fitted': True,
-        'ink': [arc_band(50, 66, 31.5, 36.3, 195, 345), rrect(10, 54, 12.5, 22, 5.5), rrect(77.5, 54, 12.5, 22, 5.5)],
+        # Worn on the crown, both cups in sight: round the whole ball, one of them was always off the round.
+        'ink': [arc_band(50, 32, 15.5, 20.5, 180, 360), rrect(26.5, 28, 11, 18, 5), rrect(62.5, 28, 11, 18, 5)],
     }),
     'villain': ('#B58CFF', {'behind': both('M23 54 Q7 31 33 9 Q21 30 35 45Z')}),
     'poet': ('#BFD9FF', {'ink': quill((45, 41), (69.5, 9.5))}),
@@ -234,9 +232,8 @@ LOOKS = {
     'therapist': ('#BFE8D2', {
         'ink': [ring(37, 31, 12.5, 7), ring(63, 31, 12.5, 7), bar(47.5, 29.5, 52.5, 29.5, 4.5, cap=False), bar(25.5, 28.5, 18.5, 25.5, 4.5), bar(74.5, 28.5, 81.5, 25.5, 4.5)],
     }),
-    'dog': ('#F0B878', {
-        'behind': both('M37 42 Q29 33 21 38 Q10 48 13 63 Q15 70 21 68 Q28 59 31 48Z'),
-    }),
+    # Ears that hang over the ball, told from it by their rim: behind it they made one shape with it.
+    'dog': ('#F0B878', {'ink': both('M37.5 42 Q30 33 22.5 38 Q12 48 15 63 Q17 70 22.5 68 Q29 59 32 48Z')}),
     # No character of the app's wears these: they are there to be picked.
     'singer': ('#FFC2D1', {
         'ink': [circ(62, 19, 10), taper(53.9, 28.1, 9, 43.1, 40.3, 6.5)],
@@ -253,7 +250,7 @@ LOOKS = {
     }),
     'cowboy': ('#F0B878', {
         'ink': ['M33.5 39 Q30 11 41 9.5 Q50 16 59 9.5 Q70 11 66.5 39Z',
-                'M11.5 31 Q10.5 25 14 25.5 Q19 37 33 36 Q50 33 67 36 Q81 37 86 25.5 Q89.5 25 88.5 31 Q84 45.5 69 43.5 Q50 39.5 31 43.5 Q16 45.5 11.5 31Z'],
+                'M14.2 31 Q13.3 25 16.5 25.5 Q21.2 37 34.2 36 Q50 33 65.8 36 Q78.8 37 83.5 25.5 Q86.7 25 85.8 31 Q81.6 45.5 67.7 43.5 Q50 39.5 32.3 43.5 Q18.4 45.5 14.2 31Z'],
     }),
     'magician': ('#B8C4D0', {
         'ink': ['M35.5 39 L33 9.5 Q33 6 36.5 6 L63.5 6 Q67 6 67 9.5 L64.5 39Z', rrect(20, 36, 60, 7.2, 3.6)],
@@ -262,8 +259,8 @@ LOOKS = {
     'ninja': ('#FF5A4F', {
         # Tied on the side that is in sight, its ends blown up and back.
         'fitted': True,
-        'white': ['M29.5 47 Q50 38 70.5 47 L74.6 53.5 Q50 44 25.4 53.5Z'],
-        'ink': [circ(24, 50, 4.6), 'M24 47.5 Q17 43 14 34.5 L9.8 37 Q12.5 47.5 21 52.5Z', 'M25.5 47 Q19.5 39 21.5 28.5 L26.3 30 Q25.5 39 29.5 44.5Z'],
+        'white': ['M32 44.5 Q50 36 68 44.5 L73 50 Q50 41 27 50Z'],
+        'ink': [circ(26, 47, 4.4), 'M24.5 44.5 Q18.5 41 16 34 L12 36.5 Q14.5 45 21.5 49.5Z', 'M26 44 Q21 37.5 22.5 29 L27 30.5 Q26.5 37 30 41.5Z'],
     }),
     'angel': ('#BFD9FF', {'ink': [ell_ring(50, 21, 21, 8, 5.6)]}),
     'graduate': ('#BFE8D2', {
@@ -305,15 +302,12 @@ def lerp_hex(a, b, t):
 
 def svg(name, size, ground, uid, guide=False):
     layers = LOOKS[name][1]
-    place = FIGURE if layers else BARE
     figure = 'translate(%s %s) rotate(%s) scale(%s) translate(%s %s)' % (
-        f(place['x']), f(place['y']), f(FIGURE['tilt']), f(place['r'] / BR), f(-BX), f(-BY))
+        f(FIGURE['x']), f(FIGURE['y']), f(FIGURE['tilt']), f(FIGURE['r'] / BR), f(-BX), f(-BY))
     worn = 'translate(50 38) scale(%s) translate(-50 -38)' % f(1.0 if layers.get('fitted') else FIGURE['worn'])
     out = ['<svg viewBox="0 0 100 100" width="%d" height="%d"><defs><clipPath id="c%s"><circle cx="50" cy="50" r="50"/></clipPath></defs><g clip-path="url(#c%s)">' % (size, size, uid, uid)]
     out.append('<rect width="100" height="100" fill="%s"/>' % ground)
     out.append('<g transform="%s">' % figure)
-    for d in layers.get('beside', []):
-        out.append('<path d="%s" fill="%s"/>' % (d, INK))
     out.append('<g transform="%s">' % worn)
     for d in layers.get('behind', []):
         out.append('<path d="%s" fill="%s"/>' % (d, INK))
@@ -375,7 +369,7 @@ def kotlin():
            'internal fun lookArt(look: CharacterLook): LookArt = when (look) {']
     for name, (_, layers) in LOOKS.items():
         args = []
-        for key in ('beside', 'behind', 'ink', 'white', 'dot'):
+        for key in ('behind', 'ink', 'white', 'dot'):
             if key in layers:
                 args.append('        %s = listOf(\n%s\n        )' % (key, ',\n'.join('            "%s"' % d for d in layers[key])))
         if layers.get('fitted'):
@@ -395,10 +389,7 @@ def kotlin():
             'internal const val FIGURE_RADIUS = %sf' % f(FIGURE['r']),
             'internal const val FIGURE_TILT = %sf' % f(FIGURE['tilt']),
             'internal const val FIGURE_WORN = %sf' % f(FIGURE['worn']), '',
-            '/** The same for a ball that wears nothing, which has the round to itself: larger, and further in. */',
-            'internal const val BARE_X = %sf' % f(BARE['x']),
-            'internal const val BARE_Y = %sf' % f(BARE['y']),
-            'internal const val BARE_RADIUS = %sf' % f(BARE['r']), '',
+
             '/** The white disc, in parts of the ball\'s radius: off its middle and narrowed, as on a sphere. */',
             'internal const val FACE_X = %sf' % f(FACE['x']),
             'internal const val FACE_Y = %sf' % f(FACE['y']),

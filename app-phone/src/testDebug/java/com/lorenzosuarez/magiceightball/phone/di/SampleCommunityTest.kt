@@ -28,8 +28,8 @@ class SampleCommunityTest {
         assertEquals(all.size, all.map { it.name.lowercase() }.toSet().size)
         assertEquals(all.size, all.map { it.key }.toSet().size)
         val lengths = all.map { it.description.length }
-        assertTrue("shortest ${lengths.min()}", lengths.min() < 120)
-        assertTrue("longest ${lengths.max()}", lengths.max() > 220)
+        assertTrue("one-liners ${lengths.count { it < 100 }}", lengths.count { it < 100 } >= 8)
+        assertTrue("longest ${lengths.max()}", lengths.max() > 260)
     }
 
     @Test

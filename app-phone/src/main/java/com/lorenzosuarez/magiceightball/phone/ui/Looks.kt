@@ -20,8 +20,6 @@ import com.lorenzosuarez.magiceightball.phone.R
  * path of its own and is drawn by itself, so two that overlap never cut holes in each other.
  * Bottom to top:
  *
- * @property beside in the ball's ink, under the ball and as large as drawn: what is fixed to
- * the ball's sides.
  * @property behind in the ball's ink, under the ball: what grows from behind it, as ears do.
  * @property ink in the ball's ink, over the ball, with a rim of the ground round it so that it
  * is told from the ball it sits on.
@@ -31,7 +29,6 @@ import com.lorenzosuarez.magiceightball.phone.R
  * is drawn as large as it is, where anything else is drawn a size down about the crown.
  */
 internal class LookArt(
-    val beside: List<String> = emptyList(),
     val behind: List<String> = emptyList(),
     val ink: List<String> = emptyList(),
     val white: List<String> = emptyList(),
@@ -41,7 +38,6 @@ internal class LookArt(
 
 /** A look ready to be drawn: its paths read once, however many times it is drawn after. */
 internal class LookPaths(
-    val beside: List<Path>,
     val behind: List<Path>,
     val ink: List<Path>,
     val white: List<Path>,
@@ -49,14 +45,13 @@ internal class LookPaths(
     val fitted: Boolean
 ) {
     /** Whether the ball wears nothing at all. */
-    val bare: Boolean get() = beside.isEmpty() && behind.isEmpty() && ink.isEmpty() && white.isEmpty()
+    val bare: Boolean get() = behind.isEmpty() && ink.isEmpty() && white.isEmpty()
 }
 
 /** The paths of [look]. Read on the thread that draws, and kept. */
 internal fun lookPaths(look: CharacterLook): LookPaths = read.getOrPut(look) {
     val art = lookArt(look)
     LookPaths(
-        beside = art.beside.map { it.toPath() },
         behind = art.behind.map { it.toPath() },
         ink = art.ink.map { it.toPath() },
         white = art.white.map { it.toPath() },
@@ -101,7 +96,6 @@ internal fun DrawScope.drawFigure(
         scale(unit, unit, pivot = Offset.Zero)
         translate(-LOOK_BALL_X, -LOOK_BALL_Y)
     }) {
-        paths.beside.forEach { drawPath(it, ink) }
         withTransform({ scale(worn, worn, pivot = crown) }) { paths.behind.forEach { drawPath(it, ink) } }
         drawCircle(ink, radius = LOOK_BALL_RADIUS, center = middle)
         val face = Size(LOOK_BALL_RADIUS * FACE_WIDE * 2, LOOK_BALL_RADIUS * FACE_TALL * 2)
@@ -128,21 +122,16 @@ internal fun DrawScope.drawFigure(
 }
 
 /**
- * The face of a character in a round: the figure coming into it from its lower corner, as much
- * of the ball in sight as leaves what it wears whole. A ball that wears nothing has the round
- * to itself, larger and further in. The ground is not drawn here; the rim round what is worn is
- * cut through to it, so this is drawn on a layer of its own, over the ground.
+ * The face of a character in a square: the figure coming into it from its lower corner, as much
+ * of the ball in sight as leaves what it wears whole. It is the same for every look, so that in
+ * a list the balls and their numbers stand in one column.
+ *
+ * @param rim the colour of the ground the square is drawn on; null where the ground is under a
+ * layer this is drawn on, and the rim round what is worn is cut through to it.
  */
-internal fun DrawScope.drawFace(look: CharacterLook, ink: Color) {
+internal fun DrawScope.drawFace(look: CharacterLook, ink: Color, rim: Color? = null) {
     val unit = size.minDimension / LOOK_BOX
-    val bare = lookPaths(look).bare
-    drawFigure(
-        look = look,
-        ink = ink,
-        centre = Offset((if (bare) BARE_X else FIGURE_X) * unit, (if (bare) BARE_Y else FIGURE_Y) * unit),
-        radius = (if (bare) BARE_RADIUS else FIGURE_RADIUS) * unit,
-        rim = null
-    )
+    drawFigure(look = look, ink = ink, centre = Offset(FIGURE_X * unit, FIGURE_Y * unit), radius = FIGURE_RADIUS * unit, rim = rim)
 }
 
 /** What a look is called where one is picked: the app's characters lend theirs their names. */
