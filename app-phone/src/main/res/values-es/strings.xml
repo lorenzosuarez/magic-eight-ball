@@ -329,5 +329,7 @@
     <string name="look_bird">Pajarito</string>
     <string name="look_propeller">Gorro con hélice</string>
     <string name="look_bow">Moño</string>
+    <string name="look_mushroom">Hongo</string>
+    <string name="look_apple">Manzana</string>
     <string name="character_how">Cómo responde</string>
 </resources>

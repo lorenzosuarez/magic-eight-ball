@@ -50,7 +50,9 @@ enum class CharacterLook {
     BUNNY,
     BIRD,
     PROPELLER,
-    BOW;
+    BOW,
+    MUSHROOM,
+    APPLE;
 
     companion object {
         /** The look kept under [name], in whatever case; [NEUTRAL] for none and for one not known here. */

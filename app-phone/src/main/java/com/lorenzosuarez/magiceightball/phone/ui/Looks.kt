@@ -292,6 +292,8 @@ internal fun CharacterLook.labelRes(): Int = when (this) {
     CharacterLook.BIRD -> R.string.look_bird
     CharacterLook.PROPELLER -> R.string.look_propeller
     CharacterLook.BOW -> R.string.look_bow
+    CharacterLook.MUSHROOM -> R.string.look_mushroom
+    CharacterLook.APPLE -> R.string.look_apple
 }
 
 /** The box a look is drawn in, and the ball in it. */

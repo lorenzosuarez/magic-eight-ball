@@ -329,5 +329,7 @@
     <string name="look_bird">Passarinho</string>
     <string name="look_propeller">Boné com hélice</string>
     <string name="look_bow">Laço</string>
+    <string name="look_mushroom">Cogumelo</string>
+    <string name="look_apple">Maçã</string>
     <string name="character_how">Como responde</string>
 </resources>

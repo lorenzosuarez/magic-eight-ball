@@ -386,8 +386,9 @@ LOOKS = {
         'white': ['M29.66 29.5 Q50 25.5 70.34 29.5 L70.35 35.4 Q50 31.2 29.65 35.4Z'],
     }),
     'conspiracy': ('#9BE564', {
-        # A pyramid worn as a hat, tipped with the ball as every hat is, and the eye in it.
-        'ink': ['M26.5 45.5 L47.4 12.6 Q50 9.6 52.6 12.6 L73.5 45.5 Q50 37.5 26.5 45.5Z'],
+        # A pyramid worn as a hat, tipped with the ball as every hat is, its foot past the ball at both sides
+        # like a brim, and the eye in it.
+        'ink': ['M23 46.2 L47.4 12.6 Q50 9.6 52.6 12.6 L77 46.2 Q50 37.3 23 46.2Z'],
         'white': ['M38.5 31.2 Q50 21.4 61.5 31.2 Q50 39 38.5 31.2Z'],
         'dot': [circ(50, 30.6, 4.7)],
     }),
@@ -423,11 +424,11 @@ LOOKS = {
     }),
     # No character of the app's wears these: they are there to be picked.
     'singer': ('#FFC2D1', {
-        # Held up to its face, as one sings into it: the head beside the white disc, half over the ball, with
-        # a rim to tell it from the ball, and the handle away from it.
+        # Held up to its face and leaning towards it, as one sings into it: the head beside the white disc,
+        # its collar cut by the head's own edge, the handle round at its end and clear of the ball.
         'fitted': True,
-        'ink': [seen(disc(27.5, 67.5, 9.6)), seen(taper(25.4, 74.2, 8.2, 22, 85, 5.8))],
-        'white': [seen(ribbon([(20.9, 68.6), (32.3, 72.2)], 5.6, caps=(False, False)))],
+        'ink': [seen(disc(27, 62, 9.4)), seen(ribbon([(24.1, 65.7), (16.2, 75.9)], 8.6, 6.2, caps=(False, True)))],
+        'white': [seen(poly(ellipse_points(27, 62, 9.35, 9.35, 0, 208.2, 165.7, 8) + ellipse_points(27, 62, 9.35, 9.35, 0, 90.3, 47.8, 8)))],
     }),
     # In the air over it and broad: stuck into the ball, its point was a spike in a socket.
     'rockstar': ('#B58CFF', {'ink': ['M59.5 2.5 L33.5 22.5 L47 22.5 L40.5 34.5 L66.5 14.5 L53 14.5Z']}),
@@ -450,8 +451,14 @@ LOOKS = {
         'white': ['M34.6 26.5 L65.4 26.5 L64.9 32.6 L35.1 32.6Z'],
     }),
     'ninja': ('#FF5A4F', {
-        # A throwing star in the air over it, whole: stuck in the ball, its point stood in a socket.
-        'ink': [shuriken(50, 17, 16, 6.2, 32, 12)],
+        # A band tied across its brow, straight from side to side and clear of its face, knotted at the back
+        # with its two ends flying: the ball itself is the ninja. Along the ball's edge the band was taken
+        # for a shine, and a star in the air for a sparkle.
+        'fitted': True,
+        'behind': [seen(ribbon(curve([(77.7, 43.6), (74, 35.5), (81.5, 29.5), (76.5, 19.5)], 16), 4, 6.2, caps=(True, False))),
+                   seen(ribbon(curve([(77.7, 43.6), (84, 42.5), (83.5, 35), (89, 32.5)], 16), 4, 5.8, caps=(True, False))),
+                   circ(*on_ball(40.2, 0.6), 4.8)],
+        'white': [band_on_ball(41.3, 5.4, 0.6, inset=0)],
     }),
     'angel': ('#BFD9FF', {'ink': [ell_ring(50, 21, 21, 8, 5.6)]}),
     'graduate': ('#BFE8D2', {
@@ -467,13 +474,15 @@ LOOKS = {
         'white': ['M43.9 22 L56.1 22 L59.3 27 L40.7 27Z', 'M37.8 31.5 L62.2 31.5 L65.5 36.5 L34.5 36.5Z'],
     }),
     # More to pick among, each worn or grown and none in the air.
-    # A gourd of mate held up beside its face: smaller than a hat, the metal round its mouth in white, and
-    # the straw in it, leaning. It overlaps the ball enough to be told from it by its rim.
+    # A gourd of mate held up beside its face and leaning towards it: round, with a neck, the metal round
+    # its mouth in white under a lip of its own, and the straw, thin, with its flat end. It overlaps the
+    # ball enough to be told from it by its rim. Sipped, the straw into the face made a pipe of it.
     'mate': ('#9BE564', {
         'fitted': True,
-        'ink': [seen('M15.7 56.5 L30.3 56.5 L30.8 61.8 C33.6 63.2 34.2 65.7 34.2 68.1 C34.2 73.3 29.3 77 23 77 C16.7 77 11.8 73.3 11.8 68.1 C11.8 65.7 12.4 63.2 15.2 61.8Z'),
-                seen(ribbon([(24.5, 58), (32.5, 43.5)], 4.6, caps=(False, True)))],
-        'white': [seen(poly([(15.6, 57.6), (30.4, 57.6), (30.9, 62.6), (15.1, 62.6)]))],
+        'ink': [seen(turned(poly([(14.9, 53.5), (30.1, 53.5)] + ellipse_points(22.5, 66.37, 11, 9.4, 0, -41.8, 221.8, 40)), 22.5, 53.5, 6)),
+                seen(turned(bar(24, 55.5, 32.5, 38.5, 3.8, cap=False), 22.5, 53.5, 6)),
+                seen(turned(ribbon([(30.9, 41.7), (32.8, 38)], 5.4), 22.5, 53.5, 6))],
+        'white': [seen(turned(poly([(14.7, 55.7), (30.3, 55.7), (30.74, 60.5), (14.26, 60.5)]), 22.5, 53.5, 6))],
     }),
     # A bottle that has all but fallen over on its crown, and what rises from it, larger as it rises.
     'bottle': ('#BFE8D2', {
@@ -491,34 +500,46 @@ LOOKS = {
         'ink': ['M30 45 Q28 20.5 50 20.5 Q72 20.5 70 45 Q50 37.5 30 45Z'] + both('M34 37 Q14 38 21.5 15 Q23.5 27 35 28Z'),
         'white': [ribbon(curve([(36.5, 38.2), (50, 33.4), (63.5, 38.2)]), 4.6)],
     }),
-    # A mouse's ears: round, behind the ball, the inside of each in white and towards the ball, so that it
-    # is an ear and not an eye.
+    # A mouse's ears: ovals that lean outwards, the near one to the side and the far one nearer the crown,
+    # as a head turned a little shows them, the inside of each in white.
     'mouse': ('#B8C4D0', {
         'fitted': True,
-        'behind': [circ(*on_ball(-41, 6.5), 12.6), circ(*on_ball(41, 6.5), 12.6)],
-        'white': [circ(*on_ball(-41, 5), 6.2), circ(*on_ball(41, 5), 6.2)],
+        'behind': [poly(ellipse_points(*on_ball(-45, 7.5), 12.2, 14.2, -45, 0, 360, 40)[:-1]), poly(ellipse_points(*on_ball(32, 6.5), 11.6, 13.4, 32, 0, 360, 40)[:-1])],
+        'white': [poly(ellipse_points(*on_ball(-45, 6.2), 6.2, 8, -45, 0, 360, 40)[:-1]), poly(ellipse_points(*on_ball(32, 5.4), 5.8, 7.4, 32, 0, 360, 40)[:-1])],
     }),
     # A rabbit's ears: long, behind the ball, each with its inside in white.
     'bunny': ('#FFC2D1', {
         'fitted': True,
-        'behind': both('M36.5 46 Q25.5 26 32.5 8 Q46 20.5 47.5 43Z'),
-        'white': both('M38 37 Q33 25.5 35.2 16.5 Q41.4 25.5 43 37.5Z'),
+        'behind': both('M36.5 46 Q26.5 28 32.8 13.5 Q45.5 23 47.5 43Z'),
+        'white': both('M38.2 37.5 Q33.8 27.5 35.6 20.5 Q41.4 27.5 43 38Z'),
     }),
-    # A bird that has settled on its crown, looking where the ball looks.
+    # A bird that has settled on its crown, looking where the ball looks: its beak, its wing, its tail up.
     'bird': ('#BFD9FF', {
-        'ink': [poly(ellipse_points(53, 35, 13, 9.6, -8, 0, 360, 40)[:-1]), circ(41.5, 28, 7.2),
-                poly([(35.4, 25.4), (27.5, 28.4), (35.6, 31)]), poly([(62.5, 31), (76, 23.5), (74, 36.5)])],
-        'white': [circ(40.6, 27, 2.5)],
+        'ink': [poly(ellipse_points(53, 34.5, 13.5, 10.4, -6, 0, 360, 40)[:-1]), circ(41, 27.5, 7.8), poly([(35, 23.6), (24.5, 28), (35.2, 31.4)]),
+                ribbon([(60, 33), (74, 19.5)], 8.6, 6, caps=(False, False))],
+        'white': [circ(40, 26.5, 2.6), ribbon(curve([(47.5, 33.5), (54, 40.5), (60.5, 34.5)]), 4.6)],
     }),
-    # A cap with a propeller on it.
+    # A cap with a propeller of two blades on it.
     'propeller': ('#D4FF4F', {
-        'ink': ['M31 45.5 Q30 24.5 50 24.5 Q70 24.5 69 45.5 Q50 38 31 45.5Z', bar(50, 26, 50, 16, 4.2, cap=False),
-                ribbon([(35.5, 11.5), (64.5, 17.5)], 6.4), circ(50, 14.5, 4)],
+        'ink': ['M31 45.5 Q30 24.5 50 24.5 Q70 24.5 69 45.5 Q50 38 31 45.5Z', bar(50, 26, 50, 15, 4.2, cap=False),
+                poly(ellipse_points(39.5, 11.4, 10.5, 4.4, 12, 0, 360, 40)[:-1]), poly(ellipse_points(60.5, 15.6, 10.5, 4.4, 12, 0, 360, 40)[:-1]), circ(50, 13.5, 4.2)],
         'white': [ribbon(curve([(38, 38.6), (50, 34), (62, 38.6)]), 4.6)],
     }),
     # A ribbon tied in a bow on its crown.
     'bow': ('#FF7A9C', {
         'ink': both('M48 33 Q38 19.5 28 21.5 Q25.5 33 28 44.5 Q38 46.5 48 33Z') + [circ(50, 33, 6)],
+    }),
+    # The cap of a mushroom, with its spots.
+    'mushroom': ('#FF5A4F', {
+        'ink': ['M16 40.5 Q13 14.5 50 14.5 Q87 14.5 84 40.5 Q81.5 45.5 75 44.3 Q50 38.5 25 44.3 Q18.5 45.5 16 40.5Z'],
+        'white': [circ(38, 28, 5.8), circ(59.5, 23.5, 4.4), circ(71, 34, 3.4)],
+    }),
+    # An apple on its crown with an arrow through it.
+    'apple': ('#9BE564', {
+        'ink': ['M50 22 Q55 17.5 61 20 Q67.5 23.5 66 33 Q64 44.5 56 46.5 Q52.5 47.2 50 45.6 Q47.5 47.2 44 46.5 Q36 44.5 34 33 Q32.5 23.5 39 20 Q45 17.5 50 22Z',
+                bar(50, 23, 52.5, 14.5, 3.6), 'M53 16.5 Q58 9.5 66 11.5 Q62 18.5 53 16.5Z',
+                bar(22, 33, 79, 33, 3.6, cap=False), poly([(27.5, 26.8), (14.5, 33), (27.5, 39.2)]),
+                poly([(72.5, 33), (77, 27), (85.5, 27), (81.5, 33), (85.5, 39), (77, 39)])],
     }),
 }
 

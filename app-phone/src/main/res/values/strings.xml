@@ -337,5 +337,7 @@
     <string name="look_bird">Bird</string>
     <string name="look_propeller">Propeller cap</string>
     <string name="look_bow">Bow</string>
+    <string name="look_mushroom">Mushroom</string>
+    <string name="look_apple">Apple</string>
     <string name="character_how">How it answers</string>
 </resources>

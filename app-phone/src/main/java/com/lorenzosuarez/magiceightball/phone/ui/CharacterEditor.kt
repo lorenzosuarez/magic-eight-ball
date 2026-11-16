@@ -654,6 +654,8 @@ internal val EMBLEMS = listOf(
     CharacterLook.BIRD,
     CharacterLook.MATE,
     CharacterLook.PROPELLER,
+    CharacterLook.MUSHROOM,
+    CharacterLook.APPLE,
     CharacterLook.BOW,
     CharacterLook.PUNK,
     CharacterLook.ROCKSTAR,
