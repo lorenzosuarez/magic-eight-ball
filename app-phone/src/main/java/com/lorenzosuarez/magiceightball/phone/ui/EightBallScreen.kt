@@ -1313,54 +1313,64 @@ private fun Caption(state: EightBallUiState, answerSmall: Boolean, modifier: Mod
             )
             is BallPhase.Thinking -> QuietText(phase.question.quoted())
             is BallPhase.Answered -> Column(
-                // Where there is more to read than room for it, it scrolls in its own place, and
-                // what is still below fades out rather than being cut through a line.
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        if (captionScroll.canScrollForward) {
-                            drawRect(
-                                brush = Brush.verticalGradient(
-                                    0f to Color.Black,
-                                    1f to Color.Transparent,
-                                    startY = size.height - CAPTION_FADE.toPx(),
-                                    endY = size.height
-                                ),
-                                blendMode = BlendMode.DstIn
-                            )
-                        }
-                    }
-                    .verticalScroll(captionScroll),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (largeFont || answerSmall) {
-                    // The answer itself: heavier than what is said about it, and a little apart.
-                    Text(
-                        text = phase.answer.text(),
-                        modifier = Modifier.padding(bottom = 4.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
-                    )
-                }
-                // The character's comeback to the question, said under its answer and more quietly:
-                // the ball has the word, and this is an aside.
-                phase.answer.remark()?.let { remark ->
-                    Text(
-                        text = remark,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        style = MaterialTheme.typography.bodyLarge,
-                        // The character's own words, not a note about them: in full ink, apart
-                        // from the question over the ball, which is the user's and is quiet.
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        maxLines = REMARK_MAX_LINES,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                val written = largeFont || answerSmall
+                val remark = phase.answer.remark()
+                // Where there is more to read than room for it, it scrolls in its own place, and
+                // what is still below fades out rather than being cut through a line. Who said it
+                // is under it and stays: it is never what is scrolled away or faded.
+                if (written || remark != null) Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .fillMaxWidth()
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            if (captionScroll.canScrollForward) {
+                                drawRect(
+                                    brush = Brush.verticalGradient(
+                                        0f to Color.Black,
+                                        1f to Color.Transparent,
+                                        startY = size.height - CAPTION_FADE.toPx(),
+                                        endY = size.height
+                                    ),
+                                    blendMode = BlendMode.DstIn
+                                )
+                            }
+                        }
+                        .verticalScroll(captionScroll),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (written) {
+                        // The answer itself: heavier than what is said about it, and a little apart.
+                        Text(
+                            text = phase.answer.text(),
+                            modifier = Modifier.padding(bottom = 4.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    // The character's comeback to the question, said under its answer and more quietly:
+                    // the ball has the word, and this is an aside.
+                    if (remark != null) {
+                        Text(
+                            text = remark,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                            style = MaterialTheme.typography.bodyLarge,
+                            // The character's own words, not a note about them: in full ink, apart
+                            // from the question over the ball, which is the user's and is quiet.
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                            maxLines = REMARK_MAX_LINES,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 // Who said it, signed as on the picture that is shared: an answer is only funny
                 // when it is known whose it is.
@@ -1440,33 +1450,27 @@ private fun Actions(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // A refusal is said in the colour of a warning.
-                if (notice != null) {
+                // What stands in the way of asking by voice, quietly: it is how things are, not something gone wrong.
+                if (notice == Notice.VoiceUnsupported) {
                     QuietText(
-                        text = stringResource(
-                            when (notice) {
-                                Notice.MicrophoneDenied -> R.string.notice_microphone_denied
-                                Notice.VoiceUnsupported -> R.string.notice_voice_unsupported
-                            }
-                        ),
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        color = if (notice == Notice.MicrophoneDenied) {
-                            MaterialTheme.colorScheme.error
-                        } else MaterialTheme.colorScheme.onSurfaceVariant
+                        text = stringResource(R.string.notice_voice_unsupported),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                     )
                 }
-                // The way out of a refusal, right where it is explained.
+                // A refusal has a way out, and the way out says what was refused: words alone, so
+                // that who answers is the one pill here.
                 if (notice == Notice.MicrophoneDenied) {
-                    FilledTonalButton(
+                    TextButton(
                         onClick = onAllowMicrophone,
-                        // A little further from who answers than the line over it: it is about the line, not about them.
-                        modifier = Modifier.padding(bottom = 4.dp).heightIn(min = 48.dp),
+                        modifier = Modifier.heightIn(min = 48.dp).semantics { liveRegion = LiveRegionMode.Polite },
                         shape = CircleShape,
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.pageCard,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                     ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_mic),
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp).size(20.dp)
+                        )
                         Text(stringResource(R.string.settings_voice_allow_microphone), fontWeight = FontWeight.SemiBold)
                     }
                 }

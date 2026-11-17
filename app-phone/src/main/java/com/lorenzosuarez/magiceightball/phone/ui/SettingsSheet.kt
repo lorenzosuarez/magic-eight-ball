@@ -218,19 +218,18 @@ internal fun SettingsContent(
                     Section(stringResource(R.string.options_answers)) {
                         ActionRow(
                             title = stringResource(R.string.settings_ai),
-                            // What stands in its way, when something does; a row that leads somewhere says nothing else.
-                            supporting = aiNote,
+                            // What stands in its way, when something does; otherwise how it is set, as
+                            // every row here that is a setting says under its name.
+                            supporting = aiNote ?: stringResource(
+                                if (state.usesAiAnswers) R.string.options_on_many else R.string.options_off_many
+                            ),
                             onClick = { nav.section = OptionsSection.ANSWERS },
                             icon = R.drawable.ic_sparkles
                         )
                         RowDivider()
                         ActionRow(
                             title = stringResource(R.string.options_voice),
-                            supporting = when (state.voice) {
-                                VoiceStatus.Unsupported -> stringResource(R.string.settings_voice_unsupported)
-                                VoiceStatus.PermissionDenied -> stringResource(R.string.settings_voice_denied)
-                                else -> null
-                            },
+                            supporting = stringResource(voiceSummary(state.voice, state.settings.spokenAnswersEnabled)),
                             onClick = { nav.section = OptionsSection.VOICE },
                             icon = R.drawable.ic_mic,
                             alert = voiceDenied
@@ -239,7 +238,9 @@ internal fun SettingsContent(
                         ActionRow(
                             title = stringResource(R.string.settings_party),
                             // Who is playing, when anyone is.
-                            supporting = state.settings.partyNames.joinToString(", ").takeIf { state.settings.isParty },
+                            supporting = if (state.settings.isParty) {
+                                state.settings.partyNames.joinToString(", ")
+                            } else stringResource(R.string.options_party_off),
                             onClick = { editingParty = true },
                             icon = R.drawable.ic_party
                         )
@@ -249,7 +250,13 @@ internal fun SettingsContent(
                         if (state.config.dailyVerdictEnabled) {
                             ActionRow(
                                 title = stringResource(R.string.options_notifications),
-                                supporting = stringResource(R.string.settings_daily_blocked).takeIf { dailyBlocked },
+                                supporting = stringResource(
+                                    when {
+                                        dailyBlocked -> R.string.settings_daily_blocked
+                                        state.settings.dailyVerdictEnabled -> R.string.options_on_many
+                                        else -> R.string.options_off_many
+                                    }
+                                ),
                                 onClick = { nav.section = OptionsSection.NOTIFICATIONS },
                                 icon = R.drawable.ic_bell,
                                 alert = dailyBlocked
@@ -883,6 +890,20 @@ private fun EightBallUiState.privacyNoteRes(): Int {
         asksAi -> R.string.privacy_ai_only
         else -> R.string.privacy_none
     }
+}
+
+/**
+ * What the row that leads to voice says under its name: what stands in the way of asking by
+ * voice, when something does, and otherwise which of the two switches behind it are on.
+ */
+@StringRes
+internal fun voiceSummary(voice: VoiceStatus, spoken: Boolean): Int = when {
+    voice == VoiceStatus.Unsupported -> R.string.settings_voice_unsupported
+    voice == VoiceStatus.PermissionDenied -> R.string.settings_voice_denied
+    voice.isReady && spoken -> R.string.options_voice_both
+    voice.isReady -> R.string.options_voice_questions
+    spoken -> R.string.options_voice_answers
+    else -> R.string.options_voice_off
 }
 
 @StringRes

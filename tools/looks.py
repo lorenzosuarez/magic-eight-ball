@@ -407,7 +407,7 @@ LOOKS = {
     }),
     'villain': ('#B58CFF', {'behind': both('M23 54 Q7 31 33 9 Q21 30 35 45Z')}),
     # Tucked behind the ball and broad: planted on it, its shaft stood in a socket.
-    'poet': ('#BFD9FF', {'behind': quill((43.5, 45), (68.5, 11), widest=8.4, shaft=0.37)}),
+    'poet': ('#BFD9FF', {'behind': quill((43.5, 45), (70, 8.5), widest=10.5, shaft=0.34)}),
     'astro': ('#8FA8FF', {
         # A planet and its ring: the ring is ink where it is past the planet and white where it crosses in
         # front of it, cut by the planet's own edge.
