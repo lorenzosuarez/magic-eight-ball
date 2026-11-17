@@ -19,12 +19,13 @@ Todavía no puede salir a producción, y lo que lo impide no está en el código
 
 - **Publicada el 16 de noviembre de 2026**, antes del punto 2, con la frase que ya tenía la política anterior en lugar de la del servicio de pago: "Según cómo se acceda a la API, Google puede conservar estas solicitudes durante un tiempo y usarlas para prestar y mejorar sus servicios", que es cierta con cualquiera de los dos planes. Con el proyecto ya en Blaze: volver a la frase del servicio de pago en las tres políticas, poner fecha nueva y desplegar otra vez.
 
-### 2. El proyecto de Firebase está en el plan gratuito: **Falta** mientras siga así (se ve en Firebase console → Uso y facturación)
+### 2. Facturación: el proyecto ya está en Blaze, falta el prepago de Gemini: **Falta** hasta cargarlo (se ve en Firebase console → Uso y facturación y en Google AI Studio → Proyectos)
 
 - **Qué.** Sin cuenta de facturación, la Gemini Developer API que usa Firebase AI Logic es el nivel gratuito. Los términos de la Gemini API (vigentes desde el 23 de marzo de 2026) solo permiten los servicios de pago para apps disponibles en el EEE, Suiza o el Reino Unido; en el servicio no pago Google usa lo enviado para mejorar sus productos, puede leerlo un revisor humano, y se pide no enviar información personal. La app envía el texto de la pregunta dicha por voz de cualquier usuario y, con cuenta, el nombre, el signo y la descripción de los personajes. Además, Cloud Functions no se puede desplegar sin el plan Blaze, así que Premium no tiene servidor.
 - **Dónde.** El propio repositorio lo exige: `docs/REMOTE_CONFIG.md:31` y `:48`, `docs/plans/personajes-cuenta-premium.md:34-37`.
 - **Al pasar a Blaze (leído el 17 de noviembre de 2026 en la consola y en `firebase.google.com/docs/ai-logic/pricing`).** Con la facturación vinculada, la Gemini Developer API pide a la mayoría de los proyectos un pago por adelantado, sobre todo con una cuenta de facturación nueva, y hasta completarlo puede bloquear las solicitudes: la app responde entonces con su lista incluida, sin error a la vista. Se completa en Google AI Studio, importando el proyecto desde la página Proyectos. Allí mismo se ponen el presupuesto y el límite de gasto de la API.
 - **Arreglo mínimo.** Pasar el proyecto a Blaze con un presupuesto y alertas en Google Cloud. Si no se hace antes de salir: `gemini_enabled` y `account_enabled` apagados, o excluir el EEE, el Reino Unido y Suiza en los países de distribución, y no publicar la frase del servicio de pago.
+- **17 de noviembre de 2026, visto en la consola.** El proyecto está en Blaze con la cuenta de facturación "Firebase Payment", en euros. Ese día se pusieron topes por servicio (Uso y facturación → Topes de gasto por servicio, en vista previa), que pausan el servicio el resto del mes al llegar al 100 % y avisan al 50 y al 80 %: Gemini Developer API 10 €, Cloud Run Functions 10 €, y 1 € para Agent Platform (Vertex AI) y App Hosting, que la app no usa. No son topes duros: el uso llega con minutos de retraso y lo gastado en ese tiempo se cobra. Además hay un presupuesto de solo alertas, "Total del proyecto", de 20 € al mes, con correo al 50, 90 y 100 %. En Google AI Studio el proyecto figura con "Prepay required" (nivel 1, tope de 250 USD al mes para la cuenta): hasta cargar el prepago, Gemini puede rechazar las solicitudes y la app responde con su lista incluida. Lo carga el dueño de la cuenta en AI Studio → Proyectos → Magic 8 Ball → Set up prepay. Con el prepago hecho, volver a la frase del servicio de pago en las políticas (punto 1).
 
 ### 3. Premium no se puede vender todavía: **Falta** (solo bloquea si Premium sale con el lanzamiento)
 
@@ -32,19 +33,31 @@ Todavía no puede salir a producción, y lo que lo impide no está en el código
 - **Dónde.** Los siete pasos están en `docs/REMOTE_CONFIG.md:45-55`: Blaze, API de Google Play Developer y permiso de la cuenta de servicio, `firebase deploy --only functions,firestore:rules`, tema `play-notifications` con las notificaciones en tiempo real, suscripción `premium_subscription` con el plan `monthly`, política y ficha.
 - **17 de noviembre de 2026:** `premium_enabled` estaba encendido en Remote Config sin servidor desplegado; se apagó, y no se tocó ningún otro valor.
 - **Arreglo mínimo.** Dejar `premium_enabled` apagado (es el valor por defecto, `config/AppConfig.kt:48`) hasta completar esos pasos y probar con un tester de licencia el ciclo entero: compra, renovación, cancelación (Premium sigue hasta el fin del periodo), vencimiento, pago rechazado, reembolso, borrado de la cuenta con suscripción activa y reclamo desde otra cuenta de la app.
+- **17 de noviembre de 2026, hecho.** La API de Google Play Android Developer ya estaba activada. `firebase deploy --only functions,firestore:rules`: las cinco funciones están en `europe-west1` y las reglas, publicadas, después de pasar las 61 pruebas del servidor y las de las reglas. El despliegue necesita Node 22 o posterior en la máquina (con Node 20, `npm ci` no instala `@google-cloud/firestore` y `npm test` no compila) y `--force` por la política de reintentos de `playNotified` y `forgetAccount`; esas dos fallaron la primera vez por permisos que tardan en propagarse y se crearon al reintentar. Google Play puede publicar en `play-notifications` (rol Pub/Sub Publisher para `google-play-developer-notifications@system.gserviceaccount.com`), las notificaciones en tiempo real están activadas en Play Console con "Suscripciones y compras anuladas", y el mensaje de prueba llegó a `playNotified` (respuesta 204).
+- **Falta, en este orden.** Invitar en Play Console → Usuarios y permisos a `88020956553-compute@developer.gserviceaccount.com`, solo para esta app, con "Ver datos financieros" y "Gestionar pedidos y suscripciones": hasta entonces `claimPremium` y `revokeVoided` no pueden consultar a Google Play. Crear el perfil de pagos: sin él Play Console no deja abrir Suscripciones. Después, la suscripción y la prueba con tester de licencia.
 
 ### 4. Acceso a producción: 12 testers durante 14 días seguidos: **No verificable**
 
 - **Qué.** Las cuentas personales creadas después del 13 de noviembre de 2023 necesitan una prueba cerrada con al menos 12 testers inscritos 14 días continuos antes de poder pedir producción; quien se da de baja y vuelve reinicia su cuenta. Después se envía un cuestionario cuya revisión suele tardar hasta 7 días.
 - **Dónde.** Play Console → Panel → "Solicitar acceso a producción": cuántos testers cuentan y desde qué día.
+- **17 de noviembre de 2026:** el panel dice que 12 testers llevan 4 días seguidos inscritos. Si nadie se da de baja, los 14 días se cumplen el 27 de noviembre.
 
 ### 5. Declaraciones de Play Console acordes a este build: **No verificable**
 
 Sin ellas la revisión rechaza o la ficha queda en infracción. La lista exacta está en "No se puede saber desde el repositorio"; lo que no puede faltar: Seguridad de los datos con cuenta, compras y la URL de borrado; público objetivo solo "18 y más"; clasificación de contenido rehecha; instrucciones de acceso para el revisor, con una cuenta que ya tenga Premium.
 
+- **17 de noviembre de 2026, leído sin cambiar nada.** "Contenido de la app" no muestra pendientes, pero Seguridad de los datos (editada el 10 de noviembre) sigue diciendo que la app no permite crear cuentas ni pedir que se borren los datos, y no declara datos personales ni historial de compras; la clasificación de contenido y el público objetivo son del 17 de abril. Se rehacen con `docs/play-console-checklist.md` antes de que la versión con cuentas salga de la prueba interna.
+
+### 6. El reloj usa una versión de la biblioteca de tarjetas con un fallo conocido: **Falta** hasta publicar una versión nueva
+
+- **Qué.** Play Console avisó el 17 de noviembre de 2026, sobre la versión 103 (1.0.1) del reloj, que `androidx.wear.tiles` 1.4.1 puede lanzar una `SecurityException` en Wear OS 5 (API 34) cuando la app apunta a la API 35 o superior, y el reloj apunta a la 36. Pide la 1.5.0 o posterior.
+- **Arreglo.** `gradle/libs.versions.toml`: tiles 1.6.2 y protolayout 1.4.2. El reloj compila y pasa sus pruebas y lint; falta verlo en un reloj y publicarlo con un código de versión mayor que 103.
+
 ### Orden sugerido
 
 1. Blaze, presupuesto y cuotas. 2. Desplegar reglas y funciones. 3. Fecha en las políticas y desplegar el sitio. 4. Declaraciones de Play Console. 5. Producto, notificaciones y prueba con tester de licencia. 6. Encender `account_enabled` y `premium_enabled`. 7. Pedir producción cuando se cumplan los 14 días.
+
+Al 17 de noviembre de 2026: 1 y 2 hechos, salvo el prepago de Gemini; de 5, las notificaciones. Lo que sigue es del dueño de las cuentas: el prepago, la invitación a la cuenta de servicio, el perfil de pagos y la lectura de los Términos.
 
 ## Conviene antes de salir
 
