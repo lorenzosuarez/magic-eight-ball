@@ -82,8 +82,8 @@ data class CustomCharacter(
             AskerFacts.cut(typed.trim(), MAX_DESCRIPTION_LENGTH).trim()
                 .takeIf { text -> text.count(Char::isLetter) >= MIN_DESCRIPTION_LETTERS }
 
-        /** Fewer letters than this say nothing about how anyone answers. */
-        private const val MIN_DESCRIPTION_LETTERS = 10
+        /** Fewer letters than this say nothing about how anyone answers. Whoever is writing one is told the number. */
+        const val MIN_DESCRIPTION_LETTERS = 10
 
         /** Which of the app's characters may lend a colour: all but the user's own. What the ball wears is any [CharacterLook]. */
         val LOOKS: List<Magic8BallPersonality> = Magic8BallPersonality.entries - Magic8BallPersonality.CUSTOM

@@ -200,7 +200,9 @@
     <string name="character_unnamed">Sem nome</string>
     <string name="character_sent">É enviado ao Gemini, do Google, para responder. Nada pessoal.</string>
     <string name="character_refused">Confira o nome e como responde</string>
-    <string name="character_incomplete">Dê um nome e diga como responde</string>
+    <string name="character_name_missing">Dê um nome</string>
+    <string name="character_description_missing">Diga como responde</string>
+    <string name="character_description_short">Escreva um pouco mais: pelo menos %1$d&#160;letras</string>
     <string name="character_discard_title">Descartar o que você escreveu?</string>
     <string name="character_discard_yes">Descartar</string>
     <string name="character_discard_no">Continuar editando</string>

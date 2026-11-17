@@ -1,5 +1,6 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import android.view.inputmethod.InputConnectionWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -22,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,13 +37,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.InterceptPlatformTextInput
+import androidx.compose.ui.platform.PlatformTextInputInterceptor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -47,10 +63,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -355,13 +373,15 @@ internal fun ProfileContent(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        // And typed in one go: each number hands the cursor on to the next, and takes it back.
+        val (day, month, year) = remember { List(3) { DateWay() } }
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            DateField(draft.day, draft::typeDay, R.string.profile_day, !busy, badDate, Modifier.weight(1f))
-            DateField(draft.month, draft::typeMonth, R.string.profile_month, !busy, badDate, Modifier.weight(1.4f))
-            DateField(draft.year, draft::typeYear, R.string.profile_year, !busy, badDate, Modifier.weight(1.2f), last = true)
+            DateField(draft::day, draft::typeDay, R.string.profile_day, LAST_DAY, !busy, badDate, day, before = null, next = month, Modifier.weight(1f))
+            DateField(draft::month, draft::typeMonth, R.string.profile_month, LAST_MONTH, !busy, badDate, month, before = day, next = year, Modifier.weight(1.4f))
+            DateField(draft::year, draft::typeYear, R.string.profile_year, LAST_YEAR, !busy, badDate, year, before = month, next = null, Modifier.weight(1.2f))
         }
         if (badDate) {
             Trouble(stringResource(R.string.profile_date_invalid), Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp))
@@ -448,29 +468,172 @@ private fun Trouble(message: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** One of the date's three numbers. */
+/**
+ * One of the date's three numbers. A date is typed in one go: the cursor goes on to the next
+ * number as soon as this one is whole (see [typedWhole]), and deleting in it once it is empty
+ * goes back to the one before, as in the boxes a code is typed into.
+ *
+ * Come back into with something in it, the number is selected whole, so that what is typed
+ * takes its place with nothing to delete first.
+ *
+ * @param value what the draft holds of it, read again after every key: the draft keeps the
+ * digits alone, and no more of them than the number has.
+ * @param most the largest the number can be.
+ * @param way the way into it, and [before] and [next] the ways into the numbers beside it:
+ * null where there is none.
+ */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun DateField(
-    value: String,
+    value: () -> String,
     onValueChange: (String) -> Unit,
     label: Int,
+    most: Int,
     enabled: Boolean,
     wrong: Boolean,
-    modifier: Modifier = Modifier,
-    last: Boolean = false
+    way: DateWay,
+    before: DateWay?,
+    next: DateWay?,
+    modifier: Modifier = Modifier
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier,
-        enabled = enabled,
-        isError = wrong,
-        shape = FieldShape,
-        singleLine = true,
-        label = { Text(stringResource(label), maxLines = 1) },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Number,
-            imeAction = if (last) ImeAction.Done else ImeAction.Next
+    // What the field knows beyond the digits the draft keeps: where the cursor is among them,
+    // and which of them are selected.
+    var held by remember { mutableStateOf(TextFieldValue(value(), TextRange(value().length))) }
+    // What the number was when the focus arrived, for as long as the field has it.
+    var entered by remember { mutableStateOf<String?>(null) }
+    // Once the focus has arrived, and not as it does: the touch that brings it puts the cursor
+    // down under the finger after the field has heard of it, and would undo this. And only if
+    // nothing has been typed in the meantime: a digit typed that fast would be selected, and
+    // the one after it would take its place.
+    LaunchedEffect(entered) {
+        if (entered != null) {
+            val end = value().length
+            if (entered == value()) {
+                held = held.copy(selection = if (way.byDeleting) TextRange(end) else TextRange(0, end))
+            }
+            way.byDeleting = false
+        }
+    }
+    // Up from the key that leaves the number whole until the cursor is handed on, which is once
+    // the field shows what was typed and not from under the key: a field that loses the focus
+    // with something in it selected says once more what it last showed, and the number that
+    // was typed over would come back.
+    var whole by remember { mutableStateOf(false) }
+    LaunchedEffect(whole) {
+        if (whole) {
+            next?.focus?.requestFocus()
+            whole = false
+        }
+    }
+    // With nothing left here to delete, deleting goes back to the number before, and says
+    // whether it did. Asked by whichever hears of it: the key, or the keyboard's own request,
+    // which may still come once the cursor has gone and is then nobody's.
+    // It is one and the same for as long as the field stands, and reads the number through what
+    // is kept current: a keyboard listened to by something new at every key starts again at
+    // every key.
+    val holds by rememberUpdatedState(value)
+    val goesBack: () -> Boolean = remember(before) {
+        {
+            if (before == null || entered == null || holds().isNotEmpty()) {
+                false
+            } else {
+                before.byDeleting = true
+                before.focus.requestFocus()
+                true
+            }
+        }
+    }
+    // A keyboard on the screen does not always send the key that deletes: with nothing before
+    // the cursor, some ask all the same for what is before it to be deleted, which no field
+    // hears of. It is listened for where the keyboard says it.
+    val listened = remember(goesBack) {
+        PlatformTextInputInterceptor { request, session ->
+            session.startInputMethod { attributes ->
+                object : InputConnectionWrapper(request.createInputConnection(attributes), false) {
+                    override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean =
+                        (beforeLength > 0 && goesBack()) || super.deleteSurroundingText(beforeLength, afterLength)
+
+                    override fun deleteSurroundingTextInCodePoints(beforeLength: Int, afterLength: Int): Boolean =
+                        (beforeLength > 0 && goesBack()) || super.deleteSurroundingTextInCodePoints(beforeLength, afterLength)
+                }
+            }
+        }
+    }
+    InterceptPlatformTextInput(listened) {
+        OutlinedTextField(
+            value = held.copy(text = value()),
+            onValueChange = { typed ->
+                val was = held.copy(text = value())
+                onValueChange(typed.text)
+                held = typed
+                if (typedWhole(was, value(), most)) whole = true
+            },
+            modifier = modifier
+                .focusRequester(way.focus)
+                .onFocusChanged {
+                    // Gone from before it was seen to arrive, as when a key held down deletes on
+                    // through it: how it was come into is not kept for the next time.
+                    if (!it.isFocused) way.byDeleting = false
+                    entered = if (it.isFocused) value() else null
+                }
+                // The key itself, from a keyboard with keys or from one on the screen that sends it.
+                .onPreviewKeyEvent { pressed ->
+                    pressed.type == KeyEventType.KeyDown && pressed.key == Key.Backspace && goesBack()
+                },
+            enabled = enabled,
+            isError = wrong,
+            shape = FieldShape,
+            singleLine = true,
+            label = { Text(stringResource(label), maxLines = 1) },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = if (next == null) ImeAction.Done else ImeAction.Next
+            ),
+            // No handle to carry the cursor by: among two digits, or four, a touch puts it where
+            // it is wanted, and the handle would hang under a number that is selected whole.
+            colors = OutlinedTextFieldDefaults.colors(
+                selectionColors = TextSelectionColors(
+                    handleColor = Color.Transparent,
+                    backgroundColor = LocalTextSelectionColors.current.backgroundColor
+                )
+            )
         )
-    )
+    }
 }
+
+/** The way into one of the date's numbers, for the numbers beside it. */
+private class DateWay {
+    val focus = FocusRequester()
+
+    /**
+     * Up from the moment deleting goes back into the number until it has the focus: it then takes
+     * the cursor at its end, for the deleting to go on, where any other way in selects it whole.
+     */
+    var byDeleting = false
+}
+
+/**
+ * Whether what was just typed leaves one of the date's numbers whole, so that the next is typed
+ * without reaching for it: it has as many digits as the largest it can be, or no digit put after
+ * it would keep it within that. A day goes on at its second digit, or at a first one from 4 to
+ * 9; a month at its second, or at a first one from 2 to 9.
+ *
+ * Only a digit typed at the end of the number does it. One put in before another is a
+ * correction, and whoever is correcting stays where they are; so does whoever deletes, moves the
+ * cursor, or types into a number that already has all its digits.
+ *
+ * @param before the field as it was: what it held, and where in it the typing went.
+ * @param typed what it holds now, digits alone.
+ * @param most the largest the number can be.
+ */
+internal fun typedWhole(before: TextFieldValue, typed: String, most: Int): Boolean {
+    val atEnd = before.selection.max == before.text.length && typed.length > before.selection.min
+    val number = typed.toIntOrNull()
+    return atEnd && typed != before.text && number != null &&
+        (typed.length == most.toString().length || number * 10 > most)
+}
+
+/** The largest each of the date's numbers can be, which is what says when one is typed whole. */
+private const val LAST_DAY = 31
+private const val LAST_MONTH = 12
+private const val LAST_YEAR = 9999

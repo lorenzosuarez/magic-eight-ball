@@ -3,7 +3,6 @@ package com.lorenzosuarez.magiceightball.phone.ui
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.material3.SheetValue
 import androidx.activity.compose.BackHandler
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.animation.core.spring
@@ -22,6 +21,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.indication
@@ -37,6 +37,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -48,6 +50,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -66,13 +69,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -82,10 +90,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.LineBreak
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.HapticFeedbackConstantsCompat
+import androidx.core.view.ViewCompat
 import com.example.magiceightball.core.domain.model.AskerFacts
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -303,9 +312,13 @@ internal class CharacterDraft(character: CustomCharacter? = null) {
  * every pick; the two things typed; the two things picked; what is sent of them, said before the
  * button that saves; and the ways out.
  *
+ * The button that saves is never dimmed for a draft that is not whole: a button that cannot be
+ * pressed cannot say why. What a field still lacks is said under the field itself.
+ *
  * @param trouble what the last touch of a button could not do, if anything.
  * @param onDelete asks to delete the character; null for a new one.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun CharacterEditorContent(
     draft: CharacterDraft,
@@ -321,8 +334,30 @@ internal fun CharacterEditorContent(
     val description = draft.descriptionToSave
     val scroll = rememberScrollState()
     val focus = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+    val view = LocalView.current
     // What a button could not do is said by the buttons: brought into sight if it is not.
     LaunchedEffect(trouble) { if (trouble != null) scroll.animateScrollTo(scroll.maxValue) }
+    // A field is found wrong when whoever is typing has left it so, or has asked to save it so,
+    // and never while they are still writing in it: that would be to correct someone before
+    // they have finished. Put right, it is no longer held against it.
+    var nameWrong by rememberSaveable { mutableStateOf(false) }
+    var descriptionWrong by rememberSaveable { mutableStateOf(false) }
+    var naming by remember { mutableStateOf(false) }
+    var describing by remember { mutableStateOf(false) }
+    val nameNote = if (nameWrong && name == null) stringResource(R.string.character_name_missing) else null
+    val descriptionNote = when {
+        description != null -> null
+        // Nothing written is not something too short: all there is to ask for is a start.
+        draft.description.isBlank() -> if (descriptionWrong) stringResource(R.string.character_description_missing) else null
+        // While it is being written, how much is wanted is said before it is wrong, and quietly.
+        descriptionWrong || describing ->
+            stringResource(R.string.character_description_short, CustomCharacter.MIN_DESCRIPTION_LETTERS)
+        else -> null
+    }
+    val descriptionError = descriptionNote.takeIf { descriptionWrong }
+    val (nameFocus, descriptionFocus) = remember { FocusRequester.createRefs() }
+    val typed = remember { BringIntoViewRequester() }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -341,12 +376,26 @@ internal fun CharacterEditorContent(
         CharacterPreview(draft)
         OutlinedTextField(
             value = draft.name,
-            onValueChange = draft::typeName,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).fillMaxWidth(),
+            onValueChange = {
+                draft.typeName(it)
+                if (draft.nameToSave != null) nameWrong = false
+            },
+            modifier = Modifier
+                // Where what is typed begins, with the room over it: a save that is refused comes back up to here.
+                .bringIntoViewRequester(typed)
+                .padding(start = 16.dp, top = 16.dp, end = 16.dp)
+                .fillMaxWidth()
+                .focusRequester(nameFocus)
+                .onFocusChanged { at ->
+                    if (naming && !at.isFocused && draft.nameToSave == null) nameWrong = true
+                    naming = at.isFocused
+                }
+                .semantics { if (nameNote != null) error(nameNote) },
             enabled = !busy,
+            isError = nameNote != null,
             singleLine = true,
             label = { Text(stringResource(R.string.character_name)) },
-            supportingText = { Counter(draft.nameLength, CustomCharacter.MAX_NAME_LENGTH) },
+            supportingText = { FieldNote(nameNote, draft.nameLength, CustomCharacter.MAX_NAME_LENGTH) },
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Words,
                 imeAction = ImeAction.Next
@@ -374,14 +423,27 @@ internal fun CharacterEditorContent(
         PickerLabel(stringResource(R.string.character_description), top = 4.dp)
         OutlinedTextField(
             value = draft.description,
-            onValueChange = draft::typeDescription,
-            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().then(keys),
+            onValueChange = {
+                draft.typeDescription(it)
+                if (draft.descriptionToSave != null) descriptionWrong = false
+            },
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .then(keys)
+                .focusRequester(descriptionFocus)
+                .onFocusChanged { at ->
+                    if (describing && !at.isFocused && draft.descriptionToSave == null) descriptionWrong = true
+                    describing = at.isFocused
+                }
+                .semantics { if (descriptionError != null) error(descriptionError) },
             enabled = !busy,
+            isError = descriptionError != null,
             minLines = DESCRIPTION_MIN_LINES,
             // No taller than this: more is scrolled inside it, not the whole sheet with it.
             maxLines = DESCRIPTION_MAX_LINES,
             placeholder = { Text(stringResource(R.string.character_description_example)) },
-            supportingText = { Counter(draft.descriptionLength, CustomCharacter.MAX_DESCRIPTION_LENGTH) },
+            supportingText = { FieldNote(descriptionNote, draft.descriptionLength, CustomCharacter.MAX_DESCRIPTION_LENGTH) },
             // One paragraph, and the last thing typed: the key that would break the line says done
             // instead, and done leaves the field, which takes the keyboard from over the picks.
             keyboardOptions = KeyboardOptions(
@@ -405,9 +467,8 @@ internal fun CharacterEditorContent(
             style = MaterialTheme.typography.bodySmall.copy(lineBreak = LineBreak.Paragraph),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        val ready = name != null && description != null
-        // Only what went wrong is written out. That the draft is not whole yet is what the
-        // button's own look says, and is said in words to whoever cannot see it.
+        // Only what a save could not do is written out here. What the draft still lacks is said
+        // by the fields that lack it.
         if (trouble != null) {
             Text(
                 text = trouble,
@@ -419,15 +480,22 @@ internal fun CharacterEditorContent(
                 color = MaterialTheme.colorScheme.error
             )
         }
-        val unfinished = stringResource(R.string.character_incomplete)
         PrimaryButton(
             text = stringResource(R.string.action_save),
-            onClick = { if (name != null && description != null) onSave(name, description) },
-            modifier = Modifier
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp)
-                .fillMaxWidth()
-                .semantics { if (!ready) stateDescription = unfinished },
-            enabled = ready,
+            onClick = {
+                if (name != null && description != null) {
+                    onSave(name, description)
+                } else {
+                    // Nothing is saved, and it is felt: each field says what it lacks, and the first
+                    // of them that does is brought back into sight with the cursor in it.
+                    nameWrong = name == null
+                    descriptionWrong = description == null
+                    scope.launch { typed.bringIntoView() }
+                    (if (name == null) nameFocus else descriptionFocus).requestFocus()
+                    ViewCompat.performHapticFeedback(view, HapticFeedbackConstantsCompat.REJECT)
+                }
+            },
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).fillMaxWidth(),
             busy = busy
         )
         QuietButton(
@@ -449,15 +517,42 @@ internal fun CharacterEditorContent(
     }
 }
 
-/** How much of the room is taken, at the end of the line under a field: in the text's own colour once it is all taken, which is full and not wrong. */
+/**
+ * The line under a field. First what the field lacks, when that is to be said: in the colour the
+ * field gives to what stands under it, which is that of a warning once the field is marked as
+ * wrong. It is heard as it comes, and by itself: read as part of the field, it would have the
+ * field said again at every letter typed.
+ *
+ * At the end of the line, how much of the room is taken: in the text's own colour once it is
+ * all taken, which is full and not wrong, and never in the warning's, since the count is not
+ * what is wrong.
+ */
 @Composable
-private fun Counter(length: Int, most: Int) {
-    Text(
-        text = "$length/$most",
+private fun FieldNote(lacks: String?, length: Int, most: Int) {
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        color = if (length >= most) MaterialTheme.colorScheme.onSurface else Color.Unspecified,
-        textAlign = TextAlign.End
-    )
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End)
+    ) {
+        if (lacks != null) {
+            Text(
+                text = lacks,
+                modifier = Modifier
+                    .weight(1f)
+                    .alignByBaseline()
+                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+                style = LocalTextStyle.current.copy(lineBreak = LineBreak.Heading)
+            )
+        }
+        Text(
+            text = "$length/$most",
+            modifier = Modifier.alignByBaseline(),
+            color = when {
+                length >= most -> MaterialTheme.colorScheme.onSurface
+                lacks != null -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> Color.Unspecified
+            }
+        )
+    }
 }
 
 /**

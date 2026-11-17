@@ -2,7 +2,6 @@
 
 package com.lorenzosuarez.magiceightball.phone.ui
 
-import androidx.compose.ui.test.hasStateDescription
 import com.example.magiceightball.core.domain.model.CharacterLook
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -10,12 +9,20 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import android.app.Application
 import android.content.pm.ActivityInfo
+import android.view.View
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
@@ -28,17 +35,24 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.UserSettings
+import com.github.takahirom.roborazzi.captureRoboImage
 import com.lorenzosuarez.magiceightball.phone.EightBallUiState
 import com.lorenzosuarez.magiceightball.phone.account.AccountOutcome
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
@@ -60,6 +74,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /** Making a character of one's own, as the user meets it: from "Create" to the one that answers. */
 @RunWith(RobolectricTestRunner::class)
@@ -137,6 +152,18 @@ class CharacterEditorTest {
     }
 
     @Test
+    fun `on the sheet itself, a save asked for too soon asks nothing of the account, and says what is lacking`() {
+        showSheet(onClose = {})
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText(NO_NAME).assertIsDisplayed()
+        compose.onNodeWithText(NO_DESCRIPTION).assertIsDisplayed()
+        // What the account would have answered, had it been asked, is not on the screen.
+        assertEquals(0, compose.onAllNodesWithText("No se pudo guardar", substring = true).fetchSemanticsNodes().size)
+    }
+
+    @Test
     fun `a draft knows whether anything in it is other than it was`() {
         assertEquals(false, CharacterDraft().changedFrom(null))
         assertEquals(false, CharacterDraft(NEMO).changedFrom(NEMO))
@@ -145,47 +172,74 @@ class CharacterEditorTest {
         assertEquals(true, CharacterDraft(NEMO).apply { typeDescription("otra cosa") }.changedFrom(NEMO))
     }
 
-    private fun showEditor(draft: CharacterDraft, isNew: Boolean = true, onSave: (String, String) -> Unit = { _, _ -> }, onDelete: (() -> Unit)? = null) =
-        compose.setContent {
-            MagicEightBallPhoneTheme {
-                ProvideAppLanguage(AppLanguage.SPANISH) {
-                    CharacterEditorContent(
-                        draft = draft,
-                        isNew = isNew,
-                        busy = false,
-                        trouble = null,
-                        onSave = onSave,
-                        onCancel = {},
-                        onDelete = onDelete
-                    )
+    /** The window the editor is shown in, which is what a refused save is felt through. */
+    private lateinit var window: View
+
+    /** The editor on the sheet's own ground, as the app shows it: some of what follows is looked at in a picture. */
+    private fun showEditor(
+        draft: CharacterDraft,
+        isNew: Boolean = true,
+        onSave: (String, String) -> Unit = { _, _ -> },
+        onDelete: (() -> Unit)? = null,
+        language: AppLanguage = AppLanguage.SPANISH,
+        dark: Boolean = false,
+        fontScale: Float = 1f
+    ) = compose.setContent {
+        window = LocalView.current
+        CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+            MagicEightBallPhoneTheme(dark = dark) {
+                ProvideAppLanguage(language) {
+                    Surface(color = MaterialTheme.colorScheme.sheetGround) {
+                        CharacterEditorContent(
+                            draft = draft,
+                            isNew = isNew,
+                            busy = false,
+                            trouble = null,
+                            onSave = onSave,
+                            onCancel = {},
+                            onDelete = onDelete,
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
                 }
             }
         }
+    }
+
+    /** The description's field: the one whose key says done, since its example goes once something is typed. */
+    private fun description() = compose.onNode(hasImeAction(ImeAction.Done))
+
+    /** Whether a field is marked as wrong, and with which words, for whoever has it read out. */
+    private fun wrong(words: String) = SemanticsMatcher.expectValue(SemanticsProperties.Error, words)
+    private val right = SemanticsMatcher.keyNotDefined(SemanticsProperties.Error)
+
+    private fun picture(name: String) = compose.onRoot().captureRoboImage("build/outputs/roborazzi/$name.png")
 
     @Test
     fun `a character is saved once it has a name and something said of it, with the look picked for it`() {
         val draft = CharacterDraft()
         val saved = mutableListOf<Pair<String, String>>()
         showEditor(draft, onSave = { name, description -> saved += name to description })
-        compose.onNodeWithText("Guardar").assertIsNotEnabled()
-        // Why it waits is not written out: it is said to whoever cannot see that the button waits.
-        assertEquals(0, count("Ponle un nombre y di cómo responde"))
-        compose.onNode(hasStateDescription("Ponle un nombre y di cómo responde")).assertExists()
+        // The button is there to be pressed from the start, and nothing is said of what nobody has touched.
+        compose.onNodeWithText("Guardar").assertIsEnabled()
+        assertEquals(0, count(NO_NAME) + count(NO_DESCRIPTION) + count(SHORT_DESCRIPTION))
         // Before the button, in a line: where what is written is sent.
         compose.onNodeWithText("Se envía a Gemini, de Google, para responder. Nada personal.").assertIsDisplayed()
 
         compose.onNodeWithText("Nombre").performTextInput("Capitán Nemo")
-        compose.onNodeWithText("Guardar").assertIsNotEnabled()
         // The field shows an example of what to write for as long as nothing is written.
         compose.onNodeWithText("Un capitán gruñón que todo lo compara con el mar").performTextInput("ok")
-        compose.onNodeWithText("Guardar").assertIsNotEnabled()
+        // Pressed too soon, it saves nothing: the cursor stays where there is more to write.
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+        assertEquals(emptyList<Pair<String, String>>(), saved)
+        description().assertIsFocused()
         // Typed on after what is there: a few words more, and it says something.
         compose.onNodeWithText("ok").performTextInput(", pero gruñón como el mar ")
         // The colour of one of the app's characters, and what another wears: the first of each name is the colour.
         compose.onAllNodesWithContentDescription("Pirata")[0].performScrollTo().performClick()
         compose.onAllNodesWithContentDescription("Gato")[1].performScrollTo().performClick()
 
-        compose.onNodeWithText("Guardar").assertIsEnabled().performClick()
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
         assertEquals(listOf("Capitán Nemo" to "ok, pero gruñón como el mar"), saved)
         // What is worn is named, since a small drawing may not say it.
         compose.onNodeWithText("Accesorio \u00b7 Gato").assertIsDisplayed()
@@ -193,6 +247,152 @@ class CharacterEditorTest {
         assertEquals(CharacterLook.CAT, draft.emblem)
         // The card follows what is typed.
         compose.onNodeWithText("— Capitán Nemo").assertIsDisplayed()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w432dp-h1200dp-400dpi")
+    fun `a save asked for too soon saves nothing, and each field says what it lacks until it has it`() {
+        val saved = mutableListOf<Pair<String, String>>()
+        showEditor(CharacterDraft(), onSave = { name, description -> saved += name to description })
+        val name = compose.onNodeWithText("Nombre")
+
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+        assertEquals(emptyList<Pair<String, String>>(), saved)
+        // It is felt, as a notice is.
+        assertEquals(HapticFeedbackConstantsCompat.REJECT, shadowOf(window).lastHapticFeedbackPerformed())
+        // Each under its own field and heard with it, and the cursor in the first of them.
+        compose.onNodeWithText(NO_NAME).assertIsDisplayed()
+        compose.onNodeWithText(NO_DESCRIPTION).assertIsDisplayed()
+        name.assert(wrong(NO_NAME)).assertIsFocused()
+        description().assert(wrong(NO_DESCRIPTION))
+        picture("phone_141_character_incomplete_spanish")
+
+        // A field stops saying it as soon as it is no longer so.
+        name.performTextInput("Nemo")
+        assertEquals(0, count(NO_NAME))
+        name.assert(right)
+        // Something written, and not enough of it: what is said then is how much more.
+        description().performTextInput("Un gato")
+        assertEquals(0, count(NO_DESCRIPTION))
+        description().assert(wrong(SHORT_DESCRIPTION))
+        description().performTextInput(" dormilón")
+        assertEquals(0, count(SHORT_DESCRIPTION))
+        description().assert(right)
+
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+        assertEquals(listOf("Nemo" to "Un gato dormilón"), saved)
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w432dp-h1200dp-400dpi")
+    fun `a description too short is told how much is wanted while it is written, and is wrong once it is left so`() {
+        showEditor(CharacterDraft().apply { typeName("Capitán Nemo") })
+        // In the field with nothing written yet there is nothing to say: the example is still there.
+        description().performClick()
+        assertEquals(0, count(NO_DESCRIPTION) + count(SHORT_DESCRIPTION))
+
+        description().performTextInput("Un gato")
+        compose.onNodeWithText(SHORT_DESCRIPTION).assertIsDisplayed()
+        // Said, and not held against whoever is still writing.
+        description().assert(right)
+        picture("phone_140_character_description_short_spanish")
+        description().performTextInput(" dormilón")
+        assertEquals(0, count(SHORT_DESCRIPTION))
+
+        // Cut short again and left so, with the key that says done: now it is wrong.
+        description().performTextReplacement("Un gato")
+        description().assert(right)
+        description().performImeAction()
+        compose.onNodeWithText(SHORT_DESCRIPTION).assertIsDisplayed()
+        description().assert(wrong(SHORT_DESCRIPTION))
+        // And stays so while it is put right, until it is.
+        description().performTextInput(" d")
+        description().assert(wrong(SHORT_DESCRIPTION))
+        description().performTextInput("ormilón")
+        description().assert(right)
+
+        // Put right, it is no longer held against it: cut short by whoever is still in it, it is only told.
+        description().performTextReplacement("Un gato")
+        compose.onNodeWithText(SHORT_DESCRIPTION).assertIsDisplayed()
+        description().assert(right)
+    }
+
+    @Test
+    fun `a name is asked for once its field was left without one, and not before`() {
+        showEditor(CharacterDraft())
+        val name = compose.onNodeWithText("Nombre")
+        name.performClick()
+        assertEquals(0, count(NO_NAME))
+
+        // Left with the key that moves on to the description, where nothing is said yet either.
+        name.performImeAction()
+        compose.onNodeWithText(NO_NAME).assertIsDisplayed()
+        name.assert(wrong(NO_NAME))
+        assertEquals(0, count(NO_DESCRIPTION))
+
+        // Gone back to, and given: and the description, left with nothing in it, now says so.
+        name.performTextInput("R2")
+        assertEquals(0, count(NO_NAME))
+        name.assert(right)
+        compose.onNodeWithText(NO_DESCRIPTION).assertIsDisplayed()
+
+        // Taken out again to write another, by whoever is still in the field: nothing is said.
+        name.performTextClearance()
+        assertEquals(0, count(NO_NAME))
+        name.assert(right)
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h640dp-xhdpi")
+    fun `the fields a refused save goes back to are brought into sight, where a small phone had them out of it`() {
+        showEditor(CharacterDraft().apply { typeName("Nemo") })
+        // The cursor is already in the field that is not right, far above the button.
+        description().performTextInput("ok")
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+
+        compose.onNodeWithText("Nombre").assertIsDisplayed()
+        compose.onNodeWithText(SHORT_DESCRIPTION).assertIsDisplayed()
+        description().assertIsFocused()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w432dp-h1200dp-night-400dpi")
+    fun `what a draft lacks is said in the dark as in the light`() {
+        showEditor(CharacterDraft(), dark = true)
+        description().performTextInput("Un gato")
+        compose.onNodeWithText(SHORT_DESCRIPTION).assertIsDisplayed()
+        picture("phone_144_character_description_short_dark")
+
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+        compose.onNodeWithText(NO_NAME).assertIsDisplayed()
+        description().assert(wrong(SHORT_DESCRIPTION))
+        picture("phone_142_character_incomplete_dark")
+    }
+
+    /** The worst case: a small phone, a large font and the longest of the three languages. */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `on a small phone with large type, what a field lacks takes the lines it needs beside the count`() {
+        showEditor(CharacterDraft().apply { typeDescription("Um gato") }, language = AppLanguage.PORTUGUESE, fontScale = 1.5f)
+        compose.onNodeWithText("Salvar").performScrollTo().performClick()
+
+        compose.onNodeWithText("Dê um nome").assertIsDisplayed()
+        compose.onNodeWithText("Escreva um pouco mais: pelo menos ${CustomCharacter.MIN_DESCRIPTION_LETTERS}\u00A0letras").assertIsDisplayed()
+        picture("phone_143_small_phone_character_incomplete_portuguese_large_font")
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `on a small phone with large type, what is lacking reads as well in Spanish`() {
+        showEditor(CharacterDraft().apply { typeDescription("Un gato") }, fontScale = 1.5f)
+        compose.onNodeWithText("Guardar").performScrollTo().performClick()
+
+        compose.onNodeWithText(NO_NAME).assertIsDisplayed()
+        compose.onNodeWithText(SHORT_DESCRIPTION).assertIsDisplayed()
+        picture("phone_147_small_phone_character_incomplete_spanish_large_font")
     }
 
     @Test
@@ -812,6 +1012,11 @@ class CharacterEditorTest {
             colour = Magic8BallPersonality.PIRATE,
             emblem = CharacterLook.CAT
         )
+
+        /** What a field says it lacks, under itself: the number is the rule's own. */
+        const val NO_NAME = "Ponle un nombre"
+        const val NO_DESCRIPTION = "Di cómo responde"
+        const val SHORT_DESCRIPTION = "Escribe un poco más: al menos ${CustomCharacter.MIN_DESCRIPTION_LETTERS}\u00A0letras"
 
         /** What the page of options says of what is sold. */
         const val OFFER = "Sin anuncios y más respuestas con IA"
