@@ -283,6 +283,25 @@ class EightBallScreenshotTest {
         )
     )
 
+    /** The options under the page's name, in the light: the name large over what it names, and none in the bar. */
+    @Test
+    fun phone_options_named_spanish_light() = captureWithSettings(
+        "phone_158_options_named_spanish_light",
+        EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), aiAnswersAvailable = true)
+    )
+
+    /** The page's name where it is tightest: it grows with the system's type only so far, and the page keeps its room. */
+    @Test
+    @Config(qualifiers = "w360dp-h640dp-night-xhdpi")
+    fun small_phone_options_named_large_font() = listOf(1.3f to "large", 2f to "largest").forEach { (scale, called) ->
+        capture(
+            "phone_159_small_phone_options_named_${called}_font",
+            accountState(AccountState.SignedOut).let { it.copy(config = it.config.copy(premiumEnabled = true)) },
+            fontScale = scale,
+            initialPage = OPTIONS_PAGE
+        )
+    }
+
     @Test
     fun phone_spanish_tap_only() = capture(
         name = "phone_9_spanish_tap_only",

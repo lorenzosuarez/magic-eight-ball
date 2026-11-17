@@ -8,6 +8,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,17 +58,25 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -81,6 +91,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
@@ -90,12 +101,15 @@ import com.example.magiceightball.core.domain.model.CharacterListing
 import com.example.magiceightball.core.domain.model.CharacterShelf
 import com.lorenzosuarez.magiceightball.phone.R
 import com.lorenzosuarez.magiceightball.phone.characters.CharacterRow
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Where who answers is chosen: a screen of its own, every character a row on it, a few loaded
- * at a time. At its top, the way out, its name and the way to make a character; under that,
- * which characters are being looked at; and the rest is theirs, group by group.
+ * at a time. At its top, the way out and the way to make a character; under that its name,
+ * which leaves as the characters are read down, and which characters are being looked at, which
+ * stays; and the rest is theirs, group by group.
  *
  * A touch on a character opens it, to be looked at; it answers once that is asked for there.
  * With thousands to look through, nobody wants the one they brushed past to start answering.
@@ -132,12 +146,49 @@ internal fun CharactersScreen(
     // The character that is open, to be looked at.
     var opened by remember { mutableStateOf<CharacterListing?>(null) }
     val title = stringResource(R.string.styles_title)
-    val density = LocalDensity.current
+    // How much of the screen's large name has left under the bar: none of it at rest, all of it
+    // once what is listed has pushed it up by its own height. It goes before the list moves and
+    // comes back once the list is at its top again, as the first thing listed would. It is not
+    // listed, though: the shelves under it then stay where they are whichever shelf is looked at,
+    // a long one, a short one or one with nothing on it.
+    var nameGone by rememberSaveable { mutableFloatStateOf(0f) }
+    var nameHeight by remember { mutableIntStateOf(0) }
+    val nameAway by remember { derivedStateOf { nameGone >= 1f } }
+    val nameLeaving = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset =
+                if (available.y < 0f) push(available.y) else Offset.Zero
+
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
+                if (available.y > 0f) push(available.y) else Offset.Zero
+
+            /** Moves the name by as much of [by] as it has left to go, and says how much that was. */
+            private fun push(by: Float): Offset {
+                if (nameHeight == 0) return Offset.Zero
+                val before = nameGone
+                nameGone = (before - by / nameHeight).coerceIn(0f, 1f)
+                return Offset(0f, (before - nameGone) * nameHeight)
+            }
+
+            // Never left cut in two: over a shelf with nothing to scroll there would be no setting it right.
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                if (nameGone > 0f && nameGone < 1f) {
+                    withContext(DesignedMotion) {
+                        animate(nameGone, if (nameGone < 0.5f) 0f else 1f, animationSpec = tween(NAME_SETTLE_MS)) { value, _ ->
+                            nameGone = value
+                        }
+                    }
+                }
+                return Velocity.Zero
+            }
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.pageGround)
             .semantics { paneTitle = title }
+            .nestedScroll(nameLeaving)
     ) {
         // A list of its own for each shelf, since a shelf is read from its top; the header over it stays.
         val prefetch = LocalListPrefetch.current
@@ -160,19 +211,8 @@ internal fun CharactersScreen(
                 description = stringResource(R.string.action_close),
                 onClick = onClose
             )
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f).semantics { heading() },
-                // As every page is named: the name grows with the system's font only as far as its bar has room.
-                style = MaterialTheme.typography.titleMedium.let {
-                    val fit = (PAGE_TITLE_MAX_SCALE / density.fontScale).coerceAtMost(1f)
-                    it.copy(fontSize = it.fontSize * fit, lineHeight = it.lineHeight * fit)
-                },
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            // As every page is named: large under the bar, and here once that has left.
+            BarTitle(text = title, shown = nameAway, modifier = Modifier.weight(1f))
             if (onCreate != null) {
                 // While what it started is on its way, a ring turns where its mark is: it has heard.
                 if (creating) {
@@ -195,6 +235,19 @@ internal fun CharactersScreen(
                 }
             }
         }
+        // As much of the name as has not left: the rest of it is under the bar.
+        LargeTitle(
+            text = title,
+            modifier = Modifier
+                .padding(horizontal = EDGE)
+                .clipToBounds()
+                .layout { measurable, constraints ->
+                    val name = measurable.measure(constraints)
+                    nameHeight = name.height
+                    val gone = (name.height * nameGone).roundToInt()
+                    layout(name.width, name.height - gone) { name.place(0, -gone) }
+                }
+        )
         if (shelves.size > 1) Shelves(shelf = shelf, shelves = shelves, onShelf = onShelf)
         // Only once something has scrolled under the header is there an edge worth drawing.
         val edge by animateColorAsState(
@@ -779,6 +832,9 @@ internal val LocalListPrefetch = staticCompositionLocalOf<LazyListPrefetchStrate
 /** The room at either side of the screen, and the widest it is laid out for. */
 private val EDGE = 16.dp
 private val SCREEN_WIDEST = 640.dp
+
+/** How long the screen's name takes to go the rest of its way, in or out, when a hand leaves it part of the way. */
+private const val NAME_SETTLE_MS = 150
 
 /** The face on a row, and on the sheet a character is opened in. */
 private val ROW_FACE = 40.dp

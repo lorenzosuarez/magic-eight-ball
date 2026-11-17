@@ -48,7 +48,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
@@ -634,6 +633,9 @@ internal fun EightBallContent(
                     else -> R.string.brand_name
                 }
             )
+            // Whose large name has left under this page's bar, as what the page lists says it. Kept
+            // with the page, so that one that comes back already read down has its small name at once.
+            val titleAway = rememberSaveable { mutableStateOf<String?>(null) }
             // The ball floats on the backdrop; its neighbours are plain pages, edge to edge,
             // so that what is listed on them is read against one flat colour.
             Column(
@@ -684,24 +686,17 @@ internal fun EightBallContent(
                                   .align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
                                   .offset(x = if (page == HISTORY_PAGE) BAR_MARK_OUT else -BAR_MARK_OUT)
                           )
-                          Text(
-                            text = open?.title ?: stringResource(
-                                if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
-                            ),
+                          // The name is large at the top of what the page lists, and here only once that has left.
+                          val name = open?.title ?: pageName
+                          BarTitle(
+                            text = name,
+                            shown = titleAway.value == name,
                             // A page is named over its dots; a subject, which is on no page, beside its way back.
-                            modifier = (if (open != null) {
+                            modifier = if (open != null) {
                                 Modifier.align(Alignment.CenterStart).padding(start = BAR_TITLE_START)
                             } else {
                                 Modifier.align(Alignment.TopCenter).padding(top = PAGE_TITLE_TOP)
-                            }).semantics { heading() },
-                            // The bar has one line's room over the dots: the name grows with the
-                            // system's font only as far as that room goes.
-                            style = MaterialTheme.typography.titleMedium.let {
-                                val fit = (PAGE_TITLE_MAX_SCALE / LocalDensity.current.fontScale).coerceAtMost(1f)
-                                it.copy(fontSize = it.fontSize * fit, lineHeight = it.lineHeight * fit)
-                            },
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            }
                           )
                         }
                     }
@@ -710,16 +705,18 @@ internal fun EightBallContent(
                     if (page == OPTIONS_PAGE) {
                         // What the page of options has to say once it is done is said by the
                         // screen, as everything else that has just been done is.
-                        CompositionLocalProvider(LocalSnackbars provides snackbars) { options() }
+                        CompositionLocalProvider(LocalSnackbars provides snackbars, LocalTitleAway provides titleAway) { options() }
                     } else if (page == HISTORY_PAGE) {
-                        HistoryContent(
-                            entries = state.history,
-                            now = now,
-                            onDelete = deleteWithUndo,
-                            onClearAll = onClearHistory,
-                            onOpen = onShowHistoryEntry,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        CompositionLocalProvider(LocalTitleAway provides titleAway) {
+                            HistoryContent(
+                                entries = state.history,
+                                now = now,
+                                onDelete = deleteWithUndo,
+                                onClearAll = onClearHistory,
+                                onOpen = onShowHistoryEntry,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     } else {
                         Stage(
                             state = state,
