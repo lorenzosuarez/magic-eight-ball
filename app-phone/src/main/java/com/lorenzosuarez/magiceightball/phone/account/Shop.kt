@@ -32,8 +32,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -165,6 +167,13 @@ interface Shop {
      */
     suspend fun buy(host: Context): Bought
 
+    /**
+     * The app came to the front. What Google Play holds is asked again then, and not only when
+     * the process starts: a subscription whose payment was put right in Google Play, or a
+     * purchase that could not be checked when it was made, is theirs when they come back.
+     */
+    fun opened() = Unit
+
     /** For builds and tests with no store. */
     object None : Shop {
         override val offer: StateFlow<Offer?> = MutableStateFlow(null)
@@ -202,6 +211,9 @@ class PlayShop @Inject constructor(
 
     private val connecting = Mutex()
 
+    /** Each coming to the front: only the latest matters, and none is waited for. */
+    private val openings = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
     private val client: BillingClient by lazy {
         BillingClient.newBuilder(context)
             .setListener(this)
@@ -235,6 +247,17 @@ class PlayShop @Inject constructor(
                 }
             }
         }
+        scope.launch {
+            // Settling what is already theirs asks the server for nothing: see [settle].
+            openings.collectLatest {
+                val open = config.config.value.premiumEnabled && account.state.value is AccountState.SignedIn
+                if (open) until { held()?.let { settle(it) != Bought.UNCONFIRMED } == true }
+            }
+        }
+    }
+
+    override fun opened() {
+        openings.tryEmit(Unit)
     }
 
     /** Tries [done] again, a little later each time, until it says it is. */
@@ -411,16 +434,20 @@ class PlayShop @Inject constructor(
             while (client.connectionState == BillingClient.ConnectionState.CONNECTING) delay(CONNECTING_POLL_MS)
         }
         if (client.isReady) return@withLock true
-        suspendCancellableCoroutine { waiting ->
-            client.startConnection(object : BillingClientStateListener {
-                override fun onBillingSetupFinished(result: BillingResult) {
-                    // Called again on every reconnection, when nobody is waiting any more.
-                    if (waiting.isActive) waiting.resume(result.responseCode == BillingResponseCode.OK)
-                }
+        // Not waited for without end: with the store being updated, or turned off, it may never answer,
+        // and everything that asks after it would wait behind this one.
+        withTimeoutOrNull(CONNECTING_WAIT_MS) {
+            suspendCancellableCoroutine { waiting ->
+                client.startConnection(object : BillingClientStateListener {
+                    override fun onBillingSetupFinished(result: BillingResult) {
+                        // Called again on every reconnection, when nobody is waiting any more.
+                        if (waiting.isActive) waiting.resume(result.responseCode == BillingResponseCode.OK)
+                    }
 
-                override fun onBillingServiceDisconnected() = Unit
-            })
-        }
+                    override fun onBillingServiceDisconnected() = Unit
+                })
+            }
+        } ?: false
     }
 
     private companion object {

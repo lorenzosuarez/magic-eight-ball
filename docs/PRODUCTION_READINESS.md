@@ -51,11 +51,11 @@ Por orden de valor. Ninguno impide publicar hoy, y los tres primeros deberían i
 Arreglados después de la revisión, y dejados escritos como se encontraron:
 
 - el 1: los filtros se indican para las cuatro categorías (`FirebaseAiGeminiClient.kt`);
-- el 2: la fila está en Opciones mientras se venda una suscripción (`ui/SettingsSheet.kt`);
+- el 2: se probó una fila fija en Opciones y se quitó: junto a "Premium · Obtener" decía dos cosas a la vez. Quien se suscribe la tiene en la tarjeta de Premium; a los demás, las condiciones de la hoja de Premium les dicen que se cancela en Google Play, y lo comprado se vuelve a comprobar cada vez que la app pasa al frente;
 - el 4: el sitio, el README y el Clásico ya no llevan el nombre ni las veinte respuestas del juguete; las instrucciones que solo lee el servicio de IA lo siguen nombrando;
 - el 5: ni se piden ni se muestran anuncios en un dispositivo marcado como menor, ni antes de saber si lo está (`ads/AdMobAdsController.kt`);
 - el 6: `site/static/app-ads.txt`, publicado con el sitio el 16 de noviembre de 2026;
-- el 8: que falte la concesión en una copia que todavía no oyó al servidor no le quita Premium a nadie (`account/Entitlements.kt`, `heldBy`);
+- el 8: que falte la concesión en una copia que todavía no oyó al servidor ya no se toma por "no tiene Premium" (`account/Entitlements.kt`, `heldBy`): hasta oír al servidor no se sabe, y mientras no se sabe no se ofrece Premium ni se piden anuncios (`ads/AdMobAdsController.kt`, `adFreeFor`). Lo que se compró se vuelve a comprobar cada vez que la app pasa al frente, no solo al arrancar (`account/Shop.kt`, `opened`);
 - el 10, en parte: con las animaciones del sistema quitadas, la bola no se mece (`ui/DesignedMotion.kt`, `motionRemoved`); lo que dice dónde está la app se sigue moviendo, que es decisión de producto;
 - el 11: la página de licencias nombra las bibliotecas bajo la Apache License 2.0 y la da entera, sin dependencia nueva.
 

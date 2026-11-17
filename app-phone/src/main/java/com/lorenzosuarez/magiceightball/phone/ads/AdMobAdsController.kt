@@ -150,7 +150,7 @@ class AdMobAdsController @Inject constructor(
      * Whoever has paid for Premium, and a device marked as under age: no ad is shown to them,
      * offered to them or loaded for them.
      */
-    private fun adFree(): Boolean = adFreeFor(entitlements.premium.value, underAge.value)
+    private fun adFree(): Boolean = adFreeFor(entitlements.premium.value, entitlements.known.value, underAge.value)
 
     /**
      * Whether an ad may be asked for now: not for whoever has paid, and not without consent.
@@ -233,5 +233,10 @@ class AdMobAdsController @Inject constructor(
     }
 }
 
-/** Whether no ad is due: to whoever has paid, and wherever it is not known that an adult is asking. */
-internal fun adFreeFor(premium: Boolean, underAge: Boolean?): Boolean = premium || underAge != false
+/**
+ * Whether no ad is due: to whoever has paid, and wherever it is not known that an adult who has
+ * not paid is asking. What an account holds is [known] only once the server has been heard
+ * from, and until then somebody who pays would be taken for somebody who does not.
+ */
+internal fun adFreeFor(premium: Boolean, known: Boolean, underAge: Boolean?): Boolean =
+    premium || !known || underAge != false

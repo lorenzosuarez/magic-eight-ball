@@ -50,7 +50,8 @@ internal fun PrimaryButton(
             containerColor = if (sold) Color(BrandPalette.ACCENT_DEEP) else scheme.onSurface,
             contentColor = if (sold) Color(BrandPalette.ON_ACCENT) else scheme.surface,
             disabledContainerColor = scheme.onSurface.copy(alpha = TILE_ALPHA),
-            disabledContentColor = scheme.onSurfaceVariant
+            // Plainly not to be pressed: at full strength it read as a second, quieter button.
+            disabledContentColor = scheme.onSurface.copy(alpha = 0.38f)
         )
     ) {
         BusyRing(busy)

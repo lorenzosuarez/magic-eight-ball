@@ -428,7 +428,10 @@ class EightBallViewModel @Inject constructor(
      * The day's verdict was touched in the notifications: the ball opens with it on, as if it
      * had just answered. It gives way to a question in progress, and is kept with the answers.
      */
-    fun showDailyVerdict(verdict: String) {
+    fun showDailyVerdict(told: String) {
+        // The activity that carries it can be started by any app with any text: it is kept to
+        // what an answer can be, one line and no longer than the longest.
+        val verdict = told.lineSequence().firstOrNull().orEmpty().trim().take(DAILY_VERDICT_MAX_LENGTH)
         if (verdict.isBlank() || isBusy()) return
         cycleJob?.cancel()
         val style = settings.value?.personality
@@ -886,6 +889,9 @@ class EightBallViewModel @Inject constructor(
     companion object {
         /** The fixed trigger the watch app sends as well. */
         const val ASK_TRIGGER = "shake"
+
+        /** As long as the longest answer the AI service is let give, which is the longest there is. */
+        const val DAILY_VERDICT_MAX_LENGTH = 72
 
         /** How long a character just saved is waited for among those kept, before it is chosen anyway. */
         const val CHARACTER_SEEN_MS = 5_000L

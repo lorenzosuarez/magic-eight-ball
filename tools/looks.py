@@ -425,10 +425,11 @@ LOOKS = {
     # No character of the app's wears these: they are there to be picked.
     'singer': ('#FFC2D1', {
         # Held up to its face and leaning towards it, as one sings into it: the head beside the white disc,
-        # its collar cut by the head's own edge, the handle round at its end and clear of the ball.
+        # its collar cut by the head's own edge, the handle round at its end and clear of the ball. The handle
+        # is as long as it can be with 3.6 left to the ball and to the round's edge: longer, it touches one.
         'fitted': True,
-        'ink': [seen(disc(27, 62, 9.4)), seen(ribbon([(24.1, 65.7), (16.2, 75.9)], 8.6, 6.2, caps=(False, True)))],
-        'white': [seen(poly(ellipse_points(27, 62, 9.35, 9.35, 0, 208.2, 165.7, 8) + ellipse_points(27, 62, 9.35, 9.35, 0, 90.3, 47.8, 8)))],
+        'ink': [seen(disc(27, 62, 9.4)), seen(ribbon([(24.44, 65.94), (16.6, 78.02)], 8.6, 5.6, caps=(False, True)))],
+        'white': [seen(turned(poly(ellipse_points(27, 62, 9.35, 9.35, 0, 208.2, 165.7, 8) + ellipse_points(27, 62, 9.35, 9.35, 0, 90.3, 47.8, 8)), 27, 62, -5.1))],
     }),
     # In the air over it and broad: stuck into the ball, its point was a spike in a socket.
     'rockstar': ('#B58CFF', {'ink': ['M59.5 2.5 L33.5 22.5 L47 22.5 L40.5 34.5 L66.5 14.5 L53 14.5Z']}),

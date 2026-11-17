@@ -295,8 +295,8 @@
     <string name="profile_date_invalid">Revisa la fecha</string>
     <string name="profile_save_failed">No se pudo guardar.\nRevisa tu conexión e inténtalo de nuevo</string>
     <string name="profile_sent_title">Qué se envía a Gemini, de Google</string>
-    <string name="profile_sent_text">Tu nombre, tu signo y que es tu cumpleaños (solo ese día). Cada personaje recibe solo lo que usa. De un personaje que crees, su nombre y lo que digas de él. Tu fecha de nacimiento, tu correo y tu foto,&#160;nunca.</string>
-    <string name="profile_sent_text_edit">Tu nombre, tu signo y que es tu cumpleaños (solo ese día). Dejan de enviarse si cierras sesión. Cada personaje recibe solo lo que usa. De un personaje que crees, su nombre y lo que digas de él. Tu fecha de nacimiento, tu correo y tu foto,&#160;nunca.</string>
+    <string name="profile_sent_text">Tu nombre, tu signo y, el día de tu cumpleaños, que es hoy. Cada personaje recibe solo lo que usa. Si creas un personaje, también su nombre y tu descripción. Nunca tu fecha de nacimiento, tu correo ni tu&#160;foto.</string>
+    <string name="profile_sent_text_edit">Tu nombre, tu signo y, el día de tu cumpleaños, que es hoy. Dejan de enviarse si cierras sesión. Cada personaje recibe solo lo que usa. Si creas un personaje, también su nombre y tu descripción. Nunca tu fecha de nacimiento, tu correo ni tu&#160;foto.</string>
     <string name="profile_accept">Aceptar y continuar</string>
     <string name="profile_not_now">Continuar sin cuenta</string>
     <string name="age_notice_title">No puedes tener cuenta</string>
@@ -317,7 +317,7 @@
     <string name="characters_community_soon_text">Aquí verás personajes creados por otras personas.</string>
     <string name="characters_load_failed_text">Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="characters_empty_yours_text">Crea uno con tus palabras y aparecerá aquí.</string>
-    <string name="character_answering">Responde ahora</string>
+    <string name="character_answering">En uso</string>
     <string name="character_use">Usar este personaje</string>
     <string name="character_edit_action">Editar</string>
     <string name="character_of_app">Original de Magic AI Ball</string>

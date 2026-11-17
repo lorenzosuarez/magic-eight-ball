@@ -46,9 +46,11 @@ class AdPacingTest {
 
     @Test
     fun `no ad is due to whoever paid nor to a device marked as under age nor before that is known`() {
-        assertTrue(adFreeFor(premium = true, underAge = false))
-        assertTrue(adFreeFor(premium = false, underAge = true))
-        assertTrue(adFreeFor(premium = false, underAge = null))
-        assertFalse(adFreeFor(premium = false, underAge = false))
+        assertTrue(adFreeFor(premium = true, known = true, underAge = false))
+        assertTrue(adFreeFor(premium = false, known = true, underAge = true))
+        assertTrue(adFreeFor(premium = false, known = true, underAge = null))
+        // Signed in, and the server not heard from yet: they may well have paid.
+        assertTrue(adFreeFor(premium = false, known = false, underAge = false))
+        assertFalse(adFreeFor(premium = false, known = true, underAge = false))
     }
 }

@@ -246,6 +246,19 @@ class EightBallViewModelTest {
     }
 
     @Test
+    fun `a verdict that came in from outside is kept to one line no longer than an answer can be`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.showDailyVerdict("  " + "x".repeat(200) + "\nand a second line")
+        advanceUntilIdle()
+
+        val shown = viewModel.state.value?.phase as BallPhase.Answered
+        assertEquals(AnswerText.Plain("x".repeat(72)), shown.answer)
+        assertEquals("x".repeat(72), history.entries.value.first().answer)
+    }
+
+    @Test
     fun `the second line is asked for only while it is switched on from afar`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
