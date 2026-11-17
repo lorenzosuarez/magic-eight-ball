@@ -15,6 +15,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
+import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
@@ -69,6 +70,8 @@ class EightBallMotionTest {
                         answer = "Without a doubt.",
                         pressed = false,
                         voiceLevel = { 0f },
+                        tint = { shareColor(Magic8BallPersonality.NEUTRAL) },
+                        roll = { 0f },
                         still = false,
                         modifier = Modifier.size(144.dp)
                     )
@@ -107,6 +110,8 @@ class EightBallMotionTest {
                         answer = null,
                         pressed = false,
                         voiceLevel = { 0f },
+                        tint = { shareColor(Magic8BallPersonality.NEUTRAL) },
+                        roll = { 0f },
                         still = true,
                         modifier = Modifier.size(144.dp)
                     )

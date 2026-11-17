@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
@@ -82,13 +83,16 @@ enum class BallMode {
  * back and forth ever less, and comes to rest upright, taking its colour and showing [answer].
  * The answer is written on the die and moves with it.
  *
- * Every animated value, [voiceLevel] included, is read in the draw or layer phase only, so an
- * animation frame never recomposes or re-measures anything, and all brushes, paths and text
- * layouts are built once per size and answer.
+ * Every animated value, [voiceLevel], [tint] and [roll] included, is read in the draw or layer
+ * phase only, so an animation frame never recomposes or re-measures anything, and all brushes,
+ * paths and text layouts are built once per size and answer.
  *
  * @param answer the text on the die while [BallMode.Answered]; ignored otherwise.
- * @param pressed whether a finger is on the ball: it gives way a little.
+ * @param pressed whether a finger is on the ball: it gives way a little, and its halo comes out.
  * @param voiceLevel how loud the voice is, from 0 to 1, while [BallMode.Listening].
+ * @param tint the colour of whoever answers, which the halo and the rings are lit in: see [ballLight].
+ * @param roll how far the ball is turned, in degrees and clockwise: what is painted on it and
+ * what floats in it turn with it, and the light on it stays where the light is.
  * @param still true to draw the ball without any motion of its own, for pictures of it.
  */
 @Composable
@@ -97,6 +101,8 @@ fun EightBall(
     answer: String?,
     pressed: Boolean,
     voiceLevel: () -> Float,
+    tint: () -> Color,
+    roll: () -> Float,
     still: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -215,18 +221,26 @@ fun EightBall(
     // Held still, the ball does not move with the voice either; its rings still say it listens.
     val voiceMotion: () -> Float = if (still) NoVoiceMotion else voiceLevel
     val textMeasurer = rememberTextMeasurer()
-    val ringColor = MaterialTheme.colorScheme.onSurface
+    val ink = MaterialTheme.colorScheme.onSurface
+    val page = MaterialTheme.colorScheme.pageGround
 
     Spacer(
         modifier = modifier
             .aspectRatio(1f)
             // Behind the ball and outside its layer: the rings do not shrink and swell with it.
             .drawWithCache {
-                val rings = BallRings(size.center, size.minDimension / 2f, ringColor)
+                val rings = BallRings(size.center, size.minDimension / 2f)
                 onDrawBehind {
+                    // Asked for as it is drawn: a colour on its way to another builds nothing again.
+                    val light = ballLight(ink, tint(), BALL_LIGHT_TINT)
                     with(rings) {
                         draw(
+                            color = light,
+                            weight = ballLightWeight(light, ink, page),
                             resting = maxOf(resting.value, thinking.value),
+                            // While it listens the rings are its light, under a finger as well.
+                            pressed = press.value * (1f - listening.value),
+                            grown = grown.value,
                             listening = listening.value,
                             level = voiceMotion(),
                             pulse = pulse.value
@@ -256,6 +270,7 @@ fun EightBall(
                             face = face.value,
                             risen = risen.value,
                             tiltDegrees = tilt.value,
+                            rollDegrees = roll(),
                             colour = colour.value,
                             shimmer = shimmer.floatValue,
                             shimmerAlpha = thinking.value,
@@ -276,21 +291,67 @@ private class LastAnswer {
     var text: String? = null
 }
 
-/** What surrounds the ball: a faint halo at rest and rings while listening. */
+/**
+ * A light of the ball's in the colour of whoever answers: [plain], which is that light with
+ * nobody's colour in it, taken [share] of the way to [tint]. Around the ball the plain light is
+ * the page's ink, so the same colour comes out softened on a dark page and darkened on a light
+ * one, and shows on both.
+ */
+internal fun ballLight(plain: Color, tint: Color, share: Float): Color = lerp(plain, tint, share)
+
+/**
+ * How many times as much of [light] is drawn as there was of [plain], for it to stand out from
+ * the [page] as much as the plain light did. A colour is nearer to a light page than ink is,
+ * and a deep one nearer to a dark page: drawn as faintly as the ink was, one character's light
+ * would be lost where another's stood out. Weighed like this, the light changes colour from
+ * one character to the next and not strength, and the classic one, which has next to no colour
+ * of its own, keeps the light there was before the ball wore anyone's.
+ *
+ * A light of the page's own colour could not be drawn enough times over to show: no character
+ * comes near it on either page, and BallLightTest holds every one of them to that.
+ */
+internal fun ballLightWeight(light: Color, plain: Color, page: Color): Float =
+    (plain.luma - page.luma) / (light.luma - page.luma)
+
+/**
+ * How light a colour is to whatever lays it over another: its red, green and blue as they are
+ * kept, each for as much as the eye makes of it.
+ */
+private val Color.luma: Float get() = 0.2126f * red + 0.7152f * green + 0.0722f * blue
+
+/** What surrounds the ball: a faint halo at rest, which a finger brings out, and rings while listening. */
 private class BallRings(
     private val center: Offset,
-    private val radius: Float,
-    private val color: Color
+    private val radius: Float
 ) {
 
-    fun DrawScope.draw(resting: Float, listening: Float, level: Float, pulse: Float) {
-        // At rest: one halo that follows the heartbeat.
-        if (resting > 0f) {
+    /**
+     * @param color the light's colour: see [ballLight].
+     * @param weight how many times as much of it is drawn as there would be of the page's ink: see [ballLightWeight].
+     * @param pressed how far a finger has the ball down, from 0 to 1.
+     * @param grown how far the ball has grown to show an answer: the halo is around the ball as it is then.
+     */
+    fun DrawScope.draw(
+        color: Color,
+        weight: Float,
+        resting: Float,
+        pressed: Float,
+        grown: Float,
+        listening: Float,
+        level: Float,
+        pulse: Float
+    ) {
+        // At rest: one halo that follows the heartbeat. Under a finger the ball gives way and
+        // the halo comes out to meet it, a little stronger and a little further: the press is
+        // answered by light as well as by the ball.
+        val halo = (resting * HALO_ALPHA + pressed * BLOOM_ALPHA) * weight
+        if (halo > 0f) {
+            val reach = HALO_REACH * (HALO_REST + (1f - HALO_REST) * beat(pulse)) + BLOOM_REACH * pressed
             drawCircle(
                 color = color,
-                radius = radius * (1f + HALO_REACH * (HALO_REST + (1f - HALO_REST) * beat(pulse))),
+                radius = radius * (1f + ANSWER_GROWTH * grown) * (1f + reach),
                 center = center,
-                alpha = resting * HALO_ALPHA
+                alpha = halo
             )
         }
         // Listening: discs one inside the other, breathing slowly and pushed out by the voice.
@@ -303,7 +364,7 @@ private class BallRings(
                     color = color,
                     radius = radius * (1f + reach * listening),
                     center = center,
-                    alpha = listening * RING_ALPHA
+                    alpha = listening * RING_ALPHA * weight
                 )
             }
         }
@@ -497,6 +558,9 @@ private class BallDrawing(
      * @param risen 0 for the die deep in the liquid, small, in the middle; 1 for the die at the window,
      * close enough to fill it.
      * @param tiltDegrees how far the die leans to one side; the answer leans with it.
+     * @param rollDegrees how far the ball is turned, clockwise. Its "8", which is painted on it,
+     * and its die, which the turn takes along, turn with it; its shine and its shading are where
+     * the light is, and stay there.
      * @param colour 0 for the grey die that is still thinking, 1 for the die with its answer.
      * @param shimmer how far across the die's bars the band of light is, from 0 to 1.
      * @param shimmerAlpha how much of the bars and of that light shows.
@@ -506,6 +570,7 @@ private class BallDrawing(
         face: Float,
         risen: Float,
         tiltDegrees: Float,
+        rollDegrees: Float,
         colour: Float,
         shimmer: Float,
         shimmerAlpha: Float,
@@ -518,6 +583,7 @@ private class BallDrawing(
             // seen more and more from the side, and is gone by the time it gets there.
             val eightAlpha = (1f - face).coerceIn(0f, 1f)
             if (eightAlpha > 0f) withTransform({
+                rotate(rollDegrees, pivot = center)
                 translate(top = -radius * EIGHT_ROLL * face)
                 scale(1f - EIGHT_NARROWING * face, 1f - EIGHT_FLATTENING * face, pivot = center)
             }) {
@@ -534,7 +600,7 @@ private class BallDrawing(
                 clipPath(liquidOutline) {
                     withTransform({
                         translate(top = deepLift * (1f - risen))
-                        rotate(tiltDegrees, pivot = center)
+                        rotate(tiltDegrees + rollDegrees, pivot = center)
                         scale(DIE_DEEP_SIZE + (1f - DIE_DEEP_SIZE) * risen, pivot = center)
                     }) {
                         if (colour < 1f) drawDie(thinkingBrush, alpha = face * (1f - colour))
@@ -737,6 +803,13 @@ private const val HEARTBEAT_SWELL = 0.03f
 private const val HALO_REACH = 0.1f
 private const val HALO_REST = 0.6f
 private const val HALO_ALPHA = 0.05f
+
+/** What a finger on the ball adds to its halo: felt more than seen, as the heartbeat is. */
+private const val BLOOM_ALPHA = 0.03f
+private const val BLOOM_REACH = 0.02f
+
+/** How far the light around the ball goes from the page's ink to the colour of whoever answers. */
+internal const val BALL_LIGHT_TINT = 0.65f
 
 /** How much larger the ball is while it shows an answer, so the answer can be read. */
 internal const val ANSWER_GROWTH = 0.3f
