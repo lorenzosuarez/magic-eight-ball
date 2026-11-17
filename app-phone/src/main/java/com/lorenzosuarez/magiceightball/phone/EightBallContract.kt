@@ -38,6 +38,9 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * @property paid of a subscription, until when it is paid for and whether it renews then, once known.
  * @property offer what they can buy and for how much; null while the store has not said, or they cannot.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
+ * @property voiceRefused a character of the user's own that the AI service would not speak as,
+ * once its answer is out: to be told, with the way to correct it, and then forgotten. Null when
+ * there is nothing to tell.
  */
 data class EightBallUiState(
     val phase: BallPhase = BallPhase.Idle,
@@ -61,7 +64,8 @@ data class EightBallUiState(
     val premiumKnown: Boolean = true,
     val offer: Offer? = null,
     val subscribed: Boolean = false,
-    val paid: Paid? = null
+    val paid: Paid? = null,
+    val voiceRefused: CustomCharacter? = null
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?
@@ -159,8 +163,15 @@ sealed interface AnswerText {
     /**
      * @property fromAi true when the AI service wrote it, false for a bundled answer.
      * @property remark what the character adds under the ball, when it added anything.
+     * @property voiceRefused true when it is a bundled answer standing in for one the AI service
+     * would not write in the character's voice.
      */
-    data class Plain(val value: String, val fromAi: Boolean = false, val remark: String? = null) : AnswerText
+    data class Plain(
+        val value: String,
+        val fromAi: Boolean = false,
+        val remark: String? = null,
+        val voiceRefused: Boolean = false
+    ) : AnswerText
     data object Fallback : AnswerText
 }
 

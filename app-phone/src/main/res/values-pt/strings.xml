@@ -138,6 +138,7 @@
     <string name="party_count">%1$d de %2$d pessoas</string>
     <string name="party_need_more">Adicione pelo menos duas pessoas</string>
     <string name="action_save">Salvar</string>
+    <string name="action_edit">Editar</string>
     <string name="settings_detailed">Respostas mais longas</string>
     <string name="settings_detailed_on">A bola se explica em algumas frases</string>
     <string name="settings_spoken">Respostas em voz alta</string>
@@ -203,6 +204,7 @@
     <string name="character_name_missing">Dê um nome</string>
     <string name="character_description_missing">Diga como responde</string>
     <string name="character_description_short">Escreva um pouco mais: pelo menos %1$d&#160;letras</string>
+    <string name="character_voice_refused">A IA não fala como “%1$s” do jeito que está escrito. Por enquanto, a bola&#160;responde</string>
     <string name="character_discard_title">Descartar o que você escreveu?</string>
     <string name="character_discard_yes">Descartar</string>
     <string name="character_discard_no">Continuar editando</string>

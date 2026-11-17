@@ -137,7 +137,25 @@ class EightBallViewModel @Inject constructor(
     private val aiAllowanceSpent = MutableStateFlow(false)
     private val voiceInputs = combine(speechAvailable, microphone, ::Pair)
     private val turn = MutableStateFlow(0)
-    private val noticeAndHistory = combine(notice, history.entries, turn, ::Triple)
+
+    /** See [EightBallUiState.voiceRefused]. */
+    private val voiceRefusal = MutableStateFlow<CustomCharacter?>(null)
+
+    /**
+     * The characters whose refusal has been told since the app opened, each by its slot and the
+     * words of it the AI service is sent: told once, and again only once those have been rewritten.
+     */
+    private val refusalsTold = mutableSetOf<Triple<String, String, String>>()
+
+    /** What the screen is told, gathered to be read as one. */
+    private data class Told(
+        val notice: Notice?,
+        val history: List<HistoryEntry>,
+        val turn: Int,
+        val voiceRefused: CustomCharacter?
+    )
+
+    private val noticeAndHistory = combine(notice, history.entries, turn, voiceRefusal, ::Told)
 
     /**
      * Null until the saved choices have been read, so the screen never shows a default that is
@@ -157,7 +175,7 @@ class EightBallViewModel @Inject constructor(
         ),
         voiceInputs,
         noticeAndHistory
-    ) { phase, saved, (aiAvailable, aiSpent, streak, config, who), (speech, microphone), (notice, history, turn) ->
+    ) { phase, saved, (aiAvailable, aiSpent, streak, config, who), (speech, microphone), (notice, history, turn, refused) ->
         saved?.let {
             EightBallUiState(
                 phase = phase,
@@ -182,7 +200,8 @@ class EightBallViewModel @Inject constructor(
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,
                 history = history,
-                turn = turn
+                turn = turn,
+                voiceRefused = refused
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -768,7 +787,26 @@ class EightBallViewModel @Inject constructor(
                 UsageEvent.Asked(how, settings.personality, fromAi = it?.fromAi == true, withRemark = it?.remark != null)
             )
         }
+        // Told once the answer is out, so that it does not cover the answer coming up. Only of one
+        // of the user's own that answered: the one kept in the settings may not be the one in use.
+        val refused = (answer as? AnswerText.Plain)?.voiceRefused == true
+        if (refused && settings.personality == Magic8BallPersonality.CUSTOM) custom?.let(::tellVoiceRefused)
         _effects.trySend(EightBallEffect.AnswerRevealed)
+    }
+
+    /**
+     * That the AI service would not speak as [answered], the character the answer is signed by,
+     * when it is one of the user's own: theirs to rewrite. Told once for the words it is written
+     * in; someone else's they cannot correct, and are not told of.
+     */
+    private fun tellVoiceRefused(answered: CustomCharacter) {
+        val own = state.value?.characters?.find { it.id == answered.id } ?: return
+        if (refusalsTold.add(Triple(own.id, own.name, own.description))) voiceRefusal.value = own
+    }
+
+    /** The screen has told it: see [EightBallUiState.voiceRefused]. */
+    fun voiceRefusalTold() {
+        voiceRefusal.value = null
     }
 
     /**
@@ -819,7 +857,12 @@ class EightBallViewModel @Inject constructor(
         return when (result) {
             is Magic8BallResult.Success ->
                 result.message.takeIf { it.isNotBlank() }?.let {
-                    AnswerText.Plain(it, result.fromAi, result.remark?.takeIf { remark -> remark.isNotBlank() })
+                    AnswerText.Plain(
+                        it,
+                        result.fromAi,
+                        result.remark?.takeIf { remark -> remark.isNotBlank() },
+                        voiceRefused = result.voiceRefused
+                    )
                 }
             is Magic8BallResult.Failure, null -> null
         } ?: AnswerText.Fallback

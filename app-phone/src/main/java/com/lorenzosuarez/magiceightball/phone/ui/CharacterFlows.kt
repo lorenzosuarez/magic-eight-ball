@@ -60,6 +60,9 @@ internal class FlowsAsked(browsing: Boolean = false) {
 
     /** What is sold, asked for from a page: taken up at once, and then no longer asked. */
     var premium by mutableStateOf(false)
+
+    /** One of the user's own, by its slot, asked from a page to be corrected: taken up at once. */
+    var edit by mutableStateOf<String?>(null)
 }
 
 /** What is asked of the flows, kept through a turn of the screen as far as it is a sheet that is up. */
@@ -114,6 +117,13 @@ internal fun CharacterFlows(
             asked.premium = false
             if (signedIn) paying = PremiumFor.EVERYTHING else notice = CharactersNotice.PREMIUM_ACCOUNT
         }
+    }
+    // One of the user's own, asked from a page to be corrected: its editor opens, unless what is
+    // sold is up, which it would land on. One no longer theirs closes as soon as that is known.
+    LaunchedEffect(asked.edit) {
+        val slot = asked.edit ?: return@LaunchedEffect
+        asked.edit = null
+        if (paying == null) editing = slot
     }
     // Whether what is kept with the account, its profile and its characters, has been heard of.
     val accountKnown = state.profile != ProfileState.Unknown && state.characters != null

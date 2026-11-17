@@ -1472,6 +1472,83 @@ class EightBallViewModelTest {
     }
 
     @Test
+    fun `a character of the user's own the AI service will not speak as is told of once for each way it is written`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        aiAvailability.isAvailable.value = true
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, voiceRefused = true) }
+        val viewModel = createViewModel(
+            account = FakeAccount(initial = FakeAccount.ANA),
+            profiles = FakeProfiles(ProfileState.Present(LORENA)),
+            characters = FakeCustomCharacters(listOf(NEMO))
+        )
+        advanceUntilIdle()
+        viewModel.chooseCharacter(NEMO)
+        advanceUntilIdle()
+
+        viewModel.ask()
+        advanceUntilIdle()
+        // The answer is out, and the ball's own: the user is told why, and of which character.
+        assertTrue(viewModel.state.value?.phase is BallPhase.Answered)
+        assertEquals(NEMO, viewModel.state.value?.voiceRefused)
+        viewModel.voiceRefusalTold()
+        assertNull(viewModel.state.value?.voiceRefused)
+
+        // Not again for the same words.
+        viewModel.dismiss()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertNull(viewModel.state.value?.voiceRefused)
+
+        // Rewritten in the editor and still refused: told again, of the character as it now reads.
+        val description = "Un capitán que sigue gruñendo, ahora sin insultos."
+        viewModel.saveCharacter(NEMO, NEMO.name, description, NEMO.colour, NEMO.emblem)
+        advanceUntilIdle()
+        viewModel.dismiss()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertEquals(description, viewModel.state.value?.voiceRefused?.description)
+    }
+
+    @Test
+    fun `a refusal is not told of a character the user cannot correct, nor of an answer the service wrote`() = runTest {
+        appConfig.config.value = AppConfig(accountEnabled = true)
+        aiAvailability.isAvailable.value = true
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, voiceRefused = true) }
+        val viewModel = createViewModel(
+            account = FakeAccount(initial = FakeAccount.ANA),
+            profiles = FakeProfiles(ProfileState.Present(LORENA)),
+            characters = FakeCustomCharacters(listOf(NEMO))
+        )
+        advanceUntilIdle()
+
+        // Someone else's, from the community: not among the user's own.
+        viewModel.chooseCharacter(NEMO.copy(id = "someone-else", name = "Ajeno"))
+        advanceUntilIdle()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertNull(viewModel.state.value?.voiceRefused)
+
+        // One of the app's own, refused, with one of the user's own still kept in the settings.
+        viewModel.chooseCharacter(NEMO)
+        advanceUntilIdle()
+        viewModel.setPersonality(Magic8BallPersonality.PIRATE)
+        advanceUntilIdle()
+        viewModel.dismiss()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertNull(viewModel.state.value?.voiceRefused)
+
+        // The user's own, answered by the service in its voice.
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, fromAi = true) }
+        viewModel.chooseCharacter(NEMO)
+        advanceUntilIdle()
+        viewModel.dismiss()
+        viewModel.ask()
+        advanceUntilIdle()
+        assertNull(viewModel.state.value?.voiceRefused)
+    }
+
+    @Test
     fun `what the user wrote for a character is sent only with their profile in sight, accounts on and them signed in`() = runTest {
         appConfig.config.value = AppConfig(accountEnabled = true)
         val account = FakeAccount(initial = FakeAccount.ANA)
