@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.BreakIterator
 
 /**
  * Whose account it is, as a round: the picture Google has of them, and until it has come, or
@@ -70,8 +71,7 @@ internal fun AccountAvatar(
             Image(bitmap = shown, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
             Text(
-                text = name.trim().take(1).uppercase(),
-                // Beside a line of text it is a letter of that line's size.
+                text = initialOf(name),
                 // On the corner of another face it is as small as still reads; beside a line of text
                 // it is a letter of that line's size.
                 style = when {
@@ -96,6 +96,19 @@ internal fun AccountAvatar(
  * the same name. Deep enough for a white letter, and none of them a colour a character has.
  */
 internal fun makerColor(name: String): Color = MAKER_COLORS[name.hashCode().mod(MAKER_COLORS.size)]
+
+/**
+ * The letter a name is shown by where there is no picture: its first letter or digit, whole, as
+ * a name that opens on an emoji or a sparkle still has one. A name with none is shown by
+ * whatever it opens with, whole: never half of an emoji.
+ */
+internal fun initialOf(name: String): String {
+    val trimmed = name.trim()
+    val letter = trimmed.codePoints().filter(Character::isLetterOrDigit).findFirst()
+    if (letter.isPresent) return String(Character.toChars(letter.asInt)).uppercase()
+    val end = BreakIterator.getCharacterInstance().apply { setText(trimmed) }.next()
+    return if (end == BreakIterator.DONE) "" else trimmed.substring(0, end)
+}
 
 private val MAKER_COLORS = listOf(
     Color(0xFF5B6B7A), Color(0xFF6B5B8C), Color(0xFF3F7A6B), Color(0xFFB5562B),
