@@ -16,11 +16,14 @@ class SampleCommunityTest {
     private val all = SampleCommunityCharacters.all
 
     @Test
-    fun `each could have been made in the app, and each is somebody's`() {
+    fun `each could have been made in the app, and each is somebody's, by a handle as people pick them`() {
         all.forEach { made ->
             assertEquals(made.name, made.name, CustomCharacter.nameOrNull(made.name))
             assertEquals(made.name, made.description, CustomCharacter.descriptionOrNull(made.description))
-            assertTrue(made.name, Regex("usuario [1-9][0-9]?").matches(made.author))
+            // As the platforms let a handle be: no capitals, accents or spaces.
+            assertTrue(made.author, HANDLE.matches(made.author))
+            // And no year so recent that it reads as a child's age.
+            assertTrue(made.author, YEAR.findAll(made.author).none { it.value.toInt() in 2008..2026 })
         }
     }
 
@@ -49,5 +52,10 @@ class SampleCommunityTest {
 
         assertEquals(all, handed)
         assertTrue("pages $pages", pages >= 4)
+    }
+
+    private companion object {
+        val HANDLE = Regex("[a-z][a-z0-9._]{2,29}")
+        val YEAR = Regex("(?<![0-9])[0-9]{4}(?![0-9])")
     }
 }
