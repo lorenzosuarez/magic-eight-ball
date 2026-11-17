@@ -1,6 +1,6 @@
 # Termos de uso do Magic AI Ball (Wear OS e celulares e tablets Android)
 
-**Data de vigência:** RELEASE-DATE
+**Data de vigência:** 17 de novembro de 2026
 
 Estes termos são o acordo entre você e Lorenzo Suarez, o desenvolvedor do app Magic AI Ball (pacote `com.lorenzosuarez.magiceightball`), para as duas versões do app: a de relógios Wear OS e a de celulares e tablets Android. Ao usar o app, você os aceita. Se não os aceita, não use o app. Como o app trata as informações está descrito na [política de privacidade](/pt/privacy).
 
