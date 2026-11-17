@@ -143,6 +143,7 @@
     <string name="party_count">%1$d of %2$d players</string>
     <string name="party_need_more">Add at least two players</string>
     <string name="action_save">Save</string>
+    <string name="action_edit">Edit</string>
     <string name="settings_detailed">Longer answers</string>
     <string name="settings_detailed_on">The ball explains itself in a few sentences</string>
     <string name="settings_spoken">Spoken answers</string>
@@ -211,6 +212,7 @@
     <string name="character_name_missing">Give it a name</string>
     <string name="character_description_missing">Say how it answers</string>
     <string name="character_description_short">Write a little more: at least %1$d&#160;letters</string>
+    <string name="character_voice_refused">The AI won\'t speak as “%1$s” as it\'s written. The ball answers for&#160;now</string>
     <string name="character_discard_title">Discard what you wrote?</string>
     <string name="character_discard_yes">Discard</string>
     <string name="character_discard_no">Keep editing</string>

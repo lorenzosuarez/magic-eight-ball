@@ -41,6 +41,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -101,6 +102,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -345,6 +348,8 @@ fun EightBallScreen(
             EightBallContent(
                 state = current,
                 onPickCharacter = { flowsAsked.browsing = true },
+                onEditCharacter = { flowsAsked.edit = it },
+                onVoiceRefusalTold = viewModel::voiceRefusalTold,
                 covered = flowsAsked.browsing,
                 section = optionsNav.section?.let { open -> SectionBar(stringResource(open.title)) { optionsNav.section = null } },
                 flows = {
@@ -498,6 +503,8 @@ fun EightBallScreen(
  * @param voiceLevel read while drawing only; see [EightBall].
  * @param onDeleteHistoryEntry deletes at once; the screen then offers to undo it, which calls
  * [onRestoreHistoryEntry].
+ * @param onEditCharacter opens the editor of one of the user's own characters, by its slot.
+ * @param onVoiceRefusalTold called as soon as [EightBallUiState.voiceRefused] has been taken up.
  * @param flows the sheets a page can ask for, which belong to no page: see [CharacterFlows].
  * @param initialPage the page in front at first: [BALL_PAGE] or [HISTORY_PAGE].
  */
@@ -525,6 +532,8 @@ internal fun EightBallContent(
     onAskWho: (String) -> Unit = {},
     onSpeakAnswer: () -> Unit = {},
     onPickCharacter: () -> Unit = {},
+    onEditCharacter: (String) -> Unit = {},
+    onVoiceRefusalTold: () -> Unit = {},
     flows: @Composable () -> Unit = {},
     covered: Boolean = false,
     section: SectionBar? = null,
@@ -544,6 +553,8 @@ internal fun EightBallContent(
 
     // Deleting needs no confirmation because it can be taken back for a moment.
     val snackbars = remember { SnackbarHostState() }
+    // How far an answer's buttons reach over the bottom edge, for the notices to stand above them.
+    var actionsHeight by remember { mutableIntStateOf(0) }
     val deletedMessage = stringResource(R.string.history_deleted)
     val undoLabel = stringResource(R.string.action_undo)
     val reportedMessage = stringResource(R.string.report_done)
@@ -561,6 +572,21 @@ internal fun EightBallContent(
             },
             onClose = { reporting = false }
         )
+    }
+    // A character of the user's own the AI service would not speak as: said once its answer is
+    // out, in the bar the screen's other notices use, with the way to correct it. Taken up at
+    // once, so that it is said one time; what it offers outlives the answer it came with.
+    val refused = state.voiceRefused
+    val refusedMessage = refused?.let { stringResource(R.string.character_voice_refused, it.name) }
+    val editLabel = stringResource(R.string.action_edit)
+    LaunchedEffect(refused) {
+        if (refused == null || refusedMessage == null) return@LaunchedEffect
+        onVoiceRefusalTold()
+        scope.launch {
+            snackbars.currentSnackbarData?.dismiss()
+            val result = snackbars.showSnackbar(refusedMessage, editLabel, duration = SnackbarDuration.Long)
+            if (result == SnackbarResult.ActionPerformed) onEditCharacter(refused.id)
+        }
     }
     val deleteWithUndo: (HistoryEntry) -> Unit = { entry ->
         onDeleteHistoryEntry(entry.id)
@@ -723,6 +749,7 @@ internal fun EightBallContent(
                             intro = intro,
                             voiceLevel = voiceLevel,
                             still = still,
+                            onActionsHeight = { actionsHeight = it },
                             onAsk = onAsk,
                             onHoldStart = onHoldStart,
                             onHoldEnd = onHoldEnd,
@@ -785,11 +812,18 @@ internal fun EightBallContent(
         // What the flows open is over every page, and what they have to say once they are done
         // is said by the screen, as the options' is: over that too.
         CompositionLocalProvider(LocalSnackbars provides snackbars) { flows() }
+        // Over an answer's own buttons, never on them: while one is up on the ball's page, what the
+        // bar says stands above what can be done with it, and settles back once it is closed.
+        val raised = designedFloatAsState(
+            if (state.phase is BallPhase.Answered && onBallPage) 1f else 0f,
+            tween(NOTICE_RISE_MS, easing = FastOutSlowInEasing)
+        )
         SnackbarHost(
             hostState = snackbars,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .windowInsetsPadding(WindowInsets.safeDrawing)
+                .offset { IntOffset(0, -(actionsHeight * raised.value).roundToInt()) }
         )
     }
 }
@@ -937,7 +971,8 @@ private fun Stage(
     onAllowMicrophone: () -> Unit,
     onShareAnswer: () -> Unit,
     onRateAnswer: (Boolean) -> Unit,
-    onAskWho: (String) -> Unit
+    onAskWho: (String) -> Unit,
+    onActionsHeight: (Int) -> Unit = {}
 ) {
     val noMotion = motionRemoved()
     // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
@@ -1058,7 +1093,13 @@ private fun Stage(
                     onShareAnswer = onShareAnswer,
                     onRateAnswer = onRateAnswer,
                     onAskWho = onAskWho,
-                    modifier = band.padding(top = 24.dp, bottom = 16.dp).heightIn(min = 48.dp)
+                    // Measured below its top margin: how far over the bottom edge what is done
+                    // here reaches, for the screen's notices to stand above it.
+                    modifier = band
+                        .padding(top = 24.dp)
+                        .onSizeChanged { onActionsHeight(it.height) }
+                        .padding(bottom = 16.dp)
+                        .heightIn(min = 48.dp)
                 )
             }
         ) { measurables, constraints ->
@@ -1901,3 +1942,6 @@ private fun EightBallContentPreview() {
 
 /** How long the picture of an answer is waited for before sharing says it could not be made. */
 private const val SHARE_PATIENCE_MS = 3_000L
+
+/** How long the screen's notices take to rise over an answer's buttons, and to settle back. */
+private const val NOTICE_RISE_MS = 180

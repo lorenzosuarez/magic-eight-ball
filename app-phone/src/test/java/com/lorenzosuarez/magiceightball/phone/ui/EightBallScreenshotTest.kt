@@ -313,6 +313,17 @@ class EightBallScreenshotTest {
     )
 
     @Test
+    fun phone_voice_refused_spanish() = capture(name = "phone_160_voice_refused_spanish", state = VOICE_REFUSED)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_voice_refused_spanish_dark() = capture(name = "phone_161_voice_refused_spanish_dark", state = VOICE_REFUSED)
+
+    @Test
+    fun phone_voice_refused_spanish_large_font() =
+        capture(name = "phone_162_voice_refused_spanish_large_font", state = VOICE_REFUSED, fontScale = 2f)
+
+    @Test
     fun phone_long_answer_large_font() = capture(
         name = "phone_10_long_answer_large_font",
         state = EightBallUiState(
@@ -1797,6 +1808,33 @@ private val ANSWERED = EightBallUiState(
         answer = AnswerText.Plain("Yes. Screenshot this.")
     ),
     aiAnswersAvailable = true
+)
+
+/** One of the user's own, named as some are, that the AI service would not speak as. */
+private val GAUCHO = CustomCharacter(
+    "7",
+    "Gaucho Puto",
+    "Un gaucho que responde con insultos.",
+    Magic8BallPersonality.COACH,
+    CharacterLook.NEUTRAL
+)
+
+/** The ball's own answer is out, signed by [GAUCHO], and the user is told why it is not his: see [VoiceRefusedTest]. */
+private val VOICE_REFUSED = EightBallUiState(
+    phase = BallPhase.Answered(
+        id = 0,
+        question = "",
+        answer = AnswerText.Plain("Yo diría que no.", voiceRefused = true),
+        style = Magic8BallPersonality.CUSTOM,
+        custom = GAUCHO
+    ),
+    settings = UserSettings(
+        language = AppLanguage.SPANISH,
+        personality = Magic8BallPersonality.CUSTOM,
+        customCharacter = GAUCHO
+    ),
+    aiAnswersAvailable = true,
+    voiceRefused = GAUCHO
 )
 
 /** Whose light the ball is shown in: the classic one's, and two far from it and from each other. */

@@ -8,13 +8,17 @@ sealed interface Magic8BallResult {
      * answers from the AI service are used up: something the user can be told.
      * @property birthdayLine true when [message] is one of the app's own lines for the asker's
      * birthday: the day's wish has then been made, as when the AI service was told of it.
+     * @property voiceRefused true when [message] is a bundled one because the AI service would not
+     * write in the character's voice, with nothing asked that it could have refused instead:
+     * whoever made the character can be told why it does not speak as they wrote it.
      */
     data class Success(
         val message: String,
         val fromAi: Boolean = false,
         val remark: String? = null,
         val aiAllowanceSpent: Boolean = false,
-        val birthdayLine: Boolean = false
+        val birthdayLine: Boolean = false,
+        val voiceRefused: Boolean = false
     ) : Magic8BallResult
     data class Failure(val error: LlmError) : Magic8BallResult
 }

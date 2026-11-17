@@ -244,6 +244,34 @@ class Magic8BallRepositoryImplTest {
     }
 
     @Test
+    fun `a tap or a shake the service will not write for still gets the ball's own answer`() = runTest {
+        // Nothing was asked, so nothing harmful was: what the service turned down was the
+        // voice of the character, and the ball answers from its own lines instead.
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
+            Magic8BallResult.Failure(LlmError.SafetyBlocked)
+
+        // And it says so, so that whoever made the character can be told why it never speaks.
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = true),
+            repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, question = null))
+        )
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = true),
+            repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, question = "  "))
+        )
+    }
+
+    @Test
+    fun `an answer the service is only away for says nothing of the character's voice`() = runTest {
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
+            Magic8BallResult.Failure(LlmError.Network)
+
+        val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, question = null))
+
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = false), result)
+    }
+
+    @Test
     fun `a failed gemini request ends in a bundled answer`() = runTest {
         coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
             Magic8BallResult.Failure(LlmError.Network)

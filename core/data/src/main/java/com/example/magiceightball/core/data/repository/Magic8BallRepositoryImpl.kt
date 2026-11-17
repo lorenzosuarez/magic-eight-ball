@@ -46,6 +46,7 @@ class Magic8BallRepositoryImpl(
     override suspend fun generateMagic8BallMessage(request: Magic8BallRequest): Magic8BallResult {
         geminiSettings.refresh()
         var allowanceSpent = false
+        var voiceRefused = false
         // The classic style is its own twenty answers: nothing is written for it. Nor for
         // one of the user's own that came without saying who it is: there is no voice to write in.
         val hasVoice = when (request.personality) {
@@ -68,8 +69,12 @@ class Magic8BallRepositoryImpl(
                 }
                 if (remote is Magic8BallResult.Success) return remote
                 // What the service would not answer is not answered by chance either: a yes drawn
-                // at random to such a question is worse than no answer.
-                if (remote == Magic8BallResult.Failure(LlmError.SafetyBlocked)) return remote
+                // at random to such a question is worse than no answer. After a tap or a shake
+                // nothing was asked: what it would not write came from the character's voice, and
+                // the ball answers from its own lines, as it does when the service is away.
+                val refused = remote == Magic8BallResult.Failure(LlmError.SafetyBlocked)
+                if (refused && request.questionForAi != null) return remote
+                voiceRefused = refused
                 // An answer that never came is not one of the day's: with no network, or a
                 // service that is slow or down, the user would use up the day without seeing one.
                 // What the service did answer, and the app turned down, stays counted.
@@ -81,7 +86,7 @@ class Magic8BallRepositoryImpl(
         }
         // What is known of the asker goes no further than the lines that come with the app.
         return localDataSource.getRandomMessage(request.languageCode, request.personality, request.asker)
-            .copy(aiAllowanceSpent = allowanceSpent)
+            .copy(aiAllowanceSpent = allowanceSpent, voiceRefused = voiceRefused)
     }
 
     /** Whether the service wrote something, even if it could not be used. Null is a wait that ran out. */
