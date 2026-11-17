@@ -425,10 +425,12 @@ LOOKS = {
     # No character of the app's wears these: they are there to be picked.
     'singer': ('#FFC2D1', {
         # Held up to its face and leaning towards it, as one sings into it: the head beside the white disc,
-        # its collar cut by the head's own edge, the handle round at its end and clear of the ball. The handle
-        # is as long as it can be with 3.6 left to the ball and to the round's edge: longer, it touches one.
+        # its collar cut by the head's own edge, and a handle long enough to read as a microphone's, about
+        # twice the head across and narrowing to its round end. Held from below, it runs off the round at
+        # its lower left, as the ball does at the other side, and is whole on the card; it stays 3.6 clear of
+        # the ball. Kept inside the round, it could not be longer than the head was wide, and read as a lollipop.
         'fitted': True,
-        'ink': [seen(disc(27, 62, 9.4)), seen(ribbon([(24.44, 65.94), (16.6, 78.02)], 8.6, 5.6, caps=(False, True)))],
+        'ink': [seen(disc(27, 62, 9.4)), seen(ribbon([(24.44, 65.94), (6.47, 93.62)], 8.6, 4.8, caps=(False, True)))],
         'white': [seen(turned(poly(ellipse_points(27, 62, 9.35, 9.35, 0, 208.2, 165.7, 8) + ellipse_points(27, 62, 9.35, 9.35, 0, 90.3, 47.8, 8)), 27, 62, -5.1))],
     }),
     # In the air over it and broad: stuck into the ball, its point was a spike in a socket.
@@ -485,12 +487,16 @@ LOOKS = {
                 seen(turned(ribbon([(30.9, 41.7), (32.8, 38)], 5.4), 22.5, 53.5, 6))],
         'white': [seen(turned(poly([(14.7, 55.7), (30.3, 55.7), (30.74, 60.5), (14.26, 60.5)]), 22.5, 53.5, 6))],
     }),
-    # A bottle that has all but fallen over on its crown, and what rises from it, larger as it rises.
+    # A bottle held up to the face and tipped towards it, as one drinks from it, where the singer holds the
+    # microphone and about as large as the mate there: its shoulder over the ball's edge, its bottom 3.4 inside
+    # the round. What rises from it goes up beside the ball, larger as it rises, and clear of it. On the crown
+    # it was a hat, not a drink.
     'bottle': ('#BFE8D2', {
-        'ink': [turned('M42.1 43.2 Q39.5 43.2 39.5 40.6 L39.5 25.5 Q39.5 20.9 44 19.4 L44 11.2 L51 11.2 L51 19.4 Q55.5 20.9 55.5 25.5 L55.5 40.6 Q55.5 43.2 52.9 43.2Z', 47.5, 43.2, -20),
-                turned(poly([(42.6, 9.2), (52.4, 9.2), (52.4, 13.2), (42.6, 13.2)]), 47.5, 43.2, -20),
-                circ(41.4, 4.5, 2.8), circ(50.6, 3.8, 3.7)],
-        'white': [turned(poly([(42.1, 27), (52.9, 27), (52.9, 35.7), (42.1, 35.7)]), 47.5, 43.2, -20)],
+        'fitted': True,
+        'ink': [seen(turned('M17.4 84 Q14.8 84 14.8 81.4 L14.8 65.4 Q14.8 61.06 18.5 61.06 L18.5 54.86 L23.9 54.86 L23.9 61.06 Q27.6 61.06 27.6 65.4 L27.6 81.4 Q27.6 84 25 84Z', 21.2, 84, 28, 1.1)),
+                seen(turned(poly([(17.4, 54.26), (25, 54.26), (25, 57.86), (17.4, 57.86)]), 21.2, 84, 28, 1.1)),
+                seen(disc(31.4, 51.8, 2)), seen(disc(29, 44.2, 2.8))],
+        'white': [seen(turned(poly([(17, 78.79), (25.4, 78.79), (25.4, 70.61), (17, 70.61)]), 21.2, 84, 28, 1.1))],
     }),
     # A fin: behind the ball, and so part of its outline.
     'shark': ('#8FA8FF', {'behind': ['M38 48 Q42 26 64 12 Q57 28 65.5 46Z']}),
