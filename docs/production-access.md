@@ -6,7 +6,8 @@ Google rechaza sobre todo por poca participación de los testers: pide que hayan
 
 ## Datos de la prueba al 17 de noviembre
 
-- **Testers:** 12 inscritos desde el 13 de noviembre. Si uno se da de baja, el contador de 14 días vuelve a empezar.
+- **Testers:** vienen de [Testers Community](https://www.testerscommunity.com/dashboard), un servicio de pago (plan Starter, pedido el 12 de noviembre): 15 testers asignados, programa de 16 días, y dos informes que llegan entre los días 7 y 10, uno con los comentarios de los testers y otro con respuestas sugeridas para este formulario. Play Console cuenta 12 inscritos desde el 13 de noviembre, así que 3 de los 15 no cuentan; si uno de los 12 se da de baja, el contador de 14 días vuelve a empezar.
+- **Instrucciones que ven esos testers** (al 17 de noviembre): "No login needed. Tap the ball or shake the phone… Try different styles in Options." Ya no describen la app: la 1.3.0 tiene cuenta, personajes propios y la página de personajes.
 - **Firebase Analytics, últimos 28 días** (solo quien dio su consentimiento, así que es un mínimo): 28 usuarios; 27 hicieron preguntas, 375 en total; 13 min 32 s de uso medio; 3,5 sesiones con interacción por usuario; 100 % de usuarios sin fallos.
 - **Funciones usadas:** elegir personaje, 3 personas; compartir una respuesta, 3; ajustes, 4; modo fiesta, 2; veredicto del día, 2; valorar una respuesta, 1; compartir la app, 2. Una desinstalación.
 - **Uso diario:** bajando; 3 usuarios el 16 de noviembre.
@@ -15,27 +16,29 @@ Google rechaza sobre todo por poca participación de los testers: pide que hayan
 ## Antes del 27
 
 1. **Invitar a 3 o 4 testers más**, para no depender de que ninguno de los 12 se dé de baja.
-2. **Pedir a los testers que usen la 1.3.0** en cuanto Google la apruebe, y guardar sus respuestas (capturas del grupo, correos). Mensaje propuesto:
+2. **Cambiar las instrucciones de los testers** en Testers Community (pestaña Instructions → Test credentials → Edit), para que prueben lo que hoy casi nadie usa. Texto propuesto:
 
-> ¡Hola! Gracias por probar Magic AI Ball. En unos días os llega la versión 1.3.0 y necesito vuestra ayuda, 5 minutos:
-> 1. Elige otro personaje y hazle una pregunta.
-> 2. Inicia sesión con Google y crea tu propio personaje.
-> 3. Prueba el modo fiesta con alguien.
-> 4. Comparte una respuesta.
->
-> Después contadme qué os gusta y qué no, por aquí o en Google Play ("Enviar comentarios privados" en la ficha de la app). Y por favor, no salgáis del programa de pruebas hasta el 27 de noviembre.
+> Version 1.3.0 is coming. Please use the app a few minutes on several days and try:
+> 1. Tap or shake the ball, or hold it and ask out loud.
+> 2. Open Characters and ask the same question to 3 or 4 of them.
+> 3. In Characters, tap "Create a character", sign in with Google, enter your date of birth (the app is for adults) and make your own.
+> 4. Play party mode with someone and share an answer.
+> 5. Open the verdict of the day.
+> Send any problem or idea through Google Play ("Send private feedback" on the app's page). Please stay in the test until 27 November.
 
-3. **Volver a leer los números** el 26 de noviembre y actualizar la respuesta sobre la participación.
+3. **Pedir al soporte de Testers Community** que los 15 queden inscritos: Play solo cuenta 12.
+4. **Volver a leer los números** el 26 de noviembre y actualizar la respuesta sobre la participación.
+5. **Cotejar con su informe de producción** (días 7 a 10): usar lo que aporte, pero con los números y cambios reales de este documento.
 
 ## 1. About your closed test
 
 **How did you recruit users for your closed test? For example, did you ask friends and family, or use a paid testing provider?**
 
-> FALTA: solo lo sabe el dueño. Plantilla: "We invited friends, family and colleagues personally, by WhatsApp and email, with the Play opt-in link, looking for adults who use Android every day. N joined, and we kept them in a group to send updates and collect feedback."
+> We used Testers Community, a paid closed-testing service: 15 Android users were assigned, 12 stayed opted in from 13 November, and they tested each version from written instructions about what to try. We also tested every build on our own phone and Wear OS watch before release.
 
 **How easy was it to recruit testers for your app?** (Very difficult, Difficult, Neither difficult or easy, Easy, Very easy)
 
-> FALTA: según cómo lo vivió el dueño.
+> Easy: el servicio de pago los consiguió.
 
 **Describe the engagement you received from testers during your closed test.** Include whether or not testers utilized all of the features in your app, and whether tester usage was consistent with how you would expect a real user to use your app. If not, describe the differences you would expect to see.
 
@@ -43,7 +46,7 @@ Google rechaza sobre todo por poca participación de los testers: pide que hayan
 
 **Provide a summary of the feedback that you received from testers. Include how you collected the feedback.**
 
-> FALTA: qué dijeron y por dónde. Plantilla: "Feedback came through [a WhatsApp group / in person / email]: [the two or three main points]. Play's private feedback channel received none. We fixed [what], and the AI answers got a Report button so testers could flag a bad one."
+> FALTA hasta el informe de comentarios de Testers Community (entre el 19 y el 22 de noviembre). Plantilla: "Testers Community collected written feedback from each tester and sent it as a report: [the two or three main points]. Play's private feedback channel received none. We fixed [what] in [version]."
 
 ## 2. About your app
 
