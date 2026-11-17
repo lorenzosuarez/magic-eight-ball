@@ -101,9 +101,14 @@ android {
     testOptions {
         // Robolectric renders the real screen for the screenshot test, so it needs the resources.
         unitTests.isIncludeAndroidResources = true
-        // And room: each picture is a whole screen drawn in memory, and with as many of them
-        // as there are now the worker's default half a gigabyte runs out before the last.
-        unitTests.all { it.maxHeapSize = "2g" }
+        // A worker of its own for each test class: what a class draws stays in memory until its
+        // worker ends, and with one worker for them all the default half gigabyte ran out before
+        // the last class. A larger heap is not the way out: a screen that never stops moving
+        // (a spinner) took four times as long to picture with 2 GB as with the default.
+        unitTests.all {
+            it.forkEvery = 1
+            it.maxParallelForks = 2
+        }
     }
 }
 
