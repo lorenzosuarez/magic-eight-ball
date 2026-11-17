@@ -7,7 +7,6 @@
     <string name="hint_tap">Toca o agita para preguntar</string>
     <string name="hint_listening">Te escucho…</string>
     <string name="hint_speak">Haz una pregunta de sí o no</string>
-    <string name="notice_microphone_denied">Para preguntar por voz, permite el acceso al micrófono.</string>
     <string name="notice_voice_unsupported">Este dispositivo no puede escuchar preguntas.</string>
 
     <!-- Result -->
@@ -327,6 +326,13 @@
     <string name="characters_community_account_text">Lo que está escrito sobre un personaje de la comunidad se envía al servicio de IA para que responda con su voz. Entra con tu cuenta para aceptarlo.</string>
     <string name="options_voice">Voz</string>
     <string name="options_notifications">Notificaciones</string>
+    <string name="options_on_many">Activadas</string>
+    <string name="options_off_many">Desactivadas</string>
+    <string name="options_voice_off">Desactivada</string>
+    <string name="options_party_off">Desactivado</string>
+    <string name="options_voice_both">Preguntas y respuestas</string>
+    <string name="options_voice_questions">Solo preguntas</string>
+    <string name="options_voice_answers">Solo respuestas</string>
     <string name="options_about">Información</string>
     <string name="options_licenses">Licencias de código abierto</string>
     <string name="license_icons">Iconos</string>

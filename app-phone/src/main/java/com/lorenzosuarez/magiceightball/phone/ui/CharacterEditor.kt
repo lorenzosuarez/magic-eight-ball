@@ -580,9 +580,10 @@ private fun ColourRow(chosen: Magic8BallPersonality, enabled: Boolean, onChosen:
 
 /**
  * What the ball can wear: nothing, or what one of the app's characters wears, as the round faces
- * characters have everywhere else, on the colour picked. The ones that read best come first,
- * and the row opens on the one picked with the one before it in sight and, as the colours do,
- * always shows half of the next.
+ * characters have everywhere else, on the colour picked. There are too many for one row to show:
+ * they stand in [EMBLEM_ROWS] rows that move as one, read down and then across, so the ones that
+ * read best are the first in sight. It opens on the one picked with those before it in sight and,
+ * as the colours do, always shows half of the next.
  */
 @Composable
 private fun EmblemRow(
@@ -594,47 +595,52 @@ private fun EmblemRow(
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val whole = ((maxWidth - PICK_EDGE) / (EMBLEM_RING + EMBLEM_LEAST_GAP) - 0.5f).toInt().coerceAtLeast(1)
         val step = (maxWidth - PICK_EDGE - EMBLEM_RING / 2) / whole
-        val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0)
+        val at = EMBLEMS.indexOf(chosen).coerceAtLeast(0) / EMBLEM_ROWS
         val start = with(LocalDensity.current) { (step * (at - 1).coerceAtLeast(0)).roundToPx() }
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .fadingRow(rememberScrollState(start), PICK_EDGE)
                 .padding(horizontal = PICK_EDGE)
-                .selectableGroup()
+                .selectableGroup(),
+            verticalArrangement = Arrangement.spacedBy(EMBLEM_LEAST_GAP)
         ) {
             OnCardColours {
-                EMBLEMS.forEach { look ->
-                    val picked = look == chosen
-                    val label = stringResource(look.labelRes())
-                    val touch = remember { MutableInteractionSource() }
-                    val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
-                    // Picked: a ring in the text's colour with the face a little inside it, as a
-                    // colour that is picked has. The ring comes as the face draws in from it, and
-                    // goes as the face fills out again.
-                    Box(
-                        modifier = Modifier
-                            // The gap after it is its own: the faces stay where the edge is. The last has none.
-                            .padding(end = if (look == EMBLEMS.last()) 0.dp else step - EMBLEM_RING)
-                            .size(EMBLEM_RING)
-                            .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), CircleShape)
-                            .clip(CircleShape)
-                            .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
-                            .semantics { contentDescription = label },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // The light of the touch is drawn here, over the face's colour: behind it, it would not show.
-                        Box(
-                            modifier = Modifier
-                                .graphicsLayer {
-                                    val drawn = 1f - EMBLEM_DRAWN_IN * mark
-                                    scaleX = drawn
-                                    scaleY = drawn
+                EMBLEM_LINES.forEach { line ->
+                    Row {
+                        line.forEach { look ->
+                            val picked = look == chosen
+                            val label = stringResource(look.labelRes())
+                            val touch = remember { MutableInteractionSource() }
+                            val mark by animateFloatAsState(if (picked) 1f else 0f, choiceTween(), label = "emblem picked")
+                            // Picked: a ring in the text's colour with the face a little inside it, as a
+                            // colour that is picked has. The ring comes as the face draws in from it, and
+                            // goes as the face fills out again.
+                            Box(
+                                modifier = Modifier
+                                    // The gap after it is its own: the faces stay where the edge is. The last of a row has none.
+                                    .padding(end = if (look == line.last()) 0.dp else step - EMBLEM_RING)
+                                    .size(EMBLEM_RING)
+                                    .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = mark), CircleShape)
+                                    .clip(CircleShape)
+                                    .selectable(selected = picked, interactionSource = touch, indication = null, enabled = enabled, role = Role.RadioButton) { onChosen(look) }
+                                    .semantics { contentDescription = label },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // The light of the touch is drawn here, over the face's colour: behind it, it would not show.
+                                Box(
+                                    modifier = Modifier
+                                        .graphicsLayer {
+                                            val drawn = 1f - EMBLEM_DRAWN_IN * mark
+                                            scaleX = drawn
+                                            scaleY = drawn
+                                        }
+                                        .clip(CircleShape)
+                                        .indication(touch, PressHighlight)
+                                ) {
+                                    CharacterFace(colour = colour, emblem = look, size = EMBLEM_RING, chosen = { mark })
                                 }
-                                .clip(CircleShape)
-                                .indication(touch, PressHighlight)
-                        ) {
-                            CharacterFace(colour = colour, emblem = look, size = EMBLEM_RING, chosen = { mark })
+                            }
                         }
                     }
                 }
@@ -682,6 +688,9 @@ private val EMBLEM_LEAST_GAP = 12.dp
 /** A look to pick: how large, ring and all, and how far the face draws in from the ring when it is the one. */
 private val EMBLEM_RING = 56.dp
 private const val EMBLEM_DRAWN_IN = 0.16f
+
+/** How many rows the looks stand in. */
+private const val EMBLEM_ROWS = 2
 
 /**
  * The colours offered: those of the app's characters, but one of two that are told apart only
@@ -738,3 +747,6 @@ internal val EMBLEMS = listOf(
     CharacterLook.SARCASTIC,
     CharacterLook.GRANDMA
 )
+
+/** The looks as they stand: each row's own, the first of them all at the top of the first column. */
+private val EMBLEM_LINES = List(EMBLEM_ROWS) { row -> EMBLEMS.filterIndexed { index, _ -> index % EMBLEM_ROWS == row } }
