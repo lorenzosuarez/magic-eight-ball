@@ -23,4 +23,13 @@ class EntitlementsTest {
             assertEquals(Held.FOR_GOOD, heldBy(exists = true, fromCache = fromCache, lasting = false))
         }
     }
+
+    @Test
+    fun `the end of a subscription is told only with what happens then`() {
+        assertEquals(Paid(until = 1_000L, renews = true), paidBy(until = 1_000L, renews = true))
+        assertEquals(Paid(until = 1_000L, renews = false), paidBy(until = 1_000L, renews = false))
+        // A grant written before the server said whether it renews, and Premium bought once.
+        assertNull(paidBy(until = 1_000L, renews = null))
+        assertNull(paidBy(until = null, renews = null))
+    }
 }

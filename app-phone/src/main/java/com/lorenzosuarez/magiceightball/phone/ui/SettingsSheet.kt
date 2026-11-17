@@ -1,5 +1,10 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import android.net.Uri
+import android.content.Intent
+import java.time.ZoneId
+import java.time.Instant
+import com.lorenzosuarez.magiceightball.phone.account.Paid
 import androidx.annotation.RawRes
 import android.content.res.Resources
 import com.example.magiceightball.core.common.BrandPalette
@@ -212,7 +217,8 @@ internal fun SettingsContent(
                         // Held, it stands where it was offered: the page is as tall with it as without,
                         // and whoever pays for it by the month has the way to Google Play's page for it here.
                         state.premium && signedIn -> PremiumHeld(
-                            onManage = if (state.subscribed) ({ context.manageSubscription() }) else null
+                            onManage = if (state.subscribed) ({ context.manageSubscription() }) else null,
+                            paid = state.paid
                         )
                     }
                     Section(stringResource(R.string.options_answers)) {
@@ -295,6 +301,18 @@ internal fun SettingsContent(
                             title = stringResource(R.string.settings_privacy_policy),
                             supporting = null,
                             onClick = onOpenPrivacyPolicy,
+                            icon = R.drawable.ic_lock
+                        )
+                        RowDivider()
+                        ActionRow(
+                            title = stringResource(R.string.settings_terms),
+                            supporting = null,
+                            onClick = {
+                                context.open(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(termsUrl(state.settings.language)))
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            },
                             icon = R.drawable.ic_terms
                         )
                         RowDivider()
@@ -303,6 +321,14 @@ internal fun SettingsContent(
                             supporting = null,
                             onClick = { nav.section = OptionsSection.LICENSES },
                             icon = R.drawable.ic_licenses
+                        )
+                        RowDivider()
+                        // The way to a person: whoever has a problem the app does not answer writes to the developer.
+                        ActionRow(
+                            title = stringResource(R.string.settings_contact),
+                            supporting = null,
+                            onClick = { context.open(contactIntent(BuildConfig.VERSION_NAME)) },
+                            icon = R.drawable.ic_mail
                         )
                     }
                     Text(
@@ -447,9 +473,11 @@ internal fun SettingsContent(
  *
  * @param onManage what opens Google Play's page for the subscription; null of Premium that is
  * not one, which has nothing to manage.
+ * @param paid until when the subscription is paid for and what happens then: said in place of
+ * "active" once it is known, since it is what whoever pays, or has cancelled, wants to know.
  */
 @Composable
-private fun PremiumHeld(onManage: (() -> Unit)?) {
+private fun PremiumHeld(onManage: (() -> Unit)?, paid: Paid? = null) {
     val scheme = MaterialTheme.colorScheme
     Spacer(Modifier.height(12.dp))
     Row(
@@ -484,7 +512,15 @@ private fun PremiumHeld(onManage: (() -> Unit)?) {
                 color = scheme.onSurface
             )
             Text(
-                text = stringResource(if (onManage != null) R.string.premium_held_subscribed else R.string.premium_held),
+                text = when {
+                    onManage == null -> stringResource(R.string.premium_held)
+                    paid == null -> stringResource(R.string.premium_held_subscribed)
+                    // The day on a line of its own, and the way to change it under it.
+                    else -> stringResource(
+                        if (paid.renews) R.string.premium_renews else R.string.premium_ends,
+                        paid.day().spelledOut()
+                    ) + "\n" + stringResource(R.string.premium_manage)
+                },
                 modifier = Modifier.padding(top = 2.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = scheme.onSurfaceVariant
@@ -874,6 +910,9 @@ internal fun SettingText(
         }
     }
 }
+
+/** The day a subscription is paid until, where the device is. */
+internal fun Paid.day(zone: ZoneId = ZoneId.systemDefault()): LocalDate = Instant.ofEpochMilli(until).atZone(zone).toLocalDate()
 
 /** Whether answers are being made for whoever is signed in: the AI service is asked, and they have a profile. */
 private val EightBallUiState.sendsProfile: Boolean

@@ -16,7 +16,7 @@ Escríbele al desarrollador a [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez
 - **Tu cuenta:** lo que Google le entregó a la app cuando iniciaste sesión, es decir, tu nombre, tu dirección de correo electrónico, la dirección de tu foto de perfil y el identificador de la cuenta.
 - **Tu perfil:** tu nombre de pila, tu fecha de nacimiento y el registro de lo que aceptaste enviar al servicio de IA.
 - **Tus personajes:** todos los personajes que creaste, con su nombre, su descripción y su aspecto.
-- **El registro de una compra de Premium**, si tu cuenta lo tiene: la fecha, la fecha hasta la que está pagada una suscripción, el número de pedido de Google Play y una huella de la compra que se guardan con tu cuenta, y la nota de qué cuenta tenía la compra.
+- **El registro de una compra de Premium**, si tu cuenta lo tiene: la fecha, la fecha hasta la que está pagada una suscripción y si se renueva entonces, el número de pedido de Google Play y una huella de la compra que se guardan con tu cuenta, y la nota de qué cuenta tenía la compra.
 
 El desarrollador no conserva copia de nada de esto. Después, Google, que guarda estos datos para el desarrollador, los quita de sus propios sistemas y copias de seguridad; en el caso de lo que le entregó a la app cuando iniciaste sesión, esto tarda hasta 180 días.
 

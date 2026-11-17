@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Builds the app's public site into site/public.
 
-The site is the privacy policy and the page for deleting an account, in the three languages the
-app speaks, and a front page for each. Their one source is the Markdown files under docs/. This
+The site is the privacy policy, the terms of use and the page for deleting an account, in the
+three languages the app speaks, and a front page for each. Their one source is the Markdown files under docs/. This
 turns them into pages, so that what is published can never drift from what is in the repository.
 It runs before every deploy (see firebase.json) and needs nothing but Python.
 
@@ -23,7 +23,7 @@ BASE_URL = "https://magic-ai-8-ball.web.app"
 PLAY_URL = "https://play.google.com/store/apps/details?id=com.lorenzosuarez.magiceightball"
 
 # The pages written as Markdown under docs/: where each is served, and its file in LANGUAGES.
-TEXTS = {"privacy": "policy", "delete-account": "deletion"}
+TEXTS = {"privacy": "policy", "terms": "conditions", "delete-account": "deletion"}
 # Stands where a date belongs until the day the text takes effect.
 PENDING_DATE = "RELEASE-DATE"
 DRAFT = "--draft" in sys.argv
@@ -34,12 +34,14 @@ LANGUAGES = {
         "html_lang": "en",
         "prefix": "",
         "policy": "PRIVACY_POLICY.md",
+        "conditions": "TERMS.md",
         "deletion": "DELETE_ACCOUNT.md",
         "name": "English",
         "tagline": "A ball that answers with character. Tap, shake or ask out loud.",
         "description": "Magic AI Ball: a ball that answers with character, for Android phones and Wear OS.",
         "get": "Get it on Google Play",
         "privacy": "Privacy policy",
+        "terms": "Terms of use",
         "delete": "Delete your account",
         "home": "Home",
         "language": "Language",
@@ -48,12 +50,14 @@ LANGUAGES = {
         "html_lang": "es",
         "prefix": "es/",
         "policy": "PRIVACY_POLICY.es.md",
+        "conditions": "TERMS.es.md",
         "deletion": "DELETE_ACCOUNT.es.md",
         "name": "Español",
         "tagline": "Una bola que responde con carácter. Toca, agita o pregunta en voz alta.",
         "description": "Magic AI Ball: una bola que responde con carácter, para teléfonos Android y Wear OS.",
         "get": "Disponible en Google Play",
         "privacy": "Política de privacidad",
+        "terms": "Términos de uso",
         "delete": "Eliminar tu cuenta",
         "home": "Inicio",
         "language": "Idioma",
@@ -62,12 +66,14 @@ LANGUAGES = {
         "html_lang": "pt-BR",
         "prefix": "pt/",
         "policy": "PRIVACY_POLICY.pt.md",
+        "conditions": "TERMS.pt.md",
         "deletion": "DELETE_ACCOUNT.pt.md",
         "name": "Português",
         "tagline": "Uma bola que responde com personalidade. Toque, agite ou pergunte em voz alta.",
         "description": "Magic AI Ball: uma bola que responde com personalidade, para celulares Android e Wear OS.",
         "get": "Disponível no Google Play",
         "privacy": "Política de privacidade",
+        "terms": "Termos de uso",
         "delete": "Excluir a sua conta",
         "home": "Início",
         "language": "Idioma",
@@ -170,6 +176,7 @@ def page(code: str, name: str, title: str, description: str, main: str, main_cla
 </main>
 <footer>
 <a href="{url(code, "privacy")}">{html.escape(words["privacy"])}</a>
+<a href="{url(code, "terms")}">{html.escape(words["terms"])}</a>
 <a href="{url(code, "delete-account")}">{html.escape(words["delete"])}</a>
 <a href="{PLAY_URL}" rel="noopener">Google Play</a>
 </footer>

@@ -2,6 +2,7 @@ package com.lorenzosuarez.magiceightball.phone
 
 import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.Offer
+import com.lorenzosuarez.magiceightball.phone.account.Paid
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import com.example.magiceightball.core.domain.model.CustomCharacter
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
@@ -34,6 +35,7 @@ import com.lorenzosuarez.magiceightball.phone.config.AppConfig
  * @property premiumKnown whether that has been heard from the server; until then [premium] is
  * false without meaning that they do not have it.
  * @property subscribed whether what they have is a subscription, to be cancelled in Google Play.
+ * @property paid of a subscription, until when it is paid for and whether it renews then, once known.
  * @property offer what they can buy and for how much; null while the store has not said, or they cannot.
  * @property turn how many answers have been closed since the app opened: at a party, whose turn it is.
  */
@@ -58,7 +60,8 @@ data class EightBallUiState(
     val premium: Boolean = false,
     val premiumKnown: Boolean = true,
     val offer: Offer? = null,
-    val subscribed: Boolean = false
+    val subscribed: Boolean = false,
+    val paid: Paid? = null
 ) {
     /** At a party, who asks next; null when one person is playing. */
     val turnName: String?

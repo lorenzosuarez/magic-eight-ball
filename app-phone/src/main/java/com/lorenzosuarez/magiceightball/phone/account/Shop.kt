@@ -10,6 +10,8 @@ import com.android.billingclient.api.BillingClient.ProductType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.InAppMessageParams
+import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
@@ -22,6 +24,7 @@ import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.FirebaseFunctionsException
 import com.lorenzosuarez.magiceightball.phone.config.AppConfigSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.lang.ref.WeakReference
 import java.security.MessageDigest
 import java.time.Period
 import java.time.format.DateTimeParseException
@@ -171,8 +174,10 @@ interface Shop {
      * The app came to the front. What Google Play holds is asked again then, and not only when
      * the process starts: a subscription whose payment was put right in Google Play, or a
      * purchase that could not be checked when it was made, is theirs when they come back.
+     * And Google Play is let say, over [host], what it has to say of a payment that failed:
+     * Premium going with no word of why is the one thing a subscriber cannot work out alone.
      */
-    fun opened() = Unit
+    fun opened(host: Activity) = Unit
 
     /** For builds and tests with no store. */
     object None : Shop {
@@ -211,8 +216,12 @@ class PlayShop @Inject constructor(
 
     private val connecting = Mutex()
 
-    /** Each coming to the front: only the latest matters, and none is waited for. */
-    private val openings = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    /**
+     * Each coming to the front, with the screen that came: only the latest matters, and none is
+     * waited for. With no screen, it is only what is held that is asked again.
+     */
+    private val openings =
+        MutableSharedFlow<WeakReference<Activity>?>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val client: BillingClient by lazy {
         BillingClient.newBuilder(context)
@@ -249,15 +258,34 @@ class PlayShop @Inject constructor(
         }
         scope.launch {
             // Settling what is already theirs asks the server for nothing: see [settle].
-            openings.collectLatest {
+            openings.collectLatest { host ->
                 val open = config.config.value.premiumEnabled && account.state.value is AccountState.SignedIn
-                if (open) until { held()?.let { settle(it) != Bought.UNCONFIRMED } == true }
+                if (!open) return@collectLatest
+                host?.get()?.let { remind(it) }
+                until { held()?.let { settle(it) != Bought.UNCONFIRMED } == true }
             }
         }
     }
 
-    override fun opened() {
-        openings.tryEmit(Unit)
+    override fun opened(host: Activity) {
+        openings.tryEmit(WeakReference(host))
+    }
+
+    /**
+     * Google Play's own message over [host] when a subscription's payment was refused, with its
+     * own way to put the payment right: Google Play decides whether there is anything to say,
+     * and how often to say it. Put right from there, what is held is asked again.
+     */
+    private suspend fun remind(host: Activity) {
+        if (!connected() || host.isFinishing || host.isDestroyed) return
+        val which = InAppMessageParams.newBuilder()
+            .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
+            .build()
+        client.showInAppMessages(host, which) { result ->
+            if (result.responseCode == InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED) {
+                openings.tryEmit(null)
+            }
+        }
     }
 
     /** Tries [done] again, a little later each time, until it says it is. */

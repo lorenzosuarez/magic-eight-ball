@@ -16,7 +16,7 @@ Write to the developer at [lorenzosuarez.dev@gmail.com](mailto:lorenzosuarez.dev
 - **Your account:** what Google gave the app when you signed in, which is your name, your email address, the address of your profile photo and the account's identifier.
 - **Your profile:** your first name, your date of birth and the record of what you agreed to send to the AI service.
 - **Your characters:** every character you created, with its name, its description and its look.
-- **The record of a Premium purchase**, if your account has it: the date, the date a subscription is paid up to, Google Play's order number and a fingerprint of the purchase kept with your account, and the note of which account held the purchase.
+- **The record of a Premium purchase**, if your account has it: the date, the date a subscription is paid up to and whether it renews then, Google Play's order number and a fingerprint of the purchase kept with your account, and the note of which account held the purchase.
 
 The developer keeps no copy of any of it. Google, which keeps this data for the developer, then removes it from its own systems and backups; for what it gave the app when you signed in, this takes up to 180 days.
 
