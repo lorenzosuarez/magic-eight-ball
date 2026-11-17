@@ -1,5 +1,14 @@
 package com.lorenzosuarez.magiceightball.phone.ui
 
+import androidx.compose.ui.platform.LocalContext
+import android.net.Uri
+import android.content.Intent
+import com.example.magiceightball.core.domain.model.AppLanguage
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -263,6 +272,27 @@ internal fun PremiumContent(
                 )
             }
         }
+        // And the whole of what paying agrees to, and of what is done with their data, a touch
+        // away from the button: one line, each name a link to its page in the app's language.
+        if (terms != null && ended != Bought.TAKEN) {
+            val language = AppLanguage.entries.firstOrNull { it.code == LocalConfiguration.current.locales[0].language }
+                ?: AppLanguage.ENGLISH
+            val linked = TextLinkStyles(SpanStyle(textDecoration = TextDecoration.Underline))
+            val context = LocalContext.current
+            fun page(url: String) = LinkAnnotation.Url(url, linked) {
+                context.open(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            Text(
+                text = buildAnnotatedString {
+                    withLink(page(termsUrl(language))) { append(stringResource(R.string.settings_terms).whole()) }
+                    append("  ·  ")
+                    withLink(page(privacyPolicyUrl(language))) { append(stringResource(R.string.settings_privacy_policy).whole()) }
+                },
+                modifier = Modifier.padding(start = 32.dp, top = 8.dp, end = 32.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         // A price is an offer only with its terms beside it.
         val offer = price?.takeIf { terms != null }
         // What is going on, how the last try ended, or why the button does not answer: heard by
@@ -404,3 +434,6 @@ private val Bought.message: Int
 
 /** The lines kept for the price while it is looked for. */
 private const val PRICE_WAIT_LINES = 3
+
+/** These words on one line, whatever room there is: their spaces are ones a line does not break at. */
+private fun String.whole(): String = replace(' ', '\u00A0')

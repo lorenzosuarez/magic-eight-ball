@@ -40,6 +40,8 @@ export function standing(purchase: Purchase): "invalid" | "pending" | "purchased
 export interface Subscribed {
   until: number;
   order: string | null;
+  /** Whether it is paid for again when that comes, or ends there: it ends once it is cancelled. */
+  renews: boolean;
 }
 
 /**
@@ -60,9 +62,9 @@ export function subscribed(subscription: Subscription, now: number): "invalid" |
     // moment: Play tells of whatever happens next, and that is when it is read again.
     case "SUBSCRIPTION_STATE_ACTIVE":
     case "SUBSCRIPTION_STATE_IN_GRACE_PERIOD":
-      return { until: expiry > now ? expiry : now, order };
+      return { until: expiry > now ? expiry : now, order, renews: true };
     case "SUBSCRIPTION_STATE_CANCELED":
-      return expiry > now ? { until: expiry, order } : "invalid";
+      return expiry > now ? { until: expiry, order, renews: false } : "invalid";
     case "SUBSCRIPTION_STATE_PENDING":
       return "pending";
     // On hold, paused, expired, a payment given up on before it was made, or no state at all.

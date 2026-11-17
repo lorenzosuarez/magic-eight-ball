@@ -50,6 +50,12 @@ interface Entitlements {
      */
     val subscribed: StateFlow<Boolean> get() = NOT
 
+    /**
+     * Of a subscription, until when it is paid for and what happens then. Null of nobody, of
+     * Premium bought once, and of a subscription the server has not said that much about.
+     */
+    val paid: StateFlow<Paid?> get() = UNSAID
+
     /** For builds with nothing to sign in to, and for tests: nobody has paid for anything. */
     object Nobody : Entitlements {
         override val premium: StateFlow<Boolean> = MutableStateFlow(false)
@@ -59,6 +65,7 @@ interface Entitlements {
         /** Where there is no server to hear from, what is said is all there is to know. */
         val HEARD: StateFlow<Boolean> = MutableStateFlow(true)
         val NOT: StateFlow<Boolean> = MutableStateFlow(false)
+        val UNSAID: StateFlow<Paid?> = MutableStateFlow(null)
     }
 }
 
@@ -75,7 +82,7 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
 
     /** What the server says of whoever is signed in: null until it has been heard from. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val heard: StateFlow<Held?> = account.state
+    private val heard: StateFlow<Reading?> = account.state
         .map { (it as? AccountState.SignedIn)?.id }
         .distinctUntilChanged()
         .flatMapLatest { id ->
@@ -84,27 +91,36 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
             }
             // Signed out, nothing is theirs, and that much is known: what the last account had
             // is not shown to the next. Of an account just signed in, nothing is known yet.
-            grant?.let { held(it).onStart { emit(null) } } ?: flowOf(Held.NOTHING)
+            grant?.let { held(it).onStart { emit(null) } } ?: flowOf(Reading(Held.NOTHING, null))
         }
         .stateIn(scope, SharingStarted.Eagerly, null)
 
     override val premium: StateFlow<Boolean> =
-        heard.map { it == Held.FOR_GOOD || it == Held.SUBSCRIBED }.stateIn(scope, SharingStarted.Eagerly, false)
+        heard.map { it?.held == Held.FOR_GOOD || it?.held == Held.SUBSCRIBED }.stateIn(scope, SharingStarted.Eagerly, false)
 
     override val subscribed: StateFlow<Boolean> =
-        heard.map { it == Held.SUBSCRIBED }.stateIn(scope, SharingStarted.Eagerly, false)
+        heard.map { it?.held == Held.SUBSCRIBED }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    override val paid: StateFlow<Paid?> = heard.map { it?.paid }.stateIn(scope, SharingStarted.Eagerly, null)
 
     override val known: StateFlow<Boolean> =
         heard.map { it != null }.stateIn(scope, SharingStarted.Eagerly, false)
 
-    private fun held(grant: DocumentReference): Flow<Held?> = callbackFlow<Held?> {
+    private fun held(grant: DocumentReference): Flow<Reading?> = callbackFlow<Reading?> {
         // Told of the copy becoming the server's own word too: that nothing is held is only
         // believed once the server has said so, and its saying it changes nothing else.
         val listening = grant.addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, failure ->
             if (failure != null || snapshot == null) {
                 close(failure ?: IllegalStateException("No grant and no reason"))
             } else {
-                heldBy(snapshot.exists(), snapshot.metadata.isFromCache, snapshot.contains(UNTIL))?.let { trySend(it) }
+                heldBy(snapshot.exists(), snapshot.metadata.isFromCache, snapshot.contains(UNTIL))?.let { held ->
+                    // Only the server writes these, but a field of another kind, as one changed by
+                    // hand in the console, throws where it is read: here, it costs only the date.
+                    val paid = runCatching {
+                        paidBy(snapshot.getTimestamp(UNTIL)?.toDate()?.time, snapshot.getBoolean(RENEWS))
+                    }.getOrNull()
+                    trySend(Reading(held, paid))
+                }
             }
         }
         awaitClose { listening.remove() }
@@ -119,6 +135,7 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
     private companion object {
         const val TAG = "Entitlements"
         const val UNTIL = "until"
+        const val RENEWS = "renews"
         const val GRANTS = "grants"
         const val PREMIUM = "premium"
         const val RETRY_FIRST_MS = 2_000L
@@ -128,6 +145,24 @@ class FirestoreEntitlements @Inject constructor(store: AccountStore, account: Ac
 
 /** What the server has written down for an account. */
 internal enum class Held { NOTHING, FOR_GOOD, SUBSCRIBED }
+
+/**
+ * Until when a subscription is paid for, and whether it [renews] then, paid for again, or ends
+ * there, as one that was cancelled does.
+ *
+ * @property until the moment, in milliseconds since 1970.
+ */
+data class Paid(val until: Long, val renews: Boolean)
+
+/** One reading of the grant: what is held, and what is said of its end. */
+private class Reading(val held: Held, val paid: Paid?)
+
+/**
+ * What a grant says of its end. Nothing unless it says both when and what then: an end with
+ * nothing said of what follows is not told as either a renewal or an ending.
+ */
+internal fun paidBy(until: Long?, renews: Boolean?): Paid? =
+    if (until != null && renews != null) Paid(until, renews) else null
 
 /**
  * What a reading of the grant says is held, and null when it says nothing. The copy kept on the

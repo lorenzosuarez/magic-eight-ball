@@ -62,11 +62,13 @@ async function isGone(uid: string): Promise<boolean> {
 }
 
 // What Play confirms of a purchase: its order, whether Play is still to be told it was
-// delivered, and, of a subscription, until when it is paid for. Premium bought once has no end.
+// delivered, and, of a subscription, until when it is paid for and whether it is paid for again
+// then. Premium bought once has no end.
 interface Confirmed {
   order: string | null;
   owed: boolean;
   until?: number;
+  renews?: boolean;
 }
 
 async function confirm(token: string, subscription: boolean): Promise<"invalid" | "pending" | Confirmed> {
@@ -98,6 +100,13 @@ async function claim(uid: string, token: string, subscription: boolean): Promise
     const written = settlement.bind ? undefined : (bound.get("until") as Timestamp | undefined)?.toMillis();
     const lasting =
       confirmed.until === undefined ? {} : { until: Timestamp.fromMillis(Math.max(confirmed.until, written ?? 0)) };
+    // Whether it is paid for again at its end is written with the end, on the grant alone: it
+    // is what the app tells whoever holds it. An end already written for this purchase that is
+    // later than this answer's keeps what was said with it.
+    const stale =
+      written !== undefined && confirmed.until !== undefined && written > confirmed.until && granted.get("purchase") === id;
+    const renews: boolean | undefined = stale ? granted.get("renews") : confirmed.renews;
+    const terms = renews === undefined ? lasting : { ...lasting, renews };
     if (settlement.bind) transaction.set(binding, { uid, at: FieldValue.serverTimestamp(), ...lasting });
     // Claimed again by the account that holds it: only how long it lasts is news.
     else if (confirmed.until !== undefined) transaction.update(binding, lasting);
@@ -111,7 +120,7 @@ async function claim(uid: string, token: string, subscription: boolean): Promise
         since: granted.get("purchase") === id ? granted.get("since") : FieldValue.serverTimestamp(),
         purchase: id,
         order: confirmed.order,
-        ...lasting,
+        ...terms,
       });
     }
     return settlement.outcome;
@@ -163,7 +172,9 @@ async function follow(token: string): Promise<void> {
     const grant = await transaction.get(grantOf(bound.get("uid")));
     const lasting = { until: Timestamp.fromMillis(state.until) };
     transaction.update(binding, lasting);
-    if (grant.get("purchase") === bound.id) transaction.update(grant.ref, { ...lasting, order: state.order });
+    if (grant.get("purchase") === bound.id) {
+      transaction.update(grant.ref, { ...lasting, order: state.order, renews: state.renews });
+    }
   });
 }
 

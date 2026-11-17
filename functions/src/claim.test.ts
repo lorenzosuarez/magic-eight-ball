@@ -108,27 +108,27 @@ test("a subscription to something else is invalid", () => {
 });
 
 test("an active subscription gives Premium until Play says it is paid for, and names its latest order", () => {
-  assert.deepEqual(subscribed(running(), NOW), { until: NOW + 30 * DAY, order: "GPA.0000-0000-0000-00000" });
+  assert.deepEqual(subscribed(running(), NOW), { until: NOW + 30 * DAY, order: "GPA.0000-0000-0000-00000", renews: true });
 });
 
 test("one with no order yet names none", () => {
-  assert.deepEqual(subscribed(ends(NOW + DAY, "SUBSCRIPTION_STATE_ACTIVE"), NOW), { until: NOW + DAY, order: null });
+  assert.deepEqual(subscribed(ends(NOW + DAY, "SUBSCRIPTION_STATE_ACTIVE"), NOW), { until: NOW + DAY, order: null, renews: true });
 });
 
 test("one whose payment failed keeps Premium while Play is still trying", () => {
-  assert.deepEqual(subscribed(ends(NOW + 3 * DAY, "SUBSCRIPTION_STATE_IN_GRACE_PERIOD"), NOW), { until: NOW + 3 * DAY, order: null });
+  assert.deepEqual(subscribed(ends(NOW + 3 * DAY, "SUBSCRIPTION_STATE_IN_GRACE_PERIOD"), NOW), { until: NOW + 3 * DAY, order: null, renews: true });
 });
 
 test("one Play still calls active past its end keeps Premium, as of now", () => {
-  assert.deepEqual(subscribed(ends(NOW - 60_000, "SUBSCRIPTION_STATE_ACTIVE"), NOW), { until: NOW, order: null });
+  assert.deepEqual(subscribed(ends(NOW - 60_000, "SUBSCRIPTION_STATE_ACTIVE"), NOW), { until: NOW, order: null, renews: true });
 });
 
 test("and so does one whose end Play does not say", () => {
-  assert.deepEqual(subscribed(running({ lineItems: [{ productId: "premium_subscription" }] }), NOW), { until: NOW, order: null });
+  assert.deepEqual(subscribed(running({ lineItems: [{ productId: "premium_subscription" }] }), NOW), { until: NOW, order: null, renews: true });
 });
 
 test("a cancelled subscription keeps Premium to the end of what was paid for, and no further", () => {
-  assert.deepEqual(subscribed(ends(NOW + DAY, "SUBSCRIPTION_STATE_CANCELED"), NOW), { until: NOW + DAY, order: null });
+  assert.deepEqual(subscribed(ends(NOW + DAY, "SUBSCRIPTION_STATE_CANCELED"), NOW), { until: NOW + DAY, order: null, renews: false });
   assert.equal(subscribed(ends(NOW, "SUBSCRIPTION_STATE_CANCELED"), NOW), "invalid");
   assert.equal(subscribed(running({ subscriptionState: "SUBSCRIPTION_STATE_CANCELED", lineItems: [{ productId: "premium_subscription" }] }), NOW), "invalid");
 });

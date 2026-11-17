@@ -177,6 +177,7 @@ class EightBallViewModel @Inject constructor(
                 premium = who.premium,
                 premiumKnown = who.premiumKnown,
                 subscribed = who.subscribed,
+                paid = who.paid,
                 offer = who.offer,
                 voice = voiceStatus(it, speech, microphone),
                 notice = notice,

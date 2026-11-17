@@ -161,6 +161,8 @@
     <string name="share_answer_text">Look what Magic AI Ball told me. Ask your own question: %1$s</string>
     <string name="share_failed">Couldn\'t prepare the picture. Try again</string>
     <string name="settings_privacy_policy">Privacy policy</string>
+    <string name="settings_terms">Terms of use</string>
+    <string name="settings_contact">Contact</string>
     <string name="settings_ad_privacy">Ad privacy choices</string>
     <string name="notifications_channel">News and reminders</string>
     <string name="daily_verdict_title">Today\'s verdict</string>
@@ -287,6 +289,9 @@
     <string name="account_premium">You have Premium</string>
     <string name="premium_held">Active</string>
     <string name="premium_held_subscribed">Active · Manage in Google&#160;Play</string>
+    <string name="premium_renews">Renews on %1$s</string>
+    <string name="premium_ends">Ends on %1$s</string>
+    <string name="premium_manage">Manage in Google&#160;Play</string>
     <string name="account_subscription">Manage subscription</string>
     <string name="account_subscription_hint">Cancel or change it in Google&#160;Play</string>
     <string name="account_delete_text_subscribed">Your account and everything in it are erased. This can\'t be undone. Your Premium subscription is not cancelled: cancel it in Google&#160;Play, or it keeps renewing. Your recent answers stay on this device. Google may ask you to pick your account to confirm.</string>

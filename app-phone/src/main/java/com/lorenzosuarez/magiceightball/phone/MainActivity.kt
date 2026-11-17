@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        shop.opened()
+        shop.opened(this)
     }
 
     override fun onNewIntent(intent: Intent) {

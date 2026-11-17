@@ -25,6 +25,7 @@ import com.lorenzosuarez.magiceightball.phone.account.AccountState
 import com.lorenzosuarez.magiceightball.phone.account.Bought
 import com.lorenzosuarez.magiceightball.phone.account.MONTHLY
 import com.lorenzosuarez.magiceightball.phone.account.Offer
+import com.lorenzosuarez.magiceightball.phone.account.Paid
 import com.lorenzosuarez.magiceightball.phone.account.Profile
 import com.lorenzosuarez.magiceightball.phone.account.ProfileState
 import java.time.LocalDate
@@ -1398,6 +1399,38 @@ class EightBallScreenshotTest {
         1f
     )
 
+    /** Once the server has said until when it is paid for, the row says the day it is paid for again. */
+    @Test
+    fun phone_options_premium_renews_spanish() = captureAccountOptions(
+        "phone_122_options_premium_renews_spanish",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com")).let {
+            it.copy(config = it.config.copy(premiumEnabled = true), premium = true, subscribed = true, paid = Paid(PAID_UNTIL, renews = true))
+        },
+        1f
+    )
+
+    /** Cancelled, it says the day it ends instead: at large type on a small phone, in the longest of the three languages. */
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun small_phone_options_premium_ends_portuguese_large_font() = captureAccountOptions(
+        "phone_123_small_phone_options_premium_ends_portuguese_large_font",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"), AppLanguage.PORTUGUESE).let {
+            it.copy(config = it.config.copy(premiumEnabled = true), premium = true, subscribed = true, paid = Paid(PAID_UNTIL, renews = false))
+        },
+        1.5f
+    )
+
+    /** The whole page, down to its last row: what is read about the app and the way to its developer. */
+    @Test
+    @Config(qualifiers = "w411dp-h1500dp")
+    fun phone_options_whole_page_spanish() = captureAccountOptions(
+        "phone_124_options_whole_page_spanish",
+        accountState(AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com")).let {
+            it.copy(config = it.config.copy(premiumEnabled = true), premium = true, subscribed = true, paid = Paid(PAID_UNTIL, renews = true))
+        },
+        1f
+    )
+
     /** And whoever holds it: marked beside their name, and said where it was offered. */
     @Test
     fun phone_options_premium_held_spanish() = captureAccountOptions(
@@ -1677,3 +1710,6 @@ private val LONG_ACCOUNT = AccountState.SignedIn(
     name = "María Fernanda de los Ángeles Rodríguez-Echeverría",
     email = "maria.fernanda.rodriguez.echeverria@correo-electronico.example.com"
 )
+
+/** Noon of 17 December 2026 in Greenwich: the same day wherever the tests run. */
+private const val PAID_UNTIL = 1_797_508_800_000L

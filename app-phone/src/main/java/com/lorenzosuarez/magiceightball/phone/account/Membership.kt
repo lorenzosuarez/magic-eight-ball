@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
  * @property premium whether they have what is sold: see [Entitlements].
  * @property premiumKnown whether that has been heard from the server, and is not only assumed.
  * @property subscribed whether what they have is a subscription, to be cancelled in Google Play.
+ * @property paid of a subscription, until when it is paid for and what happens then, once known.
  * @property offer what they can buy and for how much; null while the store has not said, or
  * they cannot: see [Shop].
  */
@@ -40,7 +41,8 @@ data class Who(
     val premium: Boolean = false,
     val offer: Offer? = null,
     val premiumKnown: Boolean = true,
-    val subscribed: Boolean = false
+    val subscribed: Boolean = false,
+    val paid: Paid? = null
 )
 
 /**
@@ -80,8 +82,8 @@ class Membership @Inject constructor(
         underAge,
         ageNotice,
         removing,
-        combine(entitlements.premium, entitlements.known, entitlements.subscribed, shop.offer) { premium, known, subscribed, offer ->
-            Who(premium = premium, premiumKnown = known, subscribed = subscribed, offer = offer)
+        combine(entitlements.premium, entitlements.known, entitlements.subscribed, entitlements.paid, shop.offer) { premium, known, subscribed, paid, offer ->
+            Who(premium = premium, premiumKnown = known, subscribed = subscribed, paid = paid, offer = offer)
         }
     ) { (account, profile, characters), underAge, ageNotice, removing, held ->
         held.copy(

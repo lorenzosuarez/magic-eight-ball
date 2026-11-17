@@ -1682,8 +1682,8 @@ private fun Context.openAppSettings() = open(
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 )
 
-/** One of the system's own pages. A device that has no such page opens nothing, and nothing breaks. */
-private fun Context.open(page: Intent) {
+/** A page of the system's or of another app. A device with nothing to open it opens nothing, and nothing breaks. */
+internal fun Context.open(page: Intent) {
     try {
         startActivity(page)
     } catch (_: ActivityNotFoundException) {
@@ -1707,12 +1707,29 @@ private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?i
 /** The app's own site, where the policy is published in each language the app speaks. */
 private const val SITE_URL = "https://magic-ai-8-ball.web.app"
 
+/** A page of the site in the language the app is set to. */
+private fun siteUrl(language: AppLanguage, page: String): String = SITE_URL + when (language) {
+    AppLanguage.ENGLISH -> ""
+    AppLanguage.SPANISH -> "/es"
+    AppLanguage.PORTUGUESE -> "/pt"
+} + "/" + page
+
 /** The policy in the language the app is set to. */
-internal fun privacyPolicyUrl(language: AppLanguage): String = SITE_URL + when (language) {
-    AppLanguage.ENGLISH -> "/privacy"
-    AppLanguage.SPANISH -> "/es/privacy"
-    AppLanguage.PORTUGUESE -> "/pt/privacy"
-}
+internal fun privacyPolicyUrl(language: AppLanguage): String = siteUrl(language, "privacy")
+
+/** What is agreed to by using the app, in the language the app is set to. */
+internal fun termsUrl(language: AppLanguage): String = siteUrl(language, "terms")
+
+/** Where the developer is written to: the address the policy and the terms give. */
+internal const val SUPPORT_EMAIL = "lorenzosuarez.dev@gmail.com"
+
+/**
+ * A message to the developer, in whatever writes mail on the device, with the app and its
+ * version as its subject: what is asked first of anyone who writes about a problem.
+ */
+internal fun contactIntent(version: String): Intent =
+    Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$SUPPORT_EMAIL?subject=" + Uri.encode("Magic AI Ball $version")))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 private const val SHARE_REFERRER = "&referrer=utm_source%3Dshare%26utm_medium%3Dapp"
 
 /** How long an answer takes to rise into view: a tap sooner than that does not ask again. */
