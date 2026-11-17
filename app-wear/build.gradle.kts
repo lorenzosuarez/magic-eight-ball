@@ -24,8 +24,8 @@ android {
         applicationId = "com.lorenzosuarez.magiceightball"
         minSdk = 30
         targetSdk = 36
-        versionCode = 103
-        versionName = "1.0.1"
+        versionCode = 104
+        versionName = "1.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

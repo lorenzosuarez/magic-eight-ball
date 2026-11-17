@@ -208,7 +208,9 @@
     <string name="character_unnamed">No name yet</string>
     <string name="character_sent">Sent to Gemini, by Google, to answer. Nothing personal.</string>
     <string name="character_refused">Check the name and how it answers</string>
-    <string name="character_incomplete">Give it a name and say how it answers</string>
+    <string name="character_name_missing">Give it a name</string>
+    <string name="character_description_missing">Say how it answers</string>
+    <string name="character_description_short">Write a little more: at least %1$d&#160;letters</string>
     <string name="character_discard_title">Discard what you wrote?</string>
     <string name="character_discard_yes">Discard</string>
     <string name="character_discard_no">Keep editing</string>

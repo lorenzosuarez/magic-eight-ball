@@ -66,8 +66,8 @@ android {
         applicationId = "com.lorenzosuarez.magiceightball"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.2.1"
+        versionCode = 5
+        versionName = "1.3.0"
 
         manifestPlaceholders["admobAppId"] = admobAppId
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"$admobInterstitialId\"")
@@ -101,6 +101,9 @@ android {
     testOptions {
         // Robolectric renders the real screen for the screenshot test, so it needs the resources.
         unitTests.isIncludeAndroidResources = true
+        // And room: each picture is a whole screen drawn in memory, and with as many of them
+        // as there are now the worker's default half a gigabyte runs out before the last.
+        unitTests.all { it.maxHeapSize = "2g" }
     }
 }
 

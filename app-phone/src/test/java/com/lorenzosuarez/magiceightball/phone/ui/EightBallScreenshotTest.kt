@@ -283,6 +283,25 @@ class EightBallScreenshotTest {
         )
     )
 
+    /** The options under the page's name, in the light: the name large over what it names, and none in the bar. */
+    @Test
+    fun phone_options_named_spanish_light() = captureWithSettings(
+        "phone_158_options_named_spanish_light",
+        EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH), aiAnswersAvailable = true)
+    )
+
+    /** The page's name where it is tightest: it grows with the system's type only so far, and the page keeps its room. */
+    @Test
+    @Config(qualifiers = "w360dp-h640dp-night-xhdpi")
+    fun small_phone_options_named_large_font() = listOf(1.3f to "large", 2f to "largest").forEach { (scale, called) ->
+        capture(
+            "phone_159_small_phone_options_named_${called}_font",
+            accountState(AccountState.SignedOut).let { it.copy(config = it.config.copy(premiumEnabled = true)) },
+            fontScale = scale,
+            initialPage = OPTIONS_PAGE
+        )
+    }
+
     @Test
     fun phone_spanish_tap_only() = capture(
         name = "phone_9_spanish_tap_only",
@@ -1575,6 +1594,94 @@ class EightBallScreenshotTest {
         )
     }
 
+    /**
+     * The ball's light in the colour of whoever answers: the classic one, which has next to none
+     * of its own, and two that are far apart, on the dark page and on the light one.
+     */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_ball_lit_dark() = LIGHTS.forEach { style ->
+        capture(
+            "phone_130_ball_lit_${style.name.lowercase()}_dark",
+            EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH, personality = style))
+        )
+    }
+
+    @Test
+    fun phone_ball_lit_light() = LIGHTS.forEach { style ->
+        capture(
+            "phone_131_ball_lit_${style.name.lowercase()}_light",
+            EightBallUiState(settings = UserSettings(language = AppLanguage.SPANISH, personality = style))
+        )
+    }
+
+    /** One of the user's own lights the ball in the colour it borrowed. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_ball_lit_yours_dark() = capture(
+        "phone_132_ball_lit_yours_dark",
+        EightBallUiState(
+            settings = UserSettings(
+                language = AppLanguage.SPANISH,
+                personality = Magic8BallPersonality.CUSTOM,
+                customCharacter = YOURS[0]
+            ),
+            config = AppConfig(accountEnabled = true),
+            account = AccountState.SignedIn("1", "Lorena Suárez", "lorena@example.com"),
+            profile = ProfileState.Present(PROFILE),
+            characters = YOURS
+        )
+    )
+
+    /** While the ball listens, its rings are in that colour. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_ball_rings_dark() = capture("phone_135_ball_rings_dark", DRAMA_LISTENING, voiceLevel = 0.5f)
+
+    @Test
+    fun phone_ball_rings_light() = capture("phone_136_ball_rings_light", DRAMA_LISTENING, voiceLevel = 0.5f)
+
+    /** With an answer on the die the light is of whoever gave it, not of whoever answers now. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_ball_lit_by_who_answered_dark() = capture(
+        "phone_137_ball_lit_by_who_answered_dark",
+        EightBallUiState(
+            phase = BallPhase.Answered(
+                id = 0,
+                question = "¿Me va a escribir esta noche?",
+                answer = AnswerText.Plain("Jamás. Qué tragedia."),
+                style = Magic8BallPersonality.DRAMA
+            ),
+            settings = UserSettings(language = AppLanguage.SPANISH, personality = Magic8BallPersonality.GAMER)
+        )
+    )
+
+    /** The ball at rest and, beside it, turned as far as a shake turns it. */
+    @Test
+    @Config(qualifiers = "+night")
+    fun phone_ball_rolled() = captureRoboImage(filePath = path("phone_138_ball_rolled")) {
+        MagicEightBallPhoneTheme {
+            Row(
+                modifier = Modifier.background(Backdrop).padding(32.dp),
+                horizontalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
+                listOf(0f, BALL_ROLL).forEach { degrees ->
+                    EightBall(
+                        mode = BallMode.Idle,
+                        answer = null,
+                        pressed = false,
+                        voiceLevel = { 0f },
+                        tint = { shareColor(Magic8BallPersonality.SARCASTIC) },
+                        roll = { degrees },
+                        still = true,
+                        modifier = Modifier.size(160.dp)
+                    )
+                }
+            }
+        }
+    }
+
     private fun capture(
         name: String,
         state: EightBallUiState,
@@ -1690,6 +1797,15 @@ private val ANSWERED = EightBallUiState(
         answer = AnswerText.Plain("Yes. Screenshot this.")
     ),
     aiAnswersAvailable = true
+)
+
+/** Whose light the ball is shown in: the classic one's, and two far from it and from each other. */
+private val LIGHTS = listOf(Magic8BallPersonality.NEUTRAL, Magic8BallPersonality.DRAMA, Magic8BallPersonality.ZOOMER)
+
+/** Listening, while a character whose colour is a red answers. */
+private val DRAMA_LISTENING = EightBallUiState(
+    phase = BallPhase.Listening("¿Me va a escribir"),
+    settings = UserSettings(language = AppLanguage.SPANISH, personality = Magic8BallPersonality.DRAMA)
 )
 
 private const val LONG_READING = "Cuatro tazas vacías y un mensaje a medio escribir no son un plan, corazón. Guarda el teléfono en el cajón de las bufandas, cena algo caliente y mañana, con la cabeza fresca, decides si de verdad vale tu desvelo."

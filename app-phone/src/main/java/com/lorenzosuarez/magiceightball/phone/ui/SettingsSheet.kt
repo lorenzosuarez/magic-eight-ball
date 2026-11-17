@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
@@ -74,6 +75,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -111,7 +113,8 @@ import com.lorenzosuarez.magiceightball.phone.VoiceStatus
  * The page itself is a way in: who the account is, and then the subjects in groups, a row to
  * each with its mark. A subject opens in the page's own place, with the way back at the top,
  * and there are its switches; [nav] says which one is open, for whoever draws the top of the page.
- * It scrolls when the font is large or the window is short.
+ * The page and each subject begin with their own name, large, which leaves as they are read
+ * down: see [LargeTitle]. It scrolls when the font is large or the window is short.
  */
 @Composable
 internal fun SettingsContent(
@@ -183,13 +186,22 @@ internal fun SettingsContent(
     ) { section ->
         // Said to whoever has the screen read out: what was touched is gone, and this is what came.
         val pane = stringResource(section?.title ?: R.string.settings_title)
+        val scroll = if (section == null) pageScroll else rememberScrollState()
+        // The name is the first thing on the page: it has left once the page is read down as far
+        // as it ends, which is known once the page has been laid out.
+        var nameEnd by remember { mutableStateOf<Int?>(null) }
+        val nameAway by remember(scroll) { derivedStateOf { nameEnd?.let { end -> scroll.value >= end } } }
+        // Said by what is open alone, since what is on its way out no longer has the bar; and not
+        // before it is known, so that till then the bar goes by what the page said when last here.
+        if (section == nav.section) nameAway?.let { away -> TitleAwayEffect(pane, away) }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .semantics { paneTitle = pane }
-                .verticalScroll(if (section == null) pageScroll else rememberScrollState())
+                .verticalScroll(scroll)
                 .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
         ) {
+            LargeTitle(pane, Modifier.onSizeChanged { nameEnd = it.height })
             when (section) {
                 null -> {
                     // First on the page where it is offered: who the answers are for comes before how they are given.

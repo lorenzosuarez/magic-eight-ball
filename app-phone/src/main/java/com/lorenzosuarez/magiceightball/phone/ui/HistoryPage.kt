@@ -10,6 +10,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,13 +26,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,13 +53,15 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * The history page: the latest answers, newest first. An entry goes away with its delete
- * button; "Clear all", always in sight at the top, asks first.
+ * The history page: under its name, the latest answers, newest first. An entry goes away with
+ * its delete button; "Delete all", on the line of the page's name and gone with it as the list
+ * is read down, asks first.
  *
  * @param now the current time, for "5 min ago".
  * @param onDelete receives the entry to delete; the caller offers to undo it.
  * @param onOpen receives the entry that was tapped, to show it in the ball again.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HistoryContent(
     entries: List<HistoryEntry>,
@@ -65,32 +72,41 @@ internal fun HistoryContent(
     onOpen: (HistoryEntry) -> Unit = {}
 ) {
     var confirmClear by rememberSaveable { mutableStateOf(false) }
+    val title = stringResource(R.string.history_title)
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = 0.dp, end = 4.dp, bottom = 0.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // The page's name is in the bar above, with the dots.
-            Spacer(Modifier.weight(1f))
-            if (entries.isNotEmpty()) {
-                TextButton(
-                    onClick = { confirmClear = true },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                    shape = CircleShape,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-                ) {
-                    Text(stringResource(R.string.history_clear_all))
-                }
-            }
-        }
-
         if (entries.isEmpty()) {
+            // Nothing is listed, so nothing takes the page's name away.
+            TitleAwayEffect(title, away = false)
+            LargeTitle(title, Modifier.padding(horizontal = 16.dp))
             EmptyHistory(Modifier.weight(1f))
         } else {
-            LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+            val list = rememberLazyListState()
+            // The name is the first thing listed: it has left once what follows it is at the top.
+            val away by remember(list) { derivedStateOf { list.firstVisibleItemIndex > 0 } }
+            TitleAwayEffect(title, away)
+            LazyColumn(state = list, contentPadding = PaddingValues(bottom = 24.dp)) {
+                item {
+                    // On the name's own line, what is done to all the page lists; where the two do
+                    // not fit side by side with a breath between them, as at the largest type on a
+                    // narrow phone, it goes under the name. Its words stand 12 dp inside it: the line
+                    // begins that much sooner and the name that much later, so that under the name
+                    // they begin where the name does.
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = TITLE_GAP),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        LargeTitle(title, Modifier.alignByBaseline().padding(start = 12.dp, end = 8.dp))
+                        TextButton(
+                            onClick = { confirmClear = true },
+                            modifier = Modifier.alignByBaseline().heightIn(min = 48.dp),
+                            shape = CircleShape,
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ) {
+                            Text(stringResource(R.string.history_clear_all))
+                        }
+                    }
+                }
                 itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                     HistoryRow(
                         entry = entry,
@@ -241,6 +257,9 @@ private const val MINUTES_PER_DAY = 60 * 24
 
 /** Older than this, an entry shows its date. */
 private const val DAYS_SHOWN_AS_AGO = 7
+
+/** The air between the line of the page's name and the first answer under it. */
+private val TITLE_GAP = 2.dp
 
 /**
  * Nothing asked yet: the ball in line, with its window empty, and under it what will be here.

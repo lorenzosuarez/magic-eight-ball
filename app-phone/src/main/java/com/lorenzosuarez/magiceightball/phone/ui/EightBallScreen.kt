@@ -38,6 +38,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -47,7 +48,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
@@ -96,6 +96,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -109,6 +110,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.center
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -629,6 +633,9 @@ internal fun EightBallContent(
                     else -> R.string.brand_name
                 }
             )
+            // Whose large name has left under this page's bar, as what the page lists says it. Kept
+            // with the page, so that one that comes back already read down has its small name at once.
+            val titleAway = rememberSaveable { mutableStateOf<String?>(null) }
             // The ball floats on the backdrop; its neighbours are plain pages, edge to edge,
             // so that what is listed on them is read against one flat colour.
             Column(
@@ -679,24 +686,17 @@ internal fun EightBallContent(
                                   .align(if (page == HISTORY_PAGE) Alignment.CenterEnd else Alignment.CenterStart)
                                   .offset(x = if (page == HISTORY_PAGE) BAR_MARK_OUT else -BAR_MARK_OUT)
                           )
-                          Text(
-                            text = open?.title ?: stringResource(
-                                if (page == HISTORY_PAGE) R.string.history_title else R.string.settings_title
-                            ),
+                          // The name is large at the top of what the page lists, and here only once that has left.
+                          val name = open?.title ?: pageName
+                          BarTitle(
+                            text = name,
+                            shown = titleAway.value == name,
                             // A page is named over its dots; a subject, which is on no page, beside its way back.
-                            modifier = (if (open != null) {
+                            modifier = if (open != null) {
                                 Modifier.align(Alignment.CenterStart).padding(start = BAR_TITLE_START)
                             } else {
                                 Modifier.align(Alignment.TopCenter).padding(top = PAGE_TITLE_TOP)
-                            }).semantics { heading() },
-                            // The bar has one line's room over the dots: the name grows with the
-                            // system's font only as far as that room goes.
-                            style = MaterialTheme.typography.titleMedium.let {
-                                val fit = (PAGE_TITLE_MAX_SCALE / LocalDensity.current.fontScale).coerceAtMost(1f)
-                                it.copy(fontSize = it.fontSize * fit, lineHeight = it.lineHeight * fit)
-                            },
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            }
                           )
                         }
                     }
@@ -705,16 +705,18 @@ internal fun EightBallContent(
                     if (page == OPTIONS_PAGE) {
                         // What the page of options has to say once it is done is said by the
                         // screen, as everything else that has just been done is.
-                        CompositionLocalProvider(LocalSnackbars provides snackbars) { options() }
+                        CompositionLocalProvider(LocalSnackbars provides snackbars, LocalTitleAway provides titleAway) { options() }
                     } else if (page == HISTORY_PAGE) {
-                        HistoryContent(
-                            entries = state.history,
-                            now = now,
-                            onDelete = deleteWithUndo,
-                            onClearAll = onClearHistory,
-                            onOpen = onShowHistoryEntry,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        CompositionLocalProvider(LocalTitleAway provides titleAway) {
+                            HistoryContent(
+                                entries = state.history,
+                                now = now,
+                                onDelete = deleteWithUndo,
+                                onClearAll = onClearHistory,
+                                onOpen = onShowHistoryEntry,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     } else {
                         Stage(
                             state = state,
@@ -937,11 +939,17 @@ private fun Stage(
     onRateAnswer: (Boolean) -> Unit,
     onAskWho: (String) -> Unit
 ) {
+    val noMotion = motionRemoved()
     // The ball has weight while it waits and while it thinks; with an answer on it, it holds still to be read.
-    val swaying = !still && state.config.ballSwayEnabled && !motionRemoved() &&
+    val swaying = !still && state.config.ballSwayEnabled && !noMotion &&
         (state.phase is BallPhase.Idle || state.phase is BallPhase.Thinking)
     val sway = rememberBallSway(active = swaying, ticks = state.phase is BallPhase.Idle)
     val swayStrength by animateFloatAsState(if (swaying) 1f else 0f, tween(durationMillis = 200), label = "sway")
+    // Left behind to one side, the ball has rolled there. Told in tenths of a degree, finer than
+    // can be seen, so that the ball is drawn again for a turn and not for a hand that trembles.
+    val roll by remember {
+        derivedStateOf { (sway.x * swayStrength * BALL_ROLL * ROLL_STEPS).roundToInt() / ROLL_STEPS }
+    }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val ballSize = minOf(
             minOf(maxWidth * BALL_WIDTH_FRACTION, BALL_MAX_SIZE),
@@ -965,7 +973,29 @@ private fun Stage(
         // On a dark screen a black ball has no outline of its own: a light behind it gives it one.
         // While it listens the rings of the voice are its light: one behind them would be one ring too many.
         val lit = MaterialTheme.colorScheme.onSurface.luminance() > 0.5f && state.phase !is BallPhase.Listening
-        val glow by animateColorAsState(if (lit) BallGlow else BallGlow.copy(alpha = 0f), label = "ball glow")
+        val glow by animateFloatAsState(if (lit) 1f else 0f, label = "ball glow")
+        // The ball's light has one colour: that of whoever gave the answer on it and, with none,
+        // of whoever answers now. When that is someone else, the one colour passes into the other.
+        val answered = state.phase as? BallPhase.Answered
+        val character = if (answered != null) {
+            answered.custom?.colour ?: answered.style ?: Magic8BallPersonality.NEUTRAL
+        } else {
+            state.answeringCustom?.colour ?: state.settings.personality
+        }
+        val colour by animateColorAsState(
+            targetValue = shareColor(character),
+            animationSpec = if (noMotion) snap() else tween(BALL_COLOUR_MS),
+            label = "ball colour"
+        )
+        // The light behind the ball in that colour, and how much of it is drawn: made again
+        // while the colour is on its way and at no other time, however often it is drawn.
+        val page = MaterialTheme.colorScheme.pageGround
+        val glowLight by remember(page) {
+            derivedStateOf {
+                val light = ballLight(BallGlow, colour, BALL_GLOW_TINT)
+                ColorFilter.tint(light) to BALL_GLOW_ALPHA * ballLightWeight(light, BallGlow, page)
+            }
+        }
         val band = Modifier
             .graphicsLayer { alpha = intro() }
             .padding(horizontal = 32.dp)
@@ -981,6 +1011,8 @@ private fun Stage(
                 Ball(
                     state = state,
                     voiceLevel = voiceLevel,
+                    tint = { colour },
+                    roll = { roll },
                     still = still,
                     answerSmall = answerSmall,
                     onAsk = onAsk,
@@ -996,22 +1028,25 @@ private fun Stage(
                             translationX = sway.x * reach
                             translationY = sway.y * reach
                         }
-                        .drawBehind {
-                            if (glow.alpha > 0f) {
-                                val reach = size.minDimension / 2f * BALL_GLOW_REACH
-                                drawCircle(
-                                    brush = Brush.radialGradient(
-                                        0f to glow,
-                                        // Whole to the ball's edge, then eased out: most of it gone a little way off.
-                                        1f / BALL_GLOW_REACH to glow,
-                                        0.75f to glow.copy(alpha = glow.alpha * 0.44f),
-                                        0.9f to glow.copy(alpha = glow.alpha * 0.12f),
-                                        1f to Color.Transparent,
-                                        center = center,
-                                        radius = reach
-                                    ),
-                                    radius = reach
-                                )
+                        .drawWithCache {
+                            val reach = size.minDimension / 2f * BALL_GLOW_REACH
+                            // The light's shape, built once and in white: its colour is laid over
+                            // it as it is drawn, so one on its way to another builds nothing again.
+                            val shape = Brush.radialGradient(
+                                0f to Color.White,
+                                // Whole to the ball's edge, then eased out: most of it gone a little way off.
+                                1f / BALL_GLOW_REACH to Color.White,
+                                0.75f to Color.White.copy(alpha = 0.44f),
+                                0.9f to Color.White.copy(alpha = 0.12f),
+                                1f to Color.Transparent,
+                                center = size.center,
+                                radius = reach
+                            )
+                            onDrawBehind {
+                                if (glow > 0f) {
+                                    val (tint, strength) = glowLight
+                                    drawCircle(shape, reach, alpha = glow * strength, colorFilter = tint)
+                                }
                             }
                         }
                 )
@@ -1094,6 +1129,8 @@ private fun Stage(
 private fun Ball(
     state: EightBallUiState,
     voiceLevel: () -> Float,
+    tint: () -> Color,
+    roll: () -> Float,
     still: Boolean,
     answerSmall: Boolean,
     onAsk: () -> Unit,
@@ -1156,6 +1193,8 @@ private fun Ball(
         answer = if (answerSmall) answer?.let { "" } else answer,
         pressed = pressed,
         voiceLevel = voiceLevel,
+        tint = tint,
+        roll = roll,
         still = still,
         modifier = modifier
             .pointerInput(Unit) {
@@ -1771,6 +1810,13 @@ private val CAPTION_FADE = 32.dp
 private val BALL_MIN_SEEN = 112.dp
 /** As far as the ball is ever left behind: enough to be felt as weight, never enough to look loose. */
 private val BALL_SWAY = 12.dp
+/**
+ * How far the ball turns, in degrees, when it is left behind that far to one side. Rolling there
+ * on its own edge would turn it about six: a little more is shown, so that the "8" is seen to turn.
+ */
+internal const val BALL_ROLL = 10f
+/** How many steps to a degree that turn is told in. */
+private const val ROLL_STEPS = 10f
 
 /** A subject of the options that is open: what the top of the page calls it, and the way back to the options. */
 internal class SectionBar(val title: String, val onBack: () -> Unit)
@@ -1796,11 +1842,16 @@ private val TITLE_ROOM = 48.dp
 /** Under this size on the die, the answer is written under the ball as well. */
 private val ANSWER_READABLE = 12.dp
 /**
- * The light behind the ball on a dark screen, and how far past the ball it reaches: a little of
- * the text's own grey, enough to give a black ball an edge and no colour of its own to the page.
+ * The light behind the ball on a dark screen: a little of the text's own grey, enough to give a
+ * black ball an edge, taken part of the way to the colour of whoever answers; and how far past
+ * the ball it reaches.
  */
-private val BallGlow = Color(0xFF9AA7B4).copy(alpha = 0.16f)
+private val BallGlow = Color(0xFF9AA7B4)
+private const val BALL_GLOW_ALPHA = 0.16f
+private const val BALL_GLOW_TINT = 0.55f
 private const val BALL_GLOW_REACH = 1.6f
+/** How long the ball's light takes to pass from one character's colour into another's. */
+private const val BALL_COLOUR_MS = 450
 /** As far as a page's name follows the system's font size. */
 internal const val PAGE_TITLE_MAX_SCALE = 1.3f
 private val ACTIONS_HEIGHT = 80.dp
