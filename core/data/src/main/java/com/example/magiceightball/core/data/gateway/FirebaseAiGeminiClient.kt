@@ -3,6 +3,8 @@ package com.example.magiceightball.core.data.gateway
 import com.google.firebase.ai.type.SafetySetting
 import com.google.firebase.ai.type.HarmCategory
 import com.google.firebase.ai.type.HarmBlockThreshold
+import com.google.firebase.ai.type.HarmProbability
+import com.google.firebase.ai.type.SafetyRating
 import android.content.Context
 import android.util.Log
 import com.example.magiceightball.core.data.config.GeminiSettings
@@ -63,10 +65,11 @@ class FirebaseAiGeminiClient @Inject constructor(
                 modelName = settings.modelId,
                 // Sampling parameters are left to the model defaults: Gemini 3.x and later ignore them.
                 generationConfig = generationConfig { this.maxOutputTokens = maxOutputTokens },
-                // Said here and not left to the service: what it does with a kind of harm nobody
-                // named is nothing at all. A character is described by whoever made it, so the
-                // words that ask are not all the app's own; what is blocked is answered from the
-                // answers the app carries, as any reply that does not come is.
+                // Said here and not left to each model's default: the app filters no kind of harm.
+                // Filtering from the middle of the scale stopped characters with attitude as
+                // "harassment" for answers nobody would take as such. The model still refuses
+                // what is truly harmful by itself, what it blocks is answered as any reply that
+                // does not come is, and an answer can be reported from the app.
                 safetySettings = SAFETY,
                 systemInstruction = content { text(systemInstruction) }
             ).generateContent(userText).toReply()
@@ -74,21 +77,19 @@ class FirebaseAiGeminiClient @Inject constructor(
             // A wait that was called off is not a request that failed: it is passed on as it is.
             currentCoroutineContext().ensureActive()
             // What went wrong says what is left to set up: the project, the proof, the model.
-            Log.w(TAG, "The AI service did not answer", e)
+            Log.w(LOG_TAG, "The AI service did not answer", e)
             e.toReply()
         }
     }
 
     private companion object {
-        const val TAG = "FirebaseAiGeminiClient"
-
-        /** Every kind of harm the service names, each stopped from the middle of its scale up. */
+        /** Every kind of harm the service names, none of them filtered by the app: see where it is used. */
         val SAFETY = listOf(
             HarmCategory.HARASSMENT,
             HarmCategory.HATE_SPEECH,
             HarmCategory.SEXUALLY_EXPLICIT,
             HarmCategory.DANGEROUS_CONTENT
-        ).map { SafetySetting(it, HarmBlockThreshold.MEDIUM_AND_ABOVE) }
+        ).map { SafetySetting(it, HarmBlockThreshold.OFF) }
     }
 }
 
@@ -96,6 +97,7 @@ class FirebaseAiGeminiClient @Inject constructor(
 internal fun GenerateContentResponse.toReply(): GeminiReply {
     val candidate = candidates.firstOrNull()
     if (promptFeedback?.blockReason != null || candidate?.finishReason == FinishReason.SAFETY) {
+        Log.w(LOG_TAG, "The AI service blocked the ${blockedNote(this)}")
         return GeminiReply.Blocked
     }
     return GeminiReply.Written(
@@ -108,7 +110,7 @@ internal fun GenerateContentResponse.toReply(): GeminiReply {
 
 /** Why a request failed, in the app's own terms. */
 internal fun Exception.toReply(): GeminiReply = when (this) {
-    is PromptBlockedException -> GeminiReply.Blocked
+    is PromptBlockedException -> GeminiReply.Blocked.also { Log.w(LOG_TAG, "The AI service blocked the ${blockedNote(response)}") }
     // To the SDK a reply that did not end by itself is an error. It is still a reply: it is read
     // like any other, so that one cut short for safety is told from one that ran out of room.
     // One that ran out before a word was written is no answer, and not one of the day's.
@@ -139,3 +141,42 @@ internal fun Exception.toReply(): GeminiReply = when (this) {
 
 /** Further down than this nothing new is learnt, and two errors may name each other as the cause. */
 private const val MAX_CAUSES = 8
+
+private const val LOG_TAG = "FirebaseAiGeminiClient"
+
+/**
+ * What the service judged, for whoever reads the device's log: whether it was the request or the
+ * reply, and each kind of harm with how likely it was. Never the words themselves. Reading it
+ * must not stand in the way of the reply, so anything the SDK does not hold is left out.
+ */
+private fun blockedNote(response: GenerateContentResponse?): String = runCatching {
+    val feedback = response?.promptFeedback
+    if (feedback?.blockReason != null) {
+        "request (${feedback.blockReason?.name}): ${feedback.safetyRatings.described()}"
+    } else {
+        "reply: ${response?.candidates?.firstOrNull()?.safetyRatings.orEmpty().described()}"
+    }
+}.getOrDefault("request or reply, with no ratings")
+
+private fun List<SafetyRating>.described(): String = joinToString(prefix = "[", postfix = "]") {
+    "${it.category.label}=${it.probability.label}" + if (it.blocked == true) " (blocked)" else ""
+}
+
+private val HarmCategory.label: String
+    get() = when (this) {
+        HarmCategory.HARASSMENT -> "harassment"
+        HarmCategory.HATE_SPEECH -> "hate"
+        HarmCategory.SEXUALLY_EXPLICIT -> "sexual"
+        HarmCategory.DANGEROUS_CONTENT -> "dangerous"
+        HarmCategory.CIVIC_INTEGRITY -> "civic"
+        else -> "other"
+    }
+
+private val HarmProbability.label: String
+    get() = when (this) {
+        HarmProbability.NEGLIGIBLE -> "negligible"
+        HarmProbability.LOW -> "low"
+        HarmProbability.MEDIUM -> "medium"
+        HarmProbability.HIGH -> "high"
+        else -> "unknown"
+    }
