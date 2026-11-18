@@ -29,7 +29,7 @@ Experience the complete journey from startup to prediction.
     *   **Local Fallback**: Instant, zero-latency responses using a local database when offline.
     *   **Cloud Intelligence**: Taps into the Gemini API for unique, witty, and varied predictions when connected.
     *   **Your Call**: An "AI answers" page lets the user switch AI answers off (or back on) at any time. Gemini is asked only when the user's choice is on and the developer's remote switch is on; when AI answers are not available the page says so instead of offering a toggle that does nothing.
-    *   **Smart Retry Policies**: Robust network handling with exponential backoff and strict safety filters.
+    *   **Smart Retry Policies**: Robust network handling with exponential backoff; what the model itself refuses is answered from the bundled list.
 
 *   **🎨 Premium Wear OS Experience**:
     *   **Physics-Based Animation**: The signature blue triangle floats and settles with realistic spring dynamics.
