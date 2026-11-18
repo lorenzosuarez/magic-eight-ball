@@ -35,6 +35,7 @@ import com.example.magiceightball.core.domain.gateway.SpeechListener
 import com.example.magiceightball.core.domain.model.asSpokenQuestion
 import com.example.magiceightball.core.domain.model.AppLanguage
 import com.example.magiceightball.core.domain.model.HistoryEntry
+import com.example.magiceightball.core.domain.model.LlmError
 import com.example.magiceightball.core.domain.model.Magic8BallPersonality
 import com.example.magiceightball.core.domain.model.Magic8BallResult
 import com.example.magiceightball.core.domain.model.QueryConfig
@@ -757,7 +758,7 @@ class EightBallViewModel @Inject constructor(
         // Whatever was said to the ball is asked of it: see [asSpokenQuestion].
         val question = awaitQuestion().asSpokenQuestion(settings.language.code)
         phase.value = BallPhase.Thinking(question)
-        val answer = requestAnswer(settings, question)
+        val (answer, aiMiss) = requestAnswer(settings, question)
         minimumThinking.join()
 
         // Classic answers are the toy's own: nobody signs them.
@@ -784,7 +785,14 @@ class EightBallViewModel @Inject constructor(
         // That the ball answered, and how it was asked: never what was asked or answered.
         (answer as? AnswerText.Plain).let {
             usage.track(
-                UsageEvent.Asked(how, settings.personality, fromAi = it?.fromAi == true, withRemark = it?.remark != null)
+                UsageEvent.Asked(
+                    how,
+                    settings.personality,
+                    fromAi = it?.fromAi == true,
+                    withRemark = it?.remark != null,
+                    tryAgain = answer == AnswerText.Fallback,
+                    aiMiss = aiMiss
+                )
             )
         }
         // Told once the answer is out, so that it does not cover the answer coming up. Only of one
@@ -817,11 +825,15 @@ class EightBallViewModel @Inject constructor(
      * layer sends it only when AI answers are in use, capped in length. It is kept, with its
      * answer, in the history on this device only.
      * A tap or a shake carries no question, and then only the fixed [ASK_TRIGGER] is sent.
+     *
+     * Comes with why the AI service's answer is not the one shown, when one was asked for: a
+     * word of the app's own, for the developer's counts.
      */
-    private suspend fun requestAnswer(settings: UserSettings, question: String): AnswerText {
+    private suspend fun requestAnswer(settings: UserSettings, question: String): Pair<AnswerText, String?> {
         val today = LocalDate.ofEpochDay(today())
         // Only while an account is offered: switched off from afar, nothing of the user's is sent.
         val asker = if (state.value?.offersAccount == true) membership.asker(today) else null
+        var broke: String? = null
         val result = try {
             withTimeoutOrNull(queryConfig.maxThinkingMs) {
                 sendMessageUseCase(
@@ -844,7 +856,9 @@ class EightBallViewModel @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // In the counts' own alphabet: lower-case letters and digits, and short.
+            broke = "error_" + e.javaClass.simpleName.lowercase().filter { it in 'a'..'z' || it in '0'..'9' }.take(29)
             null
         }
         (result as? Magic8BallResult.Success)?.let { aiAllowanceSpent.value = it.aiAllowanceSpent }
@@ -854,7 +868,7 @@ class EightBallViewModel @Inject constructor(
         if (asker?.birthdayToday == true && wished) {
             membership.birthdayWished(today)
         }
-        return when (result) {
+        val answer = when (result) {
             is Magic8BallResult.Success ->
                 result.message.takeIf { it.isNotBlank() }?.let {
                     AnswerText.Plain(
@@ -866,6 +880,12 @@ class EightBallViewModel @Inject constructor(
                 }
             is Magic8BallResult.Failure, null -> null
         } ?: AnswerText.Fallback
+        val aiMiss = broke ?: when (result) {
+            is Magic8BallResult.Success -> result.aiMiss?.label
+            is Magic8BallResult.Failure -> result.error.label
+            null -> "no_answer_in_time"
+        }
+        return answer to aiMiss
     }
 
     /**
@@ -951,3 +971,17 @@ class EightBallViewModel @Inject constructor(
         const val LISTEN_RETRY_MS = 250L
     }
 }
+
+/** What went wrong with the AI service, in the words the usage counts carry. */
+private val LlmError.label: String
+    get() = when (this) {
+        LlmError.Network -> "network"
+        LlmError.Timeout -> "timeout"
+        LlmError.Unauthorized -> "unauthorized"
+        LlmError.RateLimited -> "rate_limited"
+        LlmError.Server -> "server"
+        LlmError.Serialization -> "bad_reply"
+        LlmError.SafetyBlocked -> "safety_blocked"
+        LlmError.ValidationFailed -> "too_long"
+        is LlmError.Unknown -> "unknown"
+    }

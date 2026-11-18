@@ -24,21 +24,30 @@ sealed interface UsageEvent {
     val name: String
     val params: Map<String, String> get() = emptyMap()
 
-    /** The ball answered. */
+    /**
+     * The ball answered.
+     *
+     * @property tryAgain the ball said to try again later instead of answering.
+     * @property aiMiss why the AI service's answer is not the one shown, when one was asked for:
+     * a word of the app's own, such as "safety_blocked" or "timeout".
+     */
     data class Asked(
         val how: How,
         val style: Magic8BallPersonality,
         val fromAi: Boolean,
-        val withRemark: Boolean
+        val withRemark: Boolean,
+        val tryAgain: Boolean = false,
+        val aiMiss: String? = null
     ) : UsageEvent {
         override val name get() = "ask"
         override val params
-            get() = mapOf(
-                "how" to how.label,
-                "style" to style.label,
-                "source" to if (fromAi) "ai" else "bundled",
-                "remark" to withRemark.label
-            )
+            get() = buildMap {
+                put("how", how.label)
+                put("style", style.label)
+                put("source", if (fromAi) "ai" else if (tryAgain) "try_again" else "bundled")
+                put("remark", withRemark.label)
+                aiMiss?.let { put("ai_miss", it) }
+            }
 
         enum class How(val label: String) {
             TAP("tap"),

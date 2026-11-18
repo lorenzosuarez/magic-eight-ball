@@ -1088,6 +1088,35 @@ class EightBallViewModelTest {
         advanceTimeBy(1)
         runCurrent()
         assertEquals(AnswerText.Fallback, (viewModel.phase as BallPhase.Answered).answer)
+        assertEquals("no_answer_in_time", tracked.last { it.name == "ask" }.params["ai_miss"])
+    }
+
+    @Test
+    fun `why the AI service's answer was not shown is counted, in the app's own words`() = runTest {
+        val viewModel = createViewModel()
+
+        llmGateway.answer = { Magic8BallResult.Failure(LlmError.SafetyBlocked) }
+        viewModel.ask()
+        finishThinking()
+        llmGateway.answer = { Magic8BallResult.Success("Ask again later", aiMiss = LlmError.Network) }
+        viewModel.ask()
+        finishThinking()
+        llmGateway.answer = { error("boom") }
+        viewModel.ask()
+        finishThinking()
+        llmGateway.answer = { Magic8BallResult.Success(FakeLlmGateway.ANSWER, fromAi = true) }
+        viewModel.ask()
+        finishThinking()
+
+        assertEquals(
+            listOf(
+                "try_again" to "safety_blocked",
+                "bundled" to "network",
+                "try_again" to "error_illegalstateexception",
+                "ai" to null
+            ),
+            tracked.filter { it.name == "ask" }.map { it.params["source"] to it.params["ai_miss"] }
+        )
     }
 
     // Effects

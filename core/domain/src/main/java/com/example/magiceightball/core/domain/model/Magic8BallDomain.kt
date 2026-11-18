@@ -11,6 +11,8 @@ sealed interface Magic8BallResult {
      * @property voiceRefused true when [message] is a bundled one because the AI service would not
      * write in the character's voice, with nothing asked that it could have refused instead:
      * whoever made the character can be told why it does not speak as they wrote it.
+     * @property aiMiss why [message] is a bundled one when the AI service was asked for an answer
+     * and none could be used: for the developer's counts, never shown to the user.
      */
     data class Success(
         val message: String,
@@ -18,7 +20,8 @@ sealed interface Magic8BallResult {
         val remark: String? = null,
         val aiAllowanceSpent: Boolean = false,
         val birthdayLine: Boolean = false,
-        val voiceRefused: Boolean = false
+        val voiceRefused: Boolean = false,
+        val aiMiss: LlmError? = null
     ) : Magic8BallResult
     data class Failure(val error: LlmError) : Magic8BallResult
 }
