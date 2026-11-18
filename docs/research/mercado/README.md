@@ -8,7 +8,7 @@ Estudio del 17 de noviembre de 2026, con Premium a 0,99 € al mes (IVA incluido
 
 Lo marcado como estimación es cálculo propio sobre esas cifras, no un dato publicado.
 
-Las propuestas que salen de este estudio, con el estado de cada paso de la salida a 18 de noviembre, están en [propuestas.pdf](propuestas.pdf), que se imprime con Chrome desde [propuestas.html](propuestas.html).
+Las propuestas que salen de este estudio, con el estado de cada paso de la salida a 18 de noviembre y la idea de pasar a personajes, están en [propuestas.pdf](propuestas.pdf), que se imprime con Chrome desde [propuestas.html](propuestas.html).
 
 ## Veredicto
 

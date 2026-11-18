@@ -40,6 +40,12 @@ td.t { font-weight: 600; }
 .now { display: block; margin-top: 4pt; color: var(--muted); }
 code { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: #F2F3F7; padding: 0 2.5pt; border-radius: 3pt; }
 .sources { margin-top: 16pt; padding-top: 8pt; border-top: .6pt solid var(--line); color: var(--muted); font-size: 8pt; }
+.sources a { color: var(--accent); text-decoration: none; }
+.figures { break-inside: avoid; margin-top: 12pt; }
+table.mini { width: 60%; }
+col.m1 { width: 55%; }
+col.m2 { width: 45%; }
+.note { margin: 5pt 0 0; color: var(--muted); font-size: 8pt; }
 </style>
 </head>
 <body>
@@ -51,6 +57,7 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: #
 <div class="summary">
   <p><b>Veredicto.</b> 500&nbsp;€/mes es una meta a 6⁠–⁠12 meses, no de los primeros meses: depende más de la distribución que del producto.</p>
   <p><b>Giro.</b> Dejar de venderla como «bola 8» y presentarla como un oráculo de «sí o no» para jugar en grupo.</p>
+  <p><b>Personajes.</b> En las próximas semanas, la bola pasa a ser un personaje animado y amable, con versiones tipo vidente o genio que responden como oráculo. Con eso, el mensual puede subir a 2,99&nbsp;€.</p>
   <p><b>Qué medir 2⁠–⁠4 semanas tras la salida.</b> Vuelta al día siguiente ≥&nbsp;20&nbsp;%, cuántos comparten una respuesta y pago ≥&nbsp;1&nbsp;%. Si no aparecen, cambiar canal o producto antes de poner dinero.</p>
 </div>
 
@@ -154,6 +161,59 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: #
   </tbody>
 </table>
 
+<h2>Giro a personajes <span>idea del 18 nov · sin empezar</span></h2>
+<table>
+  <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
+  <thead><tr><th>Propuesta</th><th>Qué es</th><th>Por qué, según el mercado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">La bola, un personaje</td>
+      <td>La bola 8 pasa a ser un personaje animado y amable: una cara que reacciona mientras habla y dos tonos, amable y descarado.</td>
+      <td>Es lo que hace Grok con sus Companions, como Rudi, un panda rojo con un modo gamberro, «Bad Rudi»; van dentro de SuperGrok, de 30&nbsp;USD al mes. Además cambia la categoría: una bola 8 cobra 0,99&nbsp;€, y el tarot y los personajes con IA, 5,99&#8288;–&#8288;9,99&nbsp;€/mes.</td>
+    </tr>
+    <tr>
+      <td class="t">Personajes tipo oráculo</td>
+      <td>Vidente&nbsp;/&nbsp;Psychic, Adivino&nbsp;/&nbsp;Fortune&nbsp;teller, Genio&nbsp;/&nbsp;Genie, Bruja&nbsp;/&nbsp;Witch, Mago&nbsp;/&nbsp;Wizard, Tarotista&nbsp;/&nbsp;Tarot&nbsp;reader, Astróloga&nbsp;/&nbsp;Astrologer, Gurú&nbsp;/&nbsp;Guru y Profeta&nbsp;/&nbsp;Prophet. Todos responden como oráculo.</td>
+      <td>Son palabras que todo el mundo conoce. Akinator, un genio que adivina, tiene más de 100&nbsp;M de instalaciones. Tarotista y Astróloga enlazan con la búsqueda «tarot sí o no» y con el veredicto diario de la 1.6. Evitar sibila y augur (casi nadie las conoce), «gitana» (estereotipo), médium y chamán.</td>
+    </tr>
+    <tr>
+      <td class="t">Respuestas de oráculo, no chat</td>
+      <td>Cada personaje da una respuesta corta con su voz, sin conversación libre.</td>
+      <td>El chat libre dispara el coste de la IA y la moderación (ver «Lo que no haría»).</td>
+    </tr>
+    <tr>
+      <td class="t">Amable, no infantil</td>
+      <td>Estética pensada para adolescentes y adultos.</td>
+      <td>Google rechaza fichas con animación o personajes infantiles si la app no cumple la política de Familias, que limita anuncios y datos. Cambia dos decisiones ya tomadas: la animación muy sutil y la bola siempre de lado.</td>
+    </tr>
+    <tr>
+      <td class="t">2,99&nbsp;€/mes con personajes</td>
+      <td>Subir el mensual cuando haya personajes y veredicto diario. Sumar un anual y un pago de por vida para quien no quiere suscripciones, y anuncios para quien no paga.</td>
+      <td>En un mensual barato, contando a quien se olvida de cancelar, el 60&nbsp;% renueva la primera vez y al año queda el 10,8&nbsp;%. A 0,99&nbsp;€, cada suscriptor deja unos 3,4&nbsp;€ netos, lo mismo que un pago único de 4,99&nbsp;€. A 2,99&nbsp;€ hace falta un tercio de suscriptores (tabla siguiente).</td>
+    </tr>
+    <tr>
+      <td class="t">Captación con los personajes</td>
+      <td>Vídeos cortos con los personajes respondiendo. La campaña, solo la de medición.</td>
+      <td>Comprar instalaciones recupera solo el 2&#8288;–&#8288;35&nbsp;%. Si se suscribe el 1&nbsp;%, a 0,99&nbsp;€ hacen falta unas 14.700 instalaciones al mes, y a 2,99&nbsp;€ unas 4.900 si duran lo mismo. Un personaje con carácter es el mejor contenido, como el búho de Duolingo en TikTok.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="figures">
+<table class="mini">
+  <colgroup><col class="m1"><col class="m2"></colgroup>
+  <thead><tr><th>Para llegar a 500&nbsp;€/mes</th><th>Hace falta</th></tr></thead>
+  <tbody>
+    <tr><td>Suscripción de 0,99&nbsp;€/mes</td><td>719 suscriptores activos</td></tr>
+    <tr><td>Suscripción de 2,99&nbsp;€/mes</td><td>238 suscriptores activos</td></tr>
+    <tr><td>Suscripción de 4,99&nbsp;€/mes</td><td>143 suscriptores activos</td></tr>
+    <tr><td>Pago único de 4,99&nbsp;€</td><td>143 ventas cada mes</td></tr>
+    <tr><td>Solo anuncios</td><td>4.000&#8288;–&#8288;19.000 usuarios al día</td></tr>
+  </tbody>
+</table>
+<p class="note">Neto en España: precio sin el 21&nbsp;% de IVA y menos el 15&nbsp;% de Google. Anuncios a 1&#8288;–&#8288;5&nbsp;USD al día por cada 1.000 usuarios diarios.</p>
+</div>
+
 <h2>Lo que no haría</h2>
 <table>
   <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
@@ -174,10 +234,15 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: #
       <td>Competir por precio.</td>
       <td>No atrae a más gente y quita margen. 0,99&nbsp;€ ya es el precio de las dos apps grandes con suscripción en España.</td>
     </tr>
+    <tr>
+      <td class="t">Plan semanal pensado para el olvido</td>
+      <td>Cobrar cada semana tras una prueba, contando con que la gente no cancele.</td>
+      <td>Los planes semanales dieron el 55,5&nbsp;% de los ingresos de 2025 (Adapty), pero Google ya avisa por correo antes de que acabe una prueba, y la UE propuso el 11 de noviembre la Digital Fairness Act contra las trampas de suscripción (aún sin aprobar).</td>
+    </tr>
   </tbody>
 </table>
 
-<p class="sources">Fuentes: las cifras salen de <code>docs/research/mercado/</code> (fichas de Play y App Store consultadas el 17 de noviembre de 2026, informes de conversión y captación) y de Firebase, que solo cuenta a quien aceptó la analítica. Las instalaciones de competidores son estimaciones de AppGoblin, y no hay datos públicos de conversión para 0,99&nbsp;€ en concreto.</p>
+<p class="sources">Fuentes: las cifras salen de <code>docs/research/mercado/</code> (fichas de Play y App Store consultadas el 17 de noviembre de 2026, informes de conversión y captación) y de Firebase, que solo cuenta a quien aceptó la analítica. Las instalaciones de competidores son estimaciones de AppGoblin, y no hay datos públicos de conversión para 0,99&nbsp;€ en concreto. La parte de personajes suma búsquedas del 18 de noviembre: los Companions de Grok (<a href="https://www.nbcnews.com/tech/internet/grok-companions-include-flirty-anime-waifu-anti-religion-panda-rcna218797">NBC News</a>, <a href="https://www.reasonwhy.es/actualidad/grok-companions-avatares-digitales-inteligencia-artificial">Reason Why</a>, <a href="https://getcoai.com/news/grok-ai-launches-flirty-companions-ani-and-rudi-for-30-monthly-subscribers">CO/AI</a>), la <a href="https://support.google.com/googleplay/android-developer/answer/9893335">política de Familias de Google Play</a>, el <a href="https://android-developers.googleblog.com/2020/04/building-user-trust-through-more.html">aviso de Google antes de que acabe una prueba</a> y la <a href="https://www.techrepublic.com/article/news-eu-digital-fairness-subscription-traps-emea/">Digital Fairness Act</a>. Las cifras para 500&nbsp;€ son cálculo propio.</p>
 
 </body>
 </html>
