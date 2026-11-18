@@ -47,6 +47,7 @@ class Magic8BallRepositoryImpl(
         geminiSettings.refresh()
         var allowanceSpent = false
         var voiceRefused = false
+        var aiMiss: LlmError? = null
         // The classic style is its own twenty answers: nothing is written for it. Nor for
         // one of the user's own that came without saying who it is: there is no voice to write in.
         val hasVoice = when (request.personality) {
@@ -75,6 +76,9 @@ class Magic8BallRepositoryImpl(
                 val refused = remote == Magic8BallResult.Failure(LlmError.SafetyBlocked)
                 if (refused && request.questionForAi != null) return remote
                 voiceRefused = refused
+                // Why the bundled answer stands in, for the developer's counts: a wait that ran out is
+                // the service's too.
+                aiMiss = (remote as? Magic8BallResult.Failure)?.error ?: LlmError.Timeout
                 // An answer that never came is not one of the day's: with no network, or a
                 // service that is slow or down, the user would use up the day without seeing one.
                 // What the service did answer, and the app turned down, stays counted.
@@ -86,7 +90,7 @@ class Magic8BallRepositoryImpl(
         }
         // What is known of the asker goes no further than the lines that come with the app.
         return localDataSource.getRandomMessage(request.languageCode, request.personality, request.asker)
-            .copy(aiAllowanceSpent = allowanceSpent, voiceRefused = voiceRefused)
+            .copy(aiAllowanceSpent = allowanceSpent, voiceRefused = voiceRefused, aiMiss = aiMiss)
     }
 
     /** Whether the service wrote something, even if it could not be used. Null is a wait that ran out. */

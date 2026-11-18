@@ -14,6 +14,7 @@ import com.example.magiceightball.core.domain.model.Magic8BallResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -81,7 +82,12 @@ class Magic8BallRepositoryImplTest {
         coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
             Magic8BallResult.Failure(LlmError.RateLimited)
 
-        repeat(3) { assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request)) }
+        // Counted once, when the service said so; while it is left alone nothing goes wrong.
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiMiss = LlmError.RateLimited),
+            repository.generateMagic8BallMessage(request)
+        )
+        repeat(2) { assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request)) }
         coVerify(exactly = 1) { remoteDataSource.fetchMagic8BallMessage(any(), any()) }
 
         now += 5 * 60_000L
@@ -219,13 +225,19 @@ class Magic8BallRepositoryImplTest {
         coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
             Magic8BallResult.Failure(LlmError.Network)
         repeat(3) {
-            assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request))
+            assertEquals(
+                Magic8BallResult.Success(LOCAL_ANSWER, aiMiss = LlmError.Network),
+                repository.generateMagic8BallMessage(request)
+            )
         }
 
         // The service answered and the app could not use it: that one counts.
         coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
             Magic8BallResult.Failure(LlmError.ValidationFailed)
-        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), repository.generateMagic8BallMessage(request))
+        assertEquals(
+            Magic8BallResult.Success(LOCAL_ANSWER, aiMiss = LlmError.ValidationFailed),
+            repository.generateMagic8BallMessage(request)
+        )
         assertEquals(
             Magic8BallResult.Success(LOCAL_ANSWER, aiAllowanceSpent = true),
             repository.generateMagic8BallMessage(request)
@@ -252,11 +264,11 @@ class Magic8BallRepositoryImplTest {
 
         // And it says so, so that whoever made the character can be told why it never speaks.
         assertEquals(
-            Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = true),
+            Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = true, aiMiss = LlmError.SafetyBlocked),
             repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, question = null))
         )
         assertEquals(
-            Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = true),
+            Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = true, aiMiss = LlmError.SafetyBlocked),
             repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, question = "  "))
         )
     }
@@ -268,17 +280,29 @@ class Magic8BallRepositoryImplTest {
 
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true, question = null))
 
-        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = false), result)
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER, voiceRefused = false, aiMiss = LlmError.Network), result)
     }
 
     @Test
-    fun `a failed gemini request ends in a bundled answer`() = runTest {
+    fun `a failed gemini request ends in a bundled answer, which says why`() = runTest {
         coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } returns
             Magic8BallResult.Failure(LlmError.Network)
 
         val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
 
-        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER), result)
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER, aiMiss = LlmError.Network), result)
+    }
+
+    @Test
+    fun `a request the service does not answer in time ends in a bundled answer counted as a timeout`() = runTest {
+        coEvery { remoteDataSource.fetchMagic8BallMessage(any(), any()) } coAnswers {
+            delay(10_000)
+            Magic8BallResult.Success(REMOTE_ANSWER)
+        }
+
+        val result = repository.generateMagic8BallMessage(Magic8BallRequest(useAi = true))
+
+        assertEquals(Magic8BallResult.Success(LOCAL_ANSWER, aiMiss = LlmError.Timeout), result)
     }
 
     @Test

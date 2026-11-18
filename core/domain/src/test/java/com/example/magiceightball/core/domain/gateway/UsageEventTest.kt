@@ -9,6 +9,14 @@ class UsageEventTest {
 
     private val events = listOf(
         UsageEvent.Asked(UsageEvent.Asked.How.VOICE, Magic8BallPersonality.PIRATE, fromAi = true, withRemark = true),
+        UsageEvent.Asked(
+            UsageEvent.Asked.How.VOICE,
+            Magic8BallPersonality.VILLAIN,
+            fromAi = false,
+            withRemark = false,
+            tryAgain = true,
+            aiMiss = "safety_blocked"
+        ),
         UsageEvent.AnswerShared(Magic8BallPersonality.CAT, fromAi = false),
         UsageEvent.AppShared,
         UsageEvent.StyleChosen(Magic8BallPersonality.THERAPIST),
@@ -22,6 +30,18 @@ class UsageEventTest {
 
         assertEquals("ask", asked.name)
         assertEquals(mapOf("how" to "voice", "style" to "pirate", "source" to "ai", "remark" to "yes"), asked.params)
+    }
+
+    @Test
+    fun `an answer the AI service did not write says why, and whether the ball said to try again`() {
+        assertEquals(
+            mapOf("how" to "voice", "style" to "villain", "source" to "try_again", "remark" to "no", "ai_miss" to "safety_blocked"),
+            events[1].params
+        )
+        assertEquals(
+            mapOf("how" to "tap", "style" to "cat", "source" to "bundled", "remark" to "no", "ai_miss" to "timeout"),
+            UsageEvent.Asked(UsageEvent.Asked.How.TAP, Magic8BallPersonality.CAT, fromAi = false, withRemark = false, aiMiss = "timeout").params
+        )
     }
 
     @Test
