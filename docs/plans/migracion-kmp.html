@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Magic AI Ball · Plan de migración a Kotlin Multiplatform</title>
+<style>
+@page {
+  size: A4;
+  margin: 16mm 15mm 17mm;
+  @bottom-left { content: "Magic AI Ball · Migración a Kotlin Multiplatform · 18 nov 2026"; font: 7.5pt -apple-system, "Helvetica Neue", Arial, sans-serif; color: #8A90A6; }
+  @bottom-right { content: counter(page) " / " counter(pages); font: 7.5pt -apple-system, "Helvetica Neue", Arial, sans-serif; color: #8A90A6; }
+}
+:root { --ink: #151826; --muted: #5D6378; --faint: #8A90A6; --line: #E4E7F0; --accent: #4558D6; --accent-soft: #EEF1FD; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--ink); font-size: 9.4pt; line-height: 1.42; }
+.eyebrow { font-size: 7.6pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 4pt; }
+h1 { font-size: 21pt; line-height: 1.15; letter-spacing: -.01em; margin: 0 0 4pt; font-weight: 700; }
+.meta { color: var(--muted); margin: 0 0 14pt; }
+.summary { background: var(--accent-soft); border-radius: 8pt; padding: 10pt 12pt; margin: 0 0 6pt; }
+.summary p { margin: 0 0 5pt; }
+.summary p:last-child { margin: 0; }
+.summary b { color: var(--accent); }
+h2 { font-size: 11.5pt; margin: 18pt 0 6pt; font-weight: 700; break-after: avoid; }
+h2 span { color: var(--faint); font-weight: 500; font-size: 9pt; margin-left: 6pt; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+col.a { width: 22%; }
+col.b { width: 46%; }
+col.c { width: 32%; }
+col.m1 { width: 20%; }
+col.m2 { width: 11%; }
+col.m3 { width: 35%; }
+col.m4 { width: 34%; }
+col.f1 { width: 22%; }
+col.f2 { width: 60%; }
+col.f3 { width: 18%; }
+thead { display: table-header-group; }
+th { text-align: left; font-size: 7.2pt; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 0 9pt 5pt 0; border-bottom: 1pt solid var(--ink); }
+td { vertical-align: top; padding: 7pt 9pt 7pt 0; border-bottom: .6pt solid var(--line); }
+td:last-child, th:last-child { padding-right: 0; }
+tr { break-inside: avoid; }
+td.t { font-weight: 600; }
+td.n { font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 600; border-bottom: 1pt solid var(--ink); }
+code { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: #F2F3F7; padding: 0 1.5pt; border-radius: 3pt; }
+.keep { break-inside: avoid; }
+.note { margin: 6pt 0 0; color: var(--muted); font-size: 8pt; }
+.sources { margin-top: 16pt; padding-top: 8pt; border-top: .6pt solid var(--line); color: var(--muted); font-size: 8pt; }
+.sources a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">Magic AI Ball</p>
+<h1>Plan de migración a Kotlin Multiplatform</h1>
+<p class="meta">18 de noviembre de 2026 · Android e iOS desde un mismo código</p>
+
+<div class="summary">
+  <p><b>Extensión.</b> Mediana: 4&#8288;–&#8288;6 semanas de trabajo hasta que iOS haga lo mismo que Android, y 6&#8288;–&#8288;8 semanas hasta tenerla en el App Store, contando la revisión de Apple. No es cosa de un día.</p>
+  <p><b>Hoy.</b> La prueba de concepto lleva medio día: la bola respondiendo en el simulador de iPhone con código compartido. Antes hay que instalar Xcode, que hoy no está en el Mac.</p>
+  <p><b>Orden.</b> Android sale a producción como está. La migración avanza por fases sin parar Android, y la primera versión de iOS es la de los personajes nuevos, no la bola 8 actual.</p>
+  <p><b>Coste fijo.</b> Cuenta de Apple Developer, 99&nbsp;$ al año. RevenueCat es gratis mientras se ingresen menos de 2.500&nbsp;$ al mes.</p>
+</div>
+
+<h2>Lo que hay hoy <span>código medido el 18 nov</span></h2>
+<table>
+  <colgroup><col class="m1"><col class="m2"><col class="m3"><col class="m4"></colgroup>
+  <thead><tr><th>Módulo</th><th>Líneas</th><th>Qué depende de Android</th><th>Cómo se comparte</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">core:domain</td>
+      <td class="n">3.431</td>
+      <td>Casi nada: 3 ficheros con <code>javax.inject</code> y 1 con <code>java.time</code>.</td>
+      <td>Pasa casi entero a código común.</td>
+    </tr>
+    <tr>
+      <td class="t">core:data</td>
+      <td class="n">2.233</td>
+      <td>Firebase AI Logic, Remote Config, DataStore.</td>
+      <td>Interfaces comunes. Android conserva su código e iOS tiene el suyo.</td>
+    </tr>
+    <tr>
+      <td class="t">app-phone · interfaz</td>
+      <td class="n">11.280</td>
+      <td>Compose de Android y textos en <code>R.string</code> (es, en, pt).</td>
+      <td>Compose Multiplatform, con los textos en recursos comunes.</td>
+    </tr>
+    <tr>
+      <td class="t">app-phone · resto</td>
+      <td class="n">5.285</td>
+      <td>Hilt, Play Billing, AdMob, Credential Manager, FCM, WorkManager, voz y sensores.</td>
+      <td>ViewModel común. Cada servicio, con una versión para Android y otra para iOS.</td>
+    </tr>
+    <tr>
+      <td class="t">core:motion</td>
+      <td class="n">318</td>
+      <td>Sensores de Android.</td>
+      <td>En iOS, con CoreMotion.</td>
+    </tr>
+    <tr>
+      <td class="t">app-wear y feature:chat</td>
+      <td class="n">3.257</td>
+      <td>Wear OS.</td>
+      <td>Se quedan en Android.</td>
+    </tr>
+  </tbody>
+</table>
+<p class="note">Además hay unas 12.000 líneas de tests. Los del dominio y de la lógica pasan a tests comunes. Los de capturas de pantalla (Roborazzi) siguen siendo solo de Android.</p>
+
+<h2>Plan por fases</h2>
+<table>
+  <colgroup><col class="f1"><col class="f2"><col class="f3"></colgroup>
+  <thead><tr><th>Fase</th><th>Qué se hace</th><th>Tiempo</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">0 · Prueba de concepto</td>
+      <td>Instalar Xcode. Crear un módulo común con el dominio y una pantalla en Compose Multiplatform que responda con las frases incluidas, en el simulador de iPhone.</td>
+      <td>Medio día, con Xcode ya instalado</td>
+    </tr>
+    <tr>
+      <td class="t">1 · Dominio común</td>
+      <td><code>core:domain</code> pasa a <code>commonMain</code>: se quita <code>javax.inject</code>, <code>java.time</code> se cambia por <code>kotlinx-datetime</code> y sus tests pasan a <code>commonTest</code>.</td>
+      <td>1&#8288;–&#8288;2 días</td>
+    </tr>
+    <tr>
+      <td class="t">2 · Datos</td>
+      <td>Interfaces comunes para IA, configuración, cuenta, compras, anuncios y medición. DataStore multiplataforma. Las respuestas incluidas pasan a recurso común.</td>
+      <td>2&#8288;–&#8288;4 días</td>
+    </tr>
+    <tr>
+      <td class="t">3 · Interfaz compartida</td>
+      <td>Las pantallas pasan a Compose Multiplatform, una a una. Los textos en tres idiomas, a recursos comunes. Hilt se sustituye por Koin y el ViewModel pasa a común. Compartir, vibración y permisos se resuelven por plataforma.</td>
+      <td>1&#8288;–&#8288;2 semanas</td>
+    </tr>
+    <tr>
+      <td class="t">4 · Servicios en iOS</td>
+      <td>Firebase: GitLive para Auth, Firestore, Remote Config, Crashlytics y Functions, y adaptadores propios para AI Logic (en Swift) y para App Check con App Attest. Sign in with Apple. RevenueCat para Play y App Store. AdMob con su aviso de consentimiento. Notificaciones por APNs. Pregunta por voz con SFSpeechRecognizer, respuesta hablada con AVSpeechSynthesizer y agitar con CoreMotion.</td>
+      <td>1&#8288;–&#8288;2 semanas</td>
+    </tr>
+    <tr>
+      <td class="t">5 · Publicación</td>
+      <td>TestFlight, etiquetas de privacidad de Apple, política de privacidad con iOS y revisión de Apple.</td>
+      <td>1 semana más la revisión</td>
+    </tr>
+    <tr class="total">
+      <td>Total</td>
+      <td>iOS al nivel de Android. Android sigue compilando y publicándose en cada paso.</td>
+      <td>4&#8288;–&#8288;6 semanas</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Riesgos y cómo se cubren</h2>
+<table>
+  <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
+  <thead><tr><th>Riesgo</th><th>Qué pasa</th><th>Cómo se cubre</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">Categoría saturada (norma 4.3(b) de Apple)</td>
+      <td>Apple pone la adivinación como ejemplo de categoría saturada y rechaza esas apps salvo que ofrezcan algo único y de calidad.</td>
+      <td>Salir en iOS con los personajes con voz e IA, no con la bola 8 actual.</td>
+    </tr>
+    <tr>
+      <td class="t">Inicio de sesión (norma 4.8)</td>
+      <td>Si se entra con Google, Apple exige además otra opción equivalente que respete la privacidad.</td>
+      <td>Sign in with Apple, que Firebase Auth ya admite.</td>
+    </tr>
+    <tr>
+      <td class="t">Firebase sin SDK oficial para KMP</td>
+      <td>En iOS, AI Logic solo tiene SDK en Swift, y App Check no está en la librería de la comunidad (GitLive), que cubre el resto.</td>
+      <td>Interfaces comunes con adaptadores propios para esos dos, y GitLive para el resto.</td>
+    </tr>
+    <tr>
+      <td class="t">Compras en dos tiendas</td>
+      <td>Hoy Play Billing se verifica en un servidor propio. Con iOS habría que verificar también StoreKit.</td>
+      <td>RevenueCat, con un único SDK de KMP. Gratis hasta 2.500&nbsp;$ al mes de ingresos; por encima, el 1&nbsp;%.</td>
+    </tr>
+    <tr>
+      <td class="t">La interfaz es el bloque grande</td>
+      <td>Son 11.280 líneas, dos tercios de la app del móvil.</td>
+      <td>Migrar pantalla a pantalla, sin romper Android en ningún paso.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="keep">
+<h2>Lo que necesitas antes de empezar</h2>
+<table>
+  <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
+  <thead><tr><th>Qué</th><th>Para qué</th><th>Estado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">Xcode</td>
+      <td>Compilar para iOS y usar el simulador. Se instala desde la App Store con tu Apple ID y ocupa varios&nbsp;GB.</td>
+      <td>No instalado</td>
+    </tr>
+    <tr>
+      <td class="t">Apple Developer</td>
+      <td>Probar en un iPhone de verdad, TestFlight y publicar. Cuesta 99&nbsp;$ al año.</td>
+      <td>Por crear</td>
+    </tr>
+    <tr>
+      <td class="t">Un iPhone</td>
+      <td>App Attest solo funciona en un dispositivo real. En el simulador se usa el modo de depuración de App Check.</td>
+      <td>Opcional al principio</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p class="sources">Fuentes: el código se midió en el repositorio el 18 de noviembre de 2026. Gasto por tienda: <a href="https://techcrunch.com/2026/01/14/app-downloads-declined-again-in-2025-but-consumer-spending-soared-to-nearly-156b">TechCrunch</a> y <a href="https://www.businessofapps.com/?p=26573">Business of Apps</a>. Normas de Apple: <a href="https://developer.apple.com/forums/thread/787880">4.3(b)</a> y <a href="https://developer.apple.com/forums/thread/765145">4.8</a>, citadas en los foros de Apple. Plataformas de <a href="https://firebase.google.com/products/firebase-ai-logic">Firebase AI Logic</a>. SDK de <a href="https://www.revenuecat.com/docs/getting-started/installation/kotlin-multiplatform">RevenueCat para KMP</a>, cuyo precio sale de comparadores y no de su página oficial. Librería <a href="https://github.com/GitLiveApp/firebase-kotlin-sdk">GitLive</a>. Los tiempos son estimación propia, con el código escrito con ayuda de IA.</p>
+
+</body>
+</html>
