@@ -8,6 +8,8 @@ Estudio del 17 de noviembre de 2026, con Premium a 0,99 € al mes (IVA incluido
 
 Lo marcado como estimación es cálculo propio sobre esas cifras, no un dato publicado.
 
+Las propuestas que salen de este estudio, con el estado de cada paso de la salida a 18 de noviembre, están en [propuestas.pdf](propuestas.pdf), que se imprime con Chrome desde [propuestas.html](propuestas.html).
+
 ## Veredicto
 
 - **500 € netos al mes en los primeros meses no es realista** solo con la suscripción a 0,99 € y sin audiencia. Hacen falta unos 715 suscriptores activos, que piden entre 7.000 y 22.000 instalaciones nuevas cada mes, sostenidas. La app que lidera «magic 8 ball» en Google Play recibe unas 5.600 al mes.

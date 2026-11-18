@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Magic AI Ball · Propuestas de mercado</title>
+<style>
+@page {
+  size: A4;
+  margin: 16mm 15mm 17mm;
+  @bottom-left { content: "Magic AI Ball · Propuestas de mercado · 18 nov 2026"; font: 7.5pt -apple-system, "Helvetica Neue", Arial, sans-serif; color: #8A90A6; }
+  @bottom-right { content: counter(page) " / " counter(pages); font: 7.5pt -apple-system, "Helvetica Neue", Arial, sans-serif; color: #8A90A6; }
+}
+:root { --ink: #151826; --muted: #5D6378; --faint: #8A90A6; --line: #E4E7F0; --accent: #4558D6; --accent-soft: #EEF1FD; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--ink); font-size: 9.4pt; line-height: 1.42; }
+.eyebrow { font-size: 7.6pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 4pt; }
+h1 { font-size: 21pt; line-height: 1.15; letter-spacing: -.01em; margin: 0 0 4pt; font-weight: 700; }
+.meta { color: var(--muted); margin: 0 0 14pt; }
+.summary { background: var(--accent-soft); border-radius: 8pt; padding: 10pt 12pt; margin: 0 0 6pt; }
+.summary p { margin: 0 0 5pt; }
+.summary p:last-child { margin: 0; }
+.summary b { color: var(--accent); }
+h2 { font-size: 11.5pt; margin: 18pt 0 6pt; font-weight: 700; break-after: avoid; }
+h2 span { color: var(--faint); font-weight: 500; font-size: 9pt; margin-left: 6pt; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+col.a { width: 23%; }
+col.b { width: 33%; }
+col.c { width: 44%; }
+thead { display: table-header-group; }
+th { text-align: left; font-size: 7.2pt; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 0 9pt 5pt 0; border-bottom: 1pt solid var(--ink); }
+td { vertical-align: top; padding: 7pt 9pt 7pt 0; border-bottom: .6pt solid var(--line); }
+td:last-child, th:last-child { padding-right: 0; }
+tr { break-inside: avoid; }
+td.t { font-weight: 600; }
+.tag { display: inline-block; margin-top: 4pt; font-size: 7.2pt; font-weight: 600; padding: 1.2pt 6pt; border-radius: 10pt; white-space: nowrap; }
+.done { background: #E2F3E9; color: #1D6E41; }
+.part { background: #FDF1D8; color: #835700; }
+.todo { background: var(--accent-soft); color: var(--accent); }
+.now { display: block; margin-top: 4pt; color: var(--muted); }
+code { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: #F2F3F7; padding: 0 2.5pt; border-radius: 3pt; }
+.sources { margin-top: 16pt; padding-top: 8pt; border-top: .6pt solid var(--line); color: var(--muted); font-size: 8pt; }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">Magic AI Ball</p>
+<h1>Propuestas de mercado</h1>
+<p class="meta">18 de noviembre de 2026 · Con el estado de cada punto de la salida a esta fecha</p>
+
+<div class="summary">
+  <p><b>Veredicto.</b> 500&nbsp;€/mes es una meta a 6⁠–⁠12 meses, no de los primeros meses: depende más de la distribución que del producto.</p>
+  <p><b>Giro.</b> Dejar de venderla como «bola 8» y presentarla como un oráculo de «sí o no» para jugar en grupo.</p>
+  <p><b>Qué medir 2⁠–⁠4 semanas tras la salida.</b> Vuelta al día siguiente ≥&nbsp;20&nbsp;%, cuántos comparten una respuesta y pago ≥&nbsp;1&nbsp;%. Si no aparecen, cambiar canal o producto antes de poner dinero.</p>
+</div>
+
+<h2>Para la salida <span>sin código nuevo</span></h2>
+<table>
+  <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
+  <thead><tr><th>Propuesta</th><th>Qué es</th><th>Por qué, según el mercado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">Ficha «Sí o no»<br><span class="tag todo">Pendiente · necesita tu sí</span></td>
+      <td>Título «Magic AI Ball: Sí o No» y descripción que empieza por «¿Sí o no?», «bola mágica» y «oráculo», sin relleno.</td>
+      <td>Casi nadie busca «bola 8 mágica» en español ni en portugués; la demanda está en «sí o no», «ruleta», «tarot sí o no» y «oráculo». Al principio, la búsqueda es el único canal gratis.</td>
+    </tr>
+    <tr>
+      <td class="t">Premium visible para todos<br><span class="tag done">Hecho · 18 nov</span></td>
+      <td>Encender <code>premium_enabled</code> para todos y poner la cuenta de revisores en License testing.</td>
+      <td>Sin él no hay ingresos. Además, Google pide que los revisores puedan entrar a lo de pago.</td>
+    </tr>
+    <tr>
+      <td class="t">Anuncios<br><span class="tag part">Activo en parte</span></td>
+      <td>Un anuncio a pantalla completa cada pocas respuestas y un vídeo a cambio de más respuestas con IA; sin anuncios para Premium y menores.
+        <span class="now">Hoy: el de pantalla completa ya sale cada 4 respuestas, con 3&nbsp;min como mínimo entre uno y otro, y nunca a Premium ni a menores. El vídeo con premio está apagado.</span></td>
+      <td>En bola 8 y decisión el modelo dominante es anuncios más un pago único; la suscripción es rara. Rinden 1⁠–⁠5&nbsp;USD al día por cada 1.000 usuarios diarios en España y Latinoamérica.</td>
+    </tr>
+    <tr>
+      <td class="t">Medir el embudo<br><span class="tag todo">Por comprobar</span></td>
+      <td>Origen de la instalación, vuelta al día 1 y al día 7, preguntas por persona, compartidos, vistas de la hoja de Premium, compras y renovaciones.</td>
+      <td>El 84,5&nbsp;% de las apps de 2026 no pasa de 1.000 instalaciones, y si algo funciona se ve en los 2⁠–⁠3 primeros meses. Sin datos no sabes si fallan el producto, el canal o el precio.</td>
+    </tr>
+    <tr>
+      <td class="t">Inscripción en la comisión del 15&nbsp;%<br><span class="tag todo">Pendiente</span></td>
+      <td>Apuntarse en Play Console antes de vender un pago único.</td>
+      <td>Sin la inscripción, las compras únicas pagan el 30&nbsp;%; las suscripciones ya pagan el 15&nbsp;%.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Versiones después de la salida <span>una cada 1⁠–⁠2 semanas</span></h2>
+<table>
+  <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
+  <thead><tr><th>Propuesta</th><th>Qué es</th><th>Por qué, según el mercado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">1.4: compartir como vídeo vertical</td>
+      <td>La bola se agita y revela la respuesta en un vídeo corto, con el nombre de la app, listo para TikTok, Reels y Shorts.</td>
+      <td>El juego del impostor consiguió millones de instalaciones con vídeos cortos entre diciembre de 2025 y enero de 2026. 10.000 instalaciones son 1⁠–⁠10&nbsp;M de visualizaciones. Hoy solo se comparte imagen, y lo hicieron 3 de 28 testers.</td>
+    </tr>
+    <tr>
+      <td class="t">1.5: modo fiesta en la portada</td>
+      <td>Botón «Jugar con amigos» y rondas de grupo: la bola elige quién responde, «¿quién es más probable que…?» y un reto para quien pierda.</td>
+      <td>Las ruletas de decisión tienen 10⁠–⁠50&nbsp;M de instalaciones (Ruleta de decisiones, Spin the Wheel, Ruleta +) y las bolas 8, 100&nbsp;mil⁠–⁠1&nbsp;M. Jugar en grupo expone la app a varias personas cada vez. Hoy el modo fiesta está escondido: lo usaron 2 testers.</td>
+    </tr>
+    <tr>
+      <td class="t">1.6: el oráculo de pago</td>
+      <td>Premium con veredicto diario según tu signo, tiradas especiales de sí o no y respuestas con IA sin límite.</td>
+      <td>Las apps de astrología, tarot y personajes con IA cobran 5,99⁠–⁠9,99&nbsp;€/mes, mientras que una bola 8 casi no cobra. Co-Star creció sin publicidad con una frase diaria que la gente comparte.</td>
+    </tr>
+    <tr>
+      <td class="t">Plan anual (6,99&nbsp;€) y pago único (12,99⁠–⁠14,99&nbsp;€)</td>
+      <td>Sumarlos al mensual de 0,99&nbsp;€.</td>
+      <td>Tiny Decisions y Ruleta + venden un anual de 6,99&nbsp;€ y un pago único de 12⁠–⁠18&nbsp;€. El mensual barato pierde gente rápido: a los 12 meses sigue el 10,8&nbsp;%, y cada suscriptor deja unos 3&nbsp;€ netos en total.</td>
+    </tr>
+    <tr>
+      <td class="t">Precio por país</td>
+      <td>1,99&nbsp;USD en EE. UU. y su equivalente en Reino Unido y el norte de Europa; 0,99&nbsp;€ en España y su equivalente en Latinoamérica.</td>
+      <td>Esas mismas dos apps cobran 1,99&nbsp;USD en EE. UU. Se cambia en Play Console, sin tocar código.</td>
+    </tr>
+    <tr>
+      <td class="t">Personajes más a la vista</td>
+      <td>Que elegir y crear personajes se descubra solo, sin buscarlo.</td>
+      <td>Son el gancho de Premium y solo los probaron 2⁠–⁠4 testers (dato de Firebase de quienes aceptaron la analítica).</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Captación</h2>
+<table>
+  <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
+  <thead><tr><th>Propuesta</th><th>Qué es</th><th>Por qué, según el mercado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">Vídeos cortos cada semana</td>
+      <td>Grupos jugando al modo fiesta, en vertical: primero en TikTok y luego el mismo en Reels y Shorts.</td>
+      <td>Es el canal que hace crecer a las apps pequeñas de este tipo; la publicidad pagada no se recupera a este precio.</td>
+    </tr>
+    <tr>
+      <td class="t">Premium gratis para creadores pequeños</td>
+      <td>Regalar Premium o un personaje a medida a cambio de un vídeo, sin pagar.</td>
+      <td>Un vídeo pagado de 100&nbsp;€ necesitaría unas 400.000 visualizaciones para devolver lo gastado.</td>
+    </tr>
+    <tr>
+      <td class="t">Campaña de medición (300⁠–⁠500&nbsp;€)</td>
+      <td>Google App Campaigns en México más Colombia o Argentina, 15⁠–⁠20&nbsp;€/día durante 14 días, del 26 de diciembre a mediados de enero, ya con el vídeo para compartir.</td>
+      <td>Comprar instalaciones recupera solo el 2⁠–⁠35&nbsp;%; sirve para medir el coste por instalación, la vuelta a los días 1 y 7 y la conversión. Si de los que llegan se suscribe menos del 2⁠–⁠3&nbsp;% y a la semana vuelve menos del 8&nbsp;%, no se pone más dinero.</td>
+    </tr>
+    <tr>
+      <td class="t">Prueba gratis de 3⁠–⁠7 días, solo si hace falta</td>
+      <td>Activarla si pasado el primer mes paga menos del 1&nbsp;%.</td>
+      <td>Sube la conversión en apps de pago, pero regala valor si la oferta ya convierte.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Lo que no haría</h2>
+<table>
+  <colgroup><col class="a"><col class="b"><col class="c"></colgroup>
+  <thead><tr><th>Propuesta</th><th>Qué es</th><th>Por qué, según el mercado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="t">Chat general con personajes de IA</td>
+      <td>Convertir la app en una charla libre con IA.</td>
+      <td>Coste de IA alto, moderación difícil (se vio en la prueba con un personaje de insultos) y un mercado dominado por grandes. La única app de decisión con IA que encontré, Verdict, tiene más de 1.000 instalaciones.</td>
+    </tr>
+    <tr>
+      <td class="t">Pagar campañas antes de tener el vídeo para compartir</td>
+      <td>Comprar instalaciones desde el día 1.</td>
+      <td>Se pierde dinero sin que la app pueda crecer sola.</td>
+    </tr>
+    <tr>
+      <td class="t">Bajar de 0,99&nbsp;€</td>
+      <td>Competir por precio.</td>
+      <td>No atrae a más gente y quita margen. 0,99&nbsp;€ ya es el precio de las dos apps grandes con suscripción en España.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="sources">Fuentes: las cifras salen de <code>docs/research/mercado/</code> (fichas de Play y App Store consultadas el 17 de noviembre de 2026, informes de conversión y captación) y de Firebase, que solo cuenta a quien aceptó la analítica. Las instalaciones de competidores son estimaciones de AppGoblin, y no hay datos públicos de conversión para 0,99&nbsp;€ en concreto.</p>
+
+</body>
+</html>
