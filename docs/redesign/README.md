@@ -39,7 +39,7 @@ https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su 
   - Contiene la bola en cada estado, Recientes, Opciones, los personajes, la cuenta, Premium,
     reportar, la tarjeta de compartir, la notificación, el widget, el reloj y los estados de los
     componentes.
-  - La sección 7 de la especificación aún no recoge estas pantallas.
+  - La sección 7 de la especificación las describe una a una.
 - Página «Componentes · Canto»: la primera versión de los componentes, descartada por parecerse
   demasiado a Duolingo.
 
