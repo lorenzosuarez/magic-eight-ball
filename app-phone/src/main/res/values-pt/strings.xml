@@ -373,4 +373,13 @@
     <string name="look_mushroom">Cogumelo</string>
     <string name="look_apple">Maçã</string>
     <string name="character_how">Como responde</string>
+    <!-- Redesign (docs/redesign/especificacion.md, section 7). The current screens don't use these yet. -->
+    <string name="report_reason_disliked">Não gostei</string>
+    <string name="settings_ai_more_watch">Assistir a um anúncio</string>
+    <string name="action_stop_reading">Parar a leitura</string>
+    <string name="settings_daily_blocked_hint">Sem elas, o veredito do dia não chega até você.</string>
+    <string name="license_font_characters">A fonte do que os personagens dizem</string>
+    <string name="license_font_titles">A fonte dos títulos e dos botões</string>
+    <string name="license_font_text">A fonte do resto do texto</string>
+    <string name="license_libraries_title">Bibliotecas</string>
 </resources>

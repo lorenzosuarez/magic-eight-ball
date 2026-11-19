@@ -373,4 +373,13 @@
     <string name="look_mushroom">Hongo</string>
     <string name="look_apple">Manzana</string>
     <string name="character_how">Cómo responde</string>
+    <!-- Redesign (docs/redesign/especificacion.md, section 7). The current screens don't use these yet. -->
+    <string name="report_reason_disliked">No me gustó</string>
+    <string name="settings_ai_more_watch">Ver un anuncio</string>
+    <string name="action_stop_reading">Detener la lectura</string>
+    <string name="settings_daily_blocked_hint">Sin ellas no te llega el veredicto del día.</string>
+    <string name="license_font_characters">La letra de lo que dicen los personajes</string>
+    <string name="license_font_titles">La letra de los títulos y los botones</string>
+    <string name="license_font_text">La letra del resto del texto</string>
+    <string name="license_libraries_title">Bibliotecas</string>
 </resources>

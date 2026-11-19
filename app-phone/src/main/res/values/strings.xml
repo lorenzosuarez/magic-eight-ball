@@ -381,4 +381,13 @@
     <string name="look_mushroom">Mushroom</string>
     <string name="look_apple">Apple</string>
     <string name="character_how">How it answers</string>
+    <!-- Redesign (docs/redesign/especificacion.md, section 7). The current screens don't use these yet. -->
+    <string name="report_reason_disliked">I didn\'t like it</string>
+    <string name="settings_ai_more_watch">Watch an ad</string>
+    <string name="action_stop_reading">Stop reading aloud</string>
+    <string name="settings_daily_blocked_hint">Without them, your daily verdict won\'t reach you.</string>
+    <string name="license_font_characters">The type for what the characters say</string>
+    <string name="license_font_titles">The type on titles and buttons</string>
+    <string name="license_font_text">The type for the rest of the text</string>
+    <string name="license_libraries_title">Libraries</string>
 </resources>
