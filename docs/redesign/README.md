@@ -31,6 +31,10 @@ https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su 
 - Página «Ojos en el círculo»: la propuesta aprobada. Incluye la portada, la pantalla principal, la
   pantalla con la respuesta, los estados, los oráculos, la secuencia de respuesta, la ventana de
   cada oráculo y una animación en bucle.
+  - El tablero «Los personajes en movimiento» anima a los ocho personajes con el mismo ciclo: los seis
+    oráculos y dos nuevos, Robot y Pirata, que ya son estilos de respuesta de la app.
+  - Los tableros de los oráculos, de las ventanas y de la secuencia se dibujan a partir de la animación,
+    así que coinciden con ella.
 - Página «Cara en la ventana»: la propuesta A, descartada, que se guarda como referencia.
 - Página «Componentes · Luz»: el sistema de componentes elegido. Incluye la base, los botones, la
   selección, los avisos, tres pantallas y la comparación con la versión con canto. Sus botones
