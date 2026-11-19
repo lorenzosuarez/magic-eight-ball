@@ -17,6 +17,7 @@ disponible dividido entre 200.
 | Brillo | Elipse | Centro (66, 56), radios 22 × 11, girada −34°, blanco al 16 % |
 | Aura | Círculo detrás del cuerpo | Radio 106. Degradado radial del color del oráculo: 24 % hasta el 76 % del radio y 0 % en el borde. Es lo único que brilla en la pantalla |
 | Sombra | Elipse bajo la bola | Centro (100, 200), radios 58 × 6, negro al 30 % |
+| Sombra del borde | Círculo sobre el cuerpo | Radio 82. Degradado radial negro con centro en (96, 98) y radio 90: 0 % hasta el 60 % y 55 % en el borde. Va encima de la cara y la ventana y debajo del borde de luz, el brillo y el accesorio. En reposo no toca la cara; al girar, oscurece lo que se acerca al borde |
 | Cara | Círculo | Centro (100, 106), radio 44. Degradado mate con centro en (0,45; 0,38) y radio 0,72: `#FFFFFF` → `#F1EEEB` (70 %) → `#DFDBD7` |
 | Ojos | Dos cápsulas | 7,6 × 16, radio de esquina 3,8, en x = 83,2 y x = 109,2, y = 96. Color `#16171D`. Sin boca y sin brillos |
 | Ventana | Círculo, en la cara opuesta | Centro (100, 106), radio 46. Líquido con degradado radial: `#23308A` → `#0E1550` (60 %) → `#05081C`. Aro interior de radio 44, negro al 35 %, trazo de 4 |
@@ -109,7 +110,8 @@ x = 87 y x = 113.
 ## 5. La ventana de respuesta
 
 - La bola gira sobre su eje vertical, así que el accesorio sigue arriba y la ventana queda a la
-  vista.
+  vista. El adorno del accesorio (la gema de la Vidente, la joya del Genio…) se repite por detrás,
+  así que con la ventana delante se ve igual que con la cara.
 - En la ventana van de una a tres palabras, en mayúsculas y en dos líneas como máximo: «SÍ, SIN
   DUDA», «CONCEDIDO», «NI LO SUEÑES».
 - La frase con más personalidad va debajo de la bola, en el texto de la pantalla.
@@ -122,13 +124,33 @@ Ciclo de referencia del lienzo, de 10 s:
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
-| Reposo | 0–1,8 s | Flota ±3 unidades y parpadea a 1,0 s |
-| Escuchando | 1,8–2,9 s | Los ojos se estiran un 30 %, la bola se inclina −12° y aparecen ondas de sonido |
-| Se agita | 2,9–3,6 s | Oscila entre −12° y 10°, con ojos `> <` y líneas de movimiento |
-| Gira | 3,6–4,3 s | La cara se comprime hacia la izquierda (escala horizontal hasta 0, desplazamiento −34) y la ventana entra por la derecha; la gema del accesorio se oculta |
-| La respuesta | 4,3–7,1 s | El triángulo sube 26 unidades y aparece en 0,9 s, flota y el halo se duplica |
-| Vuelve | 7,1–7,8 s | La ventana sale por la izquierda y la cara entra por la derecha con el gesto de la respuesta |
-| Gesto | 7,8–9,4 s | Un saltito de 10 unidades y vuelta al reposo |
+| Reposo | 0–1,8 s | Flota ±3 unidades, tres ondas por ciclo, con la mirada del oráculo; la Vidente tiene los ojos cerrados con calma. Si la mirada tiene los ojos abiertos, parpadea a 1,0 s |
+| Escuchando | 1,8–2,9 s | Los ojos se abren en un parpadeo y pasan a 8,6 × 21; la bola se inclina de −5° a −12° y aparecen ondas de sonido |
+| Se agita | 2,9–3,6 s | Oscila entre −12° y 10° a 5 Hz, con un vaivén lateral de ±3 unidades que se apaga, ojos `> <` y líneas de movimiento. Al final los ojos vuelven a la mirada del oráculo |
+| Gira | 3,6–4,6 s | Media vuelta sobre su eje vertical: 5° hacia el otro lado en 0,2 s, el giro en 0,7 s, con la mayor velocidad un poco antes de la mitad y la bola 1,8 unidades más alta, y 3° de más que se asientan en 0,22 s, ya con el triángulo subiendo |
+| La respuesta | 4,6–7,1 s | El triángulo sube 26 unidades del líquido en 0,9 s, flota y el halo se duplica. Antes de volver se hunde en 0,4 s |
+| Vuelve | 7,1–8,2 s | La otra media vuelta, en el mismo sentido y con la misma curva: la ventana sale por la izquierda y la cara entra por la derecha con el gesto de la respuesta |
+| Gesto | 8,2–9,5 s | Se agacha 1,5, salta 10, se aplasta un 3 % al caer y rebota 1,5. Después el gesto se relaja en la mirada de reposo |
+
+Cómo se dibuja el giro:
+
+- La bola es una esfera de radio 82 que gira sobre su eje vertical, con la cara delante y la ventana
+  detrás. Cada ciclo da una vuelta entera, siempre en el mismo sentido.
+- La cara, los ojos y la ventana van pegados a la superficie. Un punto (x, y) del dibujo de frente,
+  medido desde el centro del cuerpo, está a la profundidad z = √(82² − x² − y²). Tras girar un
+  ángulo ψ queda en x′ = x·cos ψ − z·sen ψ, con profundidad z′ = x·sen ψ + z·cos ψ; la y no cambia.
+  La ventana usa ψ − 180°.
+- Lo que queda detrás (z′ < 0) se pega al contorno: la cara se va por el borde y no se encoge hacia
+  el centro.
+- Las piezas pequeñas (ojos, burbujas, adorno) van a su punto girado y se estrechan en horizontal
+  por z′/z.
+- La luz no gira: el degradado del cuerpo, el brillo y la sombra del borde se quedan quietos, y el
+  degradado de la cara también. El del líquido viaja con la ventana.
+- El accesorio es una figura de revolución y no cambia al girar. Su adorno se repite por detrás y se
+  recorta con la silueta del accesorio: en cada media vuelta uno se va por la izquierda y el otro
+  entra por la derecha.
+- Los contornos se calculan una vez; en cada fotograma solo se transforman, sin crear memoria
+  nueva.
 
 En la app, las fases las disparan los estados y no un reloj fijo:
 
@@ -144,6 +166,10 @@ Reglas:
 
 - Con «reducir movimiento» del sistema activado no hay giro, ni agitado, ni saltos: la cara y la
   ventana se cambian con un fundido de 200 ms.
+- Un gesto pasa a otro dentro de un parpadeo: los ojos se cierran en 50 ms hasta una cápsula de
+  7,6 × 1,9, que es igual para todos los gestos, cambian de forma y se abren en 70 ms. Los trazos
+  conservan su grosor; no se aplastan con una escala. Entre dos gestos de ojos cerrados, como los
+  ojos felices y los cerrados con calma, la forma cambia directamente en 0,3 s.
 - Los valores animados se leen solo en la fase de dibujo, sin recomponer la pantalla en cada
   fotograma, y no se crea memoria nueva en cada fotograma.
 - Todos los tiempos y curvas son tokens del sistema de diseño, nunca números sueltos en una pantalla.
