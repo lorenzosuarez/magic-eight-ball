@@ -188,29 +188,35 @@ inferior, inclinada unos 18°, con el círculo blanco y los ojos como cara.
 
 ## 9. Componentes
 
-Variante Luz ([ADR 0004](adr/0004-componentes-luz.md)). El lienzo los muestra en la página
-«Componentes · Luz», junto a la comparación con la versión descartada.
+Variante Luz ([ADR 0004](adr/0004-componentes-luz.md)), con los botones de radio 16 del
+[ADR 0005](adr/0005-botones-radio-16.md). El lienzo muestra los componentes en la página
+«Componentes · Luz», todavía con botones en píldora, y todas las pantallas en «Pantallas · Luz».
 
 Reglas comunes:
 - **Al pulsar:** el control se oscurece y se encoge al 98 %; entra en 90 ms y sale en 150 ms.
 - **Al enfocar:** anillo de 2 px `#A9BCFF`, separado 2 px del control.
 - **Brillo:** ningún componente brilla.
+- **Forma:** radio 16 en botones, campos y botones de icono; 12 en los chips; 24 en los grupos; 28
+  en los diálogos; 32 en las hojas. Solo son redondos del todo el interruptor, las etiquetas, los
+  avatares y la bola.
 - **Tamaño táctil:** 48 dp como mínimo; la altura no se fija, para que la letra grande no se recorte.
 
 | Componente | Forma y medidas | Estados y uso |
 |---|---|---|
-| Botón principal | Píldora de 52 de alto con 24 de relleno lateral. Fondo `#4361EE` con una línea interior superior de blanco al 14 %, texto blanco | Pulsado `#3B55D1`. Desactivado `#16222F` con texto `#7A8794`. Cargando: indicador y «Un momento…». Uno por pantalla |
-| Botón secundario | Píldora de 52, fondo `#16222F` con línea de blanco al 8 % | Pulsado `#1E2C3B`. Desactivado `#0D1824` |
-| Botón tonal | Píldora de 44, solo dentro de filas, `#1D2C4E` con texto `#C9D6FF` | Pulsado `#263A66`. Ejemplo: «Obtener» en la fila de Premium |
-| Botón de texto | 44 de alto, texto `#A9BCFF` | Pulsado con fondo `#152240` |
-| Botón de icono | Círculo de 48, fondo `#16222F`, icono de 22 con trazo de 2 | Mientras lee en voz alta muestra «parar» (■) |
-| Selector de oráculo | Píldora de 44 con avatar de 32, anillo de 2 px del color del oráculo, nombre y flecha | Abre la lista para elegir personaje |
+| Botón principal | 52 de alto, radio 16 y 20 de relleno lateral. Fondo `#4361EE` con una línea interior superior de blanco al 14 %, texto blanco | Pulsado `#3B55D1`. Desactivado `#16222F` con texto `#7A8794`. Cargando: indicador y «Un momento…». Uno por pantalla |
+| Botón secundario | 52 de alto y radio 16, fondo `#16222F` con línea de blanco al 8 % | Pulsado `#1E2C3B`. Desactivado `#0D1824` |
+| Botón tonal | 52 de alto y radio 16, solo dentro de filas, `#1D2C4E` con texto `#C9D6FF` | Pulsado `#263A66`. Ejemplo: «Obtener» en la fila de Premium |
+| Botón de texto | 48 de alto y radio 16, texto `#A9BCFF` | Pulsado con fondo `#1E2C3B` |
+| Botón de icono | 48 de alto y radio 16, fondo `#16222F`, icono de 22 con trazo de 2. En la fila de la respuesta mide 52; en la barra superior va sin fondo | Mientras lee en voz alta muestra «parar» (■) |
+| Selector de oráculo | 52 de alto y radio 16, con avatar de 32, anillo de 2 px del color del oráculo, nombre y flecha | Abre la lista para elegir personaje |
+| Campo de texto | 56 de alto y radio 16, fondo `#16222F` con contorno de 1 px `#6B7886`. La etiqueta va encima, en Inter 600 13 | Con foco: contorno de 2 px `#A9BCFF`. Con error: contorno de 2 px coral y el mensaje debajo, en coral |
+| Chip de filtro | 36 de alto y radio 12, en Outfit 600 15 | Elegido: fondo `#152240`, línea `#7C96FF` al 40 % y ✓ `#7C96FF` |
 | Elegir personaje | Filas de 72 en un grupo `#0D1824` de radio 24: avatar de 40, nombre en Inter 600 16, descripción en 14 | Elegida: fondo `#152240`, anillo de su color y ✓ `#7C96FF`. Sin anillos vacíos en las demás |
 | Filas de acción | Filas de 56 sin control, separadas por líneas de blanco al 8 % | Pulsada `#1E2C3B`. Tocar ya actúa |
 | Interruptor | 52 × 32, como el de Material 3. Toda la fila conmuta | Encendido: cobalto con círculo blanco de 24. Apagado: contorno de 2 px `#6B7886` y círculo de 16. El subtítulo no cambia con el estado |
 | Etiqueta | 22 de alto, sin borde, Inter 600 12 | Premium: `#152240` con texto `#A9BCFF`. Neutra: `#16222F` con `#C9D1DA` |
-| Aviso de atención | Grupo de radio 24, `#21190C`, línea ámbar al 22 % | Título, qué se pierde, botón ámbar de 44 y nota de ayuda |
+| Aviso de atención | Grupo de radio 24, `#21190C`, línea ámbar al 22 % | Título, qué se pierde, botón ámbar de 52 y nota de ayuda |
 | Error | Grupo de radio 24, `#241316`, línea coral al 24 % | Texto y botón «Reintentar» |
-| Aviso breve | Píldora opaca de 56, `#1E2C3B` | Se va solo. Tras reportar dice «Reportada. Gracias.» y ofrece «Deshacer» durante 5 s |
+| Aviso breve | 56 de alto y radio 16, opaco, `#1E2C3B` | Se va solo. Tras reportar dice «Reportada. Gracias.» y ofrece «Deshacer» durante 5 s |
 | Racha | Línea en Inter 500 14 `#9AA7B4`, con una chispa de trazo | Bajo la bola y a 24 de la ayuda; no es un contador en la barra |
 | Frase del oráculo | Etiqueta en Inter 600 12 con ▲ en el color del oráculo, y la frase en Fraunces 500 24/30 | Líneas equilibradas, tres como máximo; a 20 px si pasa de dos |
