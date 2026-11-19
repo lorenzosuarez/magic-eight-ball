@@ -1,6 +1,7 @@
 # ADR 0004: componentes con lenguaje propio, la variante Luz
 
-Estado: aceptada. 19 nov 2026.
+Estado: aceptada. 19 nov 2026. La forma de los botones (punto 4) la sustituye el
+[ADR 0005](0005-botones-radio-16.md).
 
 ## Contexto
 
@@ -31,7 +32,7 @@ Los componentes siguen la variante Luz, en la página «Componentes · Luz» del
    - Entra en 90 ms y sale en 150 ms.
    - El foco es un anillo de 2 px `#A9BCFF`.
 4. **Formas de la bola.**
-   - Botones en píldora e iconos en círculo.
+   - Botones en píldora e iconos en círculo. Sustituido por el ADR 0005: radio 16.
    - Radio 24 en los grupos y 32 en las hojas.
    - Superficies separadas por tono, sin bordes gruesos; separadores de blanco al 8 %.
 5. **Lo elegido se marca con ✓ cobalto y fondo `#152240`, nunca solo con color.** Las listas que

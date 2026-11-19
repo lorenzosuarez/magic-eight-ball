@@ -1,7 +1,7 @@
 # Rediseño: la bola como personaje
 
-Estado: diseño aprobado (propuesta B, 18 nov 2026) y componentes elegidos (variante Luz, 19 nov
-2026). La implementación no ha empezado.
+Estado: diseño aprobado (propuesta B, 18 nov 2026) y componentes elegidos (variante Luz con
+botones de radio 16, 19 nov 2026). La implementación no ha empezado.
 
 La bola 8 pasa a ser un personaje. Donde iba el 8, en el círculo blanco, tiene dos ojos pequeños
 en forma de cápsula, sin boca y sin brillos, y toda su expresión sale de la forma de esos ojos.
@@ -20,6 +20,7 @@ corresponde a esa respuesta.
 | [adr/0002-diseno-listo-para-kmp.md](adr/0002-diseno-listo-para-kmp.md) | Reglas para que el sistema de diseño y la bola pasen a Kotlin Multiplatform sin reescribirse |
 | [adr/0003-lanzamiento-con-interruptor.md](adr/0003-lanzamiento-con-interruptor.md) | Cómo se lanza sin poner en riesgo la versión de producción |
 | [adr/0004-componentes-luz.md](adr/0004-componentes-luz.md) | Por qué los componentes siguen la variante Luz y no la versión con canto, inspirada en Duolingo |
+| [adr/0005-botones-radio-16.md](adr/0005-botones-radio-16.md) | Por qué los botones tienen radio 16 y no forma de píldora |
 | [../plans/migracion-kmp.pdf](../plans/migracion-kmp.pdf) | Plan de migración a Kotlin Multiplatform e iOS, que va después del rediseño |
 
 ## Lienzo de diseño
@@ -32,7 +33,13 @@ https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su 
   cada oráculo y una animación en bucle.
 - Página «Cara en la ventana»: la propuesta A, descartada, que se guarda como referencia.
 - Página «Componentes · Luz»: el sistema de componentes elegido. Incluye la base, los botones, la
-  selección, los avisos, tres pantallas y la comparación con la versión con canto.
+  selección, los avisos, tres pantallas y la comparación con la versión con canto. Sus botones
+  todavía son píldoras: manda el ADR 0005.
+- Página «Pantallas · Luz»: todas las pantallas con los componentes Luz y los botones de radio 16.
+  - Contiene la bola en cada estado, Recientes, Opciones, los personajes, la cuenta, Premium,
+    reportar, la tarjeta de compartir, la notificación, el widget, el reloj y los estados de los
+    componentes.
+  - La sección 7 de la especificación aún no recoge estas pantallas.
 - Página «Componentes · Canto»: la primera versión de los componentes, descartada por parecerse
   demasiado a Duolingo.
 
@@ -53,3 +60,6 @@ Si este documento y el lienzo no coinciden, manda este documento: aquí están l
    - formas tomadas de la bola;
    - lo elegido se marca con ✓;
    - el Mago pasa a turquesa y el Filósofo a piedra.
+7. Botones con radio 16 en lugar de píldora (19 nov 2026, ADR 0005):
+   - los botones con relleno miden 52 de alto;
+   - los de texto miden 48.
