@@ -643,26 +643,30 @@ internal fun rememberOptionsNav(): OptionsNav = rememberSaveable(
 /** What the app is built with that comes under the Apache License: Google's and JetBrains' own libraries. */
 private const val LIBRARIES = "AndroidX, Jetpack Compose, Kotlin, Dagger Hilt, Firebase"
 
-/** A licence as sentences: its file breaks its lines for a page far wider than a phone's. */
+/**
+ * A licence as sentences: its file breaks its lines for a page far wider than a phone's. The lines
+ * of dashes that frame a title there are left out, since on a phone they would only break across
+ * lines; a rule that stands alone between two parts is kept.
+ */
 private fun Resources.licence(@RawRes id: Int): String =
     openRawResource(id).bufferedReader().use { it.readText() }.trim()
         .split(Regex("\\n\\s*\\n"))
-        .joinToString("\n\n") { paragraph -> paragraph.lines().joinToString(" ") { it.trim() } }
+        .joinToString("\n\n") { paragraph ->
+            val lines = paragraph.lines().map { it.trim() }
+            lines.filterNot { line -> line.all { it == '-' } }.ifEmpty { lines }.joinToString(" ")
+        }
 
 /** What the app uses that other people made, and on what terms. */
 @Composable
 private fun Licenses() {
     val resources = LocalContext.current.resources
     val lucide = remember { resources.licence(R.raw.license_lucide) }
+    val googleSans = remember { resources.licence(R.raw.license_google_sans) }
     val apache = remember { resources.licence(R.raw.license_apache) }
     Section(null) {
         License(name = "Lucide", what = stringResource(R.string.license_icons), terms = lucide)
         RowDivider()
-        License(
-            name = "Google Sans",
-            what = stringResource(R.string.license_font),
-            terms = "Copyright 2025 The Google Sans Project Authors.\nSIL Open Font License, Version 1.1. https://openfontlicense.org"
-        )
+        License(name = "Google Sans", what = stringResource(R.string.license_font), terms = googleSans)
         RowDivider()
         // Last, for its length: the licence is given whole, as it asks to be.
         License(name = LIBRARIES, what = stringResource(R.string.license_libraries), terms = apache)
