@@ -1,6 +1,6 @@
 # ADR 0001: la bola se dibuja con Compose
 
-Estado: aceptada. 18 nov 2026.
+Estado: aceptada. 18 nov 2026. Actualizada el 20 nov 2026: ver «Actualización», al final.
 
 ## Contexto
 
@@ -35,3 +35,10 @@ degradados y texto) y animado con las APIs de animación de Compose (`updateTran
 - El coste es que hay que escribir el dibujo a mano y cuidar el rendimiento. Se mitiga leyendo los
   valores animados solo en la fase de dibujo, guardando en caché las trayectorias con
   `drawWithCache` y midiendo con Macrobenchmark en la fase 2.
+
+## Actualización (20 nov 2026)
+
+La bola ya no gira para enseñar la ventana: cierra los ojos y su cara se vuelve de cristal, con la
+ventana detrás ([ADR 0006](0006-respuesta-cara-de-cristal.md)). La decisión no cambia. El giro de
+la esfera se sigue dibujando con Compose para la sacudida, los gestos que giran la cabeza y el
+sorteo del modo fiesta.

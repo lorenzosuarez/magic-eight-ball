@@ -79,3 +79,7 @@ están en las secciones 2, 8 y 9 de [especificacion.md](../especificacion.md).
   `getRecommendedTimeoutMillis` sobre 10 s y, con TalkBack, no se va solo.
 - **Fraunces (Consecuencias):** el corte estático fija también sus ejes, SOFT 30 y opsz 24, como el
   lienzo.
+
+El mismo día, el [ADR 0007](0007-doce-personajes.md) cambió dos valores de este ADR: el ámbar de
+los avisos pasa de `#FFB547` a `#FF9F43` (punto 2), y el Mago y el Filósofo, a `#45D3F2` y
+`#B0A08A` (punto 7).
