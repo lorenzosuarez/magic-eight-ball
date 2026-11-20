@@ -1,7 +1,7 @@
 # ADR 0005: botones con radio 16 en lugar de píldora
 
 Estado: aceptada. 19 nov 2026. Sustituye la forma de los botones del punto 4 del
-[ADR 0004](0004-componentes-luz.md).
+[ADR 0004](0004-componentes-luz.md). Actualizada el 20 nov 2026: ver «Actualización», al final.
 
 ## Contexto
 
@@ -50,3 +50,10 @@ Los valores exactos están en la sección 9 de [especificacion.md](../especifica
   pasan de 44 a 52.
 - **Lienzo desactualizado:** la página «Componentes · Luz» todavía dibuja los botones en píldora.
   Donde no coincidan, mandan este ADR y la especificación.
+
+## Actualización (20 nov 2026)
+
+- **El lienzo ya está al día:** la página «Componentes · Luz» dibuja los botones con radio 16. La
+  nota «Lienzo desactualizado» de las consecuencias ya no vale.
+- **Estados:** la sección 9 de [especificacion.md](../especificacion.md) da todos los estados de cada
+  botón, también del ámbar y del de borrar, y un solo aspecto de carga para todos.

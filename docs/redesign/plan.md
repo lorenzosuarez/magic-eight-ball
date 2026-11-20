@@ -32,8 +32,8 @@ el código queda listo para compartirse con iOS mediante Kotlin Multiplatform.
 
 ## Principios
 
-1. **Una sola fuente del diseño.** Los tokens (colores, tipografía, espaciado, radios, sombras y
-   tiempos de animación) y los componentes viven en `:core:designsystem`. Ninguna pantalla define
+1. **Una sola fuente del diseño.** Los tokens (colores, tono, tipografía, espaciado, radios, tiempos
+   de animación y vibración) y los componentes viven en `:core:designsystem`. Ninguna pantalla define
    colores ni tiempos propios.
 2. **Listo para KMP desde el primer día.** El sistema de diseño, la bola y el dominio se escriben en
    Kotlin y Compose comunes, sin APIs de Android (ADR 0002). Una regla automática lo comprueba en
@@ -50,7 +50,7 @@ el código queda listo para compartirse con iOS mediante Kotlin Multiplatform.
 | Fase | Qué se entrega | Hecho cuando | Estimación |
 |---|---|---|---|
 | 0 · Cimientos | Compose actualizado; el tema movido a `:core:designsystem`; la regla de arquitectura (Konsist) en el CI; el interruptor `redesign_enabled` apagado; estos documentos | La app se ve igual, todos los tests pasan y la regla falla si alguien usa `android.*` en los módulos comunes | 1–2 días |
-| 1 · Sistema de diseño | Los tokens de `especificacion.md`, los componentes base (fila agrupada, pastilla, botón, chip de oráculo) y una galería interna para verlos | Cada componente tiene su captura de referencia en claro y en oscuro, y en tamaño de letra grande | 2–3 días |
+| 1 · Sistema de diseño | Los tokens de la sección 2 de `especificacion.md`, los componentes de la sección 9 (botones, filas de lista, chips, campos, hojas, diálogos, avisos y selector de oráculo) y una galería interna para verlos | Cada componente tiene su captura de referencia en oscuro, con la letra al 100, 130 y 200 % | 2–3 días |
 | 2 · La bola | `OracleBall`: cuerpo, borde de color, cara con ojos, ventana con líquido y triángulo, accesorios, catálogo de expresiones y la máquina de estados de la animación | Una captura por oráculo y por expresión; tests de la máquina de estados; sin fotogramas lentos en el Pixel 8 Pro (Macrobenchmark); con «reducir movimiento» no gira | 4–6 días |
 | 3 · Pantalla principal | La nueva bola en la pantalla, la respuesta en la ventana, la frase del personaje debajo y la vibración sincronizada con agitar y girar | Con el interruptor encendido, todo el ciclo de pregunta funciona en el móvil, incluidos los casos de fallo (`ai_miss`) | 3–5 días |
 | 4 · Oráculos | Cada estilo actual recibe su aspecto (accesorio, color y mirada); los personajes propios también; el selector y la lista de Personajes | Todos los estilos y los personajes propios se ven con su aspecto, con capturas | 3–4 días |

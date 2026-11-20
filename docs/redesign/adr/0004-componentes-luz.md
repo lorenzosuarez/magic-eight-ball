@@ -1,7 +1,7 @@
 # ADR 0004: componentes con lenguaje propio, la variante Luz
 
 Estado: aceptada. 19 nov 2026. La forma de los botones (punto 4) la sustituye el
-[ADR 0005](0005-botones-radio-16.md).
+[ADR 0005](0005-botones-radio-16.md). Actualizada el 20 nov 2026: ver «Actualización», al final.
 
 ## Contexto
 
@@ -63,3 +63,19 @@ Los valores exactos están en la sección 9 de [especificacion.md](../especifica
 - **Función nueva:** deshacer un reporte, durante 5 s.
 - **Lienzo desactualizado:** la página «Ojos en el círculo» conserva los colores antiguos del Mago y
   del Filósofo. Donde no coincidan, manda la especificación.
+
+## Actualización (20 nov 2026)
+
+La revisión de componentes del 20 nov 2026 corrigió cuatro puntos. La decisión no cambia; los valores
+están en las secciones 2, 8 y 9 de [especificacion.md](../especificacion.md).
+
+- **Coral (punto 2):** el coral `#FF8A8A` es para el error de un campo y para lo que borra algo que
+  no se puede deshacer: el botón de borrar y «Eliminar cuenta», siempre con su diálogo. Lo que se
+  puede deshacer se borra con un icono neutro y el aviso breve con «Deshacer».
+- **Pulsar (punto 3):** las superficies no se oscurecen al pulsar: suben un tono y se aclaran
+  (`#16222F` → `#1E2C3B`). El cobalto sí pasa a `#3B55D1`. Solo los controles sueltos se encogen al
+  98 %; las filas, no. El anillo de foco deja transparente el hueco de 2 px.
+- **Deshacer un reporte (Consecuencias):** no dura 5 s fijos. El aviso dura lo que diga
+  `getRecommendedTimeoutMillis` sobre 10 s y, con TalkBack, no se va solo.
+- **Fraunces (Consecuencias):** el corte estático fija también sus ejes, SOFT 30 y opsz 24, como el
+  lienzo.

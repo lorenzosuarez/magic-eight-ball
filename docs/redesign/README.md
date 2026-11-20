@@ -15,7 +15,7 @@ corresponde a esa respuesta.
 | Documento | Qué contiene |
 |---|---|
 | [plan.md](plan.md) | Principios, fases con su entregable y su criterio de hecho, forma de trabajo y riesgos |
-| [especificacion.md](especificacion.md) | Anatomía de la bola, colores, oráculos, catálogo de expresiones, ventana de respuesta, animación con tiempos, pantallas y accesibilidad |
+| [especificacion.md](especificacion.md) | La hoja de diseño completa: anatomía de la bola, tokens (color, tono, letra, espacio, forma, movimiento y vibración), personajes y sus miradas, ventana de respuesta, animación con tiempos (inicio, catálogo, interrupciones, reloj en modo ambiente), todas las pantallas y sus estados, accesibilidad y componentes con sus estados |
 | [adr/0001-bola-dibujada-con-compose.md](adr/0001-bola-dibujada-con-compose.md) | Por qué la bola se dibuja con Compose y no con Lottie, Rive ni vídeo |
 | [adr/0002-diseno-listo-para-kmp.md](adr/0002-diseno-listo-para-kmp.md) | Reglas para que el sistema de diseño y la bola pasen a Kotlin Multiplatform sin reescribirse |
 | [adr/0003-lanzamiento-con-interruptor.md](adr/0003-lanzamiento-con-interruptor.md) | Cómo se lanza sin poner en riesgo la versión de producción |
@@ -29,17 +29,27 @@ Los diseños están en el lienzo «Rediseño de la bola» de Claude:
 https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su dueño.
 
 - Página «Diseño»: todo lo elegido, en una sola página y en este orden.
-  - La bola: la portada, los estados, los oráculos y la ventana de cada uno.
-  - La respuesta, en movimiento: la animación en bucle, los ocho personajes (los seis oráculos y
-    Robot y Pirata, que ya son estilos de respuesta de la app) y los cinco pasos. Los tableros de los
-    oráculos, de las ventanas y de los pasos se dibujan a partir de la animación, así que coinciden
-    con ella.
-  - La prueba «¿Gira o su cara se vuelve ventana?»: la versión que gira junto a «Cara de cristal»,
-    en la que la cara se vuelve la ventana. Está en la sección 6 de la especificación.
-  - Los componentes Luz, con los botones de radio 16 del ADR 0005.
-  - Todas las pantallas: la bola en cada estado, Recientes, Opciones, los personajes, la cuenta,
-    Premium, reportar, la tarjeta de compartir, la notificación, el widget y el reloj. La sección 7
-    de la especificación las describe una a una.
+  - Para decidir: «Propuestas para decidir», con los colores, las siluetas y las miradas que recomiendan las
+    auditorías, y dónde usar cada versión de la respuesta. Nada de eso está aplicado todavía.
+  - La bola: la portada, las miradas de cada personaje en cada estado y veredicto, los ocho personajes y la
+    ventana de cada uno.
+  - El personaje en movimiento:
+    - el inicio de la app, en el que el 8 se vuelve los ojos, animado y paso a paso;
+    - la animación de la respuesta y la prueba «¿Gira o su cara se vuelve ventana?»;
+    - el catálogo de 18 animaciones del personaje;
+    - los ocho personajes en movimiento y la respuesta en cinco pasos.
+
+    Todos los tableros de personajes se dibujan con el mismo motor de animación, así que coinciden.
+  - Los componentes Luz, con todos sus estados y los botones de radio 16 del ADR 0005.
+  - Todas las pantallas, unas 80, con las barras del sistema:
+    - la bola y sus estados: voz y micrófono, pregunta delicada, límite de IA, sin conexión, anuncios y
+      primer uso;
+    - Recientes y Opciones, con el modo fiesta;
+    - personajes y cuenta, con Comunidad, entrar con Google y eliminar la cuenta;
+    - Premium, compartir y sistema, con el ciclo de compra;
+    - el reloj, también en modo ambiente.
+
+    La sección 7 de la especificación las describe una a una.
 - Página «Descartado · Canto»: la primera versión de los componentes, descartada por parecerse
   demasiado a Duolingo, con la comparación frente a Luz.
 
