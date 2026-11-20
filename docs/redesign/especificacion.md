@@ -811,16 +811,16 @@ pregunta se queda en el título, entre «», en `bodySmall` y `textSecondary`.
 
 | Estado | Tablero | Título | Bola | Leyenda | Acciones |
 |---|---|---|---|---|---|
-| En reposo | `LP01Reposo` | La ayuda | Cara en reposo | La racha: «3 días seguidos» | El selector de oráculo, «Responde como · Vidente» |
+| En reposo | `LP01Reposo` | La ayuda | Cara en reposo | La racha: «3 días seguidos» | El selector de personaje, «Responde como · Vidente» |
 | Escuchando, antes de hablar | `LP40Escuchar` | «Te escucho…» en `sectionLabel` y `textSecondary` y, donde irá lo que oye, «Haz una pregunta de sí o no.» en `transcript` y `textSecondary` | Escuchando: ojos de 8,6 × 21, inclinada −12° y con el halo latiendo | «Suelta para preguntar · Desliza fuera para cancelar» en `emphasisSmall` y `textSecondary`; si no cabe, se parte en el «·» | Nada |
 | Escuchando | `LP02Escuchando` | «Te escucho…» y, debajo, lo que va oyendo en `transcript` y `text`: sus dos últimas líneas; las anteriores salen por arriba | Escuchando | Como antes de hablar | Nada |
 | Pensando | `LP03Pensando` | La pregunta | La ventana con el líquido | Nada; TalkBack dice «Pensando…» | Nada |
 | Respuesta | `LP04Respuesta` | La pregunta | La ventana con la respuesta | El veredicto, «Sí, sin duda.», en `verdict` y `text`; a 8, la etiqueta «▲ Vidente añade · IA»; a 8, la frase en `oracleLarge` (sección 9, «Veredicto y frase del oráculo») | «Compartir» y los dos pulgares |
 | Respuesta larga, con «Respuestas más largas» | `LP31RespuestaLarga` | La pregunta | La ventana con la respuesta | El veredicto y la etiqueta, fijos. La frase, en `oracleMedium`, se desplaza en el resto de la leyenda hasta las acciones, con un fundido de 24 sobre ellas y otro arriba en cuanto se ha desplazado. El tablero lleva 210 caracteres; la IA llega a 240 | Como en la respuesta, siempre a la vista |
 | Respuesta sin pregunta | `LP46SinPregunta` | «Una pregunta en silencio» en `bodySmall` y `textSecondary`, sin «» | Como en la respuesta | Como en la respuesta | Como en la respuesta |
-| Volver a preguntar | `LP53OtraVez` | La pregunta | La cara, con su mirada de reposo | Como en la respuesta | Encima, «¿Otra pregunta? Mantén presionada la bola.» en `emphasisSmall` y `textSecondary` |
+| Volver a preguntar | `LP53OtraVez` | La pregunta | La cara, con la mirada del veredicto, que se queda hasta la siguiente pregunta (aquí, los ojos felices del «Sí») | Como en la respuesta | Encima, «Mantén presionado y pregunta otra vez en voz alta.» en `emphasisSmall` y `textSecondary` |
 | Abierta desde Recientes | `LP54DesdeRecientes` | «Hace 5 min» en `sectionLabel` y `textSecondary`, sobre la pregunta | La ventana con la respuesta, quieta | Como en la respuesta | Como en la respuesta, con los pulgares como se dejaron |
-| Sin respuesta | `LP05SinRespuesta` | La pregunta | Cara de duda | «No lo veo claro. Pregúntame otra vez.» en `emphasisLarge` y `text` | «Toca o agita para una respuesta», como texto |
+| Sin respuesta | `LP05SinRespuesta` | La pregunta | Dos puntos en blanco por ojos, la bola 3 más abajo, recta, y la luz al 40 %: no es un veredicto | «No lo veo claro. Pregúntame otra vez.» en `emphasisLarge` y `text` | «Toca o agita para una respuesta», como texto |
 
 - `LP40Escuchar` sale en cada escucha hasta que llega la primera palabra; luego, la transcripción de
   `LP02Escuchando`. Salir 24 del círculo con el dedo cancela.
@@ -836,8 +836,7 @@ pregunta se queda en el título, entre «», en `bodySmall` y `textSecondary`.
   reposo. Si se mantiene la bola, la respuesta nueva es normal, con ✕, que cierra al reposo.
 - `LP05SinRespuesta` sale si la respuesta falla o tarda más de 6 s (sección 6).
 
-**Aviso compacto.** El aviso que pide atención de la bola es más bajo que el de la sección 9, que
-aún no lo recoge:
+**Aviso compacto.** El aviso que pide atención de la bola es el «Aviso compacto» de la sección 9, más bajo que la tarjeta:
 - 56 de alto como mínimo, radio 16, `warningContainer` y línea de 1 `warningOutline`.
 - El icono de 24 en `warning`, a 16 del borde del aviso. El texto en `emphasis` y `text`, en dos
   líneas como máximo y equilibradas, a 72 del borde de la pantalla, como en el aviso grande.
@@ -852,8 +851,8 @@ aún no lo recoge:
 |---|---|---|---|---|---|
 | Sin micrófono | `LP41SinMicrofono` | «Toca o agita para una respuesta.», sin la línea de la voz | En reposo | El aviso compacto: `mic-off`, «Sin micrófono, la bola no te oye.» y «Permitir» | El selector |
 | Micrófono bloqueado | `LP42MicrofonoBloqueado` | Como sin micrófono | En reposo | El mismo aviso, con «Abrir ajustes» | El selector |
-| No te he oído | `LP43NoTeOi` | Vacío | Duda: ladeada 8°, un ojo medio cerrado y la luz al 60 % | «No te he oído.» en `emphasisLarge` y `text` y, debajo, «Mantén presionado y habla.» en `bodySmall` y `textSecondary` | El selector |
-| Sin reconocimiento de voz | `LP44SinVoz` | «Toca o agita para una respuesta.» | En reposo | `mic-off` de 16 y «Este móvil no puede escuchar preguntas.» en `emphasis` y `textSecondary`. Sin ámbar: no hay nada que hacer | El selector |
+| No te he oído | `LP43NoTeOi` | Vacío | Duda: ladeada 8°, un ojo medio cerrado y la luz al 60 % | «No te he oído.» en `emphasisLarge` y `text` y, debajo, «Mantén presionado y pregunta en voz alta.» en `bodySmall` y `textSecondary` | El selector |
+| Sin reconocimiento de voz | `LP44SinVoz` | «Toca o agita para una respuesta.» | En reposo | `mic-off` de 16 y «Este dispositivo no puede escuchar preguntas.» en `emphasis` y `textSecondary`. Sin ámbar: no hay nada que hacer | El selector |
 
 - `LP41SinMicrofono` sale tras negar el permiso y se queda en el reposo hasta que lo hay.
   «Permitir» y mantener la bola vuelven a lanzar el diálogo de Android.
@@ -869,9 +868,9 @@ aún no lo recoge:
 
 | Estado | Tablero | Título | Bola | Leyenda | Acciones |
 |---|---|---|---|---|---|
-| Límite de IA | `LP47LimiteIA` | La pregunta | Como en la respuesta | El veredicto, «▲ Vidente añade», sin «· IA», y una frase suya de siempre | Encima, el aviso compacto: `clock`, «Ya usaste las de hoy. Vuelven mañana.» y «Ver anuncio». Debajo, «Compartir» y el botón de texto «Hazte Premium», con `crown` |
-| Sin conexión | `LP48SinConexion` | La pregunta | Como en la respuesta, con el aura al 60 %, la luz de «Sin conexión» (sección 6) | El veredicto, «▲ Vidente · sin conexión» y una frase suya de siempre. «· sin conexión» va en `textSecondary`, como «· IA» | Solo «Compartir» |
-| Pregunta delicada | `LP45Delicada` | La pregunta | Sin giro, sin triángulo y sin gesto: las cápsulas de reposo, quietas y a 0°, con el aura al 50 % | Sin etiqueta: «Esto no lo puede responder un juguete.» en `emphasisLarge` y `text`, y «Habla con alguien de confianza o llama al 112.» en `body` y `contentMedium` | El botón secundario «Dónde pedir ayuda» |
+| Límite de IA | `LP47LimiteIA` | La pregunta | Como en la respuesta | El veredicto, «▲ Vidente añade», sin «· IA», y una frase suya de siempre | Encima, el aviso compacto: `clock`, «Ya usaste las de hoy. Vuelven mañana.» y «Ver un anuncio». Debajo, «Compartir» y el botón de texto «Hazte Premium», con `crown` |
+| Sin conexión | `LP48SinConexion` | La pregunta | Como en la respuesta, con el aura al 60 %, la luz de «Sin conexión» (sección 6) | El veredicto, «▲ Vidente añade · sin conexión» y una frase suya de siempre. «· sin conexión» va en `textSecondary`, como «· IA» | Solo «Compartir» |
+| Pregunta delicada | `LP45Delicada` | La pregunta | Sin giro, sin triángulo y sin gesto: las cápsulas de reposo, quietas y a 0°, con el aura al 50 % | Sin etiqueta: «Esto no lo puede responder un juguete.» en `emphasisLarge` y `text`, y «Si es urgente, llama al 112. Si no, habla con alguien de confianza.» en `body` y `contentMedium` | El botón secundario «Dónde pedir ayuda» |
 
 - Sin IA no hay pulgares: valoran y reportan lo que escribe la IA.
 - `LP47LimiteIA`: si la frase ocupa dos líneas, pasa a `oracleMedium` para dejar 12 sobre el aviso.
@@ -920,14 +919,14 @@ aún no lo recoge:
 
 | Momento | Tablero | Qué se ve |
 |---|---|---|
-| Cargando un anuncio, si tarda más de 0,6 s | `LP49Recompensa` | El aviso compacto cambia el icono por el indicador de 24 en `warning` y dice «Cargando un anuncio…»; «Ver anuncio» se desactiva |
-| No hay anuncio, a los 8 s | `LP49Recompensa` | `clock`, «No hay anuncios ahora. Prueba en un rato.» y «Ver anuncio», activo para volver a probar. «Hazte Premium» sigue debajo |
+| Cargando un anuncio, si tarda más de 0,6 s | `LP49Recompensa` | El aviso compacto cambia el icono por el indicador de 24 en `warning` y dice «Cargando un anuncio…»; «Ver un anuncio» se desactiva |
+| No hay anuncio, a los 8 s | `LP49Recompensa` | `clock`, «No hay anuncios ahora. Prueba en un rato.» y «Reintentar». «Hazte Premium» sigue debajo |
 | Recompensa | `LP49Recompensa` | Visto el anuncio entero, se van el aviso y «Hazte Premium», y sale el aviso breve «Listo: la IA vuelve a responder.», sin acción. La pregunta siguiente ya va con IA |
 | Al cerrar la respuesta | `LP50Intersticial` | ✕ → la bola en reposo, ya asentada, con la ayuda, la racha y el selector → fundido de 300 ms a `bg`, la bola también → el anuncio de AdMob → al cerrarlo, fundido de 300 ms desde `bg` y la bola parpadea una vez |
 
 - El anuncio con recompensa sale del aviso del límite de IA (`LP47LimiteIA`). Lo muestra AdMob a
   pantalla completa y no se dibuja. Si se cierra antes de la recompensa, no hay aviso breve y vuelve
-  el aviso con «Ver anuncio». Nunca se dan cifras.
+  el aviso con «Ver un anuncio». Nunca se dan cifras.
 - El anuncio al cerrar solo sale con la bola en reposo, nunca mientras escucha, piensa o responde.
   Si se toca la bola o se cambia de página antes de que acabe el fundido, esa vez no hay anuncio. El
   ritmo es el de hoy.
@@ -1010,7 +1009,7 @@ aún no lo recoge:
 | Respuestas con IA | «Activadas» o «Ya usaste las de hoy» |
 | Voz | «Preguntas y respuestas» o «Sin micrófono» |
 | Modo fiesta | «Desactivado»; encendido, sin tablero |
-| Notificaciones | «Activadas» o «Bloqueadas en Android» |
+| Notificaciones | «Activadas» o «Bloqueadas» |
 | Idioma | El idioma elegido: «Español» |
 
 - Al pie, a 24 del grupo: la nota de privacidad en `caption`, «El servicio de voz de tu dispositivo
@@ -1023,8 +1022,8 @@ Pantallas que se abren desde Opciones, todas con «Atrás» y su título:
 | Pantalla | Tablero | Contenido | Aviso cuando falta algo |
 |---|---|---|---|
 | Respuestas con IA | `LP11IA` | Los interruptores «Respuestas con IA» («Escritas al momento») y «Respuestas más largas» («La bola se explica en unas frases») | «Ya usaste las de hoy», «Vuelven mañana. Mientras, la bola responde con sus frases de siempre.», «Ver un anuncio» y la nota «Un anuncio corto y sigues con la IA.» |
-| Voz | `LP12Voz` | «Preguntas por voz» («Mantén presionada la bola y habla») y «Respuestas en voz alta» («La bola también dice su respuesta»). «Agitar para preguntar», de la sección 8, sin tablero | «Necesita acceso al micrófono», «Sin él, solo puedes tocar o agitar.» y «Permitir micrófono» |
-| Notificaciones | `LP13Notificaciones` | «Veredicto del día» («Una notificación al día, de tu personaje») | «Las notificaciones están desactivadas para esta app», «Sin ellas no te llega el veredicto del día.», «Permitir notificaciones» y la nota «Abre los ajustes de notificaciones de la app.» |
+| Voz | `LP12Voz` | «Preguntas por voz» («Mantén presionado y pregunta en voz alta») y «Respuestas en voz alta» («La bola también dice su respuesta»). «Agitar para preguntar», de la sección 8, sin tablero | «Necesita acceso al micrófono», «Sin él, solo puedes tocar o agitar.» y «Permitir micrófono» |
+| Notificaciones | `LP13Notificaciones` | «Veredicto del día» («Una notificación al día, de tu personaje») | «Las notificaciones están bloqueadas», «Sin ellas no te llega el veredicto del día.» y «Abrir ajustes» |
 | Idioma | `LP14Idioma` | English, Español y Português; el elegido, con fondo `selected` y la ✓ de 22 | Ninguno |
 | Licencias de código abierto | `LP15Licencias` | Lucide («Iconos»), Google Sans («La letra del botón de Google»), Fraunces («La letra de lo que dicen los personajes»), Outfit («La letra de los títulos y los botones»), Inter («La letra del resto del texto») y «Bibliotecas» («AndroidX, Jetpack Compose, Kotlin, Dagger Hilt y Firebase»), cada una con › | Ninguno |
 | Modo fiesta | `LP76Fiesta` | Abajo | Ninguno |
@@ -1044,7 +1043,7 @@ Pantallas que se abren desde Opciones, todas con «Atrás» y su título:
   `rowTitle` y `link`. Al tocarla se convierte en el campo «Nombre», con el teclado; Intro añade el
   nombre y deja el campo listo para otro. Nombres de hasta 10 caracteres. Al llegar al máximo, la
   fila desaparece: nunca se dice cuántas caben;
-- al quitar a alguien, el aviso breve «Ana quitada» con «Deshacer».
+- al quitar a alguien, el aviso breve «Has quitado a Marta» con «Deshacer».
 
 ### Personajes y cuenta
 
@@ -1079,7 +1078,7 @@ Pantallas que se abren desde Opciones, todas con «Atrás» y su título:
 
 | Ficha | Tablero | Bajo el nombre | Arriba a la derecha | Botón |
 |---|---|---|---|---|
-| Original | `LP18Ficha` | «Original de Magic AI Ball» | Nada | «Usar este personaje». En la del actual, desactivado: «Es el que responde ahora» |
+| Original | `LP18Ficha` | «Original de Magic AI Ball» | Nada | «Usar este personaje». En la del actual, desactivado: «Es quien responde ahora» |
 | De Comunidad | `LP62FichaComunidad` | «De @javitorres_» | El botón de icono ⋮ «Más opciones» | «Usar este personaje» |
 | Tuya | `LP63TuPersonaje` | «Creado por ti · En Comunidad»; si no se comparte, «Creado por ti» | Los botones de icono «Editar» (lápiz) y «Borrar» (`trash-2`) | «Usar este personaje» |
 
@@ -1087,7 +1086,7 @@ Pantallas que se abren desde Opciones, todas con «Atrás» y su título:
   cerrados.»; Bruja, «Pícara y directa. Te dice lo que no quieres oír y se ríe un poco mientras lo
   dice.».
 - En la de Comunidad, la descripción va tal como la escribió su autor. «Más opciones» ofrece dos
-  acciones, ninguna en coral porque no borran. El lienzo las dibuja en un menú (pendiente, abajo):
+  acciones, ninguna en coral porque no borran. No es un menú: el ⋮ abre una hoja con dos filas (`LP62FichaComunidad`):
   - «Reportar personaje», con la bandera, abre la hoja de reportar con «¿Qué pasa con este
     personaje?», «Elige una opción y se envía» y seis filas: «Es ofensivo», «Es sexual o
     inapropiado», «Puede hacer daño», «Se hace pasar por alguien», «Es spam o engaño» y «Otra cosa».
@@ -1162,7 +1161,7 @@ confirmar:
 
 | Estado | Tablero | Qué se ve |
 |---|---|---|
-| Descripción rechazada | `LP64EditorRechazo` | Tras «Guardar», la pantalla baja hasta el campo: el título grande se ha ido y «Nuevo personaje» pasa a la barra, que lleva su línea inferior. «¿Cómo responde?» en error: «Esta descripción no se puede usar.», con el contador a la derecha. No se guarda nada. Para el nombre, «Este nombre no se puede usar.» |
+| Descripción rechazada | `LP64EditorRechazo` | Tras «Guardar», la pantalla baja hasta el campo: el título grande se ha ido y «Nuevo personaje» pasa a la barra, que lleva su línea inferior. «¿Cómo responde?» en error: «Esta descripción no se puede usar. Cámbiala y vuelve a guardar.», con el contador a la derecha. No se guarda nada. Para el nombre, «Este nombre no se puede usar.» |
 | ¿Descartar el personaje? | `LP65EditorDescartar` | Al tocar ✕ o atrás con algo escrito: el diálogo «¿Descartar el personaje?», «Se pierde lo que has escrito.», el botón de borrar «Descartar» y el de texto «Seguir editando». Sin nada escrito, ✕ cierra sin preguntar. Al editar uno guardado, «¿Descartar los cambios?» |
 
 **Tu cuenta**, en una hoja (`LP20Cuenta`):
@@ -1173,7 +1172,7 @@ confirmar:
 - «Eliminar cuenta», «Se borran tu perfil y tus personajes», una fila que borra.
 
 **¿Eliminar tu cuenta?** es un diálogo centrado entre las barras (`LP21EliminarCuenta`):
-- «Se borran tu perfil y tus personajes. Tus respuestas siguen en este móvil. No se puede deshacer.»
+- «Se borran tu perfil y tus personajes. Tus respuestas siguen en este dispositivo. No se puede deshacer.»
 - Con Premium, debajo, «Premium se sigue cobrando hasta que lo canceles.» en `noticeTitle` y
   `text`, y las acciones en este orden: «Gestionar en Google Play» (secundario), «Eliminar cuenta»
   (de borrar) y «Cancelar» (de texto).
@@ -1256,12 +1255,12 @@ Wear OS, pantalla redonda de 227 (sección 9, «Reloj»). La hora va arriba en t
 
 | Estado | Tablero | Qué se ve |
 |---|---|---|
-| En reposo | `LPW1Reposo` | La bola de 112 y «Toca o agita.» / «Mantén presionado para hablar.» en `supporting` y `contentMedium`, en tres líneas |
+| En reposo | `LPW1Reposo` | La bola de 112 y «Toca o agita.» / «Mantén presionado» / «y pregunta.» en `supporting` y `contentMedium`, en tres líneas |
 | Escuchando | `LPW6Escuchando` | La bola de 112 con la cara de escuchar (8,6 × 21, a −12°) y el halo latiendo, sin ondas ni marcas. «Te escucho…» en `contentMedium`. Cuando oye palabras, esa línea las enseña: una sola, recortada por el principio |
 | Pensando | `LPW7Pensando` | La bola de 112 con la ventana y el líquido, y la pregunta entre «» en `textSecondary`, en dos líneas como máximo |
 | La respuesta | `LPW2Respuesta` | La ventana de 120, para que se lea. Debajo, «Otra vez», la acción principal: una píldora de 160 × 52 en `accent`. Más abajo, al desplazar, «Reportar» en una píldora `control`, que en reposo solo asoma por el borde |
 | Sin respuesta | `LPW8Fallo` | La bola de 104 con la mirada de duda y «No lo veo claro. Pregúntame otra vez.» en `contentMedium`. Tocar o agitar da una respuesta; mantener y hablar pregunta |
-| Sin el móvil | `LPW9SinMovil` | La bola de 88 en reposo, «Móvil desconectado» en `text` y «Responde con sus frases de siempre» en `textSecondary`. Sin ámbar: no hay nada que hacer. El aviso se va solo al volver la conexión |
+| Sin el móvil | `LPW9SinMovil` | La bola de 88 en reposo, «Teléfono desconectado» en `text` y «Responde con sus frases de siempre.» en `textSecondary`. Sin ámbar: no hay nada que hacer. El aviso se va solo al volver la conexión |
 | Sin micrófono | `LPW10Microfono` | `mic` de 24 en `warning`, «Sin micrófono solo puedes tocar o agitar.» en `text` y el botón ámbar «Permitir», en píldora de 52. Si se denegó para siempre, «Abrir ajustes» |
 | Modo ambiente | `LPW11Ambiente`, `LPW12AmbienteMago` | La bola de ambiente (sección 6): sin aura, brillo, sombra ni degradados; el cuerpo negro con el borde de 1,5 al 60 % de la luz del personaje; la cara, un aro de 1,5 en `contentMedium`, sin relleno, con los ojos de reposo en `contentMedium`; el accesorio, en contorno de 1,5 del color del borde. Sin texto, solo la hora. Se desplaza unos píxeles cada minuto |
 
@@ -1285,7 +1284,7 @@ Los tableros de «Componentes Luz», antes de las pantallas, enseñan los compon
 | `LuzBase` | Color, letra y luz. «El color es de los personajes», con los ocho: Robot y Pirata, dibujados como los otros seis. «Pulsar y foco» |
 | `LuzContenido` | La racha, las etiquetas, los avisos y la fila de Premium |
 | `LuzBotones` | Principal, secundario, tonal, ámbar, de borrar, de texto y de icono, en normal, pulsado, desactivado y cargando |
-| `LuzSeleccion` | El selector de oráculo, también con foco; el interruptor, también desactivado; elegir personaje; los chips de filtro elegido, normal y desactivado; las filas que actúan al tocar, una con foco y otra desactivada |
+| `LuzSeleccion` | El selector de personaje, también con foco; el interruptor, también desactivado; elegir personaje; los chips de filtro elegido, normal y desactivado; las filas que actúan al tocar, una con foco y otra desactivada |
 | `LP30Estados` | Los estados que no salen en las pantallas (abajo) |
 
 `LP30Estados` lleva:
@@ -1304,21 +1303,21 @@ Hay que añadirlos o cambiarlos en los tres idiomas:
 
 | Dónde | Textos |
 |---|---|
-| La bola | La ayuda, «Toca o agita para una respuesta.» y «Mantén presionado y pregunta en voz alta.» (antes «Toca o agita para preguntar. Mantén presionado para hablar.»); «Suelta para preguntar · Desliza fuera para cancelar»; «Haz una pregunta de sí o no.»; «No lo veo claro. Pregúntame otra vez.» (antes «Prueba otra vez luego.»); «Una pregunta en silencio»; «¿Otra pregunta? Mantén presionada la bola.»; «Volver a Recientes»; «Detener la lectura» |
-| Voz y micrófono | «Sin micrófono, la bola no te oye.», «Permitir», «Abrir ajustes», «No te he oído.», «Mantén presionado y habla.» y «Este móvil no puede escuchar preguntas.» |
-| Sin IA y pregunta delicada | «Ya usaste las de hoy. Vuelven mañana.», «Ver anuncio», «Hazte Premium», «· sin conexión», «Esto no lo puede responder un juguete.», «Habla con alguien de confianza o llama al 112.» y «Dónde pedir ayuda» |
+| La bola | La ayuda, «Toca o agita para una respuesta.» y «Mantén presionado y pregunta en voz alta.» (antes «Toca o agita para preguntar. Mantén presionado para hablar.»); «Suelta para preguntar · Desliza fuera para cancelar»; «Haz una pregunta de sí o no.»; «No lo veo claro. Pregúntame otra vez.» (antes «Prueba otra vez luego.»); «Una pregunta en silencio»; «Mantén presionado y pregunta otra vez en voz alta.»; «Volver a Recientes»; «Detener la lectura» |
+| Voz y micrófono | «Sin micrófono, la bola no te oye.», «Permitir», «Abrir ajustes», «No te he oído.», «Mantén presionado y pregunta en voz alta.» y «Este dispositivo no puede escuchar preguntas.» |
+| Sin IA y pregunta delicada | «Ya usaste las de hoy. Vuelven mañana.», «Ver un anuncio», «Reintentar», «Hazte Premium», «· sin conexión», «Esto no lo puede responder un juguete.», «Si es urgente, llama al 112. Si no, habla con alguien de confianza.» y «Dónde pedir ayuda» |
 | Anuncios | «Cargando un anuncio…», «No hay anuncios ahora. Prueba en un rato.» y «Listo: la IA vuelve a responder.» |
-| Modo fiesta | «Turno de Ana» (antes «Ana, te toca»), «Salir del modo fiesta», «Modo fiesta desactivado», «Le toca a Leo», «Elegir otra vez», «La bola anuncia el turno de cada persona», «Personas», «Añadir persona», «Quitar a Leo» y «Ana quitada» |
+| Modo fiesta | «Turno de Ana» (antes «Ana, te toca»), «Salir del modo fiesta», «Modo fiesta desactivado», «Le toca a Leo», «Elegir otra vez», «La bola anuncia el turno de cada persona», «Personas», «Añadir persona», «Quitar a Leo» y «Has quitado a Marta» |
 | Valorar y reportar | «No me gustó», la cabecera «Reportar» y «Gracias por decírnoslo» |
 | Recientes | «Ayer» y «Respuesta borrada» |
-| Opciones | «Entrar» y «Los personajes sabrán quién pregunta» (antes la tarjeta «Respuestas a tu medida»); los resúmenes «Activadas», «Ya usaste las de hoy», «Preguntas y respuestas», «Sin micrófono», «Desactivado» y «Bloqueadas en Android»; «Menos movimiento» y «Sin giros ni saltos: la bola cambia con fundidos»; «Con la tecnología de Gemini» (antes «Powered by Gemini») |
+| Opciones | «Entrar» y «Los personajes sabrán quién pregunta» (antes la tarjeta «Respuestas a tu medida»); los resúmenes «Activadas», «Ya usaste las de hoy», «Preguntas y respuestas», «Sin micrófono», «Desactivado» y «Bloqueadas»; «Menos movimiento» y «Sin giros ni saltos: la bola cambia con fundidos»; «Con la tecnología de Gemini» (antes «Powered by Gemini») |
 | Ajustes | El aviso de Respuestas con IA: «Vuelven mañana. Mientras, la bola responde con sus frases de siempre.», «Ver un anuncio» y «Un anuncio corto y sigues con la IA.». El de Voz: «Sin él, solo puedes tocar o agitar.». La nota de Notificaciones, ahora con punto. En Licencias, «Bibliotecas» y las descripciones de Fraunces, Outfit e Inter |
-| Personajes | «Es el que responde ahora»; la descripción de la Bruja, sin la coma; «Aún no has creado ninguno» y «Elige su color, su accesorio y cómo responde.»; «De @…» y la nota de Comunidad; «Más opciones», «Reportar personaje», «¿Qué pasa con este personaje?», sus seis motivos y «Reportado. Gracias.»; «Bloquear a @…», «¿Bloquear a @…?», «Dejarás de ver sus personajes en Comunidad.», «Bloquear» y «@… bloqueado»; «Creado por ti», «En Comunidad», «Editar», «Borrar» y «… borrado» |
-| Editor | «Editar personaje», «Color · …», «Accesorio · …», los nombres de los colores y de los accesorios, «Compartir en Comunidad», «Otras personas podrán verlo y usarlo», «Esta descripción no se puede usar.», «Este nombre no se puede usar.», «¿Descartar el personaje?», «¿Descartar los cambios?», «Se pierde lo que has escrito.», «Descartar», «Seguir editando» y la nota «Se envía a Gemini, de Google, para responder. No pongas datos personales.» |
+| Personajes | «Es quien responde ahora»; la descripción de la Bruja, sin la coma; «Aún no has creado ninguno» y «Elige su color, su accesorio y cómo responde.»; «De @…» y la nota de Comunidad; «Más opciones», «Reportar personaje», «¿Qué pasa con este personaje?», sus seis motivos y «Reportado. Gracias.»; «Bloquear a @…», «¿Bloquear a @…?», «Dejarás de ver sus personajes en Comunidad.», «Bloquear» y «@… bloqueado»; «Creado por ti», «En Comunidad», «Editar», «Borrar» y «… borrado» |
+| Editor | «Editar personaje», «Color · …», «Accesorio · …», los nombres de los colores y de los accesorios, «Compartir en Comunidad», «Otras personas podrán verlo y usarlo», «Esta descripción no se puede usar. Cámbiala y vuelve a guardar.», «Este nombre no se puede usar.», «¿Descartar el personaje?», «¿Descartar los cambios?», «Se pierde lo que has escrito.», «Descartar», «Seguir editando» y la nota «Se envía a Gemini, de Google, para responder. No pongas datos personales.» |
 | Cuenta | «Entrando con Google», «No se pudo entrar con Google», «No hay conexión. Todo sigue como estaba.» y «Google no responde. Todo sigue como estaba.»; el texto de «Qué se envía a Gemini, de Google»; «Día», «Mes» y «Año»; «Ahora no» (antes «Continuar sin cuenta»); la nota de menores y «Continuar»; los apoyos de Tu cuenta; el cuerpo de «¿Eliminar tu cuenta?» y «Premium se sigue cobrando hasta que lo canceles.»; «No se pudo eliminar la cuenta. Prueba otra vez.» y «Cuenta eliminada» |
 | Premium | Las cuatro ventajas y las condiciones; «No se pudo cargar el precio» y «Google Play no responde. Sin el precio no puedes suscribirte.»; «Ya tienes Premium» y su texto; «Pago pendiente. Se activa cuando Google Play lo confirme.»; «Hasta el … No se renovará.»; «No se pudo cobrar Premium», «Actualiza el pago antes del … o perderás Premium.» y «Arreglar en Google Play»; «Premium está en pausa» y «Actualiza el pago en Google Play para recuperarlo.» |
 | Compartir | «Publicación», «Historia» e «Incluir la pregunta» |
-| Reloj | «Otra vez», «Móvil desconectado», «Responde con sus frases de siempre» y «Sin micrófono solo puedes tocar o agitar.» |
+| Reloj | «Otra vez», «Teléfono desconectado», «Responde con sus frases de siempre.» y «Sin micrófono solo puedes tocar o agitar.» |
 
 ### Pendiente de decidir
 
@@ -1354,8 +1353,6 @@ Hay que añadirlos o cambiarlos en los tres idiomas:
 - Cuántos reportes ocultan un personaje y cómo se recurre.
 - Dónde se desbloquea a alguien (propuesta: «Tu cuenta › Personas bloqueadas»; sin cuenta, en este
   móvil).
-- Dónde van «Reportar personaje» y «Bloquear a @…»: en el menú ⋮ de `LP62FichaComunidad`, que la
-  sección 9 no construye («Qué no se construye»), o en filas de una hoja.
 - Si los personajes de Comunidad salen solo de la paleta del editor: Abuela Remedios y El Cuñao
   llevan los colores de los ejemplos de Premium, que no están en ella.
 
@@ -1392,8 +1389,6 @@ Hay que añadirlos o cambiarlos en los tres idiomas:
   la bola, a Opciones, a Respuestas con IA y al reloj.
 - El aviso del micrófono en la bola: «Sin micrófono, la bola no te oye.» o «Sin micrófono solo
   puedes tocar o agitar.», que repite la ayuda y es el del reloj.
-- «Ver un anuncio» (`LP11IA`) o «Ver anuncio» (`LP47LimiteIA`, `LP49Recompensa`): uno solo para los
-  dos sitios.
 - El error de la fecha: «Fecha no válida» (sección 9) o «Esa fecha no existe» (`LP30Estados`).
 - El nombre del interruptor «Agitar para preguntar» (sección 8): agitar da una respuesta sin
   pregunta, como tocar.
