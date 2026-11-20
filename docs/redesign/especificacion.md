@@ -28,47 +28,403 @@ disponible dividido entre 200.
 La bola se inclina unos grados según el estado (entre −16° y 10°). Los accesorios y la cara giran
 con ella.
 
-## 2. Colores de la interfaz
+## 2. Tokens: color, tono, tipo, espacio y forma
 
 Variante Luz ([ADR 0004](adr/0004-componentes-luz.md)): un único acento, el cobalto; el resto del
-color lo ponen los oráculos.
+color lo ponen los oráculos. Las medidas van en dp, la letra en sp y los tiempos en ms, salvo que se
+diga otra cosa.
 
-| Token | Valor | Uso |
+**Dónde viven.** Todos los tokens están en `:core:designsystem`, en Kotlin común
+([ADR 0002](adr/0002-diseno-listo-para-kmp.md)). Son objetos inmutables (`@Immutable`) que
+`LuzTheme { }` provee con `staticCompositionLocalOf`, y se leen así: `LuzTheme.colors.accent`,
+`LuzTheme.type.rowTitle`. Ninguna pantalla escribe un color, un tamaño de letra, una medida, un
+tiempo ni una curva. Si falta uno, se añade aquí.
+
+| Objeto | Qué lleva | Cambia con la app abierta |
 |---|---|---|
-| `bg` | `#030B14` | Fondo de las pantallas |
-| `surface` | `#0D1824` | Grupos de filas y hojas |
-| `control` | `#16222F` | Botones secundarios, selector, botones de icono |
-| `pressed` | `#1E2C3B` | Controles y filas pulsados |
-| `line` | Blanco al 8 % | Separadores y contorno de los controles |
-| `text` | `#F2F5F8` | Texto principal |
-| `icon` | `#C9D1DA` | Iconos y notas sobre avisos |
-| `textSecondary` | `#9AA7B4` | Texto secundario |
-| `disabled` | `#808D9A` | Texto desactivado; sobre `#16222F` llega a 4,5:1 |
-| `outline` | `#6B7886` | Contorno del interruptor apagado y de los campos |
-| `pageDot` | `#56626F` | Puntos de las páginas que no se ven |
-| `scrim` | `#01060C` al 72 % | Velo detrás de hojas y diálogos |
-| `accent` | `#4361EE` | Botón principal y acento único |
-| `accentPressed` | `#3B55D1` | Botón principal pulsado |
-| `check` | `#7C96FF` | ✓ de lo elegido |
-| `link` | `#A9BCFF` | Enlaces y anillo de foco |
-| `selected` | `#152240` | Fondo de lo elegido |
-| `tonal` / `onTonal` | `#1D2C4E` / `#C9D6FF` | Botón tonal dentro de filas |
-| `warning` | `#FFB547` sobre `#21190C` | Solo avisos que piden atención, con su acción dentro |
-| `error` | `#FF8A8A`; `#2A1418` en el botón de borrar | Solo el error de un campo y las acciones que borran |
-| `eye` | `#16171D` | Ojos |
+| `LuzColors` | Primitivas y roles de color | No |
+| `OracleColors` | Los roles del personaje que responde | Al cambiar de personaje |
+| `LuzTypography` | La escala de letra | No |
+| `LuzSpacing`, `LuzShapes`, `LuzSizes` | Espaciado, radios y tamaños | No |
+| `LuzMotion` | Duraciones, curvas y si se reduce el movimiento | Al cambiar «Reducir movimiento» |
+| `LuzHaptics` | La vibración, como interfaz común que implementa cada plataforma | No |
 
-Tipografía:
+### Color: primitivas
 
-| Estilo | Letra | Uso |
+| Familia | Pasos |
+|---|---|
+| Cobalto | 900 `#152240` · 800 `#1D2C4E` · 700 `#263A66` · 600 `#3B55D1` · 500 `#4361EE` · 300 `#7C96FF` · 200 `#A9BCFF` · 100 `#C9D6FF` |
+| Noche | 990 `#01060C` · 950 `#030B14` · 900 `#0D1824` · 800 `#16222F` · 750 `#1E2C3B` · 700 `#263647` (nuevo) |
+| Niebla | 50 `#F2F5F8` · 200 `#C9D1DA` · 300 `#9AA7B4` · 500 `#808D9A` · 600 `#6B7886` · 700 `#56626F` |
+| Ámbar | 500 `#FFB547` · 600 `#E9A43F` · 900 `#2A1A00` · 950 `#21190C` |
+| Coral | 400 `#FF8A8A` · 900 `#3A1C22` · 950 `#2A1418` |
+| Sueltos | Blanco `#FFFFFF` · Negro `#000000` · Tinta `#16171D` · Asa `#2A3644` |
+
+Las pantallas y los componentes no usan primitivas: usan roles.
+
+### Color: roles
+
+| Rol | Valor | Uso |
 |---|---|---|
-| Título | Outfit 700, 28 | Título de pantalla. En hojas y diálogos, 21, salvo Premium y la ficha de un personaje, que llevan 28 |
-| Botón | Outfit 600, 16 | Botones y selector de oráculo |
-| Texto | Inter 400 y 600, 16 | Filas y texto |
-| Secundario | Inter 400 y 500, 14 | Descripciones y ayuda |
-| Nota | Inter 600, 12 | Etiquetas y pies |
-| Oráculo | Fraunces 500 | Solo lo que dicen los personajes: 24/30 bajo la bola, 20/26 en las respuestas largas, la ficha y la tarjeta de compartir, 16/22 en Recientes y 15/20 en las muestras de Personajes |
+| `bg` | Noche 950 | Fondo de las pantallas y de la barra superior. Nivel 0 |
+| `surface` | Noche 900 | Grupos sobre el fondo, hojas y diálogos. Nivel 1 |
+| `control` | Noche 800 | Controles; grupos dentro de una hoja o un diálogo. Nivel 2 |
+| `surfaceOverlay` | Noche 750 | Pulsado del nivel 2, aviso breve y etiqueta emergente. Nivel 3. Antes `pressed` |
+| `surfaceHighest` | Noche 700 | Pulsado del nivel 3. Nivel 4 |
+| `text` | Niebla 50 | Texto principal |
+| `contentMedium` | Niebla 200 | Iconos, cuerpo de diálogos y avisos, ayuda de la bola, muestras en Fraunces. Sustituye a `icon`, que ya se usaba como texto |
+| `textSecondary` | Niebla 300 | Texto secundario, cabeceras de grupo, contadores, › y ↗ |
+| `disabled` | Niebla 500 | Contenido desactivado y marcador de los campos |
+| `outline` | Niebla 600 | Contorno de los campos y del interruptor apagado |
+| `outlineVariant` | Blanco al 8 % | Separadores, contorno de los controles y de los diálogos, borde superior de las hojas (antes al 6 %) |
+| `pageDot` | Niebla 700 | Puntos de las páginas que no se ven |
+| `scrim` | Noche 990 al 72 % | Velo detrás de hojas y diálogos |
+| `accent` | Cobalto 500 | Botón principal e interruptor encendido. El único acento |
+| `accentPressed` | Cobalto 600 | Botón principal pulsado |
+| `onAccent` | Blanco | Texto e indicador sobre el cobalto |
+| `accentHighlight` | Blanco al 14 % | Línea interior de 1 en el borde superior del botón principal |
+| `check` | Cobalto 300 | ✓ de lo elegido, pulgar marcado y anillo de la muestra elegida |
+| `selected` | Cobalto 900 | Fondo de lo elegido |
+| `selectedPressed` | Cobalto 800 | Lo elegido, pulsado |
+| `selectedOutline` | Cobalto 300 al 40 % | Contorno de 1 de lo elegido |
+| `link` | Cobalto 200 | Botones de texto |
+| `focusRing` | Cobalto 200 | Anillo de foco y contorno del campo con foco |
+| `cursor` | Cobalto 200 | Cursor y asas de selección de los campos |
+| `textSelection` | Cobalto 200 al 40 % | Fondo del texto seleccionado |
+| `tonal` / `onTonal` | Cobalto 800 / Cobalto 100 | Botón tonal |
+| `tonalPressed` | Cobalto 700 | Botón tonal pulsado |
+| `warning` / `onWarning` | Ámbar 500 / Ámbar 900 | Icono del aviso y botón ámbar |
+| `warningPressed` | Ámbar 600 | Botón ámbar pulsado |
+| `warningContainer` | Ámbar 950 | Fondo del aviso que pide atención |
+| `warningOutline` | Ámbar 500 al 22 % | Contorno del aviso |
+| `error` | Coral 400 | El error de un campo y lo que borra |
+| `errorContainer` | Coral 950 | Fondo del botón de borrar |
+| `errorPressed` | Coral 900 | Botón de borrar pulsado |
+| `errorOutline` | Coral 400 al 22 % | Contorno del botón de borrar |
+| `handle` | Asa | Asa de las hojas y contorno del interruptor desactivado |
+| `ink` | Tinta | Ojos y 8 de la bola, ✓ sobre una muestra de color. Antes `eye` |
+| `watchBg` | Negro | Fondo del reloj |
 
-Toda combinación de texto y fondo cumple 4,5:1.
+- Un color con alfa se compone sobre el fondo real; en Compose, `Color.White.copy(alpha = 0.08f)`.
+- Toda combinación de texto y fondo da 4,5:1 o más. La sección 8 da cada par medido.
+- El botón «Continuar con Google» lleva los colores de la guía de Google (`#131314`, `#8E918F` y
+  `#E3E3E3`). No son roles y no se usan en nada más.
+
+### Tono
+
+No hay sombras: la altura se cuenta con el tono. Cuanto más arriba, más claro.
+
+| Nivel | Rol | Qué va en él |
+|---|---|---|
+| 0 | `bg` | La pantalla y la barra superior |
+| 1 | `surface` | Grupos, hojas y diálogos |
+| 2 | `control` | Controles; grupos dentro de una hoja o un diálogo |
+| 3 | `surfaceOverlay` | Lo pulsado del nivel 2; aviso breve; etiqueta emergente |
+| 4 | `surfaceHighest` | Lo pulsado del nivel 3 |
+
+- Un control va un nivel por encima de su contenedor y nunca por debajo del 2: sobre el fondo, un
+  grupo, una hoja o un diálogo es `control`; dentro de un grupo de una hoja, `surfaceOverlay`.
+- Pulsar sube un nivel. Las superficies se aclaran al pulsar; no se oscurecen.
+- Una fila, un botón de texto y un icono de barra son controles transparentes: en reposo no enseñan
+  su nivel y, pulsados, toman el siguiente. En la pantalla y sus grupos, `surfaceOverlay`; en un
+  grupo de una hoja, `surfaceHighest`.
+- Las sombras que dibuja el lienzo (diálogo 0 20 40 negro al 50 %, aviso breve 0 8 24 negro al 45 %)
+  no se implementan.
+
+**Capas**, de abajo arriba: contenido 0, barra superior 1, aviso breve 2, velo 3, hoja o diálogo 4.
+
+### Colores de cada personaje: `OracleColors`
+
+Cada personaje recibe sus roles a partir de su luz (sección 3), con una fórmula. Nada de esta tabla
+cambia un color de la sección 3.
+
+| Rol | Fórmula | Uso |
+|---|---|---|
+| `light` | La luz de la sección 3 | Origen de los demás |
+| `label` | La luz, si da 4,5:1 sobre `bg` y `surface`; si no, se sube su L* en pasos de 0,5 hasta darlo | «▲ Vidente añade · IA» |
+| `ring` | La luz | Anillo de 2 de los avatares |
+| `aura` | La luz al 24 %, que baja a 0 en el borde | Aura (sección 1) |
+| `rim` | La luz al 70 % | Borde de luz (sección 1) |
+| `tintSurface` | La luz al 14 % sobre `surface` | Fondo teñido, como la vista previa del editor |
+| `tintOutline` | La luz al 24 % | Contorno de 1 del fondo teñido |
+| `triangleTop`, `triangleBottom`, `triangleText` | Los de la sección 3 | Triángulo de la ventana |
+| `shareBackground`, `shareInk` | Pendiente de decidir (abajo) | Tarjeta de compartir |
+
+- Hoy los ocho dan 4,5:1 con su luz, así que `label` es la luz. El más justo es el Pirata: 5,25:1
+  sobre `bg` y 4,76:1 sobre `surface`.
+- La etiqueta en color solo va sobre `bg` o `surface`. Sobre `control`, `selected`, el tinte o en el
+  reloj, el nombre va en `text` y el color lo ponen el ▲ y el anillo: allí el Pirata daría 4,2:1.
+- Un test unitario calcula estos roles para cada personaje y comprueba el 4,5:1.
+
+**Pendiente de decidir** (va en una propuesta aparte para el dueño):
+- Los cuatro colores de la sección 3 que no llegan a ΔE00 18 frente a la interfaz. Opciones ya
+  medidas:
+  - Genio: (a) se queda `#F2B84B`, a 4 del ámbar; (b) `#E8D27A`, a 14,4 del ámbar, que no llega a 18
+    y queda a 16 del Robot; (c) `#ECDC51`, a 18 del ámbar pero a 12 del Robot.
+  - Vidente `#CC60FB` (18,1), Astróloga `#F692CE` (18,2) o `#F28FD0` (19,2) y Filósofo `#DFBFAA`
+    (18,2). Todos dan 6,2:1 o más sobre `bg`.
+- El fondo y la tinta de la tarjeta de compartir: (a) `#E4DBFF` fijo, que solo sirve a la Vidente
+  (la etiqueta en el color del personaje da 1,72:1 con el Genio, 1,83:1 con el Mago y 1,48:1 con el
+  Robot); (b) la luz al 18 % sobre `#FBF9F7`, con la etiqueta en `ink`.
+
+### Letra
+
+La escala es cerrada: un estilo que no está en la tabla no existe. Dentro de un estilo solo cambia
+el color.
+
+| Token | Letra | Tamaño / interlineado | Uso |
+|---|---|---|---|
+| `screenTitle` | Outfit 700 | 28/34 | Título de pantalla; título de Premium y de la ficha |
+| `sheetTitle` | Outfit 700 | 21/28 | Título de hojas, diálogos y estado vacío |
+| `verdict` | Outfit 600 | 20/26 | El veredicto bajo la bola, «Sí, sin duda.» |
+| `barTitle` | Outfit 600 | 18/24 | Título pequeño de la barra plegada |
+| `button` | Outfit 600 | 16/20 | Botones y nombre del selector |
+| `chip` | Outfit 600 | 15/20 | Chips; cabeceras de lista del reloj |
+| `transcript` | Inter 400 | 18/26 | Lo que la bola va oyendo |
+| `body` | Inter 400 | 16/23 | Ayuda de la bola, texto de los campos, ventajas de Premium |
+| `bodySmall` | Inter 400 | 15/22 | Cuerpo de diálogos y del estado vacío; la pregunta, en el título |
+| `supporting` | Inter 400 | 14/20 | Segunda línea de las filas; cuerpo de los avisos |
+| `caption` | Inter 400 | 12/16 | Ayuda y contador de los campos, notas y pies |
+| `emphasisLarge` | Inter 500 | 18/26 | «Prueba otra vez luego.» |
+| `emphasis` | Inter 500 | 15/20 | Aviso breve; opciones del reloj |
+| `emphasisSmall` | Inter 500 | 13/18 | Racha y etiqueta emergente |
+| `rowTitle` | Inter 600 | 16/22 | Título de las filas |
+| `noticeTitle` | Inter 600 | 15/21 | Título de los avisos y de tarjetas como «Qué se envía a Gemini, de Google» |
+| `sectionLabel` | Inter 600 | 13/18 | Etiqueta de campo, cabecera de grupo, «Te escucho…» |
+| `tag` | Inter 600 | 12/16 | Etiquetas, «▲ Vidente añade · IA» y «Responde como», que pasa de 11 a 12 |
+| `oracleLarge` | Fraunces 500 | 24/30 | La frase bajo la bola |
+| `oracleMedium` | Fraunces 500 | 20/26 | Respuesta larga, ficha, tarjeta de compartir y vista previa del editor |
+| `oracleSmall` | Fraunces 500 | 16/22 | Recientes |
+| `oracleXSmall` | Fraunces 500 | 15/20 | Muestras en Personajes |
+| `shareDisplay` | Outfit 700 | 44/46, espaciado −0,5 | Solo la respuesta de la tarjeta de compartir |
+
+- Todos los estilos llevan `letterSpacing = 0.sp`, salvo `shareDisplay`, y
+  `lineHeightStyle = LineHeightStyle(Alignment.Center, Trim.None)`.
+- **Trampa de Material 3:** el `Text` de M3 hereda `LocalTextStyle`, que por defecto es `bodyLarge`,
+  con 0,5 sp de espaciado; `bodyMedium` lleva 0,25. Los componentes Luz pasan siempre su `TextStyle`
+  entero y nunca leen `MaterialTheme.typography`.
+- **Archivos**, en `composeResources/font`, con solo los caracteres latinos:
+  - Inter 400, 500 y 600; Outfit 600 y 700.
+  - Fraunces 500 en un corte estático con sus ejes fijados (wght 500, SOFT 30, opsz 24, WONK 0),
+    hecho con `fonttools varLib.instancer`. Así se ve como en el lienzo, que usa
+    `'SOFT' 30, 'opsz' 24`.
+  - Google Sans Medium, solo para el botón de Google.
+- Las líneas de títulos y frases se equilibran con `lineBreak = LineBreak.Heading`.
+- El texto del triángulo (Inter Bold de 9 unidades) se dibuja en la bola y sigue la sección 1, no
+  esta escala.
+
+### Espacio
+
+Escala: 2, 4, 6, 8, 12, 16, 20, 24, 32 y 40 (`LuzSpacing.s2` … `s40`). No hay otros valores. Donde
+el lienzo usa 3, 10, 14 o 66, mandan esta escala y la medida que da cada componente en la sección 9.
+
+| Constante | Valor |
+|---|---|
+| Margen lateral de la pantalla | 16 |
+| Título de pantalla, cabeceras de grupo y título de las hojas | Texto a 20 del borde de la pantalla o de la hoja; en los diálogos, a 24 del borde del diálogo |
+| Relleno de una fila | 12 arriba y abajo, 16 a los lados |
+| Separación entre las piezas de una fila | 16 |
+| Texto de una fila con icono | A 56 del borde del grupo y a 72 del de la pantalla, como en los avisos |
+| Texto de una fila con avatar de 40 | A 72 del borde del grupo y a 88 del de la pantalla |
+| Entre dos grupos | 12; con cabecera, 20 hasta la cabecera y 8 hasta el grupo |
+| Diálogo | A 24 de los bordes de la pantalla |
+| Acciones de la bola | 20 por encima de la barra de navegación; 16 en pantallas bajas (sección 8) |
+| Hojas | 16 a los lados; abajo, 16 por encima de la barra de navegación |
+
+### Forma
+
+| Radio | Dónde |
+|---|---|
+| 12 | Chips y etiqueta emergente |
+| 16 | Botones, botones de icono, campos, aviso breve y losas de accesorio |
+| 24 | Grupos, avisos que piden atención y losa del estado vacío |
+| 28 | Diálogos |
+| 32 | Hojas, solo en las esquinas de arriba |
+| Completo | Interruptor, etiquetas, avatares, muestras de color, puntos de página, asa y la bola |
+
+- El anillo de foco lleva el radio del control más 4: 16 → 20, 12 → 16. Un círculo sigue siendo un
+  círculo.
+- Las filas no tienen radio propio: el grupo recorta las esquinas de la primera y la última.
+
+### Tamaños
+
+| Pieza | Medida |
+|---|---|
+| Botones con relleno | 52 de alto |
+| Botones de texto y de icono | 48; los de icono de la fila de la respuesta, 52 |
+| Campo | 56 |
+| Chip | 36, con objetivo táctil de 48 |
+| Etiqueta | 24 |
+| Objetivo táctil | 48 × 48 como mínimo |
+| Filas | 56 con una línea; 66 con dos, lo que da su contenido (12 + 22 + 20 + 12); 72 con avatar de 40 |
+| Barra superior | 56 |
+| Título de pantalla | 64 |
+| Asa de la hoja | 36 × 4, en una zona de 48 × 24 |
+| Bola | 250 en el móvil, que baja a 160 si no cabe (sección 8); 112 en el reloj |
+| Muestra de color | 40, con objetivo de 48 |
+| Losa de accesorio | 52 |
+| Avatares | 28 (reloj), 32 (selector y botón de avatar), 36 (Recientes y losas), 40 (filas de personaje), 64 (cabecera de Premium e inicial de la cuenta) y 88 (ficha) |
+| Indicador circular | 18 dentro de un botón; 24 suelto |
+| Punto de página | 6 |
+
+Todas las alturas son mínimas (`heightIn(min = …)`): crecen con la letra (sección 8).
+
+### Iconos
+
+Una sola familia, Lucide, de trazo. Tamaños: 14, 16, 18, 22 y 24. El trazo mide 2 a cualquier tamaño
+(lo que Lucide llama `absoluteStrokeWidth`): el `ImageVector`, dibujado sobre 24, lleva un trazo de
+2 × 24 / tamaño. La única excepción es el icono de 32 de la losa del estado vacío. El logotipo «G»
+de Google no es de Lucide: mide 20 y no se cambia. La › del final de las filas, que el lienzo dibuja
+a 20, pasa a 18, como la ↗.
+
+| Tamaño | Dónde |
+|---|---|
+| 14 | Insignias: ✓ en la esquina de una losa, icono de una etiqueta, chispa de la racha |
+| 16 | En línea con el texto: ✓ del chip, ✕ del chip de nombre, flecha del selector, bandera de «Respuesta reportada» |
+| 18 | Botones con icono, › y ↗ al final de las filas, ✓ de la muestra de color y del reloj |
+| 22 | Barra superior, botones de icono, inicio de las filas y ✓ de las filas |
+| 24 | Icono de los avisos que piden atención |
+
+| Uso | Icono |
+|---|---|
+| Recientes · Opciones | `history` · `sliders-horizontal` |
+| Atrás, Volver a la bola · abre una pantalla · selector | `chevron-left` o `chevron-right` · `chevron-right` · `chevron-down` |
+| Cerrar, Cancelar, Quitar · Añadir, Crear un personaje | `x` · `plus` |
+| Leer en voz alta · Detener la lectura | `volume-2` · `square` |
+| Compartir, Compartir la app · Buena y mala respuesta · Respuesta reportada | `share-2` · `thumbs-up`, `thumbs-down` · `flag` |
+| Borrar respuesta, Eliminar cuenta | `trash-2` |
+| Premium · Respuestas con IA · Respuestas más largas · racha | `crown` · `sparkles` · `text-align-start` · `sparkle` |
+| Voz · aviso del micrófono | `mic` · `mic-off` |
+| Modo fiesta · «¿Quién del grupo…?» | `party-popper` · `users` |
+| Notificaciones · aviso de notificaciones · límite de IA · error | `bell` · `bell-off` · `clock` · `circle-alert` |
+| Idioma · Privacidad de anuncios · Política de privacidad · Términos de uso | `globe` · `shield` · `lock` · `file-text` |
+| Licencias · Contacto · sale de la app | `info` · `mail` · `external-link` |
+| Tu cuenta, Tu perfil · Cerrar sesión | `user` · `log-out` |
+| Sin anuncios · Tus propios personajes · El tono que describas | `megaphone-off` · `palette` · `quote` |
+| Lo elegido | `check` |
+
+### Opacidades
+
+Las de la interfaz son estas; las de la bola están en la sección 1. 0,08 (líneas), 0,14 (brillo del
+botón principal y tinte), 0,22 (contornos ámbar y coral), 0,24 (aura y contorno del tinte), 0,30
+(pista del indicador), 0,40 (contorno de lo elegido y selección de texto), 0,70 (borde de luz) y
+0,72 (velo). Lo desactivado no usa opacidad: cambia de color.
+
+### Movimiento: `LuzMotion`
+
+| Duración | ms | Uso |
+|---|---|---|
+| `short1` | 90 | Entrada del pulsado |
+| `short2` | 150 | Salida del pulsado, interruptor, chips, barra al desplazar, puntos de página y salida de diálogo y aviso breve |
+| `medium1` | 200 | Entrada de diálogo y aviso breve; fundidos de «Reducir movimiento» |
+| `medium2` | 250 | Salida de la hoja y fila que se borra |
+| `long1` | 350 | Entrada de la hoja |
+
+| Curva | Valores | Uso |
+|---|---|---|
+| `standard` | `CubicBezierEasing(0.2f, 0f, 0f, 1f)` | Lo que cambia sin entrar ni salir: pulsado, interruptor, chips, fila borrada, barra, puntos |
+| `emphasizedDecelerate` | `CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)` | Lo que entra: hoja, diálogo y aviso breve; la bola al ir a su sitio (sección 6) |
+| `emphasizedAccelerate` | `CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)` | Lo que sale: hoja, diálogo y aviso breve |
+| `smoothstep` | u² (3 − 2u), igual que `CubicBezierEasing(1/3, 0, 2/3, 1)` | Ida y vuelta: flotar y latir de la bola, pulso de las filas esqueleto |
+| `easeOutCubic` | 1 − (1 − u)³, igual que `CubicBezierEasing(1/3, 1, 2/3, 1)` | Lo que llega y se frena en la bola (sección 6) |
+
+`smoothstep` y `easeOutCubic` son las curvas que usa el lienzo para la bola; en código se escriben
+como `Easing { u -> … }`, con su fórmula exacta.
+
+| Pieza | Entra | Sale |
+|---|---|---|
+| Pulsado | 90 `standard`: tono siguiente y escala 0,98 | 150 `standard` |
+| Hoja y su velo | 350 `emphasizedDecelerate`: sube desde abajo | 250 `emphasizedAccelerate` |
+| Diálogo y su velo | 200 `emphasizedDecelerate`: fundido y escala de 0,96 a 1 | 150 `emphasizedAccelerate`: fundido |
+| Aviso breve | 200 `emphasizedDecelerate`: fundido y 8 hacia arriba | 150 `emphasizedAccelerate`: fundido |
+| Interruptor | 150 `standard`: el círculo se desliza y cambia de tamaño; los colores se cruzan | Igual |
+| Chip elegido | 150 `standard`: entra la ✓ y cambia el ancho | Igual |
+| Fila borrada | — | 250 `standard`: se funde y se pliega su alto |
+| Barra superior al desplazar | 150 `standard`: fondo opaco, línea y título pequeño, con fundido | Igual |
+| Puntos de página | 150 `standard`: cruce de color | — |
+| Indicador circular | Una vuelta por segundo, lineal | — |
+| Filas esqueleto | Opacidad de 0,6 a 1 en 600 y de vuelta en 600, `smoothstep` | — |
+| Anillo de foco | Sin animación | — |
+| Toda la bola | Sección 6 | — |
+
+Tokens propios de la bola, que usa la sección 6: el halo sube en 50 y baja en 200; el parpadeo
+cierra en 50 y abre en 70; el cambio entre dos gestos de ojos cerrados dura 300; los fundidos de
+«Reducir movimiento», 200.
+
+**Con «Reducir movimiento»** (cómo se detecta, en la sección 8) no hay escala, ni desplazamiento, ni
+giro: solo fundidos.
+
+| Pieza | Con «Reducir movimiento» |
+|---|---|
+| Pulsado | Solo el tono, sin escala |
+| Hoja | Fundido de 200 al entrar y de 150 al salir, sin subir |
+| Diálogo | Fundido de 200, sin escala |
+| Aviso breve | Fundido, sin desplazamiento |
+| Interruptor | El círculo cambia de sitio sin deslizarse; los colores, con fundido de 150 |
+| Chip | La ✓ y el ancho cambian de golpe |
+| Fila borrada | Fundido de 150; las de debajo suben sin animación |
+| Filas esqueleto | Quietas, al 100 % |
+| Paginador | Los botones de la barra saltan de página (`scrollToPage`) en lugar de deslizar; el deslizamiento con el dedo sigue igual |
+| Indicador circular | Sigue girando: es lo que dice que algo está pasando |
+| La bola | Sección 6 |
+
+### Háptica: `LuzHaptics`
+
+Es una interfaz común que implementa cada plataforma (ADR 0002). En Android usa
+`View.performHapticFeedback`, que ya respeta la respuesta táctil del sistema.
+
+| Momento | Android | Antes de la API que pide |
+|---|---|---|
+| Tocar la bola o despertarla | `CLOCK_TICK` | — |
+| Empezar a escuchar | `LONG_PRESS` | — |
+| Llega el triángulo; cae el accesorio nuevo; cada caída de la celebración | `CONFIRM` (API 30) | `VIRTUAL_KEY` |
+| Error de un campo al guardar | `REJECT` (API 30) | `VIRTUAL_KEY` |
+| Encender o apagar un interruptor | `TOGGLE_ON` / `TOGGLE_OFF` (API 34) | `VIRTUAL_KEY` |
+| Cada sacudida al agitar | Composición de `PRIMITIVE_TICK` (API 30) | `CLOCK_TICK` |
+
+- La composición del agitado usa `Vibrator` con `USAGE_TOUCH`, para que el sistema la silencie
+  cuando la respuesta táctil está apagada.
+- Nada más vibra: ni botones, ni filas, ni chips.
+
+### Ventana
+
+| Ancho de la ventana | Qué cambia |
+|---|---|
+| Menos de 600 | Las pantallas tal como están dibujadas |
+| 600 o más | La columna de contenido se centra con 560 como máximo; los diálogos miden 400 como máximo y las hojas 640; la bola sigue en 250 |
+
+- La clase se lee con `currentWindowAdaptiveInfo().windowSizeClass`.
+- Con `targetSdk` 36, Android 16 no respeta el bloqueo de orientación en pantallas de 600 o más. El
+  diseño en horizontal está pendiente (sección 7).
+
+### Si se envuelve un componente de Material 3
+
+Los componentes Luz no leen `MaterialTheme`. Si uno envuelve un componente de M3 (`Switch`,
+`ModalBottomSheet`, `SnackbarHost`, `TooltipBox`), lo pone dentro de `LuzMaterialTheme`:
+
+- Sin color dinámico: nunca `dynamicDarkColorScheme`.
+- Sin ripple: `LocalRippleConfiguration provides null` y `LocalIndication provides LuzIndication`,
+  un `IndicationNodeFactory` que dibuja el pulsado y el foco de Luz.
+- Con `typography` hecha de estilos Luz, todos con espaciado 0: `bodyLarge` → `body`, `bodyMedium` →
+  `supporting`, `bodySmall` → `caption`, `labelLarge` → `button`, `titleLarge` → `sheetTitle`,
+  `titleMedium` → `rowTitle`.
+- Con este `ColorScheme`. Es solo una red de seguridad: cada envoltorio pasa además sus colores
+  explícitos (`SwitchDefaults.colors(…)`, `containerColor`, `scrimColor`).
+
+| M3 | Luz |
+|---|---|
+| `primary` / `onPrimary` | `accent` / `onAccent` |
+| `primaryContainer` / `onPrimaryContainer` | `selected` / `text` |
+| `secondaryContainer` / `onSecondaryContainer` | `tonal` / `onTonal` |
+| `background`, `surface`, `surfaceContainerLowest` | `bg` |
+| `surfaceContainerLow`, `surfaceContainer` | `surface` |
+| `surfaceContainerHigh`, `surfaceVariant` | `control` |
+| `surfaceContainerHighest` | `surfaceOverlay` |
+| `onBackground`, `onSurface` / `onSurfaceVariant` | `text` / `textSecondary` |
+| `outline` / `outlineVariant` | `outline` / `outlineVariant` |
+| `inverseSurface` / `inverseOnSurface` / `inversePrimary` | `surfaceOverlay` / `text` / `link`, que usa el aviso breve de M3 |
+| `error` / `errorContainer` / `onErrorContainer` | `error` / `errorContainer` / `error` |
+| `scrim` | Noche 990; el 72 % lo pone `scrimColor` |
 
 ## 3. Oráculos
 
@@ -95,6 +451,18 @@ sí: 31 y 18,5.
 
 Robot y Pirata ya son estilos de respuesta de la app; son los primeros que reciben su aspecto.
 
+Pendiente de decidir, en el tablero «Propuestas para decidir»:
+
+- **Colores:** Vidente `#BC4BFF`, Genio `#F5CB45`, Mago `#45D3F2`, Filósofo `#B0A08A` y Astróloga `#FF7EC8`, con el
+  ámbar de los avisos en `#FF9F43`. Así todos quedan a ΔE00 18 o más de la interfaz y a 19,6 o más entre ellos.
+- **Siluetas y miradas que se lean a 48 px:**
+  - el moño dorado del Genio en lugar de la gota, y sin humo;
+  - la calma de la Vidente, más curva;
+  - la Bruja mirando de reojo;
+  - las gafas de pasta del Filósofo;
+  - la luna pegada a la Astróloga, que la mira;
+  - el Mago sin ala y la Bruja con ala ancha.
+
 ## 4. Catálogo de expresiones
 
 Todas las expresiones se dibujan solo con los ojos. Cada ojo mide 7,6 de ancho y su centro está en
@@ -116,7 +484,25 @@ x = 87 y x = 113.
 | Pantallas (Robot) | Rectángulos de 10 × 7 con esquinas de 2; su «sí» son dos ángulos rellenos de 11 × 8,5 |
 | Parche (Pirata) | Tapa el ojo izquierdo; el derecho lleva la mirada de pícaro |
 
-La Bruja y el Pirata dicen que no con su mirada de pícaros: la cabeza que niega ya da el veredicto.
+| Sin respuesta | Dos puntos de 5,5 × 5,5: no es la mirada de ningún veredicto |
+| Pantallas bajas (Robot) | Barras de 10 × 3; bajadas 3 para decir que no |
+
+Cada personaje tiene su versión de cada mirada. Está dibujada en el tablero «Miradas de cada personaje»:
+
+| Personaje | Reposo | Al agitarse | Sí | No | Quizá |
+|---|---|---|---|---|---|
+| Vidente | Cerrados con calma | `> <` | Felices | Caídos | Quizá |
+| Genio | Felices | `> <` | Felices | Caídos | Quizá |
+| Bruja | Pícara | `> <` | Felices | Pícara | Quizá |
+| Mago | Abiertos | `> <` | Felices | Caídos | Quizá |
+| Filósofo | Medio cerrados | `> <` | Felices | Caídos | Quizá |
+| Astróloga | Mirando arriba | `> <` | Felices | Caídos | Quizá |
+| Robot | Pantallas | Pantallas bajas | Ángulos | Pantallas bajas y caídas | Una pantalla y una baja |
+| Pirata | Pícaro, con un ojo | Cerrado con calma | Feliz | Pícaro | Medio cerrado |
+
+- **Robot:** nunca pasa a ojos humanos.
+- **Pirata:** lo dice todo con el ojo que no tapa el parche; su `<` al agitarse se leería como un guiño.
+- **Mientras gira, todos cierran los ojos con calma:** el Robot apaga sus pantallas.
 
 ## 5. La ventana de respuesta
 
@@ -125,7 +511,12 @@ La Bruja y el Pirata dicen que no con su mirada de pícaros: la cabeza que niega
   así que con la ventana delante se ve igual que con la cara.
 - En la ventana van de una a tres palabras, en mayúsculas y en dos líneas como máximo: «SÍ, SIN
   DUDA», «CONCEDIDO», «NI LO SUEÑES».
-- La frase con más personalidad va debajo de la bola, en el texto de la pantalla.
+- La frase con más personalidad va debajo de la bola, en el texto de la pantalla, después del veredicto
+  escrito (§7).
+- El triángulo es opaco. Sube tapado por una niebla de `#0E1550` al 85 % que se aclara en 450 ms, así que nunca
+  se ve un triángulo traslúcido. Hacia los 450 ms toca el cristal (sube 1,2 de más) y se asienta en 150 ms; ahí
+  vibra. Al hundirse, la niebla vuelve.
+- Mientras se lee, todo se calma: la bola flota ±1,5 y el triángulo ±0,4, sin girar.
 - El triángulo toma el color del oráculo. Su texto cumple 4,5:1 sobre ese color; en el Genio, el Mago
   y el Robot por eso es oscuro.
 - Cada línea cabe dentro del triángulo con 2,5 de margen a cada lado, medido en lo alto de sus
@@ -140,11 +531,11 @@ Ciclo de referencia del lienzo, de 7,5 s:
 |---|---|---|
 | Reposo | 0–0,9 s | Flota ±3 unidades, tres ondas por ciclo, con la mirada del oráculo. Si la mirada tiene los ojos abiertos, parpadea a 0,45 s |
 | Escuchando | 0,9–1,7 s | Los ojos se abren en un parpadeo y pasan a 8,6 × 21, la bola se inclina de −5° a −12° y el halo late suave: un 18 % más, a 2,4 Hz |
-| Se agita | 1,7–2,3 s | 3,5 sacudidas que se apagan. El cuerpo va ±5 unidades y se mece ±4°; la cara le sigue 25 ms después, deslizándose ±3,9° sobre la bola, y los ojos, apretados en `> <`, un poco más tarde. Las puntas de los sombreros, la antena y el moño se balancean |
-| Gira | 2,3–3,1 s | Media vuelta sobre su eje vertical: 5° hacia el otro lado en 0,12 s, el giro en 0,52 s con la bola 1,8 unidades más alta y 3° de más que se asientan en 0,14 s |
-| La respuesta | 3,1–5,2 s | El triángulo sube 26 unidades del líquido en 0,6 s, flota y el halo se duplica. Antes de volver se hunde en 0,26 s |
-| Vuelve | 5,2–6,0 s | La otra media vuelta, en el mismo sentido y con la misma curva: la ventana sale por la izquierda y la cara entra por la derecha con el gesto de la respuesta |
-| Gesto | 6,0–7,0 s | Sí: se agacha 1,5, salta 10, se aplasta un 3 % al caer y rebota 1,5; el Genio salta 13 y se queda arriba 0,08 s, y el Robot cabecea dos veces. No: niega con la cabeza, ±11°. Quizá: ladea 8°, mira a un lado y sube 2. El Filósofo reacciona 0,15 s tarde y al 70 % |
+| Se agita | 1,7–2,3 s | 3,5 sacudidas que se apagan. El cuerpo va ±5 unidades y se mece ±4°; la cara le sigue 25 ms después, deslizándose ±3,9° sobre la bola, y los ojos, con su mirada de agitarse (§4), un poco más tarde. Las puntas de los sombreros, la antena y el moño se balancean |
+| Gira | 2,3–3,3 s | Cierra los ojos con calma. Media vuelta sobre su eje vertical: 5° hacia el otro lado en 0,12 s y un muelle (ζ 0,8, rigidez 90) que pasa por 180° a los 0,44 s, se pasa 2,7° y se asienta a los 0,86 s sin pararse. La bola sube 1,8 mientras gira |
+| La respuesta | 3,1–5,2 s | El triángulo sube 26 unidades en 0,6 s tapado por una niebla que se aclara en 450 ms, y toca el cristal. El halo se duplica y la bola flota ±1,5. Antes de volver se hunde en 0,26 s y la niebla vuelve |
+| Vuelve | 5,2–6,0 s | La otra media vuelta, en el mismo sentido y con el mismo muelle: la ventana sale por la izquierda y la cara entra por la derecha con su mirada de reposo |
+| Gesto | 6,0–7,0 s | Te mira y parpadea a la mirada del veredicto (§4) mientras anticipa. Sí: se agacha 3 y se aplasta un 4 % en 110 ms, salta 10 estirándose un 2 %, se aplasta un 3 % al caer y rebota 1,5; el Genio salta 13 y se queda arriba 0,08 s, y el Robot cabecea dos veces. No: niega dos veces, 0 → +12° → −12° → +6° → 0 en 0,8 s. Quizá: sube 5 en 140 ms, se queda 220 ms y baja en 300 ms, ladeada 9° y mirando a un lado. El Filósofo reacciona 0,15 s tarde y al 70 % |
 | Reposo | 7,0–7,5 s | El gesto se relaja en la mirada de reposo |
 
 Cómo se dibuja el giro:
@@ -177,15 +568,28 @@ En la app, las fases las disparan los estados y no un reloj fijo:
 | Estado de la app | Animación |
 |---|---|
 | `Idle` | Reposo |
-| `Listening` (mantener pulsado y hablar) | Escuchando. El halo sigue el nivel del micrófono: sube en 50 ms y baja en 200 ms |
+| `Listening` (mantener pulsado y hablar) | Escuchando. El halo sigue el nivel del micrófono en dB: ignora lo que está por debajo de −50 dBFS y lleva de −50 a −10 dBFS a un 0–18 % más de aura, en escala logarítmica; sube en 90 ms y baja en 300 ms |
 | `Thinking` | Se agita y gira. Si la pregunta llega agitando el móvil, la sacudida sigue al acelerómetro. Si la respuesta no ha llegado, la ventana queda a la vista con el líquido en movimiento y sin triángulo, hasta el máximo actual de 6 s |
-| `Answered` | Sube el triángulo, se mantiene unos 2,5 s y la bola vuelve con el gesto del `Verdict`: sí, no o quizá |
+| `Answered` | Se divide en dos. `Revelada`: la ventana con el triángulo, al menos 2,5 s y mientras TalkBack la lee; es lo que enseñan la tarjeta para compartir, el widget y el reloj. `Reaccionada`: la cara con la mirada del veredicto, que se queda hasta la siguiente pregunta |
 | Fallo («Prueba otra vez luego.») | El triángulo no aparece; la bola vuelve con mirada de duda |
+
+Interrupciones:
+
+- La bola responde en 100 ms como máximo a cualquier toque.
+- Con la cara delante, el agitado sale de la pose en que esté, mezclando en 80 ms.
+- Con la ventana delante, una pregunta nueva hunde el triángulo en 200 ms, agita el líquido 400 ms y sube el
+  siguiente, sin dar otra vuelta.
+- El giro solo se deshace antes de llegar a 90°; pasado ese punto, termina.
+- Si la respuesta llega a mitad del giro, el triángulo espera a que la ventana esté delante.
+- Cancelar la escucha: parpadeo al reposo en 120 ms y vuelta a −5° en 250 ms.
+- Una segunda pregunta antes de 20 s usa el ritual corto: 0,4 s de agitado y la cara de cristal.
 
 Reglas:
 
-- Con «reducir movimiento» del sistema activado no hay giro, ni agitado, ni saltos: la cara y la
-  ventana se cambian con un fundido de 200 ms.
+- Con «Quitar animaciones» la escala de animación de Android es 0 y Compose acabaría cualquier animación en
+  el siguiente fotograma. La app lee el ajuste y ofrece además el suyo (§8). En ese modo no hay giro, ni
+  agitado, ni saltos: se usa la cara de cristal con fundidos de 200 ms que la app controla.
+- El bucle de la bola se para cuando no se ve, cuando la app va en segundo plano y con el ahorro de batería.
 - Un gesto pasa a otro dentro de un parpadeo: los ojos se cierran en 50 ms hasta una cápsula de
   7,6 × 1,9, que es igual para todos los gestos, cambian de forma y se abren en 70 ms. Los trazos
   conservan su grosor; no se aplastan con una escala. Entre dos gestos de ojos cerrados, como los
@@ -199,7 +603,10 @@ Reglas:
 
 En lugar de girar, la bola enseña la respuesta donde tiene la cara: la cara se vuelve de cristal. El
 tablero «Prueba: ¿gira o su cara se vuelve ventana?» pone las dos versiones a la vez. Hasta que se
-decida, manda la versión que gira.
+decida, manda la versión que gira. La recomendación de la auditoría es usar las dos: «Gira»
+en el móvil, porque en la bola 8 de verdad la ventana está detrás, y «Cara de cristal» como versión rápida, en
+el reloj, con «Quitar animaciones», en una segunda pregunta antes de 20 s y en una respuesta abierta desde
+Recientes.
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
@@ -216,6 +623,123 @@ Reglas de la prueba:
 - No se dice «se le abre la cara», que en español es una herida.
 - El accesorio no se mueve, y el modo «reducir movimiento» queda casi igual que el normal, porque ya
   cambia la cara por la ventana con un fundido.
+
+### El 8 y los ojos
+
+La cara está donde la bola 8 de siempre tiene su 8, y el personaje lo usa para contar en qué estado está:
+
+- **El 8 es la bola como objeto:** dormida o trabajando.
+- **Los ojos son la bola despierta:** el personaje.
+- **Al abrir la app,** el 8 se vuelve ojos: despierta.
+- **Mientras algo carga,** los ojos vuelven a ser el 8, de pie, y una luz lo recorre: trabaja.
+- **Tras un rato sin uso,** cierra los ojos y vuelve a ser el 8: descansa. Al tocarla, el 8 se vuelve ojos.
+- **Tumbado (∞), el 8 solo se ve de paso:** en la cara, dos aros tumbados parecen unos ojos saltones.
+
+El 8 no es una letra de la fuente. Se dibuja con dos aros de trazo grueso que se funden en la cintura, con el
+peso de Outfit 800 a ese tamaño, para poder convertirse en ojos:
+
+| Aro | Centro | Radio | Hueco |
+|---|---|---|---|
+| Arriba | (0, −10,5) | 11 | 4,2 |
+| Abajo | (0, 12) | 12,8 | 5,2 |
+
+- Las medidas son desde el centro del cuerpo y la tinta es `#16171D`, la de los ojos.
+- Para tumbarse, el 8 gira un cuarto de vuelta a la izquierda: el aro de arriba acaba en el ojo izquierdo.
+- Para volverse ojos, cada aro se estrecha hasta el ojo abierto (7,6 × 16, en x = ±13) y su hueco se cierra en
+  el primer 60 % del cambio. Para dormirse, acaba en la cápsula cerrada de 7,6 × 1,9.
+- Las formas tienen los mismos comandos en todo el recorrido (el hueco llega a radio 0, no desaparece), así que
+  el cambio se puede hacer con `pathData` en un AnimatedVectorDrawable.
+
+### Inicio de la app
+
+En el arranque en frío se ve que el personaje es una bola 8: empieza la bola de siempre y su 8 se vuelve los
+ojos. Está en los tableros «Así se abre la app» y «El inicio, paso a paso». El icono del lanzador sigue siendo
+el 8 de siempre, así que la historia empieza en él.
+
+| Fase | Tiempo | Qué pasa |
+|---|---|---|
+| La bola 8 | 0–0,25 s | El splash del sistema enseña la bola sin accesorio, con su 8 y la luz de la marca, `#7C96FF` |
+| El 8 se tumba | 0,25–0,5 s | Gira un cuarto de vuelta y queda en ∞. Justo antes, la bola baja 1 |
+| Abre los ojos | 0,45–0,65 s | Los aros se estrechan hasta los ojos abiertos; sus huecos se cierran en el primer 35 % |
+| Parpadea | 0,72 s | Primer parpadeo y sube 2: está despierta. Aquí acaba el icono animado (0,8 s) |
+| Entra en su sitio | 1,0–1,45 s | La bola pasa del centro, al 78 %, a su sitio en la pantalla principal con desaceleración enfática (0,05, 0,7, 0,1, 1). La pantalla entra alrededor: la barra a 1,15 s, la ayuda a 1,23 s y lo de abajo a 1,31 s, cada parte con un fundido de 250 ms y 8 dp de desplazamiento |
+| Se viste | 1,05–1,61 s | La luz pasa a la del personaje en 0,5 s. Desde 1,25 s su accesorio cae 18 unidades con aceleración de caída y, al llegar, aplasta la bola un 2,5 % |
+| Lista | 1,8 s | Parpadea a su mirada de reposo y empieza a flotar |
+
+En Android 12 o posterior:
+
+- `windowSplashScreenBackground` es `#030B14` de día y de noche. Hoy el día es `#FAF9F9` y da un destello blanco.
+- `windowSplashScreenAnimatedIcon` es un AnimatedVectorDrawable en `drawable-v31` de 0,8 s, sin esperar más de
+  166 ms para empezar. El icono no lleva aura, o la bola mide 148 dp como máximo para que quepa en el círculo
+  de 192 dp.
+- El sistema puede quitar el splash en cualquier fotograma, así que los ojos se leen a los 0,65 s y el último
+  fotograma, al que salta con «Quitar animaciones», es la cara con ojos.
+- `windowSplashScreenBehavior` es `icon_preferred`, para que salga también al abrir desde la notificación.
+- `setKeepOnScreenCondition` solo dura lo que tarda la carga real.
+- En `setOnExitAnimationListener`, la vista del icono se cambia por la bola de Compose en la misma posición,
+  tamaño y fotograma (`iconAnimationStartMillis`), y desde ahí corre la entrada.
+- De Android 8 a 11 el icono no se anima: la pantalla principal empieza con el 8 y hace el cambio a ojos en la
+  entrada.
+- En el arranque en caliente no hay splash: la bola parpadea una vez al volver.
+- Sin sonido ni vibración.
+- En el reloj el splash es el icono quieto; el cambio del 8 a los ojos va dentro de la app, en 400 ms como
+  máximo, y no se hace en modo ambiente ni con «Quitar animaciones».
+- Con «Quitar animaciones», la bola aparece ya en su sitio con los ojos, y el accesorio y la pantalla entran
+  con un fundido de 200 ms.
+
+### El reloj en modo ambiente
+
+Con targetSdk 36 en Wear OS 6, la app sigue a la vista en modo ambiente. La pantalla queda negra en un 85 % como
+mínimo, sin rellenos blancos ni animaciones:
+
+- el cuerpo negro, sin aura ni brillo, con el borde de 1,5 dp al 60 % del color del personaje;
+- la cara, un aro de 1,5 dp en `#C9D1DA` sin relleno; los ojos pueden ir rellenos, porque ocupan poco;
+- el accesorio, solo en contorno, en la misma posición y sin flotar;
+- se actualiza una vez por minuto y vuelve a la versión normal con un fundido de 250 ms.
+
+### Catálogo de animaciones
+
+Todas están en el tablero «Catálogo de animaciones», cada una en bucle de reposo a reposo. Todo lo cuentan el
+cuerpo, los ojos y la luz; nada se dibuja alrededor de la bola.
+
+| Animación | Cuándo | Qué hace | Duración | Vibración | Con «reducir movimiento» |
+|---|---|---|---|---|---|
+| Inicio | Arranque en frío | El 8 se vuelve ojos, la bola entra en su sitio y se viste (ver arriba) | 2,1 s | Ninguna | Fundidos de 200 ms |
+| Reposo | Siempre que espera | Flota ±3 en 3,2 s y parpadea cada 3–6 s al azar | En bucle | Ninguna | Quieta; solo parpadea |
+| Mira alrededor | Cada 8–12 s en reposo, al azar | Los ojos se mueven 3,5 a un lado en 160 ms, luego al otro, y vuelven. La cabeza los sigue 80 ms después, 2,2° por unidad | 3,6 s | Ninguna | No se hace |
+| Toque | Al pulsar la bola, antes de cualquier pregunta | Se hunde un 4 % al pulsar, rebota 3 al soltar y abre un poco más los ojos | 0,45 s | Un toque suave al pulsar | Solo el parpadeo |
+| Se duerme y despierta | Tras 2 min sin tocarla con la app delante; despierta al tocarla o al agitar el móvil | Cierra los ojos en 0,9 s, respira más despacio (±1,2) y su luz baja al 60 %. Luego sus ojos cerrados se juntan y se levantan en el 8. Al despertar, el 8 se tumba y se vuelve ojos en 0,6 s, se estira un 3 % y parpadea | 2,2 s dormirse; 0,6 s despertar | Un toque suave al despertar | Fundidos de 200 ms entre los ojos y el 8 |
+| Sin conexión | Mientras la app avisa de que no hay red | Ojos a media asta mirando abajo, inclinada −8°, flota ±1,2 y su luz al 60 % | En bucle | Ninguna | Quieta en esa postura |
+| Escucha | Mientras mantienes pulsado | Abre los ojos a 8,6 × 21, se inclina a −12° y el halo sigue tu voz en dB (ver `Listening`) | Lo que dure | `GESTURE_START`; si no lo hay, pulsación larga | Sin inclinarse; el halo, un 15 % más, fijo |
+| Se agita | Al soltar, al tocar o al agitar el móvil | 3,5 sacudidas: el cuerpo, la cara 25 ms después y los ojos `> <` más tarde | 0,6 s | Pulsos cortos | Un parpadeo |
+| Gira y responde | Con la respuesta | Media vuelta, sube el triángulo y vuelve la otra media vuelta con el gesto | 2,9 s | Un toque al llegar el triángulo | Fundido de 200 ms entre la cara y la ventana |
+| Sí | Veredicto sí | Te mira, parpadea a ojos felices y salta (ver «Gesto») | 0,6 s | `CONFIRM` al caer | Solo los ojos felices y `CONFIRM` |
+| No | Veredicto no | Niega dos veces, ±12°, en 0,8 s | 0,8 s | `REJECT` | Solo la mirada y `REJECT` |
+| Quizá | Veredicto quizá | Sube 5, se queda 220 ms y baja, ladeada 9° y mirando a un lado | 0,66 s | Un `PRIMITIVE_TICK` | Solo la mirada |
+| Sí del Robot | Su veredicto sí | Cabecea dos veces, como un servo: −7° y baja 2,5 | 0,42 s | Ninguna | Solo la mirada |
+| Sin respuesta | Si la respuesta falla («Prueba otra vez luego.») o tarda más de 6 s | Vuelve sin triángulo, con dos puntos en blanco por ojos; se hunde 3 y su luz baja al 40 % en 400 ms, y vuelve un 20 % más despacio | 1,5 s | Dos `PRIMITIVE_LOW_TICK`, nunca `REJECT` | Los puntos y la luz |
+| Esperando | Cuando una carga pasa de 0,6 s: los personajes, la cuenta, una compra, la imagen para compartir | Los ojos se juntan en ∞ y el ∞ se levanta en el 8 (0,6 s); una luz blanca de radio 1,7 lo recorre cada 0,9 s; al acabar vuelve a ojos y parpadea | Lo que dure; como mínimo un recorrido | Ninguna | El 8 sin la luz que corre, con fundidos |
+| Cambio de personaje | Al volver a la bola tras elegir otro | El accesorio sube 16 y se desvanece en 0,32 s, la luz pasa al color nuevo en 0,5 s, parpadea a la mirada nueva y cae el accesorio nuevo desde 18 en 0,36 s, aplastando la bola un 2,5 % | 1,2 s | Un toque al caer | Fundido cruzado de 200 ms |
+| Celebración | Al abrir la app el día que se cumple una racha de 3, 7 o 30 días | Ojos felices, dos saltos de 6 y 9 con aplastamiento al caer, y su luz late una vez | 1,3 s | Un toque en cada caída | Ojos felices y la luz late, sin saltos |
+| Gesto propio (sin tablero) | Cada 20–40 s de reposo, al azar | El Genio mueve el moño, la Bruja mira de reojo, el Filósofo suspira y el Pirata se balancea como en un barco | 0,8–1,5 s | Ninguna | No se hace |
+| Leer en voz alta (sin tablero) | Mientras lee la respuesta | El halo sigue la voz, hasta un 12 % más | Lo que dure | Ninguna | El halo, fijo |
+| Sorteo del modo fiesta (sin tablero) | Al elegir a quién le toca | Da dos o tres vueltas que frenan en 1,6 s y para en la ventana con el nombre | 1,6 s | Un toque en cada media vuelta y `CONFIRM` al parar | El nombre con un fundido |
+| Cara de cristal | Prueba frente a «Gira» | Ver «En prueba: cara de cristal» | 2,9 s | Un toque al llegar el triángulo | Fundido de 200 ms |
+
+Reglas del catálogo:
+
+- **Prioridad:** cuando dos animaciones quieren los ojos a la vez, gana la de más arriba en esta lista: responder
+  (escucha, agitado, giro y gesto), toque, cambio de personaje, celebración, esperando, mira alrededor, reposo.
+- **Interrupciones:** dormida se interrumpe con cualquier toque. Si la pregunta llega dormida, primero despierta
+  (0,6 s) y luego responde.
+- **Azar:** las de reposo (el parpadeo y mirar alrededor) caen al azar dentro de su ventana, para que no se note
+  el bucle.
+- **Esperas breves:** «Esperando» solo aparece si la carga pasa de 0,6 s y, una vez empieza, dura al menos un
+  recorrido completo, para no parpadear.
+- **La espera de la respuesta es otra:** mientras llega la respuesta, se ve la ventana con el líquido en
+  movimiento (la tabla de estados de arriba).
+- **Vibración:** el toque suave es `CLOCK_TICK`, la pulsación larga `LONG_PRESS`, el toque `CONFIRM` y los pulsos
+  cortos una composición de `PRIMITIVE_TICK`. Si el sistema tiene la vibración táctil apagada, no se vibra.
 
 ## 7. Pantallas
 
@@ -433,14 +957,229 @@ Hay que añadirlos en los tres idiomas:
 
 ## 8. Accesibilidad
 
+El objetivo es WCAG 2.2 AA en el móvil y en el reloj. Cada PR de interfaz lo comprueba como dice el
+[plan](plan.md): TalkBack, contraste, objetivos de 48 y capturas en oscuro con la letra al 100, 130
+y 200 %.
+
+Lo esencial:
 - La bola tiene una descripción que cambia con el estado; por ejemplo, «La Vidente responde: sí, sin
   duda».
-- Objetivos táctiles de 48 dp como mínimo.
-- El texto de la respuesta se lee también fuera de la bola, en el texto de la pantalla, para
-  TalkBack y para el tamaño de letra grande.
-- «Reducir movimiento» se respeta como dice la sección 6.
+- La respuesta también se lee fuera de la bola: el veredicto va en texto bajo ella, para TalkBack y
+  para la letra grande.
+- Objetivos táctiles de 48 como mínimo.
 - Lo elegido se marca con ✓ y fondo, nunca solo con color.
 - Un aviso que pide atención va en ámbar y siempre da una salida.
+- Todo lo que se hace con un gesto (mantener, agitar, deslizar, arrastrar) tiene otro camino.
+
+### Semántica de cada componente
+
+Los componentes reciben sus textos de accesibilidad como parámetros, en los tres idiomas
+([ADR 0002](adr/0002-diseno-listo-para-kmp.md)).
+
+| Componente | En Compose | TalkBack lee, por ejemplo |
+|---|---|---|
+| Botón | `Role.Button` con su etiqueta; desactivado, `disabled()`; cargando, `stateDescription` «Cargando» y los toques se ignoran sin desactivarlo | «Suscribirme, botón, cargando» |
+| Botón de icono | `contentDescription` con lo que hace (tabla de nombres, abajo); el icono, `null` | «Recientes, botón» |
+| Fila que abre o actúa | `semantics(mergeDescendants = true)` y `clickable(onClickLabel = …)`, sin `contentDescription`: se lee su texto. ›, ↗ y el icono de inicio no se leen | «Voz, Preguntas y respuestas, botón. Toca dos veces para abrir» |
+| Fila que sale de la app | La misma, con `onClickLabel` «abrir en el navegador» | «Términos de uso, botón. Toca dos veces para abrir en el navegador» |
+| Fila de Recientes | Fusionada; `onClickLabel` «ver en la bola»; la papelera sale del recorrido y pasa a `customActions` «Borrar respuesta» | «Sí, sin duda. Las estrellas lo tenían claro…» y, en acciones, «Borrar respuesta» |
+| Fila con interruptor | `toggleable(value, role = Role.Switch)` en toda la fila y `Switch(onCheckedChange = null)` dentro | «Veredicto del día, Una notificación al día…, interruptor, activado» |
+| Fila que elige (Idioma) | `selectable(selected, role = Role.RadioButton)` dentro de `selectableGroup()` | «Español, botón de opción, seleccionado, 2 de 3» |
+| Cabecera de grupo y título de pantalla | `heading()` | «Respuestas, encabezado» |
+| Chip de filtro | `selectable(role = Role.RadioButton)` en un `selectableGroup()` | «Comunidad, botón de opción, no seleccionado» |
+| Chip de nombre | `Role.Button`, con su nombre | «Quitar a Ana, botón» |
+| Muestra de color | `selectable(role = Role.RadioButton)` con el nombre del color en `contentDescription` | «Turquesa, botón de opción, seleccionado» |
+| Losa de accesorio | Igual, con el nombre del objeto | «Sombrero de mago, botón de opción, no seleccionado» |
+| Pulgares | `toggleable(value, role = Role.Checkbox)` | «Buena respuesta, casilla de verificación, marcada» |
+| Selector de oráculo y botón de avatar | `Role.Button`; nombre «Responde como Vidente»; `onClickLabel` «elegir quién responde» | «Responde como Vidente, botón. Toca dos veces para elegir quién responde» |
+| Campo de texto | La etiqueta y el campo se fusionan; el error, con `error(…)`; el contador se lee como «14 de 16 caracteres» | «Nombre, cuadro de edición, Capitán Gruñón, 14 de 16 caracteres» |
+| Campo de fecha | Tres campos llamados «Día», «Mes» y «Año» bajo el encabezado «Fecha de nacimiento»; el error, con `error(…)` en los tres | «Día, cuadro de edición, 12» |
+| Paginador | Cada página lleva `paneTitle` («La bola», «Recientes», «Opciones»); los puntos, un nodo con `stateDescription` «Página 2 de 3» | Al cambiar: «Recientes» |
+| Hoja y diálogo | `paneTitle` con su título; el título, `heading()`; el asa, la acción «Cerrar» | Al abrirse: «¿Borrar todas las respuestas?» |
+| Aviso breve | `liveRegion = LiveRegionMode.Polite`; su acción, alcanzable con el foco | «Reportada. Gracias. Deshacer» |
+| Aviso que pide atención | Un grupo (`isTraversalGroup`); si aparece con la pantalla abierta, `liveRegion = Polite` en su título | «Necesita acceso al micrófono…» |
+| Indicador suelto | `progressBarRangeInfo = Indeterminate` y «Cargando» | «Cargando» |
+| Filas esqueleto | Las filas no se leen; el grupo, un solo nodo con lo que carga | «Cargando personajes» |
+| Etiqueta, racha y avatares | Texto normal; los iconos y los avatares junto a un nombre, `null` | «3 días seguidos» |
+| Veredicto y frase | Un nodo fusionado; el ▲ se dibuja, no es un carácter, y «·» se lee como coma | «Sí, sin duda. Vidente añade, con IA: Las estrellas lo tenían claro.» |
+| La bola | Ver abajo | «Bola mágica, responde la Vidente» |
+
+**La bola (`OracleBall`):**
+- `contentDescription` «Bola mágica» y un `stateDescription` por estado, que TalkBack anuncia porque
+  la bola es `liveRegion = Polite`:
+
+  | Estado | `stateDescription` |
+  |---|---|
+  | Reposo | «Responde la Vidente» |
+  | Escuchando | «Te escucho» |
+  | Pensando | «Pensando…» |
+  | Respuesta | «La Vidente responde: sí, sin duda» |
+  | Sin respuesta, a los 6 s | «Sin respuesta» |
+  | Dormida · sin conexión | «Dormida» · «Sin conexión» |
+
+- `onClick(label = "Preguntar")`: tocar pide una respuesta sin pregunta.
+- `customActions` «Preguntar en voz alta»: empieza a escuchar sin mantener y para sola cuando la
+  persona se calla. «Cancelar», en la barra, la para antes.
+
+**Nombres de los botones de icono.** Dicen lo que hacen, sin la palabra «botón» (TalkBack ya dice el
+rol) y sin el estado (va en `stateDescription`). Si una lista repite un botón, el nombre lleva el
+elemento: «Quitar a Ana», «Ver ficha de Bruja». Nunca dos elementos de una lista con el mismo
+nombre.
+
+| Dónde | Icono | Nombre |
+|---|---|---|
+| Barra de la bola | `history` · `sliders-horizontal` | «Recientes» · «Opciones» |
+| Recientes y Opciones | `chevron-right` o `chevron-left` | «Volver a la bola» |
+| Pantallas que se abren desde Opciones | `chevron-left` | «Atrás» |
+| Bola escuchando o pensando · bola con la respuesta | `x` | «Cancelar» · «Cerrar» |
+| Bola con la respuesta | `volume-2` · `square` | «Leer la respuesta en voz alta» · «Detener la lectura» |
+| Bola con la respuesta | `thumbs-up` · `thumbs-down` | «Buena respuesta» · «Mala respuesta» |
+| Recientes | `trash-2` | «Borrar respuesta», como acción de la fila |
+| Personajes | `x` · `plus` | «Cerrar» · «Crear un personaje» |
+| Nuevo personaje | `x` | «Cancelar» |
+
+### Orden del foco
+
+- El de lectura: la barra de izquierda a derecha, el título, el contenido de arriba abajo, las
+  acciones y, si lo hay, el aviso breve. En la bola: barra, ayuda o pregunta, bola, veredicto y
+  frase, acciones.
+- `traversalIndex` solo donde el orden visual no sirve; nunca para saltar contenido.
+- Al abrirse una hoja o un diálogo, el foco va a su título y no sale de ella mientras está abierta.
+  Al cerrarse, vuelve al control que la abrió.
+- Al borrar una fila, el foco pasa a la siguiente, o a la anterior si era la última. Con la lista
+  vacía, al título.
+- Con teclado físico: Tab recorre los controles, Intro y Espacio los activan y Escape cierra la hoja
+  o el diálogo, como atrás.
+
+**Anillo de foco.** Solo con foco de teclado o de mando, nunca al tocar:
+- Controles sueltos: anillo de 2 `focusRing`, separado 2 del control, con el hueco transparente (no
+  `bg`, que en una hoja parece un marco) y el radio del control más 4.
+- Filas: anillo interior de 2 dentro de la fila, para que el grupo no lo recorte; en la primera y la
+  última sigue las esquinas de 24 del grupo.
+- Interruptor: el anillo va en su fila, que es la que conmuta.
+- Campo: su contorno de 2 `focusRing` es el foco; no lleva otro anillo.
+- Muestra de color: el anillo de selección se dibuja en `focusRing`.
+- La bola: un círculo 4 por fuera del cuerpo.
+
+### Objetivos táctiles
+
+- 48 × 48 como mínimo en todo lo que se toca, con `minimumInteractiveComponentSize()`.
+- Se dibujan más pequeños, con su zona de 48: chips de 36, muestras de color de 40 y el asa de la
+  hoja (zona de 48 × 24; con TalkBack, su acción «Cerrar» se activa con doble toque).
+- Las zonas de dos controles vecinos no se pisan: las muestras van a 48 de centro a centro (40 + 8).
+- Los puntos de página, la racha y las etiquetas no se tocan.
+
+### Contraste
+
+- Texto: 4,5:1 sobre su fondo real, también pulsado, elegido o desactivado, y también con letra
+  grande.
+- Lo que no es texto pero hace falta para entender un control (iconos, contorno de campos e
+  interruptor, ✓, anillo de foco): 3:1 frente a lo que tiene al lado.
+- Lo desactivado va siempre sobre `control`: `disabled` sobre `surfaceOverlay` daría 4,19:1. Por eso
+  lo desactivado no sube de tono en hojas ni diálogos.
+- Un test unitario recorre los pares de esta tabla con los valores de `LuzColors`.
+
+| Texto o pieza | Sobre | Contraste |
+|---|---|---|
+| `text` | `bg` · `surface` · `control` · `surfaceOverlay` · `surfaceHighest` | 18,07 · 16,36 · 14,72 · 12,98 · 11,28 |
+| `text` | `selected` · `warningContainer` · `errorContainer` | 14,38 · 15,87 · 15,84 |
+| `contentMedium` | `bg` · `surface` · `control` · `surfaceOverlay` · `warningContainer` | 12,82 · 11,61 · 10,44 · 9,21 · 11,26 |
+| `textSecondary` | `bg` · `surface` · `control` · `surfaceOverlay` · `selected` | 8,06 · 7,30 · 6,56 · 5,79 · 6,41 |
+| `disabled` | `bg` · `surface` · `control` | 5,83 · 5,28 · 4,75 |
+| `link` | `bg` · `surface` · `control` · `surfaceOverlay` (pulsado) | 10,66 · 9,65 · 8,68 · 7,66 |
+| `onAccent` | `accent` · `accentPressed` | 5,02 · 6,17 |
+| `onTonal` | `tonal` · `tonalPressed` | 9,55 · 7,74 |
+| `onWarning` | `warning` · `warningPressed` | 9,59 · 7,90 |
+| `error` | `errorContainer` · `errorPressed` · `bg` · `control` | 7,64 · 6,76 · 8,72 · 7,10 |
+| `warning`, icono | `warningContainer` | 9,89 |
+| `check` | `selected` · `surface` · `control` | 5,74 · 6,53 · 5,88 |
+| `outline` | `control` · `surface` · `bg` | 3,57 · 3,97 · 4,38 |
+| `accent`, pista del interruptor | `surface` · `control` | 3,57 · 3,21 |
+| `focusRing` | `control` | 8,68 |
+| `#E3E3E3`, botón de Google | `#131314` | 14,47 |
+
+### Nunca solo con color
+
+- Lo elegido: ✓ y fondo `selected`.
+- El pulgar marcado: cambia la forma, no solo el color. El glifo pasa a relleno en `check`, sobre
+  `selected` con `selectedOutline`. Es la excepción escrita a la ✓.
+- El error de un campo: contorno de 2 y un mensaje que dice qué pasa.
+- El interruptor: el círculo cambia de lado y de tamaño (24 encendido, 16 apagado).
+- Un aviso: icono, un título que dice qué pasa y su acción.
+- Los enlaces son botones de texto o filas con ↗; nunca un trozo de párrafo en color.
+
+### Tamaño de letra
+
+- Toda la letra va en sp, salvo la de los dibujos que no deben crecer: la inicial de los avatares y
+  la tarjeta de compartir. Todas las alturas son mínimas (`heightIn(min = …)`), nunca `height(…)`:
+  botones, filas, campos, chips, etiquetas, aviso breve y títulos crecen con su texto.
+- Los botones tienen 12 de relleno vertical por encima del mínimo y su etiqueta puede ocupar dos
+  líneas. Nunca se corta con «…».
+- Con la escala no lineal de Android 14, al 200 % un texto de 16 sp se dibuja a unos 28 y uno de 13,
+  a unos 25.
+
+| Escala | Qué pasa |
+|---|---|
+| 100 % | Las pantallas como están dibujadas |
+| 130 % | Nada cambia de sitio; filas, botones y huecos crecen lo que pida su texto. En 390 × 844 la bola sigue en 250 |
+| 150 % o más | El selector de oráculo pasa a una línea: avatar y nombre, y «Responde como» queda solo en su nombre accesible. La acción del título («Borrar todo») baja bajo el título. «Añadir» baja bajo su campo. Si dos botones no caben uno al lado del otro, se apilan |
+| 200 % | Lo anterior, y además: hojas y diálogos desplazan su cuerpo con las acciones fijas abajo; los chips siguen en una línea que se desliza; la bola se encoge (abajo) |
+
+**La bola cuando no cabe.** Su tamaño se calcula con lo que queda libre:
+
+`bola = clamp(160, (alto útil − huecos) / 1,168, 250)`
+
+- **Alto útil** es la ventana sin las barras del sistema ni el recorte de la cámara
+  (`WindowInsets.safeDrawing`, arriba y abajo).
+- **Huecos** es la suma de lo que va encima y debajo de la bola, medido con la letra actual. Al
+  100 % en un móvil bajo (alto útil de menos de 700) es 344: barra 56, título 96, separación 8,
+  leyenda 96, acciones 72 y margen inferior 16.
+- **1,168** es el alto del dibujo entre su ancho (292 / 250), porque la bola necesita sitio encima
+  para saltar.
+- Con un alto útil de 636 o más, la bola mide 250. En 360 × 640 con barra de tres botones, el alto
+  útil es 568 y la bola mide 192.
+- Si ni con 160 cabe, la bola se queda en 160 y toda la columna se desplaza.
+- Los huecos se miden una vez por tamaño de ventana y de letra, con lo más alto que puede llevar
+  cada uno (por ejemplo, la pregunta en tres líneas), para que la bola no se mueva al cambiar de
+  estado.
+
+### Reducir movimiento
+
+- **Se lee el sistema.** Android no tiene un ajuste propio: «Quitar animaciones» (Accesibilidad ›
+  Color y movimiento) pone a 0 la escala de animaciones, `Settings.Global.ANIMATOR_DURATION_SCALE`.
+  La app la lee al arrancar y al volver a primer plano, mediante una interfaz común que implementa
+  Android (ADR 0002).
+- **La app tiene además su interruptor,** «Reducir movimiento», con el subtítulo fijo «Fundidos en
+  lugar de giros y saltos», para quien solo quiere menos movimiento aquí. La sección 7 dice en qué
+  pantalla va.
+- `LuzMotion.reduceMotion` = escala del sistema a 0, o el interruptor encendido.
+- **La trampa:** con la escala a 0, Compose termina cada animación de golpe, así que un fundido de
+  200 ms no se vería. Los fundidos que sustituyen al movimiento corren con su propia escala:
+  `withContext(object : MotionDurationScale { override val scaleFactor = 1f }) { … }`. Todo lo demás
+  respeta la del sistema.
+- Qué cambia en cada pieza: sección 2 («Movimiento») y, en la bola, sección 6.
+
+### Tiempos
+
+- Nada de la app caduca salvo el aviso breve.
+- Aviso breve con acción («Deshacer»): dura
+  `calculateRecommendedTimeoutMillis(10_000, containsIcons = false, containsText = true, containsControls = true)`,
+  de `LocalAccessibilityManager`, que en Android respeta el «Tiempo para actuar» del sistema. Sin
+  acción, la base es de 4.000 ms.
+- Con TalkBack activo, un aviso breve con acción no se va solo: se queda hasta que se usa o se
+  descarta. Si TalkBack está activo lo dice la interfaz común de la plataforma.
+- El tiempo se para mientras el aviso está pulsado o tiene el foco.
+
+### Otro camino para cada gesto
+
+| Gesto | Otro camino |
+|---|---|
+| Mantener la bola y hablar | La acción «Preguntar en voz alta» de la bola, que sirve con TalkBack y con Accesibilidad con interruptores |
+| Agitar el móvil | Tocar la bola. Agitar se puede apagar con el interruptor «Agitar para preguntar» (Opciones › Voz) |
+| Deslizar entre las páginas de la bola | Los botones de la barra: «Recientes», «Opciones» y «Volver a la bola» |
+| Arrastrar una hoja para cerrarla | Atrás, tocar el velo o la acción «Cerrar» del asa |
+| Deslizar un aviso breve | Se va solo o con atrás; su acción sigue en el foco |
+| Mantener un botón de icono | Solo enseña su nombre; nada se hace únicamente manteniendo |
 
 ## 9. Componentes
 
@@ -448,36 +1187,507 @@ Variante Luz ([ADR 0004](adr/0004-componentes-luz.md)), con los botones de radio
 [ADR 0005](adr/0005-botones-radio-16.md). El lienzo muestra los componentes y todas las pantallas en
 la página «Diseño».
 
-Reglas comunes:
-- **Al pulsar:** el control se oscurece y se encoge al 98 %; entra en 90 ms y sale en 150 ms.
-- **Al enfocar:** anillo de 2 px `#A9BCFF`, separado 2 px del control.
-- **Brillo:** ningún componente brilla.
-- **Forma:** radio 16 en botones, campos y botones de icono; 12 en los chips; 24 en los grupos; 28
-  en los diálogos; 32 en las hojas. Solo son redondos del todo el interruptor, las etiquetas, los
-  avatares y la bola.
-- **Tamaño táctil:** 48 dp como mínimo; la altura no se fija, para que la letra grande no se recorte.
+Cada componente vive en `:core:designsystem` con el prefijo `Luz` (`LuzButton`, `LuzListItem`…) y
+recibe sus textos como parámetros ([ADR 0002](adr/0002-diseno-listo-para-kmp.md)). Los valores salen
+de los tokens de la sección 2 y la semántica, de la sección 8. Un estado que no aparece en su
+componente no existe.
 
-| Componente | Forma y medidas | Estados y uso |
+### Reglas comunes
+
+- **Al pulsar** sube un tono (sección 2): las superficies se aclaran (`control` → `surfaceOverlay`);
+  el cobalto pasa a `accentPressed`, el tonal a `tonalPressed`, el ámbar a `warningPressed`, el de
+  borrar a `errorPressed` y lo elegido a `selectedPressed`. El botón de texto y los iconos sin fondo
+  enseñan un fondo `surfaceOverlay`. Los controles sueltos se encogen además al 98 %; las filas, los
+  grupos y los campos, no. Entra en 90 y sale en 150, `standard`.
+- **Sin ripple:** `LocalRippleConfiguration provides null`. El pulsado y el foco los dibuja
+  `LuzIndication`, un `IndicationNodeFactory`.
+- **Al enfocar** con teclado: anillo de 2 `focusRing`, separado 2, con el hueco transparente y el
+  radio del control más 4 (sección 8).
+- **Desactivado:** contenido `disabled`; contenedor `control`, sin línea, sin escala y sin opacidad,
+  también en hojas y diálogos. La semántica lleva `disabled()`, que ya pone
+  `clickable(enabled = false)`.
+- **Cargando:** un solo aspecto para todos los botones (abajo, «Cargando»).
+- **Borrar:** lo que no se puede deshacer va en coral y pide confirmación en un diálogo con el botón
+  de borrar. Lo que se puede deshacer se borra con un icono neutro y el aviso breve con «Deshacer».
+  Nunca se borra con un botón de texto cobalto.
+- **Brillo y sombras:** ninguno. Solo brilla la bola.
+- **Alturas:** todas mínimas; crecen con la letra.
+- **Textos:** español de España, comillas «» y frases cortas. Las etiquetas (botones, títulos,
+  filas, chips, cabeceras y campos) no llevan punto final; las frases (respuestas, avisos breves y
+  cuerpos de avisos y diálogos), sí. Un título dice una sola cosa. Ningún texto da cifras internas:
+  cuántas respuestas quedan, cuotas o cómo está hecho.
+
+### Estados
+
+| Componente | Reposo | Pulsado | Foco | Desactivado | Cargando | Elegido o error |
+|---|---|---|---|---|---|---|
+| Botón principal | `accent`, línea superior `accentHighlight`, etiqueta `onAccent` | `accentPressed`, 0,98 | Anillo de radio 20 | `control`, `disabled` | Indicador `onAccent` | — |
+| Botón secundario | `control` con línea `outlineVariant`, etiqueta `text` | `surfaceOverlay`, 0,98 | Anillo de radio 20 | `control` sin línea, `disabled` | Indicador `text` | — |
+| Botón tonal | `tonal`, etiqueta `onTonal` | `tonalPressed`, 0,98 | Anillo de radio 20 | `control`, `disabled` | Indicador `onTonal` | — |
+| Botón ámbar | `warning`, etiqueta `onWarning` | `warningPressed`, 0,98 | Anillo de radio 20 | `control`, `disabled` | Indicador `onWarning` | — |
+| Botón de borrar | `errorContainer` con línea `errorOutline`, etiqueta `error` | `errorPressed`, 0,98 | Anillo de radio 20 | `control`, `disabled` | Indicador `error` | — |
+| Botón de texto | Sin fondo, etiqueta `link` | Fondo `surfaceOverlay`, 0,98 | Anillo de radio 20 | Etiqueta `disabled` | No tiene | — |
+| Botón de icono | `control` con línea `outlineVariant`, icono `contentMedium` | `surfaceOverlay`, 0,98 | Anillo de radio 20 | `control`, icono `disabled` | No tiene | Pulgar marcado: `selected`, línea `selectedOutline` y glifo relleno `check` |
+| Icono de barra | Sin fondo, icono `contentMedium` | Fondo `surfaceOverlay` | Anillo de radio 20 | Icono `disabled` | No tiene | — |
+| Chip de filtro | `control` con línea `outlineVariant`, texto `contentMedium` | `surfaceOverlay`, 0,98 | Anillo de radio 16 | `control` sin línea, `disabled` | — | `selected`, línea `selectedOutline`, ✓ 16 `check`, texto `text` |
+| Chip de nombre | `control` con línea `outlineVariant`, texto `text`, ✕ `textSecondary` | `surfaceOverlay`, 0,98 | Anillo de radio 16 | — | — | — |
+| Selector de oráculo | Como el secundario | `surfaceOverlay`, 0,98 | Anillo de radio 20 | — | — | — |
+| Fila | Transparente sobre su grupo | `surfaceOverlay`; en un grupo de una hoja, `surfaceHighest`. Sin escala | Anillo interior | Texto e icono `disabled` | Filas esqueleto | `selected` y ✓ 22 `check`; pulsada, `selectedPressed` |
+| Interruptor | Encendido: pista `accent`, círculo 24 `onAccent`. Apagado: pista `control`, contorno 2 `outline`, círculo 16 `outline` | El círculo pasa a 28 | En su fila | Pista `control`, contorno 2 `handle`, círculo `disabled` | — | — |
+| Campo | `control`, contorno 1 `outline` | — | Contorno 2 `focusRing` | Contorno 1 `handle`, texto `disabled` | — | Error: contorno 2 `error` y mensaje `error` |
+| Muestra de color | Su color | 0,98 | Su anillo, en `focusRing` | — | — | Anillo 2 `check` a 3 y ✓ 18 `ink` |
+| Losa de accesorio | `control` | `surfaceOverlay`, 0,98 | Anillo de radio 20 | — | — | `selected`, línea `selectedOutline`, ✓ 14 `check` en la esquina |
+| Botón de Google | `#131314`, contorno 1 `#8E918F`, etiqueta `#E3E3E3` | Solo 0,98: sus colores no cambian | Anillo de radio 20 | — | Indicador `#E3E3E3` | — |
+
+«—» quiere decir que ese estado no existe en ese componente. El anillo de foco solo sale con teclado
+o mando (sección 8).
+
+### Botones
+
+| Botón | Alto | Relleno lateral | Ancho | Uso |
+|---|---|---|---|---|
+| Principal | 52 | 20 | Su texto, o todo el ancho de su columna | La acción principal. Uno por pantalla, hoja o diálogo |
+| Secundario | 52 | 20 | Su texto o todo el ancho | Acciones de apoyo |
+| Tonal | 52 | 20 | Su texto | Solo al final de una fila, como «Obtener» en la de Premium |
+| Ámbar | 52 | 20 | Su texto | Solo dentro de un aviso que pide atención |
+| Borrar | 52 | 20 | Todo el ancho | Confirmar algo que no se puede deshacer, en su diálogo |
+| Texto | 48 | 12 | Su texto o todo el ancho | Salidas, «Cancelar», «Ahora no» y la acción de un título |
+| Icono | 48; 52 en la fila de la respuesta | — | Cuadrado | Acciones con un icono claro; siempre con nombre accesible |
+| Icono de barra | 48 | — | Cuadrado | Barra superior, sin fondo |
+
+- Etiqueta en `button`, centrada, con 12 de relleno arriba y abajo: con una línea manda el alto
+  mínimo y con dos el botón crece. Nunca se corta con «…».
+- El botón de icono lleva un icono de 22.
+- **Con icono:** de 18, al principio y a 8 de la etiqueta. El relleno del lado del icono baja 4: 16
+  en los de relleno, 8 en los de texto. Ejemplos: «Compartir» (`share-2`) y «Añadir» (`plus`, de
+  texto).
+- **Cargando:**
+  - El contenedor y la etiqueta no cambian. Delante de la etiqueta, a 8, aparece el indicador de 18
+    con trazo de 2 y pista al 30 %, en el color de la etiqueta. Si el botón tiene icono, el
+    indicador ocupa su sitio.
+  - Los toques se ignoran, pero el botón no se desactiva: sigue con el foco y lleva
+    `stateDescription` «Cargando».
+  - El ancho no cambia. A todo el ancho, el indicador y la etiqueta se centran juntos. Un botón sin
+    icono que se ajusta a su texto y puede cargar (los ámbar de los avisos) reserva desde el reposo
+    los 26 del indicador (18 + 8), repartidos a los dos lados de la etiqueta.
+  - Nunca «Un momento…» en lugar de la etiqueta, ni un contenedor desactivado mientras carga.
+- **Contenido:** un verbo o la acción exacta, en dos o tres palabras: «Suscribirme», «Permitir
+  micrófono». El botón que confirma repite el verbo del título del diálogo: «¿Borrar todas las
+  respuestas?» → «Borrar todo», nunca «Aceptar».
+- **Sí:** un solo botón principal y «Cancelar» o «Ahora no» como botón de texto. **No:** dos botones
+  cobalto, ni «Cancelar» con relleno junto al principal.
+
+**Botón de avatar del modo fiesta.** 52 × 52, radio 16, `control` con línea `outlineVariant`, y en
+el centro el avatar de 32 con su anillo de 2 `ring`. Pulsado, `surfaceOverlay` y 0,98. Se llama
+«Responde como Vidente» y abre la lista para elegir quién responde, como el selector. No lleva
+texto, así que la letra grande no lo cambia.
+
+**Pulgares.** Dos botones de icono de 52, «Buena respuesta» (`thumbs-up`) y «Mala respuesta»
+(`thumbs-down`), a 12 de «Compartir». Marcado: fondo `selected`, línea `selectedOutline` y el glifo
+relleno en `check`. Son `toggleable` con `Role.Checkbox`. Marcar el de abajo abre la hoja para
+reportar (sección 7).
+
+**Continuar con Google.** Sigue la guía de marca de Google (consultada el 20 nov 2026):
+- 52 de alto y radio 16, a todo el ancho; fondo `#131314` y contorno interior de 1 `#8E918F`.
+- La «G» de 20, con sus colores, y a 10, como pide la guía, la etiqueta «Continuar con Google» en
+  Google Sans Medium 16/20, color `#E3E3E3`. El grupo va centrado.
+- La letra es la que pide la guía, Google Sans Medium, no Roboto. Su tamaño de 14 es para el botón
+  de 40 de alto de la guía: con 52, se usa el 16 de los demás botones.
+- Pulsado: solo la escala de 0,98. Cargando: el indicador, de `#E3E3E3`, ocupa el sitio de la «G».
+
+### Selección
+
+**Chip de filtro** (Personajes: «Todos», «Originales», «Comunidad», «Tuyos»):
+- 36 de alto con objetivo de 48, radio 12, letra `chip`.
+- Relleno de 12 a los lados. Elegido: 8 delante, la ✓ de 16, 6 hasta el texto y 12 detrás.
+- Van en un `LazyRow` con 16 de margen a los lados y 8 entre chips, que se desliza hasta el borde.
+  Nunca pasan a dos líneas.
+- Siempre hay uno elegido: es un grupo de opciones (`Role.RadioButton`).
+- Una palabra por chip.
+
+**Chip de nombre** (modo fiesta): 36 de alto, radio 12, `control` con línea `outlineVariant`, el
+nombre en `chip` y una ✕ de 16 en `textSecondary` al final. Relleno de 12 delante y 8 detrás. Todo
+el chip quita a la persona y se llama «Quitar a Ana».
+
+**Interruptor:**
+- Pista de 52 × 32, como el de Material 3; se usa el `Switch` de M3 con los colores de la tabla de
+  estados (`SwitchDefaults.colors(…)`), sin iconos dentro.
+- Toda la fila conmuta: el `Switch` va con `onCheckedChange = null` (sección 8).
+- El círculo mide 24 encendido y 16 apagado, y 28 mientras se pulsa. Se mueve en 150 con `standard`.
+- Vibra con `TOGGLE_ON` o `TOGGLE_OFF`.
+- Desactivado encendido: el círculo de 24 en `disabled`, a la derecha, sobre la pista `control` con
+  contorno `handle`. Desactivado apagado: igual, con el círculo de 16 a la izquierda.
+- El subtítulo de la fila no cambia con el estado.
+
+**Muestra de color** (Nuevo personaje):
+- Círculo de 40 con objetivo de 48, a 8 de la siguiente, en un `LazyRow` con 16 a los lados y 6
+  arriba y abajo para que quepa el anillo. Se desliza hasta el borde.
+- Elegida: anillo de 2 `check` separado 3, con el hueco transparente, y ✓ de 18 en `ink` en el
+  centro.
+- Con foco, ese mismo anillo se dibuja en `focusRing`, esté elegida o no.
+- Cada muestra tiene un nombre propio en los tres idiomas, que es su nombre accesible; nunca
+  «Color».
+- La paleta y sus nombres están pendientes con los colores de los personajes (sección 2). Un test
+  exige ΔE00 de 18 o más frente a la interfaz y 3:1 de la ✓ sobre cada color.
+
+**Losa de accesorio** (Nuevo personaje):
+- 52 × 52, radio 16, `control`, con el avatar de 36 que lleva ese accesorio; a 8 de la siguiente.
+- Elegida: `selected`, línea `selectedOutline` y ✓ de 14 en `check`, a 4 de la esquina superior
+  derecha.
+- Se llama como el objeto («Sombrero de mago»), no como un personaje.
+
+**Selector de oráculo** («Responde como · Vidente», en las acciones de la bola):
+- 52 de alto, radio 16, `control` con línea `outlineVariant`.
+- A 8 del borde izquierdo, el avatar de 32 con su anillo de 2 `ring`. A 8, dos líneas: «Responde
+  como» en `tag` y `textSecondary`, y el nombre en `button` y `text`. A 8, la flecha `chevron-down`
+  de 16 en `textSecondary`, y 12 hasta el borde derecho.
+- Con la letra al 150 % o más, una línea: avatar, nombre y flecha.
+- Abre la lista para elegir quién responde.
+
+### Listas
+
+**Grupo:**
+- Radio 24, sin contorno, a 16 de los bordes de la pantalla. `surface` sobre el fondo; `control`
+  dentro de una hoja o un diálogo.
+- Recorta las esquinas de la primera y la última fila.
+- Entre dos grupos, 12. Un grupo con contenido libre, como la tarjeta de entrar, lleva 16 de relleno
+  y 12 entre sus piezas.
+
+**Cabecera de grupo:** `sectionLabel` en `textSecondary`, a 20 del borde de la pantalla, 20 por
+encima y 8 hasta el grupo. Es un encabezado (`heading()`). Una o dos palabras, sin punto.
+
+**Fila de lista: `LuzListItem`.** Parámetros: `leading`, `headline`, `supporting`, `trailing`,
+`onClick`, `selected`, `enabled` y `destructive`.
+
+| Pieza | Valores |
+|---|---|
+| Alto mínimo | 56 con una línea; 72 con avatar de 40. Con dos líneas mide 66, lo que da su contenido |
+| Relleno | 12 arriba y abajo y 16 a los lados; 4 a la derecha si termina en un botón de icono de 48, para que su icono quede donde los demás finales |
+| Separación | 16 entre el inicio, el texto y el final |
+| Inicio | Un icono de 22 en una caja de 24, en `contentMedium`; un avatar de 36 o 40; el avatar de inicial de 40; o nada |
+| Título | `rowTitle` en `text`. Se parte en líneas; nunca se corta |
+| Apoyo | `supporting` en `textSecondary`, justo debajo |
+| Final | › o ↗ de 18 en `textSecondary`; un interruptor; un botón tonal; un botón de icono de 48; la ✓ de 22 en `check`; o nada |
+| Separador | 1 de `outlineVariant`, desde donde empieza el texto hasta el borde derecho del grupo: a 16 sin inicio, a 56 con icono, a 68 con avatar de 36 y a 72 con uno de 40. No hay tras la última fila |
+| Alineación | Inicio y final centrados en vertical; con tres líneas o más, arriba, a 12 del borde |
+
+Variantes:
+- **Abre una pantalla:** termina en ›. **Sale de la app:** termina en ↗.
+- **Ajuste:** termina en un interruptor y toda la fila conmuta. El apoyo explica el ajuste y no
+  cambia con el estado.
+- **Elige:** la elegida lleva fondo `selected` y la ✓; las demás, nada.
+- **Actúa al tocar** (antes «Filas de acción», como los motivos de «¿Qué tiene de malo esta
+  respuesta?»): sin inicio ni final y sin marca de elegido; tocar ya actúa. Título en `rowTitle`: el
+  lienzo dibuja estas filas y las de Idioma en Inter 500, y pasan a 600.
+- **Borra:** título e icono en `error`. Abre siempre un diálogo, como «Eliminar cuenta».
+- **Con botón tonal:** como «Obtener» en la fila de Premium; la fila crece a 76 (12 + 52 + 12).
+- **Recientes:** avatar arriba y cuatro líneas, a 2 entre sí y a 4 antes de la última: la respuesta
+  en `rowTitle`; la frase en `oracleSmall` y `contentMedium`; la pregunta, entre «», en `supporting`
+  y `textSecondary`; y «Hace 5 min · Vidente · IA» en `caption` y `textSecondary`. Al final, arriba,
+  la papelera de 48 «Borrar respuesta».
+
+- Pulsada: `surfaceOverlay`, o `surfaceHighest` en un grupo de una hoja; sin escala (sección 2,
+  «Tono»).
+- **Contenido:** título corto, sin punto. El apoyo, una frase corta que no repite el título.
+- **Sí:** toda la fila es un solo toque. **No:** un objetivo pequeño dentro de la fila que hace otra
+  cosa, salvo el botón de icono de 48 del final.
+
+**Elegir personaje:**
+- Filas de 72 en un grupo: avatar de 40, el nombre en `rowTitle` y una muestra de cómo responde,
+  entre «», en `oracleXSmall` y `contentMedium`.
+- La elegida: fondo `selected`, anillo de 2 `ring` en su avatar y ✓ de 22. Las demás, sin anillo.
+- **Pendiente de decidir** qué hace el toque:
+  - (a) Tocar la fila elige y cierra. Un botón de icono de 48 al final, `info`, «Ver ficha de
+    Bruja», abre la ficha. La fila es `selectable(role = Role.RadioButton)`.
+  - (b) Tocar la fila abre la ficha y la ✓ marca el actual. La fila es un botón con `onClickLabel`
+    «ver ficha» y la elegida lleva `stateDescription` «Elegido».
+
+**Filas esqueleto** (Personajes y Comunidad, mientras cargan):
+- Filas de 72 en su grupo: un círculo de 40 y dos barras de 12 de alto, redondas, del 60 % y el 40 %
+  del ancho del texto, separadas 8. Todo en `control`.
+- Tantas como llenen el primer grupo de la pantalla.
+- Laten de 0,6 a 1 de opacidad en 1,2 s, con `smoothstep`. Con «Reducir movimiento», quietas.
+- No se leen una a una: el grupo dice «Cargando personajes».
+
+**Estado vacío** (Recientes sin respuestas, «Tuyos» sin personajes):
+- Centrado, con 320 de ancho como máximo y 40 de margen a los lados.
+- Una losa de 72, radio 24 y `control`, con un icono de 32 en `contentMedium`.
+- A 20, el título en `sheetTitle`; a 12, el texto en `bodySmall` y `textSecondary`; a 24, un botón
+  secundario que lleva a llenarlo.
+- El título dice qué falta («Aún no hay respuestas»), el texto cómo llenarlo y el botón lleva allí.
+
+### Campos
+
+**Campo de texto:**
+
+| Pieza | Valores |
+|---|---|
+| Etiqueta | `sectionLabel` en `textSecondary`, encima, a 4 del borde del campo y a 6 de él |
+| Contenedor | 56 de alto mínimo, radio 16, `control` y contorno de 1 `outline` |
+| Texto | `body` en `text`, con 16 a los lados y centrado en vertical |
+| Marcador | `body` en `disabled`. Solo un ejemplo; nunca repite la etiqueta |
+| Ayuda y contador | `caption` en `textSecondary`, a 6 debajo y a 4 de los bordes: la ayuda a la izquierda y el contador («14/16») a la derecha |
+| Cursor y selección | Cursor de 2 en `cursor`; selección en `textSelection` y asas en `cursor` (`TextSelectionColors`) |
+
+- **Con foco:** contorno de 2 `focusRing`.
+- **Error:** contorno de 2 `error` y el mensaje en `caption` y `error`, en el sitio de la ayuda;
+  vibra con `REJECT`. Aparece al guardar y se va al corregirlo. El mensaje dice qué hacer: «Ponle un
+  nombre».
+- **Desactivado:** contorno de 1 `handle` y el texto en `disabled`.
+- **Límite:** el campo no deja escribir más del máximo y el contador lo enseña.
+- **Varias líneas** («¿Cómo responde?»): de 3 a 6 líneas, de 101 a 170 de alto, con 16 arriba y
+  abajo. Pasadas 6, se desplaza dentro. Lleva siempre contador.
+- **Teclado:** `capitalization = Sentences`, o `Words` en los nombres; `imeAction = Next` entre
+  campos y `Done` en el último, que cierra el teclado.
+- Preguntar es solo por voz: ningún campo sirve para escribir la pregunta.
+
+**Campo de fecha: `DateField`** (fecha de nacimiento en «¿Quién pregunta?»):
+- Tres casillas de 56 separadas 8: el día y el mes de 72 de ancho; el año, el resto.
+- Se llaman «Día», «Mes» y «Año»; encima va la etiqueta «Fecha de nacimiento».
+- El orden es un parámetro que da la pantalla según el idioma: día, mes y año en español y
+  portugués; mes, día y año en inglés de Estados Unidos.
+- Teclado numérico (`KeyboardType.Number`). Con 2, 2 y 4 cifras salta a la siguiente casilla; borrar
+  en una vacía vuelve a la anterior.
+- Marcadores «DD», «MM» y «AAAA» en `disabled`. Debajo, como ayuda, la fecha en letra: «12 de marzo
+  de 1990».
+- Un solo error para las tres, «Fecha no válida», con las tres casillas en contorno `error`.
+- No se usa el `DatePicker` de M3: no hay calendario.
+
+### Barras, hojas y avisos
+
+**Barra superior y título de pantalla:**
+- La barra mide 56, más la barra de estado encima (`WindowInsets.statusBars`). Tiene 4 de relleno a
+  los lados y dos zonas de 104, a izquierda y derecha, con hasta dos botones de icono de 48, a 4 uno
+  de otro. En el centro van los puntos de página o el título pequeño.
+- En reposo es transparente sobre `bg`. Cuando el contenido pasa por debajo, toma `bg` opaco y una
+  línea inferior de 1 `outlineVariant`, con un fundido de 150.
+- En las pantallas con «Atrás», el título pequeño (`barTitle`, una línea, centrado) entra con ese
+  fundido cuando el título grande queda bajo la barra. Es el comportamiento de `exitUntilCollapsed`
+  de M3, hecho a mano.
+- El título de pantalla va en el contenido y se desplaza con él: 64 de alto mínimo, `screenTitle`, a
+  20 del borde, con 8 de relleno abajo y a la derecha. A su derecha puede llevar un botón de texto;
+  con la letra al 150 % o más, ese botón baja bajo el título.
+- Solo el título grande es encabezado; el pequeño no se lee (sección 8).
+
+**Paginador** (las tres páginas de la bola):
+- Tres puntos de 6 separados 6, en el centro de la barra: `text` el de la página que se ve y
+  `pageDot` los demás. Cambian de color en 150.
+- Los puntos no se tocan. Las páginas se pasan deslizando o con los botones de la barra.
+- Cada página anuncia su nombre con `paneTitle`; los puntos dicen «Página 2 de 3».
+
+**Hoja:**
+- Se construye sobre `ModalBottomSheet` de M3, con
+  `rememberModalBottomSheetState(skipPartiallyExpanded = true)`: abre siempre entera.
+- Radio 32 arriba, `surface` y una línea superior de 1 `outlineVariant`. Detrás, el velo `scrim`.
+- 16 a los lados y, abajo, 16 por encima de la barra de navegación. Ancho máximo 640, centrada.
+- Alto: el de su contenido, como mucho la ventana menos la barra de estado y 48. Si no cabe, el
+  contenido se desplaza y el botón principal se queda fijo abajo, con una línea de 1
+  `outlineVariant` encima mientras haya contenido debajo.
+- Título en `sheetTitle`, a 20 del borde. Premium y la ficha de un personaje lo llevan en
+  `screenTitle`, centrado.
+- Los grupos de dentro van en `control` y sus filas, pulsadas, en `surfaceHighest`.
+
+| | Con asa | Sin asa («¿Quién pregunta?») |
 |---|---|---|
-| Botón principal | 52 de alto, radio 16 y 20 de relleno lateral. Fondo `#4361EE` con una línea interior superior de blanco al 14 %, texto blanco | Pulsado `#3B55D1`. Desactivado `#16222F` con texto `#808D9A`. Cargando: indicador y «Un momento…». Uno por pantalla |
-| Botón secundario | 52 de alto y radio 16, fondo `#16222F` con línea de blanco al 8 % | Pulsado `#1E2C3B`. Desactivado `#0D1824` |
-| Botón tonal | 52 de alto y radio 16, solo dentro de filas, `#1D2C4E` con texto `#C9D6FF` | Pulsado `#263A66`. Ejemplo: «Obtener» en la fila de Premium |
-| Botón de texto | 48 de alto y radio 16, texto `#A9BCFF` | Pulsado con fondo `#1E2C3B` |
-| Botón de icono | 48 de alto y radio 16, fondo `#16222F`, icono de 22 con trazo de 2. En la fila de la respuesta mide 52; en la barra superior va sin fondo | Mientras lee en voz alta, el de la barra muestra «parar», un cuadrado de contorno |
-| Botón de borrar | 52 de alto y radio 16, fondo `#2A1418` con línea coral al 22 % y texto `#FF8A8A` | Solo para acciones que borran, como «Borrar todo» y «Eliminar cuenta» |
-| Selector de oráculo | 52 de alto y radio 16, con avatar de 32, anillo de 2 px del color del oráculo, nombre y flecha | Abre la lista para elegir personaje |
-| Campo de texto | 56 de alto y radio 16, fondo `#16222F` con contorno de 1 px `#6B7886`. La etiqueta va encima, en Inter 600 13 | Con foco: contorno de 2 px `#A9BCFF`. Con error: contorno de 2 px coral y el mensaje debajo, en coral |
-| Chip de filtro | 36 de alto y radio 12, en Outfit 600 15 | Elegido: fondo `#152240`, línea `#7C96FF` al 40 % y ✓ `#7C96FF` |
-| Chip de nombre | 36 de alto y radio 12, `#16222F` con línea de blanco al 8 %, Outfit 600 15 y una ✕ de 16 | Todo el chip quita a la persona: «Quitar a Ana» |
-| Barra superior | 56 de alto, con botones de icono de 48 sin fondo | En las páginas de la bola lleva en el centro los puntos de página: `#F2F5F8` el de la página que se ve y `#56626F` los demás |
-| Título de pantalla | 64 de alto como mínimo, Outfit 700 28/34, a 20 del borde | A la derecha puede llevar un botón de texto, como «Borrar todo» |
-| Hoja | Radio 32 arriba, `#0D1824`, asa de 36 × 4 `#2A3644` y 16 de margen lateral | Su alto es el de su contenido. Título en Outfit 700 21/28. Los grupos de dentro van en `#16222F`. Detrás, el velo `scrim` |
-| Diálogo | Radio 28, `#0D1824` con línea de blanco al 8 %, a 24 de los bordes | Título en Outfit 700 21/28 y texto en Inter 15. La acción principal arriba y «Cancelar» o «Ahora no» como botón de texto. Detrás, el velo `scrim` |
-| Elegir personaje | Filas de 72 en un grupo `#0D1824` de radio 24: avatar de 40, nombre en Inter 600 16 y una muestra de cómo responde en Fraunces 15/20 | Elegida: fondo `#152240`, anillo de su color y ✓ `#7C96FF`. Sin anillos vacíos en las demás |
-| Filas de acción | Filas de 56 sin control, separadas por líneas de blanco al 8 % | Pulsada `#1E2C3B`. Tocar ya actúa |
-| Interruptor | 52 × 32, como el de Material 3. Toda la fila conmuta | Encendido: cobalto con círculo blanco de 24. Apagado: contorno de 2 px `#6B7886` y círculo de 16. El subtítulo no cambia con el estado |
-| Etiqueta | 24 de alto, redonda del todo, sin borde, Inter 600 12, `#16222F` con texto `#C9D1DA` | Ejemplo: «Tienes Premium», en Tu cuenta |
-| Aviso de atención | Grupo de radio 24, `#21190C`, línea ámbar al 22 %. Icono ámbar de 24, sin caja, y el texto a 72 del borde | Título, qué se pierde, la acción dentro en un botón ámbar de 52 y, si hace falta, una nota. Sirve para el límite de IA, el micrófono, las notificaciones y los personajes que no cargan («Reintentar») |
-| Aviso breve | 56 de alto y radio 16, opaco, `#1E2C3B` | Se va solo. Tras reportar dice «Reportada. Gracias.» y ofrece «Deshacer» durante 5 s |
-| Racha | Línea en Inter 500 13 `#9AA7B4`, con una chispa de trazo de 14 | Bajo la bola, en reposo y en modo fiesta; la ayuda va encima de la bola. No es un contador en la barra |
-| Frase del oráculo | Etiqueta en Inter 600 12 con ▲ en el color del oráculo, y la frase en Fraunces 500 24/30 | Líneas equilibradas. Con «Respuestas más largas», 20/26, y la leyenda crece hacia abajo sin mover la bola |
+| Arriba | Asa de 36 × 4, `handle`, a 8 del borde, en una zona de 48 × 24; el contenido empieza 16 más abajo | El contenido empieza a 24 del borde |
+| Se cierra | Arrastrando, tocando el velo, con atrás o con la acción «Cerrar» del asa | Solo con sus botones: no se arrastra (`sheetGesturesEnabled = false`), el velo no la cierra y atrás hace lo mismo que «Continuar sin cuenta» |
+
+**Diálogo:**
+- Se construye sobre `Dialog` con `usePlatformDefaultWidth = false`.
+- De 280 a 400 de ancho, a 24 de los bordes de la pantalla. Radio 28, `surface` y contorno de 1
+  `outlineVariant`. Detrás, el velo `scrim`.
+- Relleno de 24 arriba, 20 a los lados y 16 abajo; 12 entre las piezas.
+- Título en `sheetTitle` y cuerpo en `bodySmall` y `contentMedium`, los dos con 4 más de margen (a
+  24 del borde).
+- El cuerpo se desplaza si no cabe: el diálogo mide como mucho la ventana menos 96.
+- Acciones apiladas, a 24 del cuerpo (12 + 12): arriba el botón de 52, principal o de borrar, a todo
+  el ancho; debajo, los de texto de 48, separados 4.
+- Tocar el velo o atrás hacen lo que «Cancelar». Con un campo dentro, `imePadding()`.
+- **Contenido:** el título pregunta por la acción («¿Borrar todas las respuestas?»); el cuerpo dice
+  qué se pierde y si se puede deshacer, en dos o tres frases cortas; el botón repite el verbo.
+
+**Aviso breve:**
+- Se construye con `SnackbarHost` y el contenido de Luz.
+- 56 de alto mínimo, radio 16, `surfaceOverlay` y contorno de 1 `outlineVariant`, sin sombra.
+- El texto en `emphasis` y `text`, dos líneas como mucho, con 16 a la izquierda. La acción es un
+  botón de texto de 48 dentro, con 4 hasta el borde.
+- Va 12 por encima de las acciones de la bola; en las demás pantallas, 16 por encima de la barra de
+  navegación o del botón fijo de abajo. 16 a los lados; ancho máximo 560.
+- Uno cada vez: uno nuevo sustituye al que hay.
+- Se descarta deslizándolo a un lado. Su duración, la de la sección 8: el tiempo se para mientras se
+  toca y, con TalkBack, el que tiene acción no se va solo.
+- **Contenido:** una frase que dice qué ha pasado («Respuesta borrada»), y como acción un verbo
+  («Deshacer»). Sin icono.
+
+**Aviso que pide atención:**
+- Un grupo de radio 24 en `warningContainer`, con contorno de 1 `warningOutline` y 16 de relleno.
+- El icono de 24 en `warning`, sin caja; a 16, el texto, que empieza a 72 del borde de la pantalla,
+  como el de las filas.
+- Título en `noticeTitle` y `text`; a 4, el cuerpo en `supporting` y `contentMedium`; a 12, el botón
+  ámbar, que se ajusta a su texto; si hace falta, a 8, una nota en `caption` y `contentMedium`.
+- Va debajo del ajuste al que afecta, a 12 del grupo siguiente.
+- **Contenido:** el título dice qué pasa, el cuerpo qué se pierde y el botón lo arregla: «Las
+  notificaciones están desactivadas para esta app», «Sin ellas no te llega el veredicto del día.»,
+  «Permitir notificaciones».
+- Sin una acción no hay ámbar: el aviso pasa a texto en `textSecondary`.
+
+**Etiqueta emergente** (los botones de icono, al mantenerlos):
+- Es el `TooltipBox` de M3 con un `PlainTooltip` propio. Dice el nombre accesible del botón.
+- `emphasisSmall` en `text`, sobre `surfaceOverlay`, radio 12, 8 de relleno a los lados y 6 arriba y
+  abajo.
+- Sale a 8 del botón, encima o debajo según el sitio, y se va 1,5 s después de soltar.
+- TalkBack no la lee: el botón ya tiene ese nombre.
+
+### Contenido
+
+**Etiqueta:** 24 de alto, redonda del todo y sin borde. `tag` en `contentMedium`, sobre `control`.
+Puede llevar delante un icono de 14 a 6 del texto. Relleno de 8 en el lado del icono y 12 en el del
+texto. No se toca. Una o dos palabras: «Tienes Premium».
+
+**Racha:** una línea en `emphasisSmall` y `textSecondary`, con la chispa (`sparkle`) de 14 delante,
+a 6: «3 días seguidos». Va bajo la bola, en reposo y en el modo fiesta. No es un contador en la
+barra.
+
+**Veredicto y frase del oráculo** (bajo la bola, centrados, sin bocadillo):
+- El veredicto en `verdict` y `text` (por ejemplo, «Sí, sin duda.»). Así se lee fuera del triángulo
+  y sigue el tamaño de letra.
+- A 8, la etiqueta en `tag` y en el color `label` del personaje: el ▲ de 10 dibujado (no es un
+  carácter), a 8, y «Vidente añade · IA».
+- A 8, la frase en `oracleLarge` y `text`, con las líneas equilibradas (`LineBreak.Heading`).
+- Con «Respuestas más largas», la frase pasa a `oracleMedium` y la leyenda crece hacia abajo sin
+  mover la bola.
+- Una respuesta reportada cambia la frase por «Respuesta reportada», con la bandera de 16.
+
+**Avatares:**
+- **De personaje:** círculo de 28, 32, 36, 40, 64 u 88. La bola grande sale por la esquina inferior,
+  inclinada unos 18°, con el disco blanco descentrado como cara. El dibujo de cada uno está
+  pendiente (sección 7).
+- Lleva un anillo de 2 `ring` solo cuando marca al personaje actual: selector, botón de avatar, fila
+  elegida y ficha. Nunca un anillo vacío.
+- **De inicial:** círculo `control` con contorno interior de 1 `outlineVariant`, y la inicial en
+  Outfit 700 y `contentMedium`, a 0,42 del tamaño (27 en uno de 64). La letra se calcula en dp, así
+  que no crece con el tamaño de letra.
+- Junto a un nombre, el avatar no se lee.
+
+**Indicador circular:**
+- 18 dentro de un botón; 24 suelto. Trazo de 2 con extremos redondos.
+- Una pista entera al 30 % del color del indicador y un arco de 90° que da una vuelta por segundo.
+- Color: el del contenido de su contenedor (`onAccent`, `text`, `onTonal`, `onWarning` o `error`);
+  suelto, `contentMedium`.
+- Solo indeterminado: nunca un porcentaje.
+
+### La bola: `OracleBall`
+
+El componente dibuja la bola de las secciones 1 a 6
+([ADR 0001](adr/0001-bola-dibujada-con-compose.md)).
+
+| Parámetro | Valores |
+|---|---|
+| `state` | Reposo, escuchando (con el nivel del micrófono), pensando, respuesta (con el veredicto y el texto de la ventana), sin respuesta, dormida, sin conexión y esperando |
+| `oracle` | Luz, accesorio y mirada del personaje, con sus `OracleColors` |
+| `size` | El ancho: de 160 a 250 en el móvil (sección 8) y 112 en el reloj. El alto es el ancho × 1,168, por el sitio para saltar |
+| `reduceMotion` | El de `LuzMotion` |
+
+- **Tocar:** pide una respuesta sin pregunta, con la vibración `CLOCK_TICK`.
+- **Mantener** el tiempo de pulsación larga del sistema (`longPressTimeoutMillis`): empieza a
+  escuchar, vibra con `LONG_PRESS` y escucha mientras se mantiene. Al soltar, pregunta.
+- Un toque que empieza en la bola no pasa de página: la bola se queda con el gesto.
+- **Agitar** el móvil lo detecta `:core:motion` y hace lo mismo que tocar, salvo con el interruptor
+  «Agitar para preguntar» apagado.
+- **Semántica:** la de la sección 8, con la acción «Preguntar en voz alta».
+
+### Fuera de la app
+
+**Tarjeta de compartir:**
+- 360 × 450 dp, que se exportan a 1080 × 1350 px (× 3) en PNG. Se dibuja aparte, con la escala de
+  letra a 1, para que la letra grande no rompa la composición.
+- Contenido y colores, en la sección 7; el fondo y la tinta por personaje están pendientes
+  (`shareBackground` y `shareInk`, sección 2).
+- Se comparte con la hoja del sistema (`ACTION_SEND`, `image/png` y un URI de `FileProvider` con
+  permiso de lectura).
+- En la app, su imagen lleva como descripción el texto entero de la tarjeta.
+- Mientras se genera, «Compartir» está en su estado de carga.
+
+**Widget:**
+- Con Glance. Un tamaño de 2 × 2, 156 × 156, con el radio del sistema
+  (`system_app_widget_background_radius`; antes de Android 12, 16).
+- Fondo `surface` con una línea de 1 `outlineVariant`, como forma XML.
+- La bola va como imagen: Glance no dibuja con el Canvas de Compose, así que se pinta un mapa de
+  bits con el dibujo de `OracleBall` al tamaño del widget. Uno lleva la bola en reposo y el otro la
+  ventana con la última respuesta.
+- Sin texto. La imagen lleva su descripción: «Bola mágica» o «La Vidente responde: sí, sin duda».
+- Tocarlo abre la app en la bola.
+
+**Notificación:**
+- Icono pequeño: el glifo de la bola, de 24, de un solo color (blanco sobre transparente), como pide
+  Android.
+- Icono grande: el avatar del personaje.
+- El texto lo da la sección 7.
+
+### Reloj
+
+Wear OS con Compose Material 3 para Wear, que ya usa la app del reloj. Se prueba en pantallas de
+192, 227 y 240.
+
+| Pieza | Componente | Valores |
+|---|---|---|
+| Marco | `AppScaffold` y `ScreenScaffold`, con `TimeText` arriba | Fondo `watchBg`, negro, como pide Wear OS para las pantallas OLED |
+| Lista | `TransformingLazyColumn` con `ListHeader` y `ScrollIndicator` | La corona o el bisel la desplazan. Márgenes en porcentaje del ancho: 5,2 %, unos 12 en 227. La opción que llega al borde se encoge y se apaga |
+| Cabecera | `ListHeader` | `chip` en `text` |
+| Opción | `Button` de 52, en píldora, dentro de un `selectableGroup()` y con `Role.RadioButton` | `emphasis` en `text`. Elegida: `selected`, línea `selectedOutline` y ✓ de 18 al final de la etiqueta. Los nombres de los personajes, en `text` |
+| Acción principal | `EdgeButton`, al pie | La acción de la pantalla (sección 7) |
+| La bola | `OracleBall` de 112 | — |
+| Aviso | Texto en `textSecondary` si no tiene acción; con acción, un `Button` ámbar | — |
+
+- La letra mínima es 12 sp y sigue el tamaño de letra del reloj.
+- El ámbar solo va con una acción, igual que en el móvil.
+
+### Borde a borde, barras del sistema y teclado
+
+Con `targetSdk` 35 o más, Android dibuja la app detrás de sus barras. La app llama a
+`enableEdgeToEdge()`, con las barras transparentes e iconos claros, y cada superficie aparta lo
+suyo:
+
+| Superficie | Qué aparta |
+|---|---|
+| Barra superior | La barra de estado (`statusBars`) y, en horizontal, el recorte de la cámara (`displayCutout`) |
+| Listas que se desplazan | La barra de navegación, como relleno inferior del `LazyColumn` más 16: la última fila nunca queda debajo |
+| Acciones de la bola | 20 más la barra de navegación (`navigationBars`) |
+| Aviso breve | 12 sobre las acciones de la bola; en otras pantallas, 16 sobre la barra de navegación |
+| Hoja | Abajo, 16 más la barra de navegación; arriba, no pasa de la barra de estado |
+| Diálogo | Se centra en lo que queda libre (`safeDrawing`) |
+| La bola | Su tamaño sale del alto útil, sin las barras (sección 8) |
+
+- En el lienzo, las pantallas llevan dibujadas sus barras: la de estado de 24 arriba, con la hora a
+  la izquierda y los iconos a la derecha en `text`; la de navegación por gestos de 24 abajo, con su
+  píldora de 108 × 4 en `text` al 60 %. Con tres botones mide 48.
+- **Teclado:**
+  - `windowSoftInputMode="adjustResize"` en la actividad.
+  - Los formularios llevan `imePadding()` y se desplazan. El campo con foco se trae a la vista con
+    `BringIntoViewRequester`.
+  - La acción principal siempre se ve: en una hoja, su botón queda fijo encima del teclado y el
+    contenido se desplaza por detrás; en una pantalla completa, como Nuevo personaje, «Guardar» va
+    en la barra.
+
+### Carga
+
+| Qué espera | Cómo se ve |
+|---|---|
+| Una acción de un botón: comprar, entrar, ver un anuncio, borrar la cuenta | El estado «Cargando» del botón |
+| El precio de Premium | «Suscribirme» en su estado «Cargando» y, debajo, «Buscando el precio en Google Play…» |
+| Una lista (Personajes, Comunidad) | Filas esqueleto |
+| La respuesta de la bola | La ventana con el líquido (sección 6). TalkBack dice «Pensando…» y, a los 6 s, «Sin respuesta» |
+| Algo largo con la bola a la vista | La animación «Esperando» (sección 6) |
+| La imagen para compartir | «Compartir» en su estado «Cargando» |
+
+- Nunca un indicador a pantalla completa ni un velo que bloquee la pantalla mientras carga.
+
+### Qué no se construye
+
+- **Menús desplegables:** las acciones de un elemento van en las filas de una hoja.
+- **Insignias:** ni números ni puntos sobre los iconos.
+- **Control segmentado:** para filtrar se usan los chips.
+- **Deslizar para recargar:** un fallo se arregla con «Reintentar» en su aviso.
+- **Progreso lineal:** solo el indicador circular.
+- **Selector de fecha con calendario:** la fecha se escribe en el campo de fecha.
+- **Tarjetas altas:** filas compactas en grupos, como en Grok.
