@@ -1,26 +1,29 @@
 # Rediseño: la bola como personaje
 
-Estado: diseño aprobado (propuesta B, 18 nov 2026) y componentes elegidos (variante Luz con
-botones de radio 16, 19 nov 2026). La implementación no ha empezado.
+Estado: diseño aprobado (propuesta B, 18 nov 2026), componentes elegidos (variante Luz con
+botones de radio 16, 19 nov 2026), y la cara de cristal y doce personajes aprobados (20 nov 2026).
+La implementación no ha empezado.
 
 La bola 8 pasa a ser un personaje. Donde iba el 8, en el círculo blanco, tiene dos ojos pequeños
 en forma de cápsula, sin boca y sin brillos, y toda su expresión sale de la forma de esos ojos.
 Cada oráculo (Vidente, Genio, Bruja…) es esa misma bola con otro accesorio, otro color de luz y
-otra mirada. Para responder, la bola gira sobre sí misma y enseña su ventana: un triángulo sube del
-líquido con la respuesta, como en la bola 8 de siempre. Después vuelve a mirarte con el gesto que
-corresponde a esa respuesta.
+otra mirada; son doce. Para responder, la bola cierra los ojos y su cara se vuelve de cristal:
+detrás, un triángulo sube del líquido con la respuesta, como en la bola 8 de siempre, sin que el
+personaje te dé la espalda. Después abre los ojos con el gesto que corresponde a esa respuesta.
 
 ## Documentos
 
 | Documento | Qué contiene |
 |---|---|
 | [plan.md](plan.md) | Principios, fases con su entregable y su criterio de hecho, forma de trabajo y riesgos |
-| [especificacion.md](especificacion.md) | La hoja de diseño completa: anatomía de la bola, tokens (color, tono, letra, espacio, forma, movimiento y vibración), personajes y sus miradas, ventana de respuesta, animación con tiempos (inicio, catálogo, interrupciones, reloj en modo ambiente), todas las pantallas y sus estados, accesibilidad y componentes con sus estados |
+| [especificacion.md](especificacion.md) | La hoja de diseño completa: anatomía de la bola, tokens (color, tono, letra, espacio, forma, movimiento y vibración), los doce personajes y sus miradas, ventana de respuesta, animación con tiempos (la cara de cristal, los gestos, inicio, catálogo, interrupciones, reloj en modo ambiente), todas las pantallas y sus estados, accesibilidad y componentes con sus estados |
 | [adr/0001-bola-dibujada-con-compose.md](adr/0001-bola-dibujada-con-compose.md) | Por qué la bola se dibuja con Compose y no con Lottie, Rive ni vídeo |
 | [adr/0002-diseno-listo-para-kmp.md](adr/0002-diseno-listo-para-kmp.md) | Reglas para que el sistema de diseño y la bola pasen a Kotlin Multiplatform sin reescribirse |
 | [adr/0003-lanzamiento-con-interruptor.md](adr/0003-lanzamiento-con-interruptor.md) | Cómo se lanza sin poner en riesgo la versión de producción |
 | [adr/0004-componentes-luz.md](adr/0004-componentes-luz.md) | Por qué los componentes siguen la variante Luz y no la versión con canto, inspirada en Duolingo |
 | [adr/0005-botones-radio-16.md](adr/0005-botones-radio-16.md) | Por qué los botones tienen radio 16 y no forma de píldora |
+| [adr/0006-respuesta-cara-de-cristal.md](adr/0006-respuesta-cara-de-cristal.md) | Por qué la bola responde con la cara de cristal y el giro queda apartado |
+| [adr/0007-doce-personajes.md](adr/0007-doce-personajes.md) | Los colores y las siluetas aprobados, los cuatro personajes nuevos y el presupuesto de color |
 | [../plans/migracion-kmp.pdf](../plans/migracion-kmp.pdf) | Plan de migración a Kotlin Multiplatform e iOS, que va después del rediseño |
 
 ## Lienzo de diseño
@@ -29,15 +32,20 @@ Los diseños están en el lienzo «Rediseño de la bola» de Claude:
 https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su dueño.
 
 - Página «Diseño»: todo lo elegido, en una sola página y en este orden.
-  - Para decidir: «Propuestas para decidir», con los colores, las siluetas y las miradas que recomiendan las
-    auditorías, y dónde usar cada versión de la respuesta. Nada de eso está aplicado todavía.
-  - La bola: la portada, las miradas de cada personaje en cada estado y veredicto, los ocho personajes y la
-    ventana de cada uno.
+  - La bola:
+    - la portada;
+    - las miradas de cada personaje en cada estado y veredicto;
+    - los personajes y, a su lado, «Cuatro personajes nuevos» (`CirculoNuevos`): la Gata, el
+      Comentarista, la Repostera y el Dino, con su luz, su silueta, su gesto y su voz;
+    - «La respuesta de cada personaje» (`CirculoVentanas`): la cara de cristal de los doce, con el
+      triángulo y su respuesta corta.
   - El personaje en movimiento:
     - el inicio de la app, en el que el 8 se vuelve los ojos, animado y paso a paso;
-    - la animación de la respuesta y la prueba «¿Gira o su cara se vuelve ventana?»;
-    - el catálogo de 18 animaciones del personaje;
-    - los ocho personajes en movimiento y la respuesta en cinco pasos.
+    - la animación de la respuesta y «La principal y la secundaria» (`CirculoPrueba`): la cara de
+      cristal a la izquierda y «Gira», apartada, a la derecha;
+    - el catálogo de 24 animaciones del personaje (`CirculoCatalogo`);
+    - los doce personajes en movimiento (`CirculoPersonajes`) y la respuesta de la cara de cristal en
+      cinco pasos (`CirculoRespuesta`).
 
     Todos los tableros de personajes se dibujan con el mismo motor de animación, así que coinciden.
   - Los componentes Luz, con todos sus estados y los botones de radio 16 del ADR 0005.
@@ -45,7 +53,9 @@ https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su 
     - la bola y sus estados: voz y micrófono, pregunta delicada, límite de IA, sin conexión, anuncios y
       primer uso;
     - Recientes y Opciones, con el modo fiesta;
-    - personajes y cuenta, con Comunidad, entrar con Google y eliminar la cuenta;
+    - personajes y cuenta, con los grupos «Los de siempre» y «Con actitud» (el tablero nuevo,
+      `LP80PersonajesConActitud`, es la lista desplazada hasta el segundo grupo), Comunidad, entrar
+      con Google y eliminar la cuenta;
     - Premium, compartir y sistema, con el ciclo de compra;
     - el reloj, también en modo ambiente.
 
@@ -53,15 +63,18 @@ https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su 
 - Página «Descartado · Canto»: la primera versión de los componentes, descartada por parecerse
   demasiado a Duolingo, con la comparación frente a Luz.
 
-La propuesta A, con la cara dentro de la ventana, se borró del lienzo el 20 nov 2026.
+La propuesta A, con la cara dentro de la ventana, se borró del lienzo el 20 nov 2026. El mismo día
+se quitó «Propuestas para decidir» (`CirculoPropuestas`): sus colores, siluetas y miradas están
+aprobados y aplicados (ADR 0007).
 
 Si este documento y el lienzo no coinciden, manda este documento: aquí están los valores exactos.
 
 ## Decisiones clave
 
 1. Propuesta B: ojos en el círculo blanco, sin boca y sin brillos (18 nov 2026).
-2. La respuesta se ve al girar la bola, en la ventana con el triángulo. En la ventana van de una a
-   tres palabras; la frase del personaje va debajo de la bola.
+2. La respuesta se ve en la cara de cristal: la bola cierra los ojos, su cara se vuelve de cristal y
+   el triángulo sube del líquido, sin girar (20 nov 2026, ADR 0006). «Gira» queda apartada. En la
+   ventana van de una a tres palabras; la frase del personaje va debajo de la bola.
 3. La bola se dibuja con Compose (ADR 0001).
 4. El sistema de diseño y la bola se escriben listos para KMP desde el primer día (ADR 0002).
 5. Todo se lanza detrás de un interruptor de Remote Config, sin bloquear la salida a producción del
@@ -75,3 +88,7 @@ Si este documento y el lienzo no coinciden, manda este documento: aquí están l
 7. Botones con radio 16 en lugar de píldora (19 nov 2026, ADR 0005):
    - los botones con relleno miden 52 de alto;
    - los de texto miden 48.
+8. Doce personajes (20 nov 2026, ADR 0007):
+   - los colores y las siluetas de las auditorías, aprobados, y el ámbar de los avisos en `#FF9F43`;
+   - cuatro nuevos: Gata, Comentarista, Repostera y Dino;
+   - en Personajes, dos grupos: «Los de siempre» y «Con actitud».

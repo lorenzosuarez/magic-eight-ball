@@ -1,8 +1,10 @@
 # Rediseño de la bola: especificación
 
 Estado: propuesta B aprobada el 18 nov 2026 y componentes de la variante Luz elegidos el 19 nov 2026
-([ADR 0004](adr/0004-componentes-luz.md)). Los valores salen de la página «Diseño» del lienzo de
-diseño.
+([ADR 0004](adr/0004-componentes-luz.md)). El 20 nov 2026 se aprobaron la cara de cristal como
+respuesta ([ADR 0006](adr/0006-respuesta-cara-de-cristal.md)) y doce personajes, con sus colores y
+siluetas ([ADR 0007](adr/0007-doce-personajes.md)). Los valores salen de la página «Diseño» del
+lienzo de diseño; los de la bola, de su motor de animación.
 
 Todas las medidas de la bola están en un lienzo de 200 × 210 unidades, con el centro del cuerpo en
 (100, 104). En la app se escalan al tamaño de la bola en pantalla: una unidad equivale al ancho
@@ -20,9 +22,9 @@ disponible dividido entre 200.
 | Sombra del borde | Círculo sobre el cuerpo | Radio 82. Degradado radial negro con centro en (96, 98) y radio 90: 0 % hasta el 60 % y 55 % en el borde. Va encima de la cara y la ventana y debajo del borde de luz, el brillo y el accesorio. En reposo no toca la cara; al girar, oscurece lo que se acerca al borde |
 | Cara | Círculo | Centro (100, 106), radio 44. Degradado mate con centro en (0,45; 0,38) y radio 0,72: `#FFFFFF` → `#F1EEEB` (70 %) → `#DFDBD7` |
 | Ojos | Dos cápsulas | 7,6 × 16, radio de esquina 3,8, en x = 83,2 y x = 109,2, y = 96. Color `#16171D`. Sin boca y sin brillos |
-| Ventana | Círculo, en la cara opuesta | Centro (100, 106), radio 46. Líquido con degradado radial: `#23308A` → `#0E1550` (60 %) → `#05081C`. Aro interior de radio 44, negro al 35 %, trazo de 4 |
+| Ventana | Círculo, detrás de la cara y en su mismo sitio; en «Gira», en la cara opuesta | Centro (100, 106), radio 46; mientras la cara se aclara, 44, el de la cara (sección 6). Líquido con degradado radial: `#23308A` → `#0E1550` (60 %) → `#05081C`. Aro interior de radio 44, negro al 35 %, trazo de 4 |
 | Burbujas | Círculos | Radios 1,3–2, `#8FA0FF` al 35 % |
-| Triángulo | Triángulo hacia arriba | Vértices (100, 68), (137, 132) y (63, 132). Degradado vertical del color del oráculo. Contorno de 1,2 al 60 % |
+| Triángulo | Triángulo hacia arriba | Vértices (100, 68), (137, 132) y (63, 132). Degradado vertical del color del oráculo. Contorno de 1,2 en el color de borde de cada personaje (sección 3), al 60 % |
 | Texto de la respuesta | Dentro del triángulo | Inter Bold, tamaño 9, espaciado 0,2, mayúsculas, centrado en x = 100. Dos líneas como máximo, con las bases en y = 106 y 119. Si una palabra no cabe, el tamaño baja por pasos hasta 7,6 |
 
 La bola se inclina unos grados según el estado (entre −16° y 10°). Los accesorios y la cara giran
@@ -56,7 +58,7 @@ tiempo ni una curva. Si falta uno, se añade aquí.
 | Cobalto | 900 `#152240` · 800 `#1D2C4E` · 700 `#263A66` · 600 `#3B55D1` · 500 `#4361EE` · 300 `#7C96FF` · 200 `#A9BCFF` · 100 `#C9D6FF` |
 | Noche | 990 `#01060C` · 950 `#030B14` · 900 `#0D1824` · 800 `#16222F` · 750 `#1E2C3B` · 700 `#263647` (nuevo) |
 | Niebla | 50 `#F2F5F8` · 200 `#C9D1DA` · 300 `#9AA7B4` · 500 `#808D9A` · 600 `#6B7886` · 700 `#56626F` |
-| Ámbar | 500 `#FFB547` · 600 `#E9A43F` · 900 `#2A1A00` · 950 `#21190C` |
+| Ámbar | 500 `#FF9F43` · 600 `#E9913D` · 900 `#2A1A00` · 950 `#21190C` (500 y 600, antes `#FFB547` y `#E9A43F`: [ADR 0007](adr/0007-doce-personajes.md)) |
 | Coral | 400 `#FF8A8A` · 900 `#3A1C22` · 950 `#2A1418` |
 | Sueltos | Blanco `#FFFFFF` · Negro `#000000` · Tinta `#16171D` · Asa `#2A3644` |
 
@@ -148,24 +150,21 @@ cambia un color de la sección 3.
 | `tintSurface` | La luz al 14 % sobre `surface` | Fondo teñido, como la vista previa del editor |
 | `tintOutline` | La luz al 24 % | Contorno de 1 del fondo teñido |
 | `triangleTop`, `triangleBottom`, `triangleText` | Los de la sección 3 | Triángulo de la ventana |
+| `triangleEdge` | El borde de la sección 3 | Contorno de 1,2 del triángulo, al 60 % |
 | `shareBackground`, `shareInk` | Pendiente de decidir (abajo) | Tarjeta de compartir |
 
-- Hoy los ocho dan 4,5:1 con su luz, así que `label` es la luz. El más justo es el Pirata: 5,25:1
-  sobre `bg` y 4,76:1 sobre `surface`.
+- Hoy los doce dan 4,5:1 con su luz, así que `label` es la luz. Los más justos son el Pirata y la
+  Vidente: 5,25:1 y 5,26:1 sobre `bg`, y 4,76:1 sobre `surface`.
 - La etiqueta en color solo va sobre `bg` o `surface`. Sobre `control`, `selected`, el tinte o en el
-  reloj, el nombre va en `text` y el color lo ponen el ▲ y el anillo: allí el Pirata daría 4,2:1.
+  reloj, el nombre va en `text` y el color lo ponen el ▲ y el anillo: allí el Pirata y la Vidente
+  bajarían hasta 4,1:1.
 - Un test unitario calcula estos roles para cada personaje y comprueba el 4,5:1.
 
-**Pendiente de decidir** (va en una propuesta aparte para el dueño):
-- Los cuatro colores de la sección 3 que no llegan a ΔE00 18 frente a la interfaz. Opciones ya
-  medidas:
-  - Genio: (a) se queda `#F2B84B`, a 4 del ámbar; (b) `#E8D27A`, a 14,4 del ámbar, que no llega a 18
-    y queda a 16 del Robot; (c) `#ECDC51`, a 18 del ámbar pero a 12 del Robot.
-  - Vidente `#CC60FB` (18,1), Astróloga `#F692CE` (18,2) o `#F28FD0` (19,2) y Filósofo `#DFBFAA`
-    (18,2). Todos dan 6,2:1 o más sobre `bg`.
-- El fondo y la tinta de la tarjeta de compartir: (a) `#E4DBFF` fijo, que solo sirve a la Vidente
-  (la etiqueta en el color del personaje da 1,72:1 con el Genio, 1,83:1 con el Mago y 1,48:1 con el
-  Robot); (b) la luz al 18 % sobre `#FBF9F7`, con la etiqueta en `ink`.
+**Pendiente de decidir:** el fondo y la tinta de la tarjeta de compartir, ahora para las doce luces.
+- (a) `#E4DBFF` fijo, que solo va con la Vidente: con la etiqueta en el color del personaje, ninguno
+  llega a 3:1.
+- (b) La luz al 18 % sobre `#FBF9F7`, con la etiqueta en `ink`: da 13,5:1 o más con los doce. La
+  tarjeta de la Repostera queda casi blanca (`#FAF2F8`).
 
 ### Letra
 
@@ -432,45 +431,71 @@ Los componentes Luz no leen `MaterialTheme`. Si uno envuelve un componente de M3
 
 ## 3. Oráculos
 
-| Oráculo (es / en) | Luz | Triángulo (texto) | Accesorio | Mirada | Carácter | Frase de ejemplo |
+Doce personajes ([ADR 0007](adr/0007-doce-personajes.md)). Los colores, las siluetas y las miradas
+se aprobaron el 20 nov 2026, y se leen a 48 px.
+
+| Oráculo (es / en) | Luz | Triángulo (texto) y borde | Accesorio | Mirada | Carácter | Frase de ejemplo |
 |---|---|---|---|---|---|---|
-| Vidente / Psychic | `#9B7BFF` | `#8E73F0` → `#5B3FD1` (blanco) | Turbante `#6E4FD8` con pliegues `#8E73F0` y gema `#FFD166` | Ojos cerrados con calma | Misteriosa y segura | «Las estrellas dicen que sí.» |
-| Genio / Genie | `#F2B84B` | `#FFD27A` → `#E0A030` (`#2A1A00`) | Moño y banda dorados `#F2B84B`, joya `#FF8FA3` y humo bajo la bola | Ojos felices | Generoso y teatral | «Concedido: es un sí.» |
-| Bruja / Witch | `#5BC8A0` | `#23A374` → `#0F6447` (blanco) | Sombrero puntiagudo `#1E7A58`, ala `#1A6A4C` y cinta `#A8F0D4` | Borde de arriba inclinado, de pícara | Pícara y directa | «Ni lo sueñes, cariño.» |
-| Mago / Wizard | `#34D1DB` | `#7DE6EC` → `#2FB7C2` (`#032A2E`) | Sombrero `#1F8C99`, ala `#18737E` y estrellas `#FFD166` | Cápsulas atentas | Sabio y amable | «Mis cálculos dicen que sí.» |
-| Filósofo / Philosopher | `#C4B59F` | `#9A8B74` → `#4F4436` (blanco) | Gafas redondas negras | Medio cerrados | Seco y cansado | «Define “sí”.» |
-| Astróloga / Astrologer | `#FF8FA3` | `#E0607E` → `#A82C4C` (blanco) | Luna creciente `#FFD1DB` y estrellas `#FFD166` | Mirando arriba | Soñadora | «Con Venus a favor, sí.» |
-| Robot / Robot | `#C6F03C` | `#DDF58A` → `#9CC827` (`#1B2A06`) | Antena `#8B9AAD` con bola `#C6F03C` sobre una arandela `#5F6E80`, y una junta remachada | Pantallas de 10 × 7 | Literal y exacto | «Afirmativo. Bip.» |
-| Pirata / Pirate | `#EC4A2A` | `#E8584A` → `#A12A21` (blanco) | Pañuelo `#B8262A` de borde inclinado, con lunares `#F4EDE4` y nudo al lado, y un parche negro con cinta | Un ojo tapado y el otro de pícaro | Gruñón y teatral | «Ni hablar, grumete.» |
+| Vidente / Psychic | `#BC4BFF` | `#A64BF0` → `#6B22C2` (blanco); borde `#E2BFFF` | Turbante `#7B2FCF` con pliegues `#A64BF0` y gema `#FFD166` | Ojos cerrados con calma, hondos | Misteriosa y segura | «Las estrellas dicen que sí.» |
+| Genio / Genie | `#F5CB45` | `#FFE07A` → `#E8B830` (`#2A1A00`); borde `#FFE6B0` | Moño dorado `#F5CB45` con anillo `#B8862A`, banda `#F5CB45` y joya `#FF8FA3`. Sin humo | Ojos felices | Generoso y teatral | «Concedido: es un sí.» |
+| Bruja / Witch | `#5BC8A0` | `#23A374` → `#0F6447` (blanco); borde `#A8F0D4` | Ala ancha `#1A6A4C` y cono corto y doblado `#1E7A58`, con cinta `#0F4A35` y hebilla `#F2D27A`. Así no se confunde con el Mago | De reojo, bajo un párpado plano | Pícara y directa | «Ni lo sueñes, cariño.» |
+| Mago / Wizard | `#45D3F2` | `#8BE4F6` → `#3BBCDF` (`#032A2E`); borde `#C2F4F7` | Sin ala: un cono alto y estrecho `#1B84A3` que cae hacia atrás, con cinta `#146B86` y su estrella `#FFD166` en la punta | Cápsulas atentas | Sabio y amable | «Mis cálculos dicen que sí.» |
+| Filósofo / Philosopher | `#B0A08A` | `#9A8B74` → `#4F4436` (blanco); borde `#E2D9CB` | Gafas de pasta redondas `#16171D`, de trazo 2,2; la mitad de arriba de cada aro, de 3,2, hace de párpado | Medio cerrados | Seco y cansado | «Define “sí”.» |
+| Astróloga / Astrologer | `#FF7EC8` | `#D9529E` → `#9E2569` (blanco); borde `#FFC2E4` | Luna creciente `#FFD3EC` pegada a la bola, arriba a la izquierda. Sin estrellas | Mirando arriba a la izquierda, a su luna | Soñadora | «Con Venus a favor, sí.» |
+| Robot / Robot | `#C6F03C` | `#DDF58A` → `#9CC827` (`#1B2A06`); borde `#EEFAC4` | Antena `#8B9AAD` con bola `#C6F03C` sobre una arandela `#5F6E80`, y una junta remachada | Pantallas de 10 × 7 | Literal y exacto | «Afirmativo. Bip.» |
+| Pirata / Pirate | `#EC4A2A` | `#E8584A` → `#A12A21` (blanco); borde `#F4B0A8` | Pañuelo `#B8262A` de borde inclinado, con lunares `#F4EDE4` y nudo al lado, y un parche negro con cinta | Un ojo tapado y el otro de pícaro | Gruñón y teatral | «Ni hablar, grumete.» |
+| Gata / Cat | `#2DC511`, verde ojo de gato | `#6EE05C` → `#2FA61E` (`#072A05`); borde `#C4F5BC` | Una gata negra: la bola es su cabeza. Orejas `#2B3042` con el borde `#2DC511` al 85 % (trazo de 2,4) y el interior `#2DC511` al 35 % | Rendijas de ojo de gato | Presumida y perezosa | «No. Y no insistas, humano.» |
+| Comentarista / Commentator | `#B08C19`, dorado de trofeo | `#E0C25A` → `#B08C19` (`#2A1F00`); borde `#F0DFA8` | Cascos: diadema `#4A5366`, auriculares `#2C3240` con placas `#B08C19` y, a la izquierda, el micrófono `#B08C19` en un brazo `#4A5366` | Muy abiertos | Eufórico y exagerado | «¡Gooool! Es un sí.» |
+| Repostera / Pastry chef | `#F5D1FB`, rosa merengue | `#F4C2EE` → `#D58ACB` (`#3A1036`); borde `#FFF0FD` | Gorro de cocina alto `#F6F1EC` con pliegues `#D8D0C8`, cinta `#E9A3E0` y una guinda `#E5384F` con rabito `#4C7A2E` que bota | Sonrientes: el párpado de abajo alzado | Dulce y perfeccionista | «Quizá: le falta un horneado.» |
+| Dino / Dino | `#819865`, verde salvia | `#B4C89C` → `#86A06A` (`#16200C`); borde `#E2ECD6` | Cresta de cinco placas `#6E8A52`; las tres del centro, con brillo `#B9CDA2` al 60 % | Pequeños | Antiquísimo y bonachón | «Sí. Lo sé desde el Jurásico.» |
 
 Nombres que se evitan: sibila y augur, porque casi nadie los conoce; «gitana», por estereotipo;
 médium y chamán.
 
 Los colores de los oráculos no pueden coincidir con los de la interfaz. Se comprueba con una
-distancia de color ΔE00 de 18 o más frente al cobalto, el ámbar, el coral y los grises de texto.
-Por eso el Mago es turquesa y el Filósofo, piedra. Hoy no lo cumplen el Genio (4 frente al
-ámbar), la Astróloga (7 frente al coral), la Vidente (12 frente al azul del ✓ y 15 frente al
-cobalto) y el Filósofo (17 frente al gris de los iconos); está pendiente de decidir. Robot y Pirata
-sí: 31 y 18,5.
+distancia de color ΔE00 de 18 o más frente al cobalto, el ámbar `#FF9F43`, el coral y los grises de
+texto, y las doce luces lo cumplen. Para que cupiera el Genio, el ámbar de los avisos pasó de
+`#FFB547` a `#FF9F43` (sección 2).
+
+Entre ellas, las doce luces quedan a ΔE00 17,9 o más. Los pares más cercanos son Genio y
+Comentarista (17,9), Robot y Gata (18,0), Bruja y Dino (18,3) y Filósofo y Dino (18,3). Con los
+ocho de antes solo quedaban cuatro huecos de color, y los ocupan los cuatro nuevos. Un personaje
+más tendrá que compartir familia de color con otro y distinguirse por su silueta.
+
+Contraste de las luces nuevas, que la etiqueta usa tal cual (sección 2):
+
+| Personaje | Sobre `bg` | Sobre `surface` |
+|---|---|---|
+| Gata | 8,6:1 | 7,8:1 |
+| Comentarista | 6,2:1 | 5,6:1 |
+| Repostera | 14,5:1 | 13,1:1 |
+| Dino | 6,2:1 | 5,6:1 |
 
 Robot y Pirata ya son estilos de respuesta de la app; son los primeros que reciben su aspecto.
 
-Pendiente de decidir, en el tablero «Propuestas para decidir»:
+**Los cuatro nuevos.** Dos con humor, la Gata y el Comentarista, y dos más tiernos, la Repostera y
+el Dino. Cada uno tiene un gesto que sale de lo que es (sección 6). Los nombres en inglés y
+portugués están por confirmar (sección 7).
 
-- **Colores:** Vidente `#BC4BFF`, Genio `#F5CB45`, Mago `#45D3F2`, Filósofo `#B0A08A` y Astróloga `#FF7EC8`, con el
-  ámbar de los avisos en `#FF9F43`. Así todos quedan a ΔE00 18 o más de la interfaz y a 19,6 o más entre ellos.
-- **Siluetas y miradas que se lean a 48 px:**
-  - el moño dorado del Genio en lugar de la gota, y sin humo;
-  - la calma de la Vidente, más curva;
-  - la Bruja mirando de reojo;
-  - las gafas de pasta del Filósofo;
-  - la luna pegada a la Astróloga, que la mira;
-  - el Mago sin ala y la Bruja con ala ancha.
+| Personaje (es / en / pt) | Voz | Sí | No | Quizá | Ventana |
+|---|---|---|---|---|---|
+| Gata / Cat / Gata | Breve, distante, un poco diva y perezosa. Llama «humano» a quien pregunta y habla de su siesta y de comida. Nunca es cruel | «Sí. Ahora, mi siesta.» | «No. Y no insistas, humano.» | «Quizá. Tráeme algo rico y lo pienso.» | «NO. / MIAU» |
+| Comentarista / Commentator / Narrador | La euforia de una retransmisión de fútbol: vocales largas y palabras del fútbol (fuera de juego, VAR, golazo). Nunca insulta a nadie | «¡Gooool! Es un sí.» | «¡Fuera de juego! No.» | «¡Al VAR! Quizá.» | «¡GOOOL!» |
+| Repostera / Pastry chef / Confeiteira | Dulce y perfeccionista, con metáforas de repostería: el horno, la masa, el merengue, la guinda | «Sí, y con su guinda.» | «No: esa masa no sube.» | «Quizá: le falta un horneado.» | «LE FALTA / HORNO» |
+| Dino / Dino / Dino | Antiquísimo, bonachón y lento, con referencias a la prehistoria. Nunca da miedo | «Sí. Lo sé desde el Jurásico.» | «No. Ni en 65 millones de años.» | «Quizá. Déjame pensarlo un periodo geológico.» | «SÍ, / GRAAR» |
+
+- **Gata:** su luz es la de los ojos de un gato en la oscuridad, y sus orejas son de la misma tinta
+  que la bola, encendidas en el borde.
+- **Comentarista:** narra cada respuesta como un gol; su luz es el dorado viejo de un trofeo.
+- **Repostera:** su luz es el rosa pálido del merengue. La guinda bota cuando la bola salta.
+- **Dino:** lleva aquí desde el Jurásico y nada le corre prisa: reacciona tarde y despacio.
+- El texto del triángulo da 4,5:1 o más donde va: 6,4:1 en la Gata, 5,1:1 en el Comentarista en lo
+  más bajo del triángulo, 7,8:1 en la Repostera y 5,8:1 en el Dino en lo más bajo.
 
 ## 4. Catálogo de expresiones
 
-Todas las expresiones se dibujan solo con los ojos. Cada ojo mide 7,6 de ancho y su centro está en
-x = 87 y x = 113.
+Todas las expresiones se dibujan solo con los ojos. Cada ojo mide 7,6 de ancho, salvo donde la
+tabla da otra medida, y su centro está en x = 87 y x = 113.
 
 | Expresión | Forma |
 |---|---|
@@ -482,12 +507,18 @@ x = 87 y x = 113.
 | Quizá | Un ojo medio cerrado (mitad inferior, borde de arriba plano) y el otro abierto |
 | No | Cápsulas caídas: el borde de arriba se inclina hacia fuera y los ojos bajan |
 | Cerrados con calma | Arcos hacia abajo, trazo de 3,8: `M82 103 Q87 109 92 103` |
+| Cerrados con calma, hondos (Vidente) | Arcos hacia abajo tan curvos como los felices, trazo de 4: `M82 102 Q87 113 92 102` |
 | Medio cerrados | Mitad inferior de la cápsula, con el borde de arriba plano en y = 104 |
 | Pícara | Borde de arriba inclinado hacia el centro |
+| De reojo (Bruja) | Mitad inferior de la cápsula, con el borde de arriba casi plano (baja 1,5 de un lado al otro), 2,5 a la derecha y 3 más abajo |
+| Mirando arriba a la izquierda (Astróloga) | Las cápsulas de reposo, 2,5 a la izquierda y 9 más arriba: mira su luna |
+| Rendijas (Gata) | Un huso vertical de 5,6 × 16, en punta arriba y abajo |
+| Muy abiertos (Comentarista) | Cápsulas de 9 × 18 |
+| Sonrientes (Repostera) | Cápsulas de 7,6 × 11,8 con el borde de abajo curvado hacia arriba, el párpado alzado; 1 más abajo |
+| Pequeños (Dino) | Cápsulas de 5,6 × 11 |
 | Parpadeo | Cápsulas aplastadas al 12 % de su alto durante unos 100 ms |
 | Pantallas (Robot) | Rectángulos de 10 × 7 con esquinas de 2; su «sí» son dos ángulos rellenos de 11 × 8,5 |
 | Parche (Pirata) | Tapa el ojo izquierdo; el derecho lleva la mirada de pícaro |
-
 | Sin respuesta | Dos puntos de 5,5 × 5,5: no es la mirada de ningún veredicto |
 | Pantallas bajas (Robot) | Barras de 10 × 3; bajadas 3 para decir que no |
 
@@ -495,77 +526,121 @@ Cada personaje tiene su versión de cada mirada. Está dibujada en el tablero «
 
 | Personaje | Reposo | Al agitarse | Sí | No | Quizá |
 |---|---|---|---|---|---|
-| Vidente | Cerrados con calma | `> <` | Felices | Caídos | Quizá |
+| Vidente | Cerrados con calma, hondos | `> <` | Felices | Caídos | Quizá |
 | Genio | Felices | `> <` | Felices | Caídos | Quizá |
-| Bruja | Pícara | `> <` | Felices | Pícara | Quizá |
+| Bruja | De reojo | `> <` | Felices | De reojo | Quizá |
 | Mago | Abiertos | `> <` | Felices | Caídos | Quizá |
 | Filósofo | Medio cerrados | `> <` | Felices | Caídos | Quizá |
-| Astróloga | Mirando arriba | `> <` | Felices | Caídos | Quizá |
+| Astróloga | Mirando arriba a la izquierda | `> <` | Felices | Caídos | Quizá |
 | Robot | Pantallas | Pantallas bajas | Ángulos | Pantallas bajas y caídas | Una pantalla y una baja |
 | Pirata | Pícaro, con un ojo | Cerrado con calma | Feliz | Pícaro | Medio cerrado |
+| Gata | Rendijas | `> <` | Rendijas, con un parpadeo lento | De reojo | Quizá |
+| Comentarista | Muy abiertos | `> <` | Felices | `> <` | Muy abiertos |
+| Repostera | Sonrientes | `> <` | Felices | Caídos | Quizá |
+| Dino | Pequeños | `> <` | Felices | Caídos | Quizá |
 
 - **Robot:** nunca pasa a ojos humanos.
 - **Pirata:** lo dice todo con el ojo que no tapa el parche; su `<` al agitarse se leería como un guiño.
-- **Mientras gira, todos cierran los ojos con calma:** el Robot apaga sus pantallas.
+- **Gata:** dice que sí sin cambiar de mirada: cierra despacio las rendijas y las vuelve a abrir
+  (sección 6).
+- **Comentarista:** dice que no con los ojos apretados, `> <`, y su quizá mira al VAR (sección 6).
+- **Con la cara de cristal, los ojos se cierran antes de que la cara se aclare y vuelven cerrados
+  cuando se empaña:** la Vidente y el Genio, con los cerrados con calma; los demás, en la cápsula
+  cerrada de 7,6 × 1,9, y el Robot apaga sus pantallas. En «Gira», mientras gira, todos cierran los
+  ojos con calma y el Robot apaga sus pantallas.
 
 ## 5. La ventana de respuesta
 
-- La bola gira sobre su eje vertical, así que el accesorio sigue arriba y la ventana queda a la
-  vista. El adorno del accesorio (la gema de la Vidente, la joya del Genio…) se repite por detrás,
-  así que con la ventana delante se ve igual que con la cara.
+- La ventana está detrás de la cara: la bola cierra los ojos y su cara se vuelve de cristal
+  (sección 6). No se da la vuelta, así que te sigue mirando de frente y el accesorio no se mueve.
+- En «Gira», la versión secundaria, la ventana está en la cara opuesta. La bola gira sobre su eje
+  vertical, así que el accesorio sigue arriba, y su adorno (la gema de la Vidente, la joya del
+  Genio…) se repite por detrás: con la ventana delante se ve igual que con la cara.
 - En la ventana van de una a tres palabras, en mayúsculas y en dos líneas como máximo: «SÍ, SIN
-  DUDA», «CONCEDIDO», «NI LO SUEÑES».
+  DUDA», «CONCEDIDO», «NI LO SUEÑES»; en los cuatro nuevos, «NO. / MIAU», «¡GOOOL!», «LE FALTA /
+  HORNO» y «SÍ, / GRAAR».
 - La frase con más personalidad va debajo de la bola, en el texto de la pantalla, después del veredicto
   escrito (§7).
 - El triángulo es opaco. Sube tapado por una niebla de `#0E1550` al 85 % que se aclara en 450 ms, así que nunca
   se ve un triángulo traslúcido. Hacia los 450 ms toca el cristal (sube 1,2 de más) y se asienta en 150 ms; ahí
   vibra. Al hundirse, la niebla vuelve.
 - Mientras se lee, todo se calma: la bola flota ±1,5 y el triángulo ±0,4, sin girar.
-- El triángulo toma el color del oráculo. Su texto cumple 4,5:1 sobre ese color; en el Genio, el Mago
-  y el Robot por eso es oscuro.
+- El triángulo toma el color del oráculo y su contorno, el color de borde (sección 3). Su texto
+  cumple 4,5:1 sobre ese color; en el Genio, el Mago, el Robot y los cuatro nuevos, por eso es
+  oscuro.
 - Cada línea cabe dentro del triángulo con 2,5 de margen a cada lado, medido en lo alto de sus
   mayúsculas, donde el triángulo mide de medio ancho 37 · (base − 0,73 · tamaño − 68) / 64. Si no
   cabe, el tamaño baja por pasos hasta 7,6.
 
 ## 6. Animación de la respuesta
 
-Ciclo de referencia del lienzo, de 7,5 s:
+La bola responde con la cara de cristal ([ADR 0006](adr/0006-respuesta-cara-de-cristal.md)): cierra
+los ojos, su cara se vuelve de cristal y el triángulo sube del líquido detrás, sin darte nunca la
+espalda. Es la única animación de respuesta por defecto, en el móvil, en el reloj y en todos los
+casos. «Gira», la versión que da media vuelta, queda apartada (abajo, «Secundaria: gira»). El
+tablero «La principal y la secundaria» pone las dos a la vez, y «La respuesta: su cara se vuelve de
+cristal» la cuenta en cinco pasos.
+
+Ciclo de referencia del lienzo, de 7,5 s, con los valores de su motor de animación:
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
 | Reposo | 0–0,9 s | Flota ±3 unidades, tres ondas por ciclo, con la mirada del oráculo. Si la mirada tiene los ojos abiertos, parpadea a 0,45 s |
 | Escuchando | 0,9–1,7 s | Los ojos se abren en un parpadeo y pasan a 8,6 × 21, la bola se inclina de −5° a −12° y el halo late suave: un 18 % más, a 2,4 Hz |
-| Se agita | 1,7–2,3 s | 3,5 sacudidas que se apagan. El cuerpo va ±5 unidades y se mece ±4°; la cara le sigue 25 ms después, deslizándose ±3,9° sobre la bola, y los ojos, con su mirada de agitarse (§4), un poco más tarde. Las puntas de los sombreros, la antena y el moño se balancean |
-| Gira | 2,3–3,3 s | Cierra los ojos con calma. Media vuelta sobre su eje vertical: 5° hacia el otro lado en 0,12 s y un muelle (ζ 0,8, rigidez 90) que pasa por 180° a los 0,44 s, se pasa 2,7° y se asienta a los 0,86 s sin pararse. La bola sube 1,8 mientras gira |
-| La respuesta | 3,1–5,2 s | El triángulo sube 26 unidades en 0,6 s tapado por una niebla que se aclara en 450 ms, y toca el cristal. El halo se duplica y la bola flota ±1,5. Antes de volver se hunde en 0,26 s y la niebla vuelve |
-| Vuelve | 5,2–6,0 s | La otra media vuelta, en el mismo sentido y con el mismo muelle: la ventana sale por la izquierda y la cara entra por la derecha con su mirada de reposo |
-| Gesto | 6,0–7,0 s | Te mira y parpadea a la mirada del veredicto (§4) mientras anticipa. Sí: se agacha 3 y se aplasta un 4 % en 110 ms, salta 10 estirándose un 2 %, se aplasta un 3 % al caer y rebota 1,5; el Genio salta 13 y se queda arriba 0,08 s, y el Robot cabecea dos veces. No: niega dos veces, 0 → +12° → −12° → +6° → 0 en 0,8 s. Quizá: sube 5 en 140 ms, se queda 220 ms y baja en 300 ms, ladeada 9° y mirando a un lado. El Filósofo reacciona 0,15 s tarde y al 70 % |
+| Se agita | 1,7–2,3 s | 3,5 sacudidas que se apagan. El cuerpo va ±5 unidades y se mece ±4°; la cara le sigue 25 ms después, deslizándose ±3,9° sobre la bola, y los ojos, con su mirada de agitarse (§4), un poco más tarde. Lo que cuelga o sobresale del accesorio se balancea (abajo) |
+| Cierra los ojos | 2,28–2,3 s | Al acabar la sacudida, los ojos se cierran tranquilos en un parpadeo: la Vidente y el Genio, con los cerrados con calma; los demás, en la cápsula cerrada de 7,6 × 1,9, y las pantallas del Robot se apagan |
+| Toma aire | 2,3–2,85 s | Con los ojos cerrados, sube 3,5 y se estira un 2 %, y vuelve |
+| Su cara se aclara | 2,46–2,8 s | Los ojos y lo que lleva la cara, como las gafas o el parche, se desvanecen en 2,46–2,58 s. Un destello cruza el blanco en 2,52–2,68 s mientras la cara se vuelve transparente, en 2,52–2,74 s, y deja ver el líquido. La ventana toma al final su tamaño, de radio 44 a 46, y su bisel, en 2,7–2,8 s |
+| La respuesta | 2,62–5,25 s | El triángulo sube desde 2,62 s, mientras la cara aún se aclara: 26 unidades en 0,6 s con `easeOutCubic`, de −8° a 0° y del 92 % al 100 %, tapado por una niebla que baja del 85 % a 0 en 0,45 s. Hacia los 0,45 s toca el cristal (sube 1,2 de más) y se asienta. El halo se duplica y la bola flota ±1,5. Desde 4,8 s se hunde 12 en 0,45 s con `smoothstep`, se encoge un 6 % y la niebla vuelve |
+| Se empaña | 5,0–5,3 s | La cara vuelve a ser blanca en 5,0–5,22 s, con otro destello, más suave y en sentido contrario, en 5,04–5,2 s; la ventana pierde su bisel y su tamaño en 5,0–5,08 s. La bola sube 1,5 y baja en 5,0–5,5 s. Los ojos cerrados y lo que lleva la cara vuelven en 5,2–5,3 s |
+| Abre los ojos | 5,85 s | Se abren en 70 ms, ya con la mirada del veredicto (§4) |
+| Gesto | 6,05–7,0 s | El gesto del veredicto (abajo). Quien reacciona tarde empieza después |
 | Reposo | 7,0–7,5 s | El gesto se relaja en la mirada de reposo |
 
-Cómo se dibuja el giro:
+**Gestos de la respuesta.** Son los mismos en las dos versiones. Empiezan a 6,05 s; los del Filósofo,
+0,15 s después, y los del Dino, 0,08 s después.
 
-- La bola es una esfera de radio 82 que gira sobre su eje vertical, con la cara delante y la ventana
-  detrás. Cada ciclo da una vuelta entera, siempre en el mismo sentido.
-- La cara, los ojos y la ventana van pegados a la superficie. Un punto (x, y) del dibujo de frente,
-  medido desde el centro del cuerpo, está a la profundidad z = √(82² − x² − y²). Tras girar un
-  ángulo ψ queda en x′ = x·cos ψ − z·sen ψ, con profundidad z′ = x·sen ψ + z·cos ψ; la y no cambia.
-  La ventana usa ψ − 180°. Para la sacudida y el cabeceo la cara gira además un ángulo pequeño θ
-  sobre el eje horizontal.
-- Lo que queda detrás (z′ < 0) se pega al contorno: la cara se va por el borde y no se encoge hacia
-  el centro.
-- Las piezas pequeñas (ojos, burbujas, adorno) van a su punto girado y se estrechan en horizontal
-  por z′/z.
-- La luz no gira: el degradado del cuerpo, el brillo y la sombra del borde se quedan quietos, y el
-  degradado de la cara también. El del líquido viaja con la ventana.
-- Lo redondo del accesorio no cambia al girar. Lo que no es redondo (la punta torcida de un sombrero,
-  el borde inclinado del pañuelo) se mezcla con su imagen en espejo según cos ψ, y lo que sobresale
-  (el nudo del Pirata) da la vuelta alrededor del eje y pasa por detrás de la bola.
-- Los adornos se repiten por detrás y se recortan con la silueta del accesorio: en cada media vuelta
-  uno se va por la izquierda y el otro entra por la derecha.
-- El dibujo necesita 34 unidades libres por encima de la bola: en el salto, la punta del sombrero del
-  Mago sube hasta y = −33.
-- Los contornos se calculan una vez; en cada fotograma solo se transforman, sin crear memoria
-  nueva.
+| Gesto | Quién | Qué hace |
+|---|---|---|
+| Salta | El sí de casi todos | Se agacha 3 y se aplasta un 4 % en 110 ms, salta 10 en 0,2 s estirándose un 2 %, baja en 0,2 s, se aplasta un 3 % al caer y rebota 1,5 |
+| Salta más alto | El sí del Genio | Salta 13, sube en 0,24 s y se queda arriba 0,08 s |
+| Cabecea | El sí del Robot | Cabecea dos veces, como un servo: −7° y baja 2,5, en 0,42 s |
+| Parpadeo lento | El sí de la Gata | No salta. Sus rendijas se cierran en 0,4 s, se quedan cerradas 0,45 s y se abren en 0,4 s: en un gato, es confianza. Mientras, se hunde 1,5 y se ladea 2° |
+| ¡Gol! | El sí del Comentarista | Un salto pequeño de 6 y, medio segundo después, uno grande de 12 que se queda arriba 0,06 s y rebota 1,5. Su luz destella una vez: el halo sube un 70 % y vuelve en 0,8 s |
+| Pisotón | El sí del Dino | Se agacha 4, salta 8 más despacio (sube en 0,26 s), cae con un aplastamiento del 6 % y rebota 2,5 |
+| Niega | El no de casi todos | Niega dos veces, 0 → +12° → −12° → +6° → 0 en 0,8 s, y se ladea 0,2° por cada grado |
+| Aparta la cara | El no de la Gata | Gira la cabeza 18° en 0,2 s, con la barbilla alta (se ladea 5° y sube 1) y las orejas gachas, 28° hacia fuera; la mantiene 0,6 s y vuelve en 0,3 s |
+| Se encoge | El quizá de casi todos | Sube 5 en 140 ms, se queda 220 ms y baja en 300 ms, ladeada 9° y mirando a un lado: la cabeza gira 7° |
+| Al VAR | El quizá del Comentarista | Los ojos van 3,5 a la izquierda, a la derecha y otra vez a la izquierda, y vuelven, en 1,4 s. La cabeza les sigue, 0,9° por unidad, y se ladea 3° |
+| Lo prueba | El quizá de la Repostera | Se ladea despacio a un lado y al otro, hasta 7°, una vez cada 0,9 s, durante 1,3 s, subida 2 y con la cabeza girada 4°, antes de decidir |
+
+- El Filósofo hace sus gestos al 70 %.
+- El Dino es lento: su no y su quizá duran 1,25 veces más (su no, 1 s), y su sí es el pisotón.
+- Lo que cuelga o sobresale se balancea con la sacudida, el despegue y la caída: las puntas de los
+  sombreros de la Bruja y el Mago, la estrella del Mago, el moño del Genio, la antena del Robot, la
+  luna de la Astróloga, la guinda de la Repostera, la cresta del Dino, el nudo del Pirata y el
+  micrófono del Comentarista.
+- Las orejas de la Gata se mueven solas de vez en cuando, 10° en 0,18 s (en el ciclo del lienzo, la
+  izquierda a 0,5 s y la derecha a 4,4 s), tiemblan con la sacudida y se aplastan cuando dice que no.
+- Lo más alto del dibujo son la estrella del Mago y el rabito de la guinda de la Repostera: llegan a
+  y = −39 y −43 en reposo, y a −53 en el salto. Es el sitio que la bola necesita por encima del
+  lienzo de 200 × 210 (pendiente, sección 7).
+
+Cómo se dibuja la cara de cristal:
+
+- La ventana va detrás de la cara, en su mismo sitio, y solo se dibuja mientras la cara no es del
+  todo blanca. Sobre el líquido van las burbujas, el triángulo y su niebla; encima de todo, la cara.
+- La cara se desvanece entera: su opacidad baja de 1 a 0, y con ella los ojos, las gafas y el
+  parche. Nunca tiene un agujero: un círculo oscuro que crece dentro del blanco parece un ojo
+  enorme.
+- La cara no cambia de color: roja o verde se lee como herida, enfado o mareo.
+- El destello es una franja blanca de 10 × 140, inclinada 35°, al 30 % y recortada por la cara.
+  Cruza de x = 30 a x = 170 en 0,16 s; al empañarse, cruza de vuelta al 24 %.
+- La ventana empieza con el radio de la cara, 44, y crece a 46 cuando aparece su bisel, el aro
+  interior de la sección 1.
+- El accesorio no se mueve, porque la bola no se da la vuelta. La esfera solo gira unos grados con
+  la sacudida y con los gestos, y se dibuja como en «Secundaria: gira».
+- No se dice «se le abre la cara», que en español es una herida.
 
 En la app, las fases las disparan los estados y no un reloj fijo:
 
@@ -573,26 +648,29 @@ En la app, las fases las disparan los estados y no un reloj fijo:
 |---|---|
 | `Idle` | Reposo |
 | `Listening` (mantener pulsado y hablar) | Escuchando. El halo sigue el nivel del micrófono en dB: ignora lo que está por debajo de −50 dBFS y lleva de −50 a −10 dBFS a un 0–18 % más de aura, en escala logarítmica; sube en 90 ms y baja en 300 ms |
-| `Thinking` | Se agita y gira. Si la respuesta se pide agitando el móvil, la sacudida sigue al acelerómetro. Si la respuesta no ha llegado, la ventana queda a la vista con el líquido en movimiento y sin triángulo, hasta el máximo actual de 6 s |
-| `Answered` | Se divide en dos. `Revelada`: la ventana con el triángulo, al menos 2,5 s y mientras TalkBack la lee; es lo que enseñan el widget y el reloj. `Reaccionada`: la cara con la mirada del veredicto, que se queda hasta que se pide otra respuesta |
-| Fallo («No lo veo claro. Pregúntame otra vez.») | El triángulo no aparece; la bola vuelve con mirada de duda |
+| `Thinking` | Se agita, cierra los ojos y su cara se vuelve de cristal. Si la respuesta se pide agitando el móvil, la sacudida sigue al acelerómetro. Si la respuesta no ha llegado, la cara de cristal deja ver el líquido en movimiento, sin triángulo, hasta el máximo actual de 6 s |
+| `Answered` | Se divide en dos. `Revelada`: la cara de cristal con el triángulo, al menos 2,5 s y mientras TalkBack la lee; es lo que enseñan el widget y el reloj. `Reaccionada`: la cara con la mirada del veredicto, que se queda hasta que se pide otra respuesta |
+| Fallo («No lo veo claro. Pregúntame otra vez.») | El triángulo no aparece: la cara se empaña y la bola abre los ojos en blanco, como en «Sin respuesta» (catálogo, abajo) |
 
 Interrupciones:
 
 - La bola responde en 100 ms como máximo a cualquier toque.
-- Con la cara delante, el agitado sale de la pose en que esté, mezclando en 80 ms.
-- Con la ventana delante, pedir otra respuesta hunde el triángulo en 200 ms, agita el líquido 400 ms y sube
-  el siguiente, sin dar otra vuelta.
-- El giro solo se deshace antes de llegar a 90°; pasado ese punto, termina.
-- Si la respuesta llega a mitad del giro, el triángulo espera a que la ventana esté delante.
+- Con la cara blanca, el agitado sale de la pose en que esté, mezclando en 80 ms.
+- Con la cara de cristal abierta, pedir otra respuesta hunde el triángulo en 200 ms, agita el líquido
+  400 ms y sube el siguiente, sin que la cara se empañe.
+- No hay giro que deshacer: si se cancela con la cara de cristal, se empaña desde donde esté y los
+  ojos vuelven.
+- Si la respuesta llega mientras la cara se aclara, el triángulo sube ya, bajo la niebla: no espera a
+  que la cara acabe de aclararse.
 - Cancelar la escucha: parpadeo al reposo en 120 ms y vuelta a −5° en 250 ms.
 - Otra respuesta pedida antes de 20 s usa el ritual corto: 0,4 s de agitado y la cara de cristal.
 
 Reglas:
 
 - Con «Quitar animaciones» la escala de animación de Android es 0 y Compose acabaría cualquier animación en
-  el siguiente fotograma. La app lee el ajuste y ofrece además el suyo (§8). En ese modo no hay giro, ni
-  agitado, ni saltos: se usa la cara de cristal con fundidos de 200 ms que la app controla.
+  el siguiente fotograma. La app lee el ajuste y ofrece además el suyo, «Menos movimiento» (§8). En ese
+  modo no hay agitado, ni respiración, ni destello, ni saltos: la cara de cristal cambia con fundidos de
+  200 ms que la app controla.
 - El bucle de la bola se para cuando no se ve, cuando la app va en segundo plano y con el ahorro de batería.
 - Un gesto pasa a otro dentro de un parpadeo: los ojos se cierran en 50 ms hasta una cápsula de
   7,6 × 1,9, que es igual para todos los gestos, cambian de forma y se abren en 70 ms. Los trazos
@@ -603,30 +681,55 @@ Reglas:
 - Todos los tiempos y curvas son tokens del sistema de diseño, nunca números sueltos en una pantalla.
 - La vibración acompaña al agitado (pulsos cortos) y a la llegada del triángulo (un toque).
 
-### En prueba: cara de cristal
+### Secundaria: gira
 
-En lugar de girar, la bola enseña la respuesta donde tiene la cara: la cara se vuelve de cristal. El
-tablero «Prueba: ¿gira o su cara se vuelve ventana?» pone las dos versiones a la vez. Hasta que se
-decida, manda la versión que gira. La recomendación de la auditoría es usar las dos: «Gira»
-en el móvil, porque en la bola 8 de verdad la ventana está detrás, y «Cara de cristal» como versión rápida, en
-el reloj, con «Quitar animaciones», al pedir otra respuesta antes de 20 s y en una respuesta abierta desde
-Recientes.
+Apartada: no sale por defecto ([ADR 0006](adr/0006-respuesta-cara-de-cristal.md)). Es la bola 8 de
+juguete: da media vuelta y enseña la ventana de detrás, y responde medio segundo más tarde que la
+cara de cristal, porque el triángulo sube a 3,12 s. Si la app la ofrece como «Giro clásico» en
+Opciones está pendiente de decidir (sección 7); la recomendación es no ofrecerla en el lanzamiento.
+
+Su dibujo de la esfera es también el de la sacudida, el de los gestos que giran la cabeza y el de las
+vueltas del sorteo del modo fiesta, así que se construye aunque «Gira» no salga.
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
-| Cierra los ojos | 2,28–2,58 s | Tras la sacudida, los ojos se cierran tranquilos (las pantallas del Robot se apagan) y la bola toma aire: sube 3,5 y se estira un 2 %. Luego los ojos y lo que lleva la cara, como las gafas o el parche, se desvanecen |
-| La cara se aclara | 2,52–2,8 s | Un destello cruza el blanco y la cara se vuelve transparente en 0,22 s sobre la ventana, que toma al final su tamaño y su bisel. El triángulo ya sube detrás desde 2,62 s |
-| La respuesta | Hasta 5,25 s | El triángulo flota y, desde 4,8 s, se hunde en 0,45 s con una curva suave |
-| Se cierra | 5,0–5,3 s | El blanco vuelve con otro destello y reaparecen los ojos cerrados |
-| Abre los ojos | 5,85 s | Se abren con la mirada del gesto, que empieza a los 6,05 s, como en el giro |
+| Reposo, escucha y agitado | 0–2,3 s | Como en la cara de cristal |
+| Gira | 2,3–3,3 s | Cierra los ojos con calma. Media vuelta sobre su eje vertical: 5° hacia el otro lado en 0,12 s y un muelle (ζ 0,8, rigidez 90) que pasa por 180° a los 0,44 s, se pasa 2,7° y se asienta a los 0,86 s sin pararse. La bola sube 1,8 mientras gira |
+| La respuesta | 3,1–5,2 s | El triángulo sube desde 3,12 s, 26 unidades en 0,6 s, tapado por una niebla que se aclara en 450 ms, y toca el cristal. El halo se duplica y la bola flota ±1,5. Antes de volver se hunde en 0,26 s y la niebla vuelve |
+| Vuelve | 5,2–6,0 s | La otra media vuelta, en el mismo sentido y con el mismo muelle: la ventana sale por la izquierda y la cara entra por la derecha con su mirada de reposo |
+| Gesto | 6,0–7,0 s | Te mira y parpadea a la mirada del veredicto (§4) mientras anticipa, y desde 6,05 s hace el gesto del veredicto, como en la cara de cristal |
+| Reposo | 7,0–7,5 s | El gesto se relaja en la mirada de reposo |
 
-Reglas de la prueba:
+Cómo se dibuja el giro:
 
-- La cara nunca tiene un agujero: un círculo oscuro que crece dentro del blanco parece un ojo enorme.
-- La cara no cambia de color: roja o verde se lee como herida, enfado o mareo.
-- No se dice «se le abre la cara», que en español es una herida.
-- El accesorio no se mueve, y el modo «reducir movimiento» queda casi igual que el normal, porque ya
-  cambia la cara por la ventana con un fundido.
+- La bola es una esfera de radio 82 que gira sobre su eje vertical, con la cara delante y la ventana
+  detrás. Cada ciclo da una vuelta entera, siempre en el mismo sentido.
+- La cara, los ojos y la ventana van pegados a la superficie. Un punto (x, y) del dibujo de frente,
+  medido desde el centro del cuerpo, está a la profundidad z = √(82² − x² − y²). Tras girar un
+  ángulo ψ queda en x′ = x·cos ψ − z·sen ψ, con profundidad z′ = x·sen ψ + z·cos ψ; la y no cambia.
+  La ventana usa ψ − 180°; en la cara de cristal, ψ. Para la sacudida y el cabeceo la cara gira
+  además un ángulo pequeño θ sobre el eje horizontal.
+- Lo que queda detrás (z′ < 0) se pega al contorno: la cara se va por el borde y no se encoge hacia
+  el centro.
+- Las piezas pequeñas (ojos, burbujas, adorno) van a su punto girado y se estrechan en horizontal
+  por z′/z.
+- La luz no gira: el degradado del cuerpo, el brillo y la sombra del borde se quedan quietos, y el
+  degradado de la cara también. El del líquido viaja con la ventana.
+- Lo redondo del accesorio no cambia al girar. Lo que no es redondo (la punta torcida de un sombrero,
+  el borde inclinado del pañuelo) se mezcla con su imagen en espejo según cos ψ, y lo que sobresale
+  (el nudo del Pirata, el micrófono del Comentarista) da la vuelta alrededor del eje y pasa por
+  detrás de la bola.
+- Los adornos se repiten por detrás y se recortan con la silueta del accesorio: en cada media vuelta
+  uno se va por la izquierda y el otro entra por la derecha.
+- Los contornos se calculan una vez; en cada fotograma solo se transforman, sin crear memoria
+  nueva.
+
+Sus interrupciones:
+
+- Con la ventana delante, pedir otra respuesta hunde el triángulo en 200 ms, agita el líquido 400 ms
+  y sube el siguiente, sin dar otra vuelta.
+- El giro solo se deshace antes de llegar a 90°; pasado ese punto, termina.
+- Si la respuesta llega a mitad del giro, el triángulo espera a que la ventana esté delante.
 
 ### El 8 y los ojos
 
@@ -703,8 +806,9 @@ mínimo, sin rellenos blancos ni animaciones:
 
 ### Catálogo de animaciones
 
-Todas están en el tablero «Catálogo de animaciones», cada una en bucle de reposo a reposo. Todo lo cuentan el
-cuerpo, los ojos y la luz; nada se dibuja alrededor de la bola.
+Todas están en el tablero «Catálogo de animaciones», cada una en bucle de reposo a reposo: son 24. Todo lo
+cuentan el cuerpo, los ojos y la luz; nada se dibuja alrededor de la bola. «Responde» es la cara de cristal, y
+«Gira · secundaria» va la última, apartada.
 
 | Animación | Cuándo | Qué hace | Duración | Vibración | Con «reducir movimiento» |
 |---|---|---|---|---|---|
@@ -716,32 +820,39 @@ cuerpo, los ojos y la luz; nada se dibuja alrededor de la bola.
 | Sin conexión | Mientras la app avisa de que no hay red | Ojos a media asta mirando abajo, inclinada −8°, flota ±1,2 y su luz al 60 % | En bucle | Ninguna | Quieta en esa postura |
 | Escucha | Mientras mantienes pulsado | Abre los ojos a 8,6 × 21, se inclina a −12° y el halo sigue tu voz en dB (ver `Listening`) | Lo que dure | `GESTURE_START`; si no lo hay, pulsación larga | Sin inclinarse; el halo, un 15 % más, fijo |
 | Se agita | Al soltar, al tocar o al agitar el móvil | 3,5 sacudidas: el cuerpo, la cara 25 ms después y los ojos `> <` más tarde | 0,6 s | Pulsos cortos | Un parpadeo |
-| Gira y responde | Con la respuesta | Media vuelta, sube el triángulo y vuelve la otra media vuelta con el gesto | 2,9 s | Un toque al llegar el triángulo | Fundido de 200 ms entre la cara y la ventana |
-| Sí | Veredicto sí | Te mira, parpadea a ojos felices y salta (ver «Gesto») | 0,6 s | `CONFIRM` al caer | Solo los ojos felices y `CONFIRM` |
+| Responde | Con la respuesta | Cierra los ojos, su cara se vuelve de cristal y sube el triángulo; luego la cara se empaña y abre los ojos con la mirada del veredicto (ver arriba) | 2,9 s | Un toque al llegar el triángulo | Fundidos de 200 ms, sin respiración ni destello |
+| Sí | Veredicto sí | Abre los ojos felices y salta (ver «Gestos de la respuesta») | 0,6 s | `CONFIRM` al caer | Solo los ojos felices y `CONFIRM` |
 | No | Veredicto no | Niega dos veces, ±12°, en 0,8 s | 0,8 s | `REJECT` | Solo la mirada y `REJECT` |
 | Quizá | Veredicto quizá | Sube 5, se queda 220 ms y baja, ladeada 9° y mirando a un lado | 0,66 s | Un `PRIMITIVE_TICK` | Solo la mirada |
 | Sí del Robot | Su veredicto sí | Cabecea dos veces, como un servo: −7° y baja 2,5 | 0,42 s | Ninguna | Solo la mirada |
-| Sin respuesta | Si la respuesta falla («No lo veo claro. Pregúntame otra vez.») o tarda más de 6 s | Vuelve sin triángulo, con dos puntos en blanco por ojos; se hunde 3 y su luz baja al 40 % en 400 ms, y vuelve un 20 % más despacio | 1,5 s | Dos `PRIMITIVE_LOW_TICK`, nunca `REJECT` | Los puntos y la luz |
+| Sí de la Gata | Su veredicto sí | Un parpadeo lento: las rendijas se cierran en 0,4 s, se quedan cerradas y se abren en 0,4 s, mientras se hunde 1,5 y se ladea 2°. No salta | 1,25 s | Ninguna | Solo el parpadeo lento |
+| No de la Gata | Su veredicto no | Aparta la cara 18° con la barbilla alta y las orejas gachas, la mantiene 0,6 s y vuelve | 1,1 s | `REJECT` | Solo la mirada y `REJECT` |
+| ¡Gol! | Sí del Comentarista | Un salto pequeño, uno grande y su luz destella una vez | 1,25 s | `CONFIRM` en cada caída | Ojos felices y el destello, sin saltos |
+| Al VAR | Quizá del Comentarista | Los ojos miran a un lado, al otro y otra vez al primero, y la cabeza les sigue | 1,4 s | Un `PRIMITIVE_TICK` | Solo la mirada |
+| Pisotón | Sí del Dino | Salta poco y despacio, y cae con peso: se aplasta un 6 % y rebota 2,5 | 0,8 s | `CONFIRM` al caer | Solo los ojos felices y `CONFIRM` |
+| Lo prueba | Quizá de la Repostera | Se ladea a un lado y al otro antes de decidir | 1,3 s | Un `PRIMITIVE_TICK` | Solo la mirada |
+| Sin respuesta | Si la respuesta falla («No lo veo claro. Pregúntame otra vez.») o tarda más de 6 s | La cara se empaña sin triángulo y abre los ojos con dos puntos en blanco; se hunde 3 y su luz baja al 40 % en 400 ms, y vuelve un 20 % más despacio | 1,5 s | Dos `PRIMITIVE_LOW_TICK`, nunca `REJECT` | Los puntos y la luz |
 | Esperando | Cuando una carga pasa de 0,6 s: los personajes, la cuenta, una compra, la imagen para compartir | Los ojos se juntan en ∞ y el ∞ se levanta en el 8 (0,6 s); una luz blanca de radio 1,7 lo recorre cada 0,9 s; al acabar vuelve a ojos y parpadea | Lo que dure; como mínimo un recorrido | Ninguna | El 8 sin la luz que corre, con fundidos |
 | Cambio de personaje | Al volver a la bola tras elegir otro | El accesorio sube 16 y se desvanece en 0,32 s, la luz pasa al color nuevo en 0,5 s, parpadea a la mirada nueva y cae el accesorio nuevo desde 18 en 0,36 s, aplastando la bola un 2,5 % | 1,2 s | Un toque al caer | Fundido cruzado de 200 ms |
 | Celebración | Al abrir la app el día que se cumple una racha de 3, 7 o 30 días | Ojos felices, dos saltos de 6 y 9 con aplastamiento al caer, y su luz late una vez | 1,3 s | Un toque en cada caída | Ojos felices y la luz late, sin saltos |
-| Gesto propio (sin tablero) | Cada 20–40 s de reposo, al azar | El Genio mueve el moño, la Bruja mira de reojo, el Filósofo suspira y el Pirata se balancea como en un barco | 0,8–1,5 s | Ninguna | No se hace |
+| Gesto propio (sin tablero) | Cada 20–40 s de reposo, al azar | El Genio mueve el moño, la Bruja mira de reojo, el Filósofo suspira, el Pirata se balancea como en un barco y la Gata mueve una oreja | 0,8–1,5 s | Ninguna | No se hace |
 | Leer en voz alta (sin tablero) | Mientras lee la respuesta | El halo sigue la voz, hasta un 12 % más | Lo que dure | Ninguna | El halo, fijo |
-| Sorteo del modo fiesta (sin tablero) | Al elegir a quién le toca | Da dos o tres vueltas que frenan en 1,6 s y para en la ventana con el nombre | 1,6 s | Un toque en cada media vuelta y `CONFIRM` al parar | El nombre con un fundido |
-| Cara de cristal | Prueba frente a «Gira» | Ver «En prueba: cara de cristal» | 2,9 s | Un toque al llegar el triángulo | Fundido de 200 ms |
+| Sorteo del modo fiesta (sin tablero) | Al elegir a quién le toca | Da dos o tres vueltas, como una ruleta, que frenan en 1,6 s. Para de cara a ti y su cara se vuelve de cristal con el nombre: no hay ventana detrás | 1,6 s y la cara de cristal | Un toque en cada media vuelta y `CONFIRM` al parar | El nombre con un fundido |
+| Gira · secundaria | Apartada: no sale por defecto | Media vuelta, sube el triángulo en la ventana de detrás y vuelve la otra media vuelta con el gesto (ver «Secundaria: gira») | 2,9 s | Un toque al llegar el triángulo | Fundido de 200 ms entre la cara y la ventana |
 
 Reglas del catálogo:
 
 - **Prioridad:** cuando dos animaciones quieren los ojos a la vez, gana la de más arriba en esta lista: responder
-  (escucha, agitado, giro y gesto), toque, cambio de personaje, celebración, esperando, mira alrededor, reposo.
+  (escucha, agitado, cara de cristal y gesto), toque, cambio de personaje, celebración, esperando, mira
+  alrededor, reposo.
 - **Interrupciones:** dormida se interrumpe con cualquier toque. Si se le pide una respuesta mientras duerme,
   primero despierta (0,6 s) y luego responde.
 - **Azar:** las de reposo (el parpadeo y mirar alrededor) caen al azar dentro de su ventana, para que no se note
   el bucle.
 - **Esperas breves:** «Esperando» solo aparece si la carga pasa de 0,6 s y, una vez empieza, dura al menos un
   recorrido completo, para no parpadear.
-- **La espera de la respuesta es otra:** mientras llega la respuesta, se ve la ventana con el líquido en
-  movimiento (la tabla de estados de arriba).
+- **La espera de la respuesta es otra:** mientras llega la respuesta, la cara de cristal deja ver el líquido
+  en movimiento (la tabla de estados de arriba).
 - **Vibración:** el toque suave es `CLOCK_TICK`, la pulsación larga `LONG_PRESS`, el toque `CONFIRM` y los pulsos
   cortos una composición de `PRIMITIVE_TICK`. Si el sistema tiene la vibración táctil apagada, no se vibra.
 
@@ -814,7 +925,7 @@ pregunta se queda en el título, entre «», en `bodySmall` y `textSecondary`.
 | En reposo | `LP01Reposo` | La ayuda | Cara en reposo | La racha: «3 días seguidos» | El selector de personaje, «Responde como · Vidente» |
 | Escuchando, antes de hablar | `LP40Escuchar` | «Te escucho…» en `sectionLabel` y `textSecondary` y, donde irá lo que oye, «Haz una pregunta de sí o no.» en `transcript` y `textSecondary` | Escuchando: ojos de 8,6 × 21, inclinada −12° y con el halo latiendo | «Suelta para preguntar · Desliza fuera para cancelar» en `emphasisSmall` y `textSecondary`; si no cabe, se parte en el «·» | Nada |
 | Escuchando | `LP02Escuchando` | «Te escucho…» y, debajo, lo que va oyendo en `transcript` y `text`: sus dos últimas líneas; las anteriores salen por arriba | Escuchando | Como antes de hablar | Nada |
-| Pensando | `LP03Pensando` | La pregunta | La ventana con el líquido | Nada; TalkBack dice «Pensando…» | Nada |
+| Pensando | `LP03Pensando` | La pregunta | La cara de cristal, con el líquido en movimiento y sin triángulo | Nada; TalkBack dice «Pensando…» | Nada |
 | Respuesta | `LP04Respuesta` | La pregunta | La ventana con la respuesta | El veredicto, «Sí, sin duda.», en `verdict` y `text`; a 8, la etiqueta «▲ Vidente añade · IA»; a 8, la frase en `oracleLarge` (sección 9, «Veredicto y frase del oráculo») | «Compartir» y los dos pulgares |
 | Respuesta larga, con «Respuestas más largas» | `LP31RespuestaLarga` | La pregunta | La ventana con la respuesta | El veredicto y la etiqueta, fijos. La frase, en `oracleMedium`, se desplaza en el resto de la leyenda hasta las acciones, con un fundido de 24 sobre ellas y otro arriba en cuanto se ha desplazado. El tablero lleva 210 caracteres; la IA llega a 240 | Como en la respuesta, siempre a la vista |
 | Respuesta sin pregunta | `LP46SinPregunta` | «Una pregunta en silencio» en `bodySmall` y `textSecondary`, sin «» | Como en la respuesta | Como en la respuesta | Como en la respuesta |
@@ -870,7 +981,7 @@ pregunta se queda en el título, entre «», en `bodySmall` y `textSecondary`.
 |---|---|---|---|---|---|
 | Límite de IA | `LP47LimiteIA` | La pregunta | Como en la respuesta | El veredicto, «▲ Vidente añade», sin «· IA», y una frase suya de siempre | Encima, el aviso compacto: `clock`, «Ya usaste las de hoy. Vuelven mañana.» y «Ver un anuncio». Debajo, «Compartir» y el botón de texto «Hazte Premium», con `crown` |
 | Sin conexión | `LP48SinConexion` | La pregunta | Como en la respuesta, con el aura al 60 %, la luz de «Sin conexión» (sección 6) | El veredicto, «▲ Vidente añade · sin conexión» y una frase suya de siempre. «· sin conexión» va en `textSecondary`, como «· IA» | Solo «Compartir» |
-| Pregunta delicada | `LP45Delicada` | La pregunta | Sin giro, sin triángulo y sin gesto: las cápsulas de reposo, quietas y a 0°, con el aura al 50 % | Sin etiqueta: «Esto no lo puede responder un juguete.» en `emphasisLarge` y `text`, y «Si es urgente, llama al 112. Si no, habla con alguien de confianza.» en `body` y `contentMedium` | El botón secundario «Dónde pedir ayuda» |
+| Pregunta delicada | `LP45Delicada` | La pregunta | Sin cara de cristal, sin triángulo y sin gesto: las cápsulas de reposo, quietas y a 0°, con el aura al 50 % | Sin etiqueta: «Esto no lo puede responder un juguete.» en `emphasisLarge` y `text`, y «Si es urgente, llama al 112. Si no, habla con alguien de confianza.» en `body` y `contentMedium` | El botón secundario «Dónde pedir ayuda» |
 
 - Sin IA no hay pulgares: valoran y reportan lo que escribe la IA.
 - `LP47LimiteIA`: si la frase ocupa dos líneas, pasa a `oracleMedium` para dejar 12 sobre el aviso.
@@ -888,7 +999,7 @@ pregunta se queda en el título, entre «», en `bodySmall` y `textSecondary`.
 | Estado | Tablero | Título | Bola | Leyenda | Acciones |
 |---|---|---|---|---|---|
 | Turno de Ana | `LP77FiestaTurno`, que sustituye a `LP06Fiesta` | «Turno de Ana» en `screenTitle` y, debajo, la ayuda en `bodySmall` y `textSecondary` | Cara en reposo | La racha | El botón de avatar del modo fiesta y el secundario «¿Quién del grupo…?», con `users` |
-| Le toca a Leo | `LP78FiestaElegido` | «¿Quién del grupo…?» en `bodySmall` y `textSecondary` | Gira y la ventana dice «LEO» | «Le toca a Leo» en `verdict` y `text` | El secundario «Elegir otra vez», con el icono de repetir |
+| Le toca a Leo | `LP78FiestaElegido` | «¿Quién del grupo…?» en `bodySmall` y `textSecondary` | Da vueltas como una ruleta, para de cara a ti y su cara se vuelve de cristal con «LEO» | «Le toca a Leo» en `verdict` y `text` | El secundario «Elegir otra vez», con el icono de repetir |
 
 - En el margen superior, centrado, va el chip «Modo fiesta»: un chip de nombre (sección 9) con
   `party-popper` de 16 delante del texto. Se llama «Salir del modo fiesta». Lo apaga y sale el aviso
@@ -1051,9 +1162,13 @@ Pantallas que se abren desde Opciones, todas con «Atrás» y su título:
 - La barra lleva ✕, «Cerrar», y +, «Crear un personaje». Debajo, el título «Personajes».
 - Los chips de filtro «Todos», «Originales», «Comunidad» y «Tuyos», en una fila que se desliza
   (sección 9). A 390 caben los cuatro.
-- «Todos» enseña los ocho en el grupo «Originales», con filas de elegir personaje: Vidente,
-  Filósofo, Astróloga, Bruja, Genio, Mago, Robot («Afirmativo. Bip.») y Pirata («Ni hablar,
-  grumete.»). Debajo irán «Comunidad» y «Tuyos».
+- «Todos» enseña los doce originales en dos grupos, con filas de elegir personaje y la frase de
+  ejemplo de cada uno (sección 3):
+  - «Los de siempre», los seis clásicos: Vidente, Genio, Bruja, Mago, Filósofo y Astróloga;
+  - «Con actitud»: Robot, Pirata, Gata, Comentarista, Repostera y Dino.
+
+  Debajo irán «Comunidad» y «Tuyos». Los dos grupos no caben en una pantalla:
+  `LP80PersonajesConActitud` es la misma, desplazada hasta el segundo grupo.
 - El actual lleva fondo `selected`, su anillo y la ✓. Tocar una fila abre su ficha: es la opción (b)
   de la sección 9, aún pendiente.
 - Mientras cargan, filas esqueleto. Si no cargan, el aviso «No se pudieron cargar los personajes»,
@@ -1227,7 +1342,7 @@ Por defecto, «Publicación» y con la pregunta. Se recuerda la última elecció
 **Tarjeta de compartir** (`LP27Compartir`), de 360 × 450. Se dibuja aparte, con sus propios tamaños
 (sección 9):
 - Fondo y tinta: pendientes (`shareBackground` y `shareInk`, sección 2). El tablero usa la luz del
-  personaje al 18 % sobre `#FBF9F7` (con la Vidente, `#EAE2F8`) y la tinta `#2A2440`.
+  personaje al 18 % sobre `#FBF9F7` (con la Vidente, `#F0DAF8`) y la tinta `#2A2440`.
 - La pregunta, en un bocadillo blanco con relleno de 12 × 16, en Inter 15/20, en dos líneas como
   máximo, con «…».
 - La respuesta en `shareDisplay`, en una columna de 200 como máximo y en dos líneas. Si no cabe,
@@ -1257,21 +1372,22 @@ Wear OS, pantalla redonda de 227 (sección 9, «Reloj»). La hora va arriba en t
 |---|---|---|
 | En reposo | `LPW1Reposo` | La bola de 112 y «Toca o agita.» / «Mantén presionado» / «y pregunta.» en `supporting` y `contentMedium`, en tres líneas |
 | Escuchando | `LPW6Escuchando` | La bola de 112 con la cara de escuchar (8,6 × 21, a −12°) y el halo latiendo, sin ondas ni marcas. «Te escucho…» en `contentMedium`. Cuando oye palabras, esa línea las enseña: una sola, recortada por el principio |
-| Pensando | `LPW7Pensando` | La bola de 112 con la ventana y el líquido, y la pregunta entre «» en `textSecondary`, en dos líneas como máximo |
+| Pensando | `LPW7Pensando` | La bola de 112 con la cara de cristal y el líquido en movimiento, y la pregunta entre «» en `textSecondary`, en dos líneas como máximo |
 | La respuesta | `LPW2Respuesta` | La ventana de 120, para que se lea. Debajo, «Otra vez», la acción principal: una píldora de 160 × 52 en `accent`. Más abajo, al desplazar, «Reportar» en una píldora `control`, que en reposo solo asoma por el borde |
 | Sin respuesta | `LPW8Fallo` | La bola de 104 con la mirada de duda y «No lo veo claro. Pregúntame otra vez.» en `contentMedium`. Tocar o agitar da una respuesta; mantener y hablar pregunta |
 | Sin el móvil | `LPW9SinMovil` | La bola de 88 en reposo, «Teléfono desconectado» en `text` y «Responde con sus frases de siempre.» en `textSecondary`. Sin ámbar: no hay nada que hacer. El aviso se va solo al volver la conexión |
 | Sin micrófono | `LPW10Microfono` | `mic` de 24 en `warning`, «Sin micrófono solo puedes tocar o agitar.» en `text` y el botón ámbar «Permitir», en píldora de 52. Si se denegó para siempre, «Abrir ajustes» |
 | Modo ambiente | `LPW11Ambiente`, `LPW12AmbienteMago` | La bola de ambiente (sección 6): sin aura, brillo, sombra ni degradados; el cuerpo negro con el borde de 1,5 al 60 % de la luz del personaje; la cara, un aro de 1,5 en `contentMedium`, sin relleno, con los ojos de reposo en `contentMedium`; el accesorio, en contorno de 1,5 del color del borde. Sin texto, solo la hora. Se desplaza unos píxeles cada minuto |
 
-- En ambiente, el borde de la Vidente da 2,9:1 sobre negro: es decorativo, y la forma la da el aro
-  de la cara, a 13,6:1. El del Mago da 4,3:1.
+- En ambiente, el borde de la Vidente da 2,5:1 sobre negro: es decorativo, y la forma la da el aro
+  de la cara, a 13,6:1. El del Mago da 4,5:1.
 - Idioma (`LPW3Idioma`), Personaje (`LPW4Personaje`) y Respuestas con IA (`LPW5IA`, «Sí» o «No») son
   listas de opciones (sección 9): píldoras de 160 × 52 con relleno de 16. La elegida lleva fondo
   `selected`, línea `selectedOutline` y ✓ de 18 en `check`. La que llega al borde se encoge al 86 % y
   se apaga al 70 %.
 - En Personaje, cada píldora lleva el avatar de 28, con 12 de relleno a la izquierda, y el nombre en
-  `text`. El anillo del color del personaje solo va en el elegido.
+  `text`. El anillo del color del personaje solo va en el elegido. La lista lleva los doce, en el
+  orden de Personajes: los seis de siempre, Robot y Pirata, y al final los cuatro nuevos.
 - Con el límite de IA gastado, Respuestas con IA dice «Ya usaste las de hoy. Vuelven mañana.» en
   `caption` y `textSecondary`, sin ámbar: en el reloj no hay acción que ofrecer.
 
@@ -1281,7 +1397,7 @@ Los tableros de «Componentes Luz», antes de las pantallas, enseñan los compon
 
 | Tablero | Qué enseña |
 |---|---|
-| `LuzBase` | Color, letra y luz. «El color es de los personajes», con los ocho: Robot y Pirata, dibujados como los otros seis. «Pulsar y foco» |
+| `LuzBase` | Color, letra y luz. «El color es de los personajes», con los doce, todos dibujados igual. «Pulsar y foco» |
 | `LuzContenido` | La racha, las etiquetas, los avisos y la fila de Premium |
 | `LuzBotones` | Principal, secundario, tonal, ámbar, de borrar, de texto y de icono, en normal, pulsado, desactivado y cargando |
 | `LuzSeleccion` | El selector de personaje, también con foco; el interruptor, también desactivado; elegir personaje; los chips de filtro elegido, normal y desactivado; las filas que actúan al tocar, una con foco y otra desactivada |
@@ -1312,7 +1428,8 @@ Hay que añadirlos o cambiarlos en los tres idiomas:
 | Recientes | «Ayer» y «Respuesta borrada» |
 | Opciones | «Entrar» y «Los personajes sabrán quién pregunta» (antes la tarjeta «Respuestas a tu medida»); los resúmenes «Activadas», «Ya usaste las de hoy», «Preguntas y respuestas», «Sin micrófono», «Desactivado» y «Bloqueadas»; «Menos movimiento» y «Sin giros ni saltos: la bola cambia con fundidos»; «Con la tecnología de Gemini» (antes «Powered by Gemini») |
 | Ajustes | El aviso de Respuestas con IA: «Vuelven mañana. Mientras, la bola responde con sus frases de siempre.», «Ver un anuncio» y «Un anuncio corto y sigues con la IA.». El de Voz: «Sin él, solo puedes tocar o agitar.». La nota de Notificaciones, ahora con punto. En Licencias, «Bibliotecas» y las descripciones de Fraunces, Outfit e Inter |
-| Personajes | «Es quien responde ahora»; la descripción de la Bruja, sin la coma; «Aún no has creado ninguno» y «Elige su color, su accesorio y cómo responde.»; «De @…» y la nota de Comunidad; «Más opciones», «Reportar personaje», «¿Qué pasa con este personaje?», sus seis motivos y «Reportado. Gracias.»; «Bloquear a @…», «¿Bloquear a @…?», «Dejarás de ver sus personajes en Comunidad.», «Bloquear» y «@… bloqueado»; «Creado por ti», «En Comunidad», «Editar», «Borrar» y «… borrado» |
+| Personajes nuevos | Los nombres «Gata», «Comentarista», «Repostera» y «Dino» (en inglés y portugués, los de la sección 3, por confirmar); su carácter, «Presumida y perezosa», «Eufórico y exagerado», «Dulce y perfeccionista» y «Antiquísimo y bonachón»; sus frases de ejemplo de sí, no y quizá (sección 3) y la descripción de su ficha, por escribir |
+| Personajes | Las cabeceras «Los de siempre» y «Con actitud»; «Es quien responde ahora»; la descripción de la Bruja, sin la coma; «Aún no has creado ninguno» y «Elige su color, su accesorio y cómo responde.»; «De @…» y la nota de Comunidad; «Más opciones», «Reportar personaje», «¿Qué pasa con este personaje?», sus seis motivos y «Reportado. Gracias.»; «Bloquear a @…», «¿Bloquear a @…?», «Dejarás de ver sus personajes en Comunidad.», «Bloquear» y «@… bloqueado»; «Creado por ti», «En Comunidad», «Editar», «Borrar» y «… borrado» |
 | Editor | «Editar personaje», «Color · …», «Accesorio · …», los nombres de los colores y de los accesorios, «Compartir en Comunidad», «Otras personas podrán verlo y usarlo», «Esta descripción no se puede usar. Cámbiala y vuelve a guardar.», «Este nombre no se puede usar.», «¿Descartar el personaje?», «¿Descartar los cambios?», «Se pierde lo que has escrito.», «Descartar», «Seguir editando» y la nota «Se envía a Gemini, de Google, para responder. No pongas datos personales.» |
 | Cuenta | «Entrando con Google», «No se pudo entrar con Google», «No hay conexión. Todo sigue como estaba.» y «Google no responde. Todo sigue como estaba.»; el texto de «Qué se envía a Gemini, de Google»; «Día», «Mes» y «Año»; «Ahora no» (antes «Continuar sin cuenta»); la nota de menores y «Continuar»; los apoyos de Tu cuenta; el cuerpo de «¿Eliminar tu cuenta?» y «Premium se sigue cobrando hasta que lo canceles.»; «No se pudo eliminar la cuenta. Prueba otra vez.» y «Cuenta eliminada» |
 | Premium | Las cuatro ventajas y las condiciones; «No se pudo cargar el precio» y «Google Play no responde. Sin el precio no puedes suscribirte.»; «Ya tienes Premium» y su texto; «Pago pendiente. Se activa cuando Google Play lo confirme.»; «Hasta el … No se renovará.»; «No se pudo cobrar Premium», «Actualiza el pago antes del … o perderás Premium.» y «Arreglar en Google Play»; «Premium está en pausa» y «Actualiza el pago en Google Play para recuperarlo.» |
@@ -1331,6 +1448,11 @@ Hay que añadirlos o cambiarlos en los tres idiomas:
 - `LP40Escuchar`: con el dedo fuera, que la línea diga «Suelta para cancelar» y el halo deje de
   seguir la voz (propuesta).
 - `LP54DesdeRecientes`: «Hace 5 min» encima de la pregunta (propuesta; se puede quitar).
+- «Giro clásico»: si Opciones ofrece «Gira», la respuesta que da media vuelta (sección 6,
+  «Secundaria: gira»). Recomendación: no en el lanzamiento.
+- El sitio para saltar: la bola mide de alto 1,168 veces su ancho (sección 8), que deja 24 unidades
+  por encima del lienzo de 200 × 210, y la estrella del Mago y la guinda de la Repostera llegan a
+  y = −53 en el salto (sección 6). O se reserva más alto, o el dibujo pisa el título.
 
 **Pregunta delicada**
 - Qué abre «Dónde pedir ayuda» (una hoja con teléfonos por país o una web) y qué número de
@@ -1363,8 +1485,10 @@ Hay que añadirlos o cambiarlos en los tres idiomas:
 **Personajes**
 - Qué hace tocar una fila de personaje: la opción (a) o la (b) de la sección 9. El lienzo dibuja la
   (b).
-- `LP17Personajes`: un grupo «Originales» con los ocho, o los grupos «Los de siempre» y «Con
-  actitud», que suman 668 en 640 libres y dejan al Pirata bajo la barra de gestos.
+- Si los cuatro nuevos son gratis o de Premium. Recomendación: gratis, porque traen a la gente de
+  vuelta; Premium vende las respuestas con IA y los personajes propios.
+- Los nombres en inglés y portugués de los cuatro nuevos: Cat y Gata, Commentator y Narrador,
+  Pastry chef y Confeiteira, Dino y Dino.
 - El dibujo del avatar de cada personaje (sección 9).
 - Las losas «Sombrero de bruja», «Diadema» y «Gafas» van en los colores de su personaje. Lo
   coherente sería el color elegido, pero este trabajo no redibuja accesorios.
@@ -1376,7 +1500,8 @@ Hay que añadirlos o cambiarlos en los tres idiomas:
 
 **Compartir**
 - «Publicación» e «Historia», o «4:5» y «9:16».
-- El fondo y la tinta de la tarjeta para cada personaje (`shareBackground` y `shareInk`, sección 2).
+- El fondo y la tinta de la tarjeta para cada personaje (`shareBackground` y `shareInk`, sección 2),
+  también para las cuatro luces nuevas.
 
 **Reloj**
 - Si el reloj puede responder con IA sin el móvil: `LPW9SinMovil` supone que solo lo hace a través
@@ -1545,9 +1670,9 @@ nombre.
 | `link` | `bg` · `surface` · `control` · `surfaceOverlay` (pulsado) | 10,66 · 9,65 · 8,68 · 7,66 |
 | `onAccent` | `accent` · `accentPressed` | 5,02 · 6,17 |
 | `onTonal` | `tonal` · `tonalPressed` | 9,55 · 7,74 |
-| `onWarning` | `warning` · `warningPressed` | 9,59 · 7,90 |
+| `onWarning` | `warning` · `warningPressed` | 8,26 · 6,89 |
 | `error` | `errorContainer` · `errorPressed` · `bg` · `control` | 7,64 · 6,76 · 8,72 · 7,10 |
-| `warning`, icono y acción del aviso compacto | `warningContainer` · `surfaceOverlay` (pulsado) | 9,89 · 8,08 |
+| `warning`, icono y acción del aviso compacto | `warningContainer` · `surfaceOverlay` (pulsado) | 8,51 · 6,96 |
 | `check` | `selected` · `surface` · `control` | 5,74 · 6,53 · 5,88 |
 | `outline` | `control` · `surface` · `bg` | 3,57 · 3,97 · 4,38 |
 | `accent`, pista del interruptor | `surface` · `control` | 3,57 · 3,21 |
@@ -2074,7 +2199,7 @@ El componente dibuja la bola de las secciones 1 a 6
 
 | Parámetro | Valores |
 |---|---|
-| `state` | Reposo, escuchando (con el nivel del micrófono), pensando, respuesta (con el veredicto y el texto de la ventana; quieta si se abre desde Recientes), sin respuesta, no te he oído, delicada, sorteo (con el nombre en la ventana), dormida, sin conexión, esperando y ambiente (reloj). Cómo es cada uno, en las secciones 6 y 7 |
+| `state` | Reposo, escuchando (con el nivel del micrófono), pensando, respuesta (con el veredicto y el texto de la ventana; quieta si se abre desde Recientes), sin respuesta, no te he oído, delicada, sorteo (con el nombre en la cara de cristal), dormida, sin conexión, esperando y ambiente (reloj). Cómo es cada uno, en las secciones 6 y 7 |
 | `oracle` | Luz, accesorio y mirada del personaje, con sus `OracleColors` |
 | `size` | El ancho: de 160 a 250 en el móvil (sección 8); en el reloj, 112, 104 sin respuesta y 88 sin el móvil (sección 7). El alto es el ancho × 1,168, por el sitio para saltar |
 | `reduceMotion` | El de `LuzMotion` |
@@ -2170,7 +2295,7 @@ suyo:
 | Un anuncio desde el aviso compacto de la bola | El indicador de 24 en lugar del icono y «Cargando un anuncio…» (`LP49Recompensa`) |
 | El precio de Premium | «Suscribirme» en su estado «Cargando» y, debajo, «Buscando el precio en Google Play…» |
 | Una lista (Personajes, Comunidad) | Filas esqueleto |
-| La respuesta de la bola | La ventana con el líquido (sección 6). TalkBack dice «Pensando…» y, a los 6 s, «Sin respuesta» |
+| La respuesta de la bola | La cara de cristal con el líquido en movimiento (sección 6). TalkBack dice «Pensando…» y, a los 6 s, «Sin respuesta» |
 | Algo largo con la bola a la vista | La animación «Esperando» (sección 6) |
 | La imagen para compartir | «Compartir» en su estado «Cargando» |
 
