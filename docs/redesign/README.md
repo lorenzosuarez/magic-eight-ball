@@ -28,20 +28,22 @@ corresponde a esa respuesta.
 Los diseños están en el lienzo «Rediseño de la bola» de Claude:
 https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su dueño.
 
-- Página «Ojos en el círculo»: la propuesta aprobada. Incluye la portada, la pantalla principal, la
-  pantalla con la respuesta, los estados, los oráculos, la secuencia de respuesta, la ventana de
-  cada oráculo y una animación en bucle.
-- Página «Cara en la ventana»: la propuesta A, descartada, que se guarda como referencia.
-- Página «Componentes · Luz»: el sistema de componentes elegido. Incluye la base, los botones, la
-  selección, los avisos, tres pantallas y la comparación con la versión con canto. Sus botones
-  todavía son píldoras: manda el ADR 0005.
-- Página «Pantallas · Luz»: todas las pantallas con los componentes Luz y los botones de radio 16.
-  - Contiene la bola en cada estado, Recientes, Opciones, los personajes, la cuenta, Premium,
-    reportar, la tarjeta de compartir, la notificación, el widget, el reloj y los estados de los
-    componentes.
-  - La sección 7 de la especificación las describe una a una.
-- Página «Componentes · Canto»: la primera versión de los componentes, descartada por parecerse
-  demasiado a Duolingo.
+- Página «Diseño»: todo lo elegido, en una sola página y en este orden.
+  - La bola: la portada, los estados, los oráculos y la ventana de cada uno.
+  - La respuesta, en movimiento: la animación en bucle, los ocho personajes (los seis oráculos y
+    Robot y Pirata, que ya son estilos de respuesta de la app) y los cinco pasos. Los tableros de los
+    oráculos, de las ventanas y de los pasos se dibujan a partir de la animación, así que coinciden
+    con ella.
+  - La prueba «¿Gira o su cara se vuelve ventana?»: la versión que gira junto a «Cara de cristal»,
+    en la que la cara se vuelve la ventana. Está en la sección 6 de la especificación.
+  - Los componentes Luz, con los botones de radio 16 del ADR 0005.
+  - Todas las pantallas: la bola en cada estado, Recientes, Opciones, los personajes, la cuenta,
+    Premium, reportar, la tarjeta de compartir, la notificación, el widget y el reloj. La sección 7
+    de la especificación las describe una a una.
+- Página «Descartado · Canto»: la primera versión de los componentes, descartada por parecerse
+  demasiado a Duolingo, con la comparación frente a Luz.
+
+La propuesta A, con la cara dentro de la ventana, se borró del lienzo el 20 nov 2026.
 
 Si este documento y el lienzo no coinciden, manda este documento: aquí están los valores exactos.
 

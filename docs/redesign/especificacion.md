@@ -1,8 +1,8 @@
 # Rediseño de la bola: especificación
 
 Estado: propuesta B aprobada el 18 nov 2026 y componentes de la variante Luz elegidos el 19 nov 2026
-([ADR 0004](adr/0004-componentes-luz.md)). Los valores salen del lienzo de diseño: páginas «Ojos en
-el círculo» y «Componentes · Luz».
+([ADR 0004](adr/0004-componentes-luz.md)). Los valores salen de la página «Diseño» del lienzo de
+diseño.
 
 Todas las medidas de la bola están en un lienzo de 200 × 210 unidades, con el centro del cuerpo en
 (100, 104). En la app se escalan al tamaño de la bola en pantalla: una unidad equivale al ancho
@@ -13,8 +13,8 @@ disponible dividido entre 200.
 | Parte | Forma | Valores |
 |---|---|---|
 | Cuerpo | Círculo | Centro (100, 104), radio 82. Degradado radial con centro en (0,36; 0,3) y radio 0,78: `#4B5166` → `#1C1F2B` (45 %) → `#0A0B10` |
-| Borde de luz | Aro | Radio 81, trazo de 2, color del oráculo al 45–70 % |
-| Brillo | Elipse | Centro (66, 56), radios 22 × 11, girada −34°, blanco al 16 % |
+| Borde de luz | Aro | Radio 81, trazo de 2,4, color del oráculo al 70 % |
+| Brillo | Elipse | Centro (66, 56), radios 22 × 11, girada −34°, blanco al 14 % |
 | Aura | Círculo detrás del cuerpo | Radio 106. Degradado radial del color del oráculo: 24 % hasta el 76 % del radio y 0 % en el borde. Es lo único que brilla en la pantalla |
 | Sombra | Elipse bajo la bola | Centro (100, 200), radios 58 × 6, negro al 30 % |
 | Sombra del borde | Círculo sobre el cuerpo | Radio 82. Degradado radial negro con centro en (96, 98) y radio 90: 0 % hasta el 60 % y 55 % en el borde. Va encima de la cara y la ventana y debajo del borde de luz, el brillo y el accesorio. En reposo no toca la cara; al girar, oscurece lo que se acerca al borde |
@@ -25,7 +25,7 @@ disponible dividido entre 200.
 | Triángulo | Triángulo hacia arriba | Vértices (100, 68), (137, 132) y (63, 132). Degradado vertical del color del oráculo. Contorno de 1,2 al 60 % |
 | Texto de la respuesta | Dentro del triángulo | Inter Bold, tamaño 9, espaciado 0,2, mayúsculas, centrado en x = 100. Dos líneas como máximo, con las bases en y = 106 y 119. Si una palabra no cabe, el tamaño baja por pasos hasta 7,6 |
 
-La bola se inclina unos grados según el estado (entre −14° y 10°). Los accesorios y la cara giran
+La bola se inclina unos grados según el estado (entre −16° y 10°). Los accesorios y la cara giran
 con ella.
 
 ## 2. Colores de la interfaz
@@ -78,15 +78,22 @@ Toda combinación de texto y fondo cumple 4,5:1.
 | Genio / Genie | `#F2B84B` | `#FFD27A` → `#E0A030` (`#2A1A00`) | Moño y banda dorados `#F2B84B`, joya `#FF8FA3` y humo bajo la bola | Ojos felices | Generoso y teatral | «Concedido: es un sí.» |
 | Bruja / Witch | `#5BC8A0` | `#23A374` → `#0F6447` (blanco) | Sombrero puntiagudo `#1E7A58`, ala `#1A6A4C` y cinta `#A8F0D4` | Borde de arriba inclinado, de pícara | Pícara y directa | «Ni lo sueñes, cariño.» |
 | Mago / Wizard | `#34D1DB` | `#7DE6EC` → `#2FB7C2` (`#032A2E`) | Sombrero `#1F8C99`, ala `#18737E` y estrellas `#FFD166` | Cápsulas atentas | Sabio y amable | «Mis cálculos dicen que sí.» |
-| Filósofo / Philosopher | `#C4B59F` | `#9A8B74` → `#4F4436` (blanco) | Gafas redondas negras | Medio cerrados | Seco y cansado | «Define "sí".» |
+| Filósofo / Philosopher | `#C4B59F` | `#9A8B74` → `#4F4436` (blanco) | Gafas redondas negras | Medio cerrados | Seco y cansado | «Define “sí”.» |
 | Astróloga / Astrologer | `#FF8FA3` | `#E0607E` → `#A82C4C` (blanco) | Luna creciente `#FFD1DB` y estrellas `#FFD166` | Mirando arriba | Soñadora | «Con Venus a favor, sí.» |
+| Robot / Robot | `#C6F03C` | `#DDF58A` → `#9CC827` (`#1B2A06`) | Antena `#8B9AAD` con bola `#C6F03C` sobre una arandela `#5F6E80`, y una junta remachada | Pantallas de 10 × 7 | Literal y exacto | «Afirmativo. Bip.» |
+| Pirata / Pirate | `#EC4A2A` | `#E8584A` → `#A12A21` (blanco) | Pañuelo `#B8262A` de borde inclinado, con lunares `#F4EDE4` y nudo al lado, y un parche negro con cinta | Un ojo tapado y el otro de pícaro | Gruñón y teatral | «Ni hablar, grumete.» |
 
 Nombres que se evitan: sibila y augur, porque casi nadie los conoce; «gitana», por estereotipo;
 médium y chamán.
 
 Los colores de los oráculos no pueden coincidir con los de la interfaz. Se comprueba con una
 distancia de color ΔE00 de 18 o más frente al cobalto, el ámbar, el coral y los grises de texto.
-Por eso el Mago es turquesa y el Filósofo, piedra.
+Por eso el Mago es turquesa y el Filósofo, piedra. Hoy no lo cumplen el Genio (4 frente al
+ámbar), la Astróloga (7 frente al coral), la Vidente (12 frente al azul del ✓ y 15 frente al
+cobalto) y el Filósofo (17 frente al gris de los iconos); está pendiente de decidir. Robot y Pirata
+sí: 31 y 18,5.
+
+Robot y Pirata ya son estilos de respuesta de la app; son los primeros que reciben su aspecto.
 
 ## 4. Catálogo de expresiones
 
@@ -106,6 +113,10 @@ x = 87 y x = 113.
 | Medio cerrados | Mitad inferior de la cápsula, con el borde de arriba plano en y = 104 |
 | Pícara | Borde de arriba inclinado hacia el centro |
 | Parpadeo | Cápsulas aplastadas al 12 % de su alto durante unos 100 ms |
+| Pantallas (Robot) | Rectángulos de 10 × 7 con esquinas de 2; su «sí» son dos ángulos rellenos de 11 × 8,5 |
+| Parche (Pirata) | Tapa el ojo izquierdo; el derecho lleva la mirada de pícaro |
+
+La Bruja y el Pirata dicen que no con su mirada de pícaros: la cabeza que niega ya da el veredicto.
 
 ## 5. La ventana de respuesta
 
@@ -115,22 +126,26 @@ x = 87 y x = 113.
 - En la ventana van de una a tres palabras, en mayúsculas y en dos líneas como máximo: «SÍ, SIN
   DUDA», «CONCEDIDO», «NI LO SUEÑES».
 - La frase con más personalidad va debajo de la bola, en el texto de la pantalla.
-- El triángulo toma el color del oráculo. Su texto cumple 4,5:1 sobre ese color; en el Genio por eso
-  es oscuro.
+- El triángulo toma el color del oráculo. Su texto cumple 4,5:1 sobre ese color; en el Genio, el Mago
+  y el Robot por eso es oscuro.
+- Cada línea cabe dentro del triángulo con 2,5 de margen a cada lado, medido en lo alto de sus
+  mayúsculas, donde el triángulo mide de medio ancho 37 · (base − 0,73 · tamaño − 68) / 64. Si no
+  cabe, el tamaño baja por pasos hasta 7,6.
 
 ## 6. Animación de la respuesta
 
-Ciclo de referencia del lienzo, de 10 s:
+Ciclo de referencia del lienzo, de 7,5 s:
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
-| Reposo | 0–1,8 s | Flota ±3 unidades, tres ondas por ciclo, con la mirada del oráculo; la Vidente tiene los ojos cerrados con calma. Si la mirada tiene los ojos abiertos, parpadea a 1,0 s |
-| Escuchando | 1,8–2,9 s | Los ojos se abren en un parpadeo y pasan a 8,6 × 21; la bola se inclina de −5° a −12° y aparecen ondas de sonido |
-| Se agita | 2,9–3,6 s | Oscila entre −12° y 10° a 5 Hz, con un vaivén lateral de ±3 unidades que se apaga, ojos `> <` y líneas de movimiento. Al final los ojos vuelven a la mirada del oráculo |
-| Gira | 3,6–4,6 s | Media vuelta sobre su eje vertical: 5° hacia el otro lado en 0,2 s, el giro en 0,7 s, con la mayor velocidad un poco antes de la mitad y la bola 1,8 unidades más alta, y 3° de más que se asientan en 0,22 s, ya con el triángulo subiendo |
-| La respuesta | 4,6–7,1 s | El triángulo sube 26 unidades del líquido en 0,9 s, flota y el halo se duplica. Antes de volver se hunde en 0,4 s |
-| Vuelve | 7,1–8,2 s | La otra media vuelta, en el mismo sentido y con la misma curva: la ventana sale por la izquierda y la cara entra por la derecha con el gesto de la respuesta |
-| Gesto | 8,2–9,5 s | Se agacha 1,5, salta 10, se aplasta un 3 % al caer y rebota 1,5. Después el gesto se relaja en la mirada de reposo |
+| Reposo | 0–0,9 s | Flota ±3 unidades, tres ondas por ciclo, con la mirada del oráculo. Si la mirada tiene los ojos abiertos, parpadea a 0,45 s |
+| Escuchando | 0,9–1,7 s | Los ojos se abren en un parpadeo y pasan a 8,6 × 21, la bola se inclina de −5° a −12° y el halo late suave: un 18 % más, a 2,4 Hz |
+| Se agita | 1,7–2,3 s | 3,5 sacudidas que se apagan. El cuerpo va ±5 unidades y se mece ±4°; la cara le sigue 25 ms después, deslizándose ±3,9° sobre la bola, y los ojos, apretados en `> <`, un poco más tarde. Las puntas de los sombreros, la antena y el moño se balancean |
+| Gira | 2,3–3,1 s | Media vuelta sobre su eje vertical: 5° hacia el otro lado en 0,12 s, el giro en 0,52 s con la bola 1,8 unidades más alta y 3° de más que se asientan en 0,14 s |
+| La respuesta | 3,1–5,2 s | El triángulo sube 26 unidades del líquido en 0,6 s, flota y el halo se duplica. Antes de volver se hunde en 0,26 s |
+| Vuelve | 5,2–6,0 s | La otra media vuelta, en el mismo sentido y con la misma curva: la ventana sale por la izquierda y la cara entra por la derecha con el gesto de la respuesta |
+| Gesto | 6,0–7,0 s | Sí: se agacha 1,5, salta 10, se aplasta un 3 % al caer y rebota 1,5; el Genio salta 13 y se queda arriba 0,08 s, y el Robot cabecea dos veces. No: niega con la cabeza, ±11°. Quizá: ladea 8°, mira a un lado y sube 2. El Filósofo reacciona 0,15 s tarde y al 70 % |
+| Reposo | 7,0–7,5 s | El gesto se relaja en la mirada de reposo |
 
 Cómo se dibuja el giro:
 
@@ -139,16 +154,21 @@ Cómo se dibuja el giro:
 - La cara, los ojos y la ventana van pegados a la superficie. Un punto (x, y) del dibujo de frente,
   medido desde el centro del cuerpo, está a la profundidad z = √(82² − x² − y²). Tras girar un
   ángulo ψ queda en x′ = x·cos ψ − z·sen ψ, con profundidad z′ = x·sen ψ + z·cos ψ; la y no cambia.
-  La ventana usa ψ − 180°.
+  La ventana usa ψ − 180°. Para la sacudida y el cabeceo la cara gira además un ángulo pequeño θ
+  sobre el eje horizontal.
 - Lo que queda detrás (z′ < 0) se pega al contorno: la cara se va por el borde y no se encoge hacia
   el centro.
 - Las piezas pequeñas (ojos, burbujas, adorno) van a su punto girado y se estrechan en horizontal
   por z′/z.
 - La luz no gira: el degradado del cuerpo, el brillo y la sombra del borde se quedan quietos, y el
   degradado de la cara también. El del líquido viaja con la ventana.
-- El accesorio es una figura de revolución y no cambia al girar. Su adorno se repite por detrás y se
-  recorta con la silueta del accesorio: en cada media vuelta uno se va por la izquierda y el otro
-  entra por la derecha.
+- Lo redondo del accesorio no cambia al girar. Lo que no es redondo (la punta torcida de un sombrero,
+  el borde inclinado del pañuelo) se mezcla con su imagen en espejo según cos ψ, y lo que sobresale
+  (el nudo del Pirata) da la vuelta alrededor del eje y pasa por detrás de la bola.
+- Los adornos se repiten por detrás y se recortan con la silueta del accesorio: en cada media vuelta
+  uno se va por la izquierda y el otro entra por la derecha.
+- El dibujo necesita 34 unidades libres por encima de la bola: en el salto, la punta del sombrero del
+  Mago sube hasta y = −33.
 - Los contornos se calculan una vez; en cada fotograma solo se transforman, sin crear memoria
   nueva.
 
@@ -157,8 +177,8 @@ En la app, las fases las disparan los estados y no un reloj fijo:
 | Estado de la app | Animación |
 |---|---|
 | `Idle` | Reposo |
-| `Listening` (mantener pulsado y hablar) | Escuchando |
-| `Thinking` | Se agita y gira. Si la respuesta no ha llegado, la ventana queda a la vista con el líquido en movimiento y sin triángulo, hasta el máximo actual de 6 s |
+| `Listening` (mantener pulsado y hablar) | Escuchando. El halo sigue el nivel del micrófono: sube en 50 ms y baja en 200 ms |
+| `Thinking` | Se agita y gira. Si la pregunta llega agitando el móvil, la sacudida sigue al acelerómetro. Si la respuesta no ha llegado, la ventana queda a la vista con el líquido en movimiento y sin triángulo, hasta el máximo actual de 6 s |
 | `Answered` | Sube el triángulo, se mantiene unos 2,5 s y la bola vuelve con el gesto del `Verdict`: sí, no o quizá |
 | Fallo («Prueba otra vez luego.») | El triángulo no aparece; la bola vuelve con mirada de duda |
 
@@ -175,9 +195,31 @@ Reglas:
 - Todos los tiempos y curvas son tokens del sistema de diseño, nunca números sueltos en una pantalla.
 - La vibración acompaña al agitado (pulsos cortos) y a la llegada del triángulo (un toque).
 
+### En prueba: cara de cristal
+
+En lugar de girar, la bola enseña la respuesta donde tiene la cara: la cara se vuelve de cristal. El
+tablero «Prueba: ¿gira o su cara se vuelve ventana?» pone las dos versiones a la vez. Hasta que se
+decida, manda la versión que gira.
+
+| Fase | Tiempo | Qué pasa |
+|---|---|---|
+| Cierra los ojos | 2,28–2,58 s | Tras la sacudida, los ojos se cierran tranquilos (las pantallas del Robot se apagan) y la bola toma aire: sube 3,5 y se estira un 2 %. Luego los ojos y lo que lleva la cara, como las gafas o el parche, se desvanecen |
+| La cara se aclara | 2,52–2,8 s | Un destello cruza el blanco y la cara se vuelve transparente en 0,22 s sobre la ventana, que toma al final su tamaño y su bisel. El triángulo ya sube detrás desde 2,62 s |
+| La respuesta | Hasta 5,25 s | El triángulo flota y, desde 4,8 s, se hunde en 0,45 s con una curva suave |
+| Se cierra | 5,0–5,3 s | El blanco vuelve con otro destello y reaparecen los ojos cerrados |
+| Abre los ojos | 5,85 s | Se abren con la mirada del gesto, que empieza a los 6,05 s, como en el giro |
+
+Reglas de la prueba:
+
+- La cara nunca tiene un agujero: un círculo oscuro que crece dentro del blanco parece un ojo enorme.
+- La cara no cambia de color: roja o verde se lee como herida, enfado o mareo.
+- No se dice «se le abre la cara», que en español es una herida.
+- El accesorio no se mueve, y el modo «reducir movimiento» queda casi igual que el normal, porque ya
+  cambia la cara por la ventana con un fundido.
+
 ## 7. Pantallas
 
-Todas están dibujadas en la página «Pantallas · Luz» del lienzo, en el orden de esta sección. Los
+Todas están dibujadas en la página «Diseño» del lienzo, en el orden de esta sección. Los
 componentes que se nombran aquí están en la sección 9.
 
 ### La bola
@@ -212,7 +254,7 @@ el hueco libre, así que la bola no se mueve nunca.
 | Estado | Título | Bola | Leyenda | Acciones |
 |---|---|---|---|---|
 | En reposo | «Toca o agita para preguntar. Mantén presionado para hablar.» | Cara en reposo | La racha: «3 días seguidos» | Selector «Responde como · Vidente» |
-| Escuchando | «Te escucho…» en Inter 600 13 y, debajo, lo que va oyendo en Inter 18 `#F2F5F8` | Escuchando, con ondas | Nada | Nada |
+| Escuchando | «Te escucho…» en Inter 600 13 y, debajo, lo que va oyendo en Inter 18 `#F2F5F8` | Escuchando, con el halo latiendo | Nada | Nada |
 | Pensando | La pregunta | La ventana con el líquido | Nada | Nada |
 | Respuesta | La pregunta | La ventana con la respuesta | «▲ Vidente añade · IA» y la frase en Fraunces 24/30 | «Compartir» y los dos pulgares |
 | Respuesta larga, con «Respuestas más largas» | La pregunta | La ventana con la respuesta | La frase en Fraunces 20/26; la leyenda crece hacia abajo | Como en la respuesta |
@@ -403,8 +445,8 @@ Hay que añadirlos en los tres idiomas:
 ## 9. Componentes
 
 Variante Luz ([ADR 0004](adr/0004-componentes-luz.md)), con los botones de radio 16 del
-[ADR 0005](adr/0005-botones-radio-16.md). El lienzo muestra los componentes en la página
-«Componentes · Luz», todavía con botones en píldora, y todas las pantallas en «Pantallas · Luz».
+[ADR 0005](adr/0005-botones-radio-16.md). El lienzo muestra los componentes y todas las pantallas en
+la página «Diseño».
 
 Reglas comunes:
 - **Al pulsar:** el control se oscurece y se encoge al 98 %; entra en 90 ms y sale en 150 ms.
