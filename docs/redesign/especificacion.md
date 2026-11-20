@@ -195,21 +195,27 @@ Reglas:
 - Todos los tiempos y curvas son tokens del sistema de diseño, nunca números sueltos en una pantalla.
 - La vibración acompaña al agitado (pulsos cortos) y a la llegada del triángulo (un toque).
 
-### En prueba: la cara se vuelve la ventana
+### En prueba: cara de cristal
 
-En lugar de girar, la bola enseña la respuesta donde tiene la cara. El tablero «Prueba: ¿gira o se le
-abre la cara?» pone las dos versiones a la vez. Hasta que se decida, manda la versión que gira.
+En lugar de girar, la bola enseña la respuesta donde tiene la cara: la cara se vuelve de cristal. El
+tablero «Prueba: ¿gira o su cara se vuelve ventana?» pone las dos versiones a la vez. Hasta que se
+decida, manda la versión que gira.
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
-| Cierra los ojos | 2,3–2,42 s | Los ojos acaban la sacudida cerrados en la cápsula y se desvanecen, con lo que lleve la cara (gafas, parche) |
-| La cara se aclara | 2,4–2,72 s | El blanco se vuelve transparente, como un cristal que se desempaña, y deja ver la ventana, que pasa de radio 44 a 46. No se abre ningún agujero: un círculo oscuro que crece dentro del blanco parece un ojo enorme |
-| La respuesta | 2,78–5,2 s | El triángulo sube como en el giro, 0,34 s antes, y se queda 1,5 s quieto. La bola sube 1,2 unidades al aclararse y otra vez al cerrarse |
-| Se cierra | 5,18–5,5 s | El blanco vuelve a cubrir la ventana |
-| Abre los ojos | 5,48–5,67 s | Los ojos aparecen cerrados y se abren con la mirada del gesto, que empieza a los 6,05 s, como en el giro |
+| Cierra los ojos | 2,28–2,58 s | Tras la sacudida, los ojos se cierran tranquilos (las pantallas del Robot se apagan) y la bola toma aire: sube 3,5 y se estira un 2 %. Luego los ojos y lo que lleva la cara, como las gafas o el parche, se desvanecen |
+| La cara se aclara | 2,52–2,8 s | Un destello cruza el blanco y la cara se vuelve transparente en 0,22 s sobre la ventana, que toma al final su tamaño y su bisel. El triángulo ya sube detrás desde 2,62 s |
+| La respuesta | Hasta 5,25 s | El triángulo flota y, desde 4,8 s, se hunde en 0,45 s con una curva suave |
+| Se cierra | 5,0–5,3 s | El blanco vuelve con otro destello y reaparecen los ojos cerrados |
+| Abre los ojos | 5,85 s | Se abren con la mirada del gesto, que empieza a los 6,05 s, como en el giro |
 
-Con esta versión el accesorio no se mueve y el modo «reducir movimiento» queda casi igual que el
-normal, porque ya cambia la cara por la ventana con un fundido.
+Reglas de la prueba:
+
+- La cara nunca tiene un agujero: un círculo oscuro que crece dentro del blanco parece un ojo enorme.
+- La cara no cambia de color: roja o verde se lee como herida, enfado o mareo.
+- No se dice «se le abre la cara», que en español es una herida.
+- El accesorio no se mueve, y el modo «reducir movimiento» queda casi igual que el normal, porque ya
+  cambia la cara por la ventana con un fundido.
 
 ## 7. Pantallas
 

@@ -34,8 +34,8 @@ https://claude.ai/artifact/HT9sVVKHCiHjhWFJLgdc2E. Es privado y solo lo abre su 
     Robot y Pirata, que ya son estilos de respuesta de la app) y los cinco pasos. Los tableros de los
     oráculos, de las ventanas y de los pasos se dibujan a partir de la animación, así que coinciden
     con ella.
-  - La prueba «¿Gira o se le abre la cara?»: la versión que gira junto a otra en la que la cara se
-    vuelve la ventana. Está en la sección 6 de la especificación.
+  - La prueba «¿Gira o su cara se vuelve ventana?»: la versión que gira junto a «Cara de cristal»,
+    en la que la cara se vuelve la ventana. Está en la sección 6 de la especificación.
   - Los componentes Luz, con los botones de radio 16 del ADR 0005.
   - Todas las pantallas: la bola en cada estado, Recientes, Opciones, los personajes, la cuenta,
     Premium, reportar, la tarjeta de compartir, la notificación, el widget y el reloj. La sección 7
