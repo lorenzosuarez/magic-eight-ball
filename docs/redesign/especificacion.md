@@ -1,8 +1,8 @@
 # Rediseño de la bola: especificación
 
 Estado: propuesta B aprobada el 18 nov 2026 y componentes de la variante Luz elegidos el 19 nov 2026
-([ADR 0004](adr/0004-componentes-luz.md)). Los valores salen del lienzo de diseño: páginas «Ojos en
-el círculo» y «Componentes · Luz».
+([ADR 0004](adr/0004-componentes-luz.md)). Los valores salen de la página «Diseño» del lienzo de
+diseño.
 
 Todas las medidas de la bola están en un lienzo de 200 × 210 unidades, con el centro del cuerpo en
 (100, 104). En la app se escalan al tamaño de la bola en pantalla: una unidad equivale al ancho
@@ -195,9 +195,25 @@ Reglas:
 - Todos los tiempos y curvas son tokens del sistema de diseño, nunca números sueltos en una pantalla.
 - La vibración acompaña al agitado (pulsos cortos) y a la llegada del triángulo (un toque).
 
+### En prueba: la cara se vuelve la ventana
+
+En lugar de girar, la bola enseña la respuesta donde tiene la cara. El tablero «Prueba: ¿gira o se le
+abre la cara?» pone las dos versiones a la vez. Hasta que se decida, manda la versión que gira.
+
+| Fase | Tiempo | Qué pasa |
+|---|---|---|
+| Cierra los ojos | 2,3–2,42 s | Los ojos acaban la sacudida cerrados en la cápsula y se desvanecen, con lo que lleve la cara (gafas, parche) |
+| La cara se aclara | 2,4–2,72 s | El blanco se vuelve transparente, como un cristal que se desempaña, y deja ver la ventana, que pasa de radio 44 a 46. No se abre ningún agujero: un círculo oscuro que crece dentro del blanco parece un ojo enorme |
+| La respuesta | 2,78–5,2 s | El triángulo sube como en el giro, 0,34 s antes, y se queda 1,5 s quieto. La bola sube 1,2 unidades al aclararse y otra vez al cerrarse |
+| Se cierra | 5,18–5,5 s | El blanco vuelve a cubrir la ventana |
+| Abre los ojos | 5,48–5,67 s | Los ojos aparecen cerrados y se abren con la mirada del gesto, que empieza a los 6,05 s, como en el giro |
+
+Con esta versión el accesorio no se mueve y el modo «reducir movimiento» queda casi igual que el
+normal, porque ya cambia la cara por la ventana con un fundido.
+
 ## 7. Pantallas
 
-Todas están dibujadas en la página «Pantallas · Luz» del lienzo, en el orden de esta sección. Los
+Todas están dibujadas en la página «Diseño» del lienzo, en el orden de esta sección. Los
 componentes que se nombran aquí están en la sección 9.
 
 ### La bola
@@ -423,8 +439,8 @@ Hay que añadirlos en los tres idiomas:
 ## 9. Componentes
 
 Variante Luz ([ADR 0004](adr/0004-componentes-luz.md)), con los botones de radio 16 del
-[ADR 0005](adr/0005-botones-radio-16.md). El lienzo muestra los componentes en la página
-«Componentes · Luz», todavía con botones en píldora, y todas las pantallas en «Pantallas · Luz».
+[ADR 0005](adr/0005-botones-radio-16.md). El lienzo muestra los componentes y todas las pantallas en
+la página «Diseño».
 
 Reglas comunes:
 - **Al pulsar:** el control se oscurece y se encoge al 98 %; entra en 90 ms y sale en 150 ms.
